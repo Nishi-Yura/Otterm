@@ -19,15 +19,57 @@ struct Line {
 /// result gives its new position in the returned rows. A column of `cols` means the cursor is
 /// right after a full row, waiting to wrap.
 pub(crate) fn reflow(rows: Vec<Row>, cols: usize, cursor: (usize, usize)) -> (Vec<Row>, (usize, usize)) {
-    let lines = join(rows, cursor);
-    let mut out = Vec::with_capacity(lines.len());
+    let mut out = Vec::with_capacity(rows.len());
     let mut new_cursor = (0, 0);
-    for line in lines {
-        if let Some(pos) = split(line, cols, &mut out) {
-            new_cursor = pos;
+    // Rows ending in a wrap, collected until the row that ends their logical line.
+    let mut run: Vec<Row> = Vec::new();
+    let mut run_start = 0;
+    for (i, row) in rows.into_iter().enumerate() {
+        // Most lines are one row that fits the new width: keep the row as it is. This is what
+        // keeps a resize with a full scrollback cheap.
+        if run.is_empty() && !row.wrapped && content_len(&row) <= cols && !(i == cursor.0 && cursor.1 >= cols) {
+            if i == cursor.0 {
+                new_cursor = (out.len(), cursor.1);
+            }
+            out.push(row);
+            continue;
+        }
+        if run.is_empty() {
+            run_start = i;
+        }
+        let ends_line = !row.wrapped;
+        run.push(row);
+        if ends_line {
+            rewrap(&mut run, run_start, cols, cursor, &mut out, &mut new_cursor);
         }
     }
+    if !run.is_empty() {
+        rewrap(&mut run, run_start, cols, cursor, &mut out, &mut new_cursor);
+    }
     (out, new_cursor)
+}
+
+/// Rewrap one logical line made of `run` (rows `start..`) into `out`.
+fn rewrap(
+    run: &mut Vec<Row>,
+    start: usize,
+    cols: usize,
+    cursor: (usize, usize),
+    out: &mut Vec<Row>,
+    new_cursor: &mut (usize, usize),
+) {
+    let local =
+        if (start..start + run.len()).contains(&cursor.0) { (cursor.0 - start, cursor.1) } else { (usize::MAX, 0) };
+    for line in join(std::mem::take(run), local) {
+        if let Some(pos) = split(line, cols, out) {
+            *new_cursor = pos;
+        }
+    }
+}
+
+/// Cells up to the last one that is not blank.
+fn content_len(row: &Row) -> usize {
+    row.cells[..row.used.min(row.cells.len())].iter().rposition(|c| *c != Cell::default()).map_or(0, |n| n + 1)
 }
 
 fn join(rows: Vec<Row>, cursor: (usize, usize)) -> Vec<Line> {

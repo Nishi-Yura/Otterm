@@ -506,7 +506,13 @@ impl Terminal {
         let start = out.len().saturating_sub(rows).min(row);
         let mut screen: VecDeque<Row> = out.drain(start..).take(rows).collect();
         screen.resize_with(rows, || Row::new(cols, &Attrs::default()));
-        self.scrollback = out.iter().map(Row::compact).collect();
+        self.scrollback = out
+            .into_iter()
+            .map(|mut r| {
+                r.compact_in_place();
+                r
+            })
+            .collect();
         self.primary = screen;
         self.cursor.row = row - start;
         self.cursor.col = col.min(cols - 1);

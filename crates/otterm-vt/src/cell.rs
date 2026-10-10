@@ -112,6 +112,17 @@ impl Row {
         Self { cells: self.cells[..used].to_vec(), extra: self.extra.clone(), wrapped: self.wrapped, used }
     }
 
+    /// Like [`Self::compact`], in place: drop trailing default cells.
+    pub(crate) fn compact_in_place(&mut self) {
+        let used = self.cells[..self.used].iter().rposition(|c| *c != Cell::default()).map_or(0, |i| i + 1);
+        self.cells.truncate(used);
+        // Give memory back only when it is worth a reallocation (a screen row entering history).
+        if self.cells.capacity() > used * 2 + 16 {
+            self.cells.shrink_to_fit();
+        }
+        self.used = used;
+    }
+
     /// Blank the whole row in place, keeping its allocation.
     pub fn clear(&mut self, pen: &Attrs) {
         if pen.bg == Color::Default {
