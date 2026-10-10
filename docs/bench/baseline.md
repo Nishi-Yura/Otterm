@@ -79,7 +79,7 @@ macOS ランナー（仮想マシン）は JS と Rust の時計のずれがラ�
 
 往復 p50 / p99（ms）
 
-| 大きさ | macOS 14（M2 Pro、仮想） | Linux（Ubuntu、Xvfb） | Windows（Server 2022 系） |
+| 大きさ | macos-latest（M2 Pro、仮想） | ubuntu-latest（EPYC、Xvfb） | windows-latest（EPYC） |
 | --- | --- | --- | --- |
 | 64 B | Tauri 0.39 / 0.60 ・ WS 0.30 / 0.50 | Tauri 0.77 / 2.39 ・ WS 0.26 / 0.33 | Tauri 1.56 / 4.71 ・ WS 0.16 / 0.22 |
 | 2 KiB | Tauri 0.87 / 1.79 ・ WS 0.32 / 0.59 | Tauri 1.03 / 1.57 ・ WS 0.27 / 0.35 | Tauri 3.16 / 3.90 ・ WS 0.16 / 0.22 |
