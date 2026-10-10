@@ -31,7 +31,7 @@ otterm はシェルを解きほぐして、使う人のそばに寄り添いま�
 
 ## 状態
 
-M0（骨組み）に着手。仕様書で決めた型とデータは配置済みで、CI で検証している。ターミナルとしてはまだ動かない。
+M1（ターミナルとして成立）の途中。Windows で日常の作業ができるところまで来ている: タブと分割、スクロールバックと検索、選択とコピー、リンク、日本語入力、設定ファイルとテーマ、マウス報告、Kitty キーボード。描画は Canvas 2D（WebGL は未着手）。macOS と Linux は CI でビルドと自動テストが通るのみで、手動の確認はまだ。進み具合は [docs/07-roadmap.md](docs/07-roadmap.md)。
 
 | 場所 | 中身 |
 | --- | --- |
@@ -39,7 +39,11 @@ M0（骨組み）に着手。仕様書で決めた型とデータは配置済み
 | [packages/create-mod/](packages/create-mod/) | mod テンプレート（Git Status Bar の見本） |
 | [packages/ui/locales/](packages/ui/locales/) | UI 文言とコツメの台詞（Fluent） |
 | [mods/dictionary-core/](mods/dictionary-core/) | 同梱のコマンド辞書（164 コマンド）と危険ルール |
-| [crates/otterm-config/](crates/otterm-config/) | 設定の Rust 構造体（`config.toml` / `workspace.toml`） |
+| [crates/otterm-vt/](crates/otterm-vt/) | VT パーサとグリッド、検索、再折り返し、キー・マウスのエンコード |
+| [crates/otterm-pty/](crates/otterm-pty/) / [crates/otterm-session/](crates/otterm-session/) | PTY（Windows は同梱の ConPTY）とセッション |
+| [crates/otterm-app/](crates/otterm-app/) | Tauri アプリ本体 |
+| [packages/ui/](packages/ui/) | 画面（SolidJS、Canvas 2D レンダラ） |
+| [crates/otterm-config/](crates/otterm-config/) | 設定の Rust 構造体と読み込み、同梱テーマ |
 | [tests/dictionary/](tests/dictionary/) | 辞書の検証スクリプト |
 | [scripts/](scripts/) | 開発用スクリプト（Windows で同梱する ConPTY の取得など） |
 | [tests/bench/](tests/bench/) | ベンチマーク（`just bench`）。結果は [docs/bench/](docs/bench/baseline.md) |
