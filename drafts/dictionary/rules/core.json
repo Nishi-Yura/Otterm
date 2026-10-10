@@ -1,0 +1,97 @@
+{
+  "$comment": "Cross-command danger rules for danger-guard. DRAFT; target: mods/dictionary-core/dictionary/rules/core.json. Shape mirrors DangerRule in drafts/api/index.d.ts. Per-command dangers live on options/subcommands in commands/*.json; only patterns that span commands or pipelines belong here.",
+  "rules": [
+    {
+      "id": "core.pipe-to-shell",
+      "level": "confirm",
+      "match": { "regex": "\\b(curl|wget|iwr|Invoke-WebRequest)\\b[^|]*\\|\\s*(sudo\\s+)?(sh|bash|zsh|pwsh|powershell|iex|Invoke-Expression)\\b" },
+      "message": { "ja": "ダウンロードした内容をそのまま実行します。中身を確認してから実行する方が安全です", "en": "Runs downloaded content directly. Safer to inspect it first" },
+      "alternatives": [{ "label": { "ja": "先に中身を見る", "en": "Inspect first" }, "command": "{download} | less" }]
+    },
+    {
+      "id": "core.fork-bomb",
+      "level": "block",
+      "match": { "regex": ":\\(\\)\\s*\\{\\s*:\\|:&\\s*\\};:" },
+      "message": { "ja": "これは fork bomb です。システムを停止させます。実行できません", "en": "This is a fork bomb and will freeze the system. Blocked" }
+    },
+    {
+      "id": "core.rm-root",
+      "level": "block",
+      "match": { "regex": "\\brm\\s+(-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r)[a-zA-Z]*\\s+(/|/\\*|~|~/|\\$HOME|\\$HOME/)\\s*$" },
+      "message": { "ja": "ルートまたはホーム全体を削除しようとしています。実行できません", "en": "This would delete the root or your entire home. Blocked" }
+    },
+    {
+      "id": "core.remove-item-userprofile",
+      "level": "confirm",
+      "platforms": ["windows"],
+      "match": { "regex": "\\b(Remove-Item|rm|del|rd|rmdir)\\b.*-Recurse.*(\\$env:USERPROFILE|\\$HOME|C:\\\\\\\\?\\s|C:\\\\Users\\\\[^\\\\\\s]+\\s*$)" },
+      "message": { "ja": "ユーザーフォルダ以上の範囲を削除しようとしています", "en": "This targets your user folder or above" }
+    },
+    {
+      "id": "core.chmod-777-recursive",
+      "level": "warn",
+      "match": { "command": "chmod", "allOptions": ["-R"], "argPattern": "^0?777\\b" },
+      "message": { "ja": "すべてのユーザーに読み書き実行の権限を与えます。通常は 755 や 644 で十分です", "en": "Gives every user full permissions. 755 or 644 is usually enough" }
+    },
+    {
+      "id": "core.sudo-danger-escalation",
+      "level": "confirm",
+      "match": { "regex": "^\\s*sudo\\s+(rm|chmod|chown|dd|mkfs|fdisk|parted)\\b" },
+      "message": { "ja": "管理者権限で破壊的な操作をしようとしています。対象をもう一度確認してください", "en": "Destructive operation with admin rights. Double-check the target" }
+    },
+    {
+      "id": "core.dd-to-device",
+      "level": "confirm",
+      "match": { "regex": "\\bdd\\b.*\\bof=/dev/(sd|nvme|disk|hd)" },
+      "message": { "ja": "ディスクに直接書き込みます。デバイス名を間違えるとデータがすべて消えます", "en": "Writes directly to a disk. A wrong device name destroys all its data" }
+    },
+    {
+      "id": "core.mkfs-format",
+      "level": "confirm",
+      "match": { "regex": "^\\s*(sudo\\s+)?(mkfs(\\.\\w+)?|format|diskpart|Format-Volume|Clear-Disk)\\b" },
+      "message": { "ja": "ディスクを初期化します。中のデータはすべて消えます", "en": "Formats a disk. All data on it will be erased" }
+    },
+    {
+      "id": "core.sql-drop",
+      "level": "confirm",
+      "match": { "regex": "\\bDROP\\s+(TABLE|DATABASE|SCHEMA)\\b" },
+      "message": { "ja": "テーブルまたはデータベースを削除します。元に戻せません", "en": "Drops a table or database. This cannot be undone" }
+    },
+    {
+      "id": "core.git-clean-force",
+      "level": "confirm",
+      "match": { "command": "git", "subcommand": "clean", "anyOption": ["-f", "-fd", "-fdx", "--force"] },
+      "message": { "ja": "追跡されていないファイルを削除します。新しく作ったファイルが消えます", "en": "Deletes untracked files, including ones you just created" },
+      "alternatives": [{ "label": { "ja": "何が消えるか見る", "en": "Preview what would be deleted" }, "command": "git clean -n {args}" }]
+    },
+    {
+      "id": "core.redirect-overwrite-source",
+      "level": "warn",
+      "match": { "regex": "\\b(cat|sort|sed|grep|awk)\\b\\s+([^\\s>|]+)\\s*(\\|[^>]*)?>\\s*\\2\\s*$" },
+      "message": { "ja": "読み込んでいるファイルと同じファイルに書き出しています。中身が空になります", "en": "Writes to the same file it reads. The file will end up empty" }
+    },
+    {
+      "id": "core.set-executionpolicy-unrestricted",
+      "level": "warn",
+      "platforms": ["windows"],
+      "match": { "command": "Set-ExecutionPolicy", "argPattern": "^Unrestricted$" },
+      "message": { "ja": "すべてのスクリプトが無条件に実行できるようになります", "en": "Allows every script to run without checks" },
+      "alternatives": [{ "label": { "ja": "RemoteSigned にする", "en": "Use RemoteSigned" }, "command": "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser" }]
+    },
+    {
+      "id": "core.reg-delete",
+      "level": "confirm",
+      "platforms": ["windows"],
+      "match": { "regex": "^\\s*(reg\\s+delete|Remove-ItemProperty\\s+-Path\\s+HK(LM|CU))" },
+      "message": { "ja": "レジストリを変更します。元に戻せない場合があります", "en": "Modifies the registry. This may not be reversible" },
+      "alternatives": [{ "label": { "ja": "先にエクスポート", "en": "Export first" }, "command": "reg export {key} backup.reg" }]
+    },
+    {
+      "id": "core.kill-explorer",
+      "level": "warn",
+      "platforms": ["windows"],
+      "match": { "regex": "\\b(Stop-Process\\s+-Name\\s+explorer|taskkill\\s+/f\\s+/im\\s+explorer\\.exe)" },
+      "message": { "ja": "デスクトップとタスクバーが一時的に消えます", "en": "The desktop and taskbar will disappear temporarily" }
+    }
+  ]
+}

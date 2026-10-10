@@ -1,0 +1,46 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "docker",
+  "summary": { "ja": "コンテナ（隔離されたアプリ実行環境）を作って動かすツールです", "en": "Builds and runs containers (isolated app environments)" },
+  "install": { "winget": "winget install Docker.DockerDesktop", "brew": "brew install --cask docker", "url": "https://docs.docker.com/get-docker/" },
+  "subcommands": [
+    {
+      "name": "run",
+      "summary": { "ja": "イメージから新しいコンテナを作って起動します", "en": "Creates and starts a container from an image" },
+      "args": [{ "name": "image", "type": "image" }, { "name": "command", "type": "command", "optional": true }],
+      "options": [
+        { "flags": ["-it"], "summary": { "ja": "対話モード（中でシェルを使うとき）", "en": "Interactive with a terminal (for shells inside)" } },
+        { "flags": ["-d", "--detach"], "summary": { "ja": "バックグラウンドで起動", "en": "Run in the background" } },
+        { "flags": ["-p", "--publish"], "takesValue": true, "summary": { "ja": "ポートを公開（ホスト:コンテナ）", "en": "Publish a port (host:container)" } },
+        { "flags": ["-v", "--volume"], "takesValue": true, "summary": { "ja": "フォルダを共有（ホスト:コンテナ）", "en": "Mount a folder (host:container)" } },
+        { "flags": ["--rm"], "summary": { "ja": "終了時にコンテナを自動削除", "en": "Remove the container when it exits" } },
+        { "flags": ["--name"], "takesValue": true, "valueType": "string", "summary": { "ja": "コンテナに名前を付ける", "en": "Name the container" } },
+        { "flags": ["--privileged"], "summary": { "ja": "ホストのほぼ全権限を与える", "en": "Give nearly all host privileges" }, "danger": "confirm", "dangerMessage": { "ja": "コンテナの隔離がほぼなくなります。信頼できるイメージ以外では使わないでください", "en": "Removes most isolation. Only for trusted images" } }
+      ],
+      "examples": [{ "command": "docker run -it --rm ubuntu bash", "summary": { "ja": "Ubuntu を一時的に起動して中でシェルを使う", "en": "Start a throwaway Ubuntu with a shell" } }],
+      "errors": [
+        { "pattern": "Cannot connect to the Docker daemon|docker daemon is not running", "hint": { "ja": "Docker が起動していません。Docker Desktop を起動してください", "en": "Docker is not running. Start Docker Desktop" } },
+        { "pattern": "port is already allocated|address already in use", "hint": { "ja": "そのポートは使用中です。-p の左側（ホスト側）を別の番号にしてください", "en": "That port is in use. Change the host side of -p" } },
+        { "pattern": "Unable to find image '(?<img>[^']+)' locally.*(pull access denied|not found)", "hint": { "ja": "{img} が見つかりません。イメージ名とタグを確認してください", "en": "{img} was not found. Check the image name and tag" } }
+      ]
+    },
+    { "name": "ps", "summary": { "ja": "動いているコンテナの一覧", "en": "Lists running containers" }, "options": [{ "flags": ["-a", "--all"], "summary": { "ja": "停止中も含める", "en": "Include stopped containers" } }] },
+    { "name": "exec", "summary": { "ja": "動いているコンテナの中でコマンドを実行します", "en": "Runs a command inside a running container" }, "args": [{ "name": "container", "type": "container" }, { "name": "command", "type": "command" }], "options": [{ "flags": ["-it"], "summary": { "ja": "対話モード", "en": "Interactive" } }], "examples": [{ "command": "docker exec -it web sh", "summary": { "ja": "web コンテナの中でシェルを開く", "en": "Open a shell inside the web container" } }] },
+    { "name": "logs", "summary": { "ja": "コンテナの出力ログを表示", "en": "Shows a container's logs" }, "args": [{ "name": "container", "type": "container" }], "options": [{ "flags": ["-f", "--follow"], "summary": { "ja": "リアルタイムで追い続ける", "en": "Follow in real time" } }, { "flags": ["--tail"], "takesValue": true, "valueType": "number", "summary": { "ja": "末尾 N 行だけ", "en": "Only the last N lines" } }] },
+    { "name": "stop", "summary": { "ja": "コンテナを停止", "en": "Stops a container" }, "args": [{ "name": "container", "type": "container", "variadic": true }] },
+    { "name": "rm", "summary": { "ja": "コンテナを削除", "en": "Removes containers" }, "args": [{ "name": "container", "type": "container", "variadic": true }], "options": [{ "flags": ["-f", "--force"], "summary": { "ja": "動いていても強制削除", "en": "Force-remove even if running" }, "danger": "warn" }] },
+    { "name": "rmi", "summary": { "ja": "イメージを削除", "en": "Removes images" }, "args": [{ "name": "image", "type": "image", "variadic": true }] },
+    { "name": "build", "summary": { "ja": "Dockerfile からイメージを作ります", "en": "Builds an image from a Dockerfile" }, "args": [{ "name": "context", "type": "dir" }], "options": [{ "flags": ["-t", "--tag"], "takesValue": true, "valueType": "string", "summary": { "ja": "イメージに名前:タグを付ける", "en": "Name and tag the image" } }] },
+    { "name": "pull", "summary": { "ja": "イメージをダウンロード", "en": "Downloads an image" }, "args": [{ "name": "image", "type": "image" }] },
+    { "name": "images", "summary": { "ja": "手元のイメージ一覧", "en": "Lists local images" } },
+    {
+      "name": "system",
+      "summary": { "ja": "Docker 全体の管理", "en": "Docker-wide management" },
+      "options": [{ "flags": ["prune"], "summary": { "ja": "使っていないコンテナ・イメージ・ネットワークを一括削除", "en": "Remove all unused containers, images and networks" }, "danger": "confirm", "dangerMessage": { "ja": "停止中のコンテナと未使用イメージがすべて消えます", "en": "Deletes every stopped container and unused image" } }, { "flags": ["df"], "summary": { "ja": "ディスク使用量", "en": "Disk usage" } }]
+    },
+    { "name": "compose", "summary": { "ja": "複数コンテナをまとめて定義・起動（compose.yaml）", "en": "Define and run multi-container apps (compose.yaml)" }, "options": [{ "flags": ["up"], "summary": { "ja": "すべて起動（-d でバックグラウンド）", "en": "Start everything (-d for background)" } }, { "flags": ["down"], "summary": { "ja": "すべて停止して削除", "en": "Stop and remove everything" } }, { "flags": ["logs"], "summary": { "ja": "ログを表示", "en": "Show logs" } }, { "flags": ["ps"], "summary": { "ja": "状態一覧", "en": "List services" } }] }
+  ],
+  "errors": [
+    { "pattern": "permission denied while trying to connect to the Docker daemon socket", "hint": { "ja": "Docker を使う権限がありません。ユーザーを docker グループに追加して再ログインしてください", "en": "No permission to use Docker. Add your user to the docker group and log in again" }, "fix": "sudo usermod -aG docker $USER" }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Remove-Item",
+  "aliases": ["ri", "rm", "del", "erase", "rmdir", "rd"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "ファイルやフォルダを削除します（PowerShell）。ゴミ箱には入りません", "en": "Deletes files or folders (PowerShell). Bypasses the Recycle Bin" },
+  "danger": "warn",
+  "learn": { "ja": "otterm のファイルツリーの削除はゴミ箱に送ります。Remove-Item は送りません", "en": "Deleting in otterm's file tree uses the Recycle Bin. Remove-Item does not" },
+  "options": [
+    { "flags": ["-Path"], "takesValue": true, "valueType": "path", "summary": { "ja": "削除する対象", "en": "Items to delete" } },
+    {
+      "flags": ["-Recurse"],
+      "summary": { "ja": "フォルダの中身ごと削除", "en": "Delete a folder with everything inside" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "このフォルダの中身がすべて消えます。ゴミ箱には入りません", "en": "Everything inside will be deleted, bypassing the Recycle Bin" },
+      "alternative": { "label": { "ja": "ゴミ箱に送る", "en": "Move to Recycle Bin" }, "command": "otterm trash {args}" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "隠し・読み取り専用ファイルも確認なしで削除", "en": "Delete hidden/read-only items without prompting" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "確認なしで削除します", "en": "Deletes without asking" }
+    },
+    { "flags": ["-WhatIf"], "summary": { "ja": "実際には削除せず、何が消えるかだけ表示（安全な予行演習）", "en": "Show what would be deleted without doing it (safe dry run)" } },
+    { "flags": ["-Confirm"], "summary": { "ja": "1 件ずつ確認", "en": "Ask before each item" } },
+    { "flags": ["-Include"], "takesValue": true, "valueType": "pattern", "summary": { "ja": "パターンに一致するものだけ", "en": "Only items matching the pattern" } },
+    { "flags": ["-Exclude"], "takesValue": true, "valueType": "pattern", "summary": { "ja": "パターンに一致するものを除外", "en": "Skip items matching the pattern" } }
+  ],
+  "args": [{ "name": "path", "type": "path", "variadic": true }],
+  "examples": [
+    { "command": "Remove-Item old.txt", "summary": { "ja": "ファイルを 1 つ削除", "en": "Delete one file" } },
+    { "command": "Remove-Item build -Recurse -WhatIf", "summary": { "ja": "build を消したら何が消えるか確認だけする", "en": "Preview what deleting build would remove" } }
+  ],
+  "errors": [
+    { "pattern": "Directory .* cannot be removed because it is not empty", "hint": { "ja": "フォルダが空ではありません。中身ごと消すには -Recurse が必要です。ゴミ箱に送る方が安全です", "en": "The folder is not empty. -Recurse deletes its contents. Moving to the Recycle Bin is safer" }, "fix": "otterm trash {args}" },
+    { "pattern": "Cannot find path '(?<path>[^']+)'", "hint": { "ja": "{path} は存在しません。すでに消えているか、名前が違います", "en": "{path} does not exist. It may already be gone or the name differs" } },
+    { "pattern": "Access to the path .* is denied|UnauthorizedAccessException", "hint": { "ja": "削除する権限がありません。他のプログラムが開いているか、管理者権限が必要です", "en": "Access denied. Another program may have it open, or admin rights are required" } },
+    { "pattern": "because it is being used by another process", "hint": { "ja": "他のプログラムが使用中です。そのプログラムを閉じてから再試行してください", "en": "Another process is using it. Close that program and retry" } }
+  ]
+}

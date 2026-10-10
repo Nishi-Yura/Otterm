@@ -1,0 +1,34 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ls",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "フォルダの中身（ファイルとフォルダ）を一覧表示します", "en": "Lists the files and folders in a directory" },
+  "description": {
+    "ja": "引数を省略すると今いるフォルダを表示します。隠しファイル（名前が . で始まるもの）は -a を付けないと表示されません。",
+    "en": "Without arguments it lists the current directory. Hidden files (names starting with a dot) need -a."
+  },
+  "learn": { "ja": "ファイルツリーで見ているものは、ターミナルでは ls で確認できます", "en": "What the file tree shows is what ls prints in the terminal" },
+  "options": [
+    { "flags": ["-l"], "summary": { "ja": "権限・サイズ・更新日時を含む詳細表示", "en": "Long format with permissions, size and date" } },
+    { "flags": ["-a", "--all"], "summary": { "ja": "隠しファイルも表示", "en": "Include hidden files" } },
+    { "flags": ["-h", "--human-readable"], "summary": { "ja": "サイズを KB / MB で表示（-l と併用）", "en": "Sizes in KB / MB (with -l)" } },
+    { "flags": ["-t"], "summary": { "ja": "更新日時が新しい順に並べる", "en": "Sort by modification time, newest first" } },
+    { "flags": ["-r", "--reverse"], "summary": { "ja": "並び順を逆にする", "en": "Reverse the sort order" } },
+    { "flags": ["-R", "--recursive"], "summary": { "ja": "サブフォルダの中身も再帰的に表示", "en": "List subdirectories recursively" } },
+    { "flags": ["-S"], "summary": { "ja": "サイズが大きい順に並べる", "en": "Sort by size, largest first" } }
+  ],
+  "args": [
+    { "name": "path", "type": "path", "optional": true, "variadic": true, "summary": { "ja": "表示するフォルダやファイル", "en": "Directories or files to list" } }
+  ],
+  "examples": [
+    { "command": "ls -la", "summary": { "ja": "隠しファイルを含めて詳細表示", "en": "Long listing including hidden files" } },
+    { "command": "ls -lt | head", "summary": { "ja": "最近更新された 10 件", "en": "Ten most recently modified entries" } }
+  ],
+  "errors": [
+    {
+      "pattern": "cannot access '(?<path>[^']+)': No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    }
+  ]
+}

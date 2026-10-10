@@ -1,0 +1,33 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "python",
+  "aliases": ["python3", "py"],
+  "summary": { "ja": "Python のプログラムを実行します。引数なしなら対話モードです", "en": "Runs a Python program; with no arguments, starts the interactive prompt" },
+  "install": { "winget": "winget install Python.Python.3.12", "brew": "brew install python", "apt": "sudo apt install python3", "url": "https://www.python.org/downloads/" },
+  "learn": { "ja": "ファイルツリーで .py を右クリックして「実行」を選ぶと、このコマンドが入力されます", "en": "Right-click a .py file in the tree and choose Run to get this command" },
+  "options": [
+    { "flags": ["-m"], "takesValue": true, "valueType": "string", "summary": { "ja": "モジュールをスクリプトとして実行（例: -m venv、-m pip）", "en": "Run a module as a script (e.g. -m venv, -m pip)" } },
+    { "flags": ["-c"], "takesValue": true, "valueType": "string", "summary": { "ja": "文字列をプログラムとして実行", "en": "Run the given string as code" } },
+    { "flags": ["-i"], "summary": { "ja": "スクリプト実行後に対話モードへ", "en": "Drop into the interactive prompt after the script" } },
+    { "flags": ["-V", "--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } },
+    { "flags": ["-u"], "summary": { "ja": "出力をバッファしない（ログをすぐ見たいとき）", "en": "Unbuffered output (see logs immediately)" } }
+  ],
+  "args": [
+    { "name": "script", "type": "file", "optional": true, "summary": { "ja": "実行する .py ファイル", "en": "The .py file to run" } },
+    { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "スクリプトに渡す引数", "en": "Arguments for the script" } }
+  ],
+  "examples": [
+    { "command": "python main.py", "summary": { "ja": "main.py を実行", "en": "Run main.py" } },
+    { "command": "python -m venv .venv", "summary": { "ja": "仮想環境を作る", "en": "Create a virtual environment" } },
+    { "command": "python -m http.server 8000", "summary": { "ja": "今のフォルダを簡易 Web サーバーで公開", "en": "Serve the current folder over HTTP" } }
+  ],
+  "errors": [
+    { "pattern": "ModuleNotFoundError: No module named '(?<mod>[^']+)'", "hint": { "ja": "{mod} がインストールされていません。pip で入れられます（パッケージ名がモジュール名と違うこともあります）", "en": "{mod} is not installed. Install it with pip (the package name may differ)" }, "fix": "pip install {mod}" },
+    { "pattern": "SyntaxError: (?<msg>.+)", "hint": { "ja": "文法エラーです: {msg}。エラーの直前の行の括弧やコロンの閉じ忘れをまず確認してください", "en": "Syntax error: {msg}. Check the previous line for missing brackets or colons" }, "allowAi": true },
+    { "pattern": "IndentationError", "hint": { "ja": "インデント（行頭の空白）が揃っていません。タブとスペースが混ざっていないか確認してください", "en": "Indentation is inconsistent. Check for mixed tabs and spaces" } },
+    { "pattern": "FileNotFoundError: \\[Errno 2\\] No such file or directory: '(?<path>[^']+)'", "hint": { "ja": "{path} が見つかりません。スクリプトから見た相対パスは「今いるフォルダ」基準です", "en": "{path} was not found. Relative paths resolve from the current folder, not the script's" } },
+    { "pattern": "python: can't open file '(?<path>[^']+)'", "hint": { "ja": "{path} がありません。ファイル名と今いるフォルダを確認してください", "en": "{path} does not exist. Check the name and your current folder" }, "fix": "ls" },
+    { "pattern": "'python' is not recognized|Python was not found", "hint": { "ja": "Python が見つかりません。インストールするか、Windows では py コマンドを試してください", "en": "Python was not found. Install it, or on Windows try the py launcher" }, "fix": "py {args}" },
+    { "pattern": "KeyboardInterrupt", "hint": { "ja": "Ctrl+C で中断しました。エラーではありません", "en": "Interrupted with Ctrl+C. This is not an error" }, "allowAi": false }
+  ]
+}

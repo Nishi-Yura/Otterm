@@ -1,0 +1,34 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "pip",
+  "aliases": ["pip3"],
+  "summary": { "ja": "Python のパッケージ管理ツールです", "en": "Package installer for Python" },
+  "description": { "ja": "仮想環境（venv）の中で使うのが安全です。プロンプトに (venv) が付いているか確認しましょう。", "en": "Safest inside a virtual environment (venv). Check for (venv) in your prompt." },
+  "install": { "winget": "winget install Python.Python.3.12", "brew": "brew install python", "apt": "sudo apt install python3-pip" },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": { "ja": "パッケージをインストールします", "en": "Installs packages" },
+      "args": [{ "name": "package", "type": "package", "variadic": true, "optional": true }],
+      "options": [
+        { "flags": ["-r", "--requirement"], "takesValue": true, "valueType": "file", "summary": { "ja": "requirements.txt に書かれた一覧をまとめてインストール", "en": "Install everything listed in a requirements file" } },
+        { "flags": ["-U", "--upgrade"], "summary": { "ja": "すでに入っていても最新に更新", "en": "Upgrade if already installed" } },
+        { "flags": ["-e", "--editable"], "takesValue": true, "valueType": "dir", "summary": { "ja": "開発中のプロジェクトをリンクとしてインストール", "en": "Install a local project in editable mode" } },
+        { "flags": ["--user"], "summary": { "ja": "ユーザーフォルダにインストール", "en": "Install into the user site" } },
+        { "flags": ["--break-system-packages"], "summary": { "ja": "OS 管理の Python に強制的にインストール", "en": "Force-install into the OS-managed Python" }, "danger": "confirm", "dangerMessage": { "ja": "OS が使う Python を壊す可能性があります。venv を使ってください", "en": "May break the OS's Python. Use a venv instead" }, "alternative": { "label": { "ja": "venv を作る", "en": "Create a venv" }, "command": "python -m venv .venv" } }
+      ],
+      "errors": [
+        { "pattern": "externally-managed-environment", "hint": { "ja": "OS 管理の Python には直接インストールできません。仮想環境を作ってから入れてください", "en": "This Python is managed by the OS. Create a virtual environment first" }, "fix": "python -m venv .venv" },
+        { "pattern": "No matching distribution found for (?<pkg>\\S+)", "hint": { "ja": "{pkg} が見つかりません。名前のスペルか、Python のバージョン対応を確認してください", "en": "{pkg} was not found. Check the name or Python version support" } },
+        { "pattern": "Could not install packages due to an OSError.*Permission denied", "hint": { "ja": "書き込み権限がありません。--user を付けるか、venv を使ってください", "en": "No write permission. Use --user or a venv" }, "fix": "pip install --user {args}" }
+      ]
+    },
+    { "name": "uninstall", "summary": { "ja": "パッケージを削除します", "en": "Removes packages" }, "args": [{ "name": "package", "type": "package", "variadic": true }], "options": [{ "flags": ["-y", "--yes"], "summary": { "ja": "確認せずに削除", "en": "Do not ask for confirmation" } }] },
+    { "name": "list", "summary": { "ja": "インストール済みパッケージの一覧", "en": "Lists installed packages" }, "options": [{ "flags": ["--outdated"], "summary": { "ja": "更新があるものだけ", "en": "Only packages with updates" } }] },
+    { "name": "freeze", "summary": { "ja": "インストール済み一覧を requirements.txt 形式で出力", "en": "Outputs installed packages in requirements format" }, "examples": [{ "command": "pip freeze > requirements.txt", "summary": { "ja": "依存一覧をファイルに保存", "en": "Save the dependency list to a file" } }] },
+    { "name": "show", "summary": { "ja": "パッケージの詳細を表示", "en": "Shows package details" }, "args": [{ "name": "package", "type": "package" }] }
+  ],
+  "errors": [
+    { "pattern": "'pip' is not recognized|pip: command not found", "hint": { "ja": "pip が見つかりません。python -m pip なら動くことが多いです", "en": "pip was not found. python -m pip usually works" }, "fix": "python -m pip {args}" }
+  ]
+}

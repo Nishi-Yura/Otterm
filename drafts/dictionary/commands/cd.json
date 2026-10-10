@@ -1,0 +1,33 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "cd",
+  "aliases": ["Set-Location", "chdir", "sl"],
+  "summary": { "ja": "作業フォルダを移動します", "en": "Changes the current directory" },
+  "description": {
+    "ja": "引数なしでホームフォルダへ、`cd -` で直前のフォルダへ戻ります。`..` は 1 つ上のフォルダです。",
+    "en": "No argument goes home; `cd -` returns to the previous directory. `..` is the parent folder."
+  },
+  "learn": { "ja": "ファイルツリーでフォルダを開く操作は cd と同じです", "en": "Opening a folder in the file tree is the same as cd" },
+  "args": [
+    { "name": "dir", "type": "dir", "optional": true, "summary": { "ja": "移動先のフォルダ", "en": "Target directory" } }
+  ],
+  "examples": [
+    { "command": "cd ..", "summary": { "ja": "1 つ上のフォルダへ", "en": "Go to the parent folder" } },
+    { "command": "cd ~/Documents", "summary": { "ja": "ホームの Documents へ", "en": "Go to Documents in your home" } },
+    { "command": "cd -", "summary": { "ja": "直前にいたフォルダへ戻る", "en": "Return to the previous folder" } }
+  ],
+  "errors": [
+    {
+      "pattern": "(No such file or directory|Cannot find path '(?<path>[^']+)')",
+      "hint": { "ja": "そのフォルダは存在しません。ファイルツリーで場所を確認するか、Tab で補完してみてください", "en": "That folder does not exist. Check the file tree or use Tab completion" }
+    },
+    {
+      "pattern": "Not a directory",
+      "hint": { "ja": "指定したのはファイルです。cd はフォルダにしか移動できません", "en": "That is a file. cd only moves into folders" }
+    },
+    {
+      "pattern": "Permission denied",
+      "hint": { "ja": "このフォルダに入る権限がありません", "en": "You do not have permission to enter this folder" }
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "git",
+  "summary": { "ja": "ソースコードの変更履歴を管理するツールです", "en": "Version control for your source code" },
+  "install": { "winget": "winget install Git.Git", "brew": "brew install git", "apt": "sudo apt install git", "dnf": "sudo dnf install git", "pacman": "sudo pacman -S git" },
+  "subcommands": [
+    {
+      "name": "status",
+      "summary": { "ja": "変更されたファイルの一覧を表示します", "en": "Shows which files changed" },
+      "options": [{ "flags": ["-s", "--short"], "summary": { "ja": "短い形式で表示", "en": "Short format" } }]
+    },
+    {
+      "name": "add",
+      "summary": { "ja": "変更を次のコミットに含める（ステージする）", "en": "Stages changes for the next commit" },
+      "args": [{ "name": "path", "type": "path", "variadic": true }],
+      "options": [{ "flags": ["-A", "--all"], "summary": { "ja": "すべての変更をステージ", "en": "Stage all changes" } }, { "flags": ["-p", "--patch"], "summary": { "ja": "変更箇所を選びながらステージ", "en": "Choose hunks interactively" } }],
+      "examples": [{ "command": "git add -A", "summary": { "ja": "すべての変更をステージ", "en": "Stage everything" } }]
+    },
+    {
+      "name": "commit",
+      "summary": { "ja": "ステージした変更を履歴に記録します", "en": "Records staged changes in history" },
+      "options": [
+        { "flags": ["-m", "--message"], "takesValue": true, "valueType": "string", "summary": { "ja": "コミットメッセージ", "en": "Commit message" } },
+        { "flags": ["-a", "--all"], "summary": { "ja": "追跡中ファイルの変更を自動でステージしてコミット", "en": "Auto-stage tracked files" } },
+        { "flags": ["--amend"], "summary": { "ja": "直前のコミットを書き換える", "en": "Rewrite the previous commit" }, "danger": "warn", "dangerMessage": { "ja": "すでにプッシュ済みのコミットを書き換えると、他の人と履歴が食い違います", "en": "Amending a pushed commit diverges history from others" } }
+      ],
+      "errors": [
+        { "pattern": "Please tell me who you are", "hint": { "ja": "名前とメールアドレスが未設定です", "en": "Your name and email are not configured" }, "fix": "git config --global user.name \"Your Name\" && git config --global user.email \"you@example.com\"" },
+        { "pattern": "nothing to commit", "hint": { "ja": "ステージされた変更がありません。先に git add が必要です", "en": "Nothing is staged. Run git add first" }, "fix": "git add -A" }
+      ]
+    },
+    {
+      "name": "push",
+      "summary": { "ja": "ローカルのコミットをリモート（GitHub など）に送ります", "en": "Uploads local commits to the remote" },
+      "args": [{ "name": "remote", "type": "remote", "optional": true }, { "name": "branch", "type": "branch", "optional": true }],
+      "options": [
+        {
+          "flags": ["-f", "--force"],
+          "summary": { "ja": "リモートの履歴を無視して上書き", "en": "Overwrite the remote history" },
+          "danger": "confirm",
+          "dangerMessage": { "ja": "リモートの履歴を強制的に上書きします。他の人のコミットが消えることがあります", "en": "Force-overwrites remote history. Other people's commits may be lost" },
+          "alternative": { "label": { "ja": "--force-with-lease で実行", "en": "Use --force-with-lease" }, "command": "git push --force-with-lease {args}" }
+        },
+        { "flags": ["--force-with-lease"], "summary": { "ja": "リモートが自分の知っている状態のときだけ上書き（安全な force）", "en": "Overwrite only if the remote is as you last saw it (safer force)" }, "danger": "warn" },
+        { "flags": ["-u", "--set-upstream"], "summary": { "ja": "このブランチの追跡先を記憶する", "en": "Remember the upstream for this branch" } },
+        { "flags": ["--tags"], "summary": { "ja": "タグも送る", "en": "Push tags too" } }
+      ],
+      "errors": [
+        { "pattern": "has no upstream branch", "hint": { "ja": "このブランチの送り先がまだ決まっていません", "en": "This branch has no upstream yet" }, "fix": "git push -u origin HEAD" },
+        { "pattern": "\\[rejected\\].*(fetch first|non-fast-forward)", "hint": { "ja": "リモートに自分の持っていないコミットがあります。先に取り込んでください。--force は使わないでください", "en": "The remote has commits you do not have. Pull first. Do not use --force" }, "fix": "git pull --rebase" },
+        { "pattern": "Permission denied \\(publickey\\)", "hint": { "ja": "SSH 鍵が認証されていません。鍵の登録を確認してください", "en": "Your SSH key was not accepted. Check that it is registered" } }
+      ]
+    },
+    {
+      "name": "pull",
+      "summary": { "ja": "リモートの変更を取り込みます", "en": "Downloads and merges remote changes" },
+      "options": [{ "flags": ["--rebase"], "summary": { "ja": "マージではなく自分のコミットを後ろに付け替えて取り込む", "en": "Rebase local commits on top instead of merging" } }],
+      "errors": [{ "pattern": "You have unstaged changes|Your local changes .* would be overwritten", "hint": { "ja": "未コミットの変更があるため取り込めません。先にコミットするか stash で退避してください", "en": "Uncommitted changes block the pull. Commit or stash first" }, "fix": "git stash" }]
+    },
+    { "name": "fetch", "summary": { "ja": "リモートの最新状態を取得します（作業ファイルは変えません）", "en": "Fetches remote state without touching your files" } },
+    {
+      "name": "checkout",
+      "summary": { "ja": "ブランチを切り替える、またはファイルを元に戻します", "en": "Switches branches or restores files" },
+      "args": [{ "name": "branch", "type": "branch", "optional": true }],
+      "options": [
+        { "flags": ["-b"], "takesValue": true, "valueType": "branch", "summary": { "ja": "新しいブランチを作って切り替える", "en": "Create and switch to a new branch" } },
+        { "flags": ["--"], "summary": { "ja": "以降をファイル名として扱い、変更を捨てて元に戻す", "en": "Treat the rest as paths and discard their changes" }, "danger": "confirm", "dangerMessage": { "ja": "そのファイルの未コミットの変更が消えます", "en": "Uncommitted changes to those files will be lost" } }
+      ]
+    },
+    { "name": "switch", "summary": { "ja": "ブランチを切り替えます", "en": "Switches branches" }, "args": [{ "name": "branch", "type": "branch" }], "options": [{ "flags": ["-c", "--create"], "takesValue": true, "valueType": "branch", "summary": { "ja": "新しいブランチを作って切り替える", "en": "Create and switch" } }] },
+    { "name": "branch", "summary": { "ja": "ブランチの一覧・作成・削除", "en": "List, create or delete branches" }, "options": [{ "flags": ["-d", "--delete"], "takesValue": true, "valueType": "branch", "summary": { "ja": "マージ済みブランチを削除", "en": "Delete a merged branch" } }, { "flags": ["-D"], "takesValue": true, "valueType": "branch", "summary": { "ja": "未マージでも強制削除", "en": "Force-delete even if unmerged" }, "danger": "confirm", "dangerMessage": { "ja": "マージされていないコミットが失われることがあります", "en": "Unmerged commits may be lost" } }] },
+    { "name": "merge", "summary": { "ja": "別ブランチの変更を今のブランチに統合します", "en": "Merges another branch into the current one" }, "args": [{ "name": "branch", "type": "branch" }], "errors": [{ "pattern": "CONFLICT \\(content\\): Merge conflict in (?<path>\\S+)", "hint": { "ja": "{path} で競合しました。ファイルを開いて <<<< と >>>> の間を直し、git add してから続けてください", "en": "Conflict in {path}. Open it, resolve the <<<< / >>>> markers, then git add and continue" } }] },
+    { "name": "rebase", "summary": { "ja": "コミットを別の土台の上に並べ替えます", "en": "Replays commits onto another base" }, "danger": "warn", "dangerMessage": { "ja": "履歴を書き換えます。プッシュ済みブランチでは注意", "en": "Rewrites history. Be careful on pushed branches" }, "options": [{ "flags": ["-i", "--interactive"], "summary": { "ja": "コミットを選んで編集・結合", "en": "Edit or squash commits interactively" } }, { "flags": ["--abort"], "summary": { "ja": "リベースを中止して元に戻す", "en": "Abort and restore the original state" } }, { "flags": ["--continue"], "summary": { "ja": "競合を直した後に続行", "en": "Continue after resolving conflicts" } }] },
+    {
+      "name": "reset",
+      "summary": { "ja": "ステージや履歴を指定の状態に戻します", "en": "Resets staging or history to a given state" },
+      "options": [
+        { "flags": ["--soft"], "summary": { "ja": "履歴だけ戻し、変更はステージに残す", "en": "Move history only; keep changes staged" } },
+        { "flags": ["--mixed"], "summary": { "ja": "履歴とステージを戻し、ファイルの変更は残す（既定）", "en": "Move history and unstage; keep file changes (default)" } },
+        { "flags": ["--hard"], "summary": { "ja": "履歴・ステージ・ファイルの変更をすべて捨てる", "en": "Discard history, staging and file changes" }, "danger": "confirm", "dangerMessage": { "ja": "未コミットの変更がすべて消えます。元に戻せません", "en": "All uncommitted changes will be lost permanently" }, "alternative": { "label": { "ja": "先に stash で退避", "en": "Stash first" }, "command": "git stash && git reset --hard {args}" } }
+      ]
+    },
+    { "name": "stash", "summary": { "ja": "未コミットの変更を一時退避します", "en": "Shelves uncommitted changes temporarily" }, "options": [{ "flags": ["pop"], "summary": { "ja": "退避した変更を戻す", "en": "Reapply the last stash" } }, { "flags": ["list"], "summary": { "ja": "退避の一覧", "en": "List stashes" } }] },
+    { "name": "log", "summary": { "ja": "コミット履歴を表示します", "en": "Shows commit history" }, "options": [{ "flags": ["--oneline"], "summary": { "ja": "1 コミット 1 行で表示", "en": "One line per commit" } }, { "flags": ["--graph"], "summary": { "ja": "ブランチの分岐を図で表示", "en": "Draw the branch graph" } }] },
+    { "name": "diff", "summary": { "ja": "変更内容の差分を表示します", "en": "Shows what changed" }, "options": [{ "flags": ["--staged", "--cached"], "summary": { "ja": "ステージ済みの差分", "en": "Staged changes only" } }] },
+    { "name": "clone", "summary": { "ja": "リモートのリポジトリを手元に複製します", "en": "Copies a remote repository to your machine" }, "args": [{ "name": "url", "type": "url" }, { "name": "dir", "type": "dir", "optional": true }] },
+    { "name": "init", "summary": { "ja": "このフォルダを Git リポジトリにします", "en": "Turns this folder into a git repository" } },
+    { "name": "remote", "summary": { "ja": "リモートの一覧・追加・削除", "en": "Manage remotes" }, "options": [{ "flags": ["-v"], "summary": { "ja": "URL も表示", "en": "Show URLs" } }] }
+  ],
+  "errors": [
+    { "pattern": "fatal: not a git repository", "hint": { "ja": "ここは Git リポジトリではありません。リポジトリのフォルダへ移動するか、git init で始められます", "en": "This is not a git repository. Move into one, or run git init to start" }, "fix": "git init" },
+    { "pattern": "git: '(?<sub>\\S+)' is not a git command", "hint": { "ja": "{sub} というサブコマンドはありません。スペルを確認してください", "en": "{sub} is not a git subcommand. Check the spelling" } }
+  ]
+}

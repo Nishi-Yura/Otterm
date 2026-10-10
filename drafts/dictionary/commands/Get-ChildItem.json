@@ -1,0 +1,29 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Get-ChildItem",
+  "aliases": ["gci", "dir", "ls"],
+  "shells": ["pwsh", "powershell"],
+  "platforms": ["windows", "macos", "linux"],
+  "summary": { "ja": "フォルダの中身を一覧表示します（PowerShell）。ls や dir と打っても同じです", "en": "Lists a folder's contents (PowerShell). ls and dir are aliases" },
+  "description": { "ja": "PowerShell では ls は Get-ChildItem の別名なので、Linux の ls のオプション（-la など）は使えません。-Force が隠しファイル表示に相当します。", "en": "In PowerShell, ls is an alias of Get-ChildItem, so Linux-style flags like -la do not work. -Force shows hidden files." },
+  "learn": { "ja": "ファイルツリーの表示は Get-ChildItem（ls）と同じ内容です", "en": "The file tree shows what Get-ChildItem (ls) would print" },
+  "options": [
+    { "flags": ["-Path"], "takesValue": true, "valueType": "path", "summary": { "ja": "表示するフォルダ", "en": "Folder to list" } },
+    { "flags": ["-Force"], "summary": { "ja": "隠しファイル・システムファイルも表示", "en": "Include hidden and system files" } },
+    { "flags": ["-Recurse"], "summary": { "ja": "サブフォルダも再帰的に", "en": "Include subfolders recursively" } },
+    { "flags": ["-Filter"], "takesValue": true, "valueType": "pattern", "summary": { "ja": "名前のパターンで絞り込み（例: *.txt）", "en": "Filter by name pattern (e.g. *.txt)" } },
+    { "flags": ["-File"], "summary": { "ja": "ファイルだけ", "en": "Files only" } },
+    { "flags": ["-Directory"], "summary": { "ja": "フォルダだけ", "en": "Folders only" } },
+    { "flags": ["-Name"], "summary": { "ja": "名前だけを表示", "en": "Names only" } }
+  ],
+  "args": [{ "name": "path", "type": "path", "optional": true }],
+  "examples": [
+    { "command": "Get-ChildItem -Force", "summary": { "ja": "隠しファイルも含めて表示", "en": "List including hidden files" } },
+    { "command": "ls *.py -Recurse", "summary": { "ja": "サブフォルダも含めて .py を探す", "en": "Find .py files in all subfolders" } },
+    { "command": "Get-ChildItem | Sort-Object LastWriteTime -Descending | Select-Object -First 10", "summary": { "ja": "最近更新された 10 件", "en": "Ten most recently modified entries" } }
+  ],
+  "errors": [
+    { "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'", "hint": { "ja": "-{p} は PowerShell の ls にはありません。Linux の ls とは別物です。隠しファイルは -Force、詳細は既定で表示されます", "en": "-{p} is not a parameter here. PowerShell's ls differs from Linux ls. Use -Force for hidden files" }, "fix": "Get-ChildItem -Force" },
+    { "pattern": "Cannot find path '(?<path>[^']+)' because it does not exist", "hint": { "ja": "{path} は存在しません。スペルと今いるフォルダを確認してください", "en": "{path} does not exist. Check the spelling and current folder" }, "fix": "Get-ChildItem" }
+  ]
+}

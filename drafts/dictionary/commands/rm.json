@@ -1,0 +1,47 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "rm",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルを削除します。ゴミ箱には入らず、元に戻せません", "en": "Deletes files. They do not go to the trash and cannot be recovered" },
+  "danger": "warn",
+  "learn": { "ja": "otterm のファイルツリーの削除はゴミ箱に送ります。rm は送りません", "en": "Deleting in otterm's file tree moves to the trash. rm does not" },
+  "options": [
+    {
+      "flags": ["-r", "-R", "--recursive"],
+      "summary": { "ja": "フォルダとその中身をすべて削除", "en": "Delete a folder and everything inside it" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "このフォルダの中身がすべて消えます。ゴミ箱には入りません", "en": "Everything inside this folder will be deleted, bypassing the trash" },
+      "alternative": { "label": { "ja": "ゴミ箱に送る", "en": "Move to trash" }, "command": "otterm trash {args}" }
+    },
+    {
+      "flags": ["-f", "--force"],
+      "summary": { "ja": "確認せず、存在しないファイルのエラーも無視して削除", "en": "Never prompt; ignore missing files" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "確認なしで削除します", "en": "Deletes without asking" }
+    },
+    { "flags": ["-i"], "summary": { "ja": "1 件ずつ確認してから削除", "en": "Ask before each deletion" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "削除したファイル名を表示", "en": "Print each deleted file" } }
+  ],
+  "args": [
+    { "name": "path", "type": "path", "variadic": true, "summary": { "ja": "削除するファイルやフォルダ", "en": "Files or folders to delete" } }
+  ],
+  "examples": [
+    { "command": "rm old.txt", "summary": { "ja": "ファイルを 1 つ削除", "en": "Delete one file" } },
+    { "command": "rm -r build", "summary": { "ja": "build フォルダを中身ごと削除（確認が出ます）", "en": "Delete the build folder and its contents (confirmation shown)" } }
+  ],
+  "errors": [
+    {
+      "pattern": "cannot remove '(?<path>[^']+)': Is a directory",
+      "hint": { "ja": "{path} はフォルダです。フォルダを消すには -r が必要です。ゴミ箱に送る方が安全です", "en": "{path} is a folder. Deleting folders needs -r. Moving it to the trash is safer" },
+      "fix": "otterm trash {path}"
+    },
+    {
+      "pattern": "cannot remove '(?<path>[^']+)': No such file or directory",
+      "hint": { "ja": "{path} は存在しません。すでに消えているか、名前が違います", "en": "{path} does not exist. It may already be gone or the name differs" }
+    },
+    {
+      "pattern": "Permission denied",
+      "hint": { "ja": "削除する権限がありません。自分のファイルでないか、他のプログラムが使っている可能性があります", "en": "No permission to delete. The file may belong to another user or be in use" }
+    }
+  ]
+}

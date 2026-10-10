@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://otterm.dev/schemas/dictionary.schema.json",
+  "title": "otterm command dictionary",
+  "description": "One JSON file per command. DRAFT; target: packages/api/schemas/dictionary.schema.json. Spec: docs/03-core-features.md §8.1. Consumed by cmd-explain (summary/options/parts), completion (subcommands/options/args), danger-guard (danger fields) and error-hint (errors).",
+  "type": "object",
+  "required": ["name", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.+-]+$",
+      "description": "Command name as typed. PowerShell cmdlets keep their casing (Get-ChildItem)."
+    },
+    "aliases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Other names that resolve to this entry (e.g. ls -> dir on PowerShell is an alias of Get-ChildItem)."
+    },
+    "platforms": { "type": "array", "items": { "$ref": "#/$defs/platform" }, "description": "Omit for all." },
+    "shells": { "type": "array", "items": { "$ref": "#/$defs/shellKind" }, "description": "Omit for all." },
+    "summary": { "$ref": "#/$defs/localized", "description": "One sentence shown in the assist bar." },
+    "description": { "$ref": "#/$defs/localized", "description": "Longer text for Lv3 and hover." },
+    "danger": { "$ref": "#/$defs/dangerLevel", "description": "Danger of the bare command (rare; usually on options/subcommands)." },
+    "subcommands": { "type": "array", "items": { "$ref": "#/$defs/subcommand" } },
+    "options": { "type": "array", "items": { "$ref": "#/$defs/option" } },
+    "args": { "type": "array", "items": { "$ref": "#/$defs/arg" } },
+    "examples": { "type": "array", "items": { "$ref": "#/$defs/example" } },
+    "errors": { "type": "array", "items": { "$ref": "#/$defs/error" } },
+    "learn": {
+      "$ref": "#/$defs/localized",
+      "description": "Shown when a GUI action performed the equivalent of this command (file tree hints, docs/03 §9.2)."
+    },
+    "install": {
+      "type": "object",
+      "description": "How to get the command when 'command not found'. Keys are package managers.",
+      "additionalProperties": { "type": "string" },
+      "propertyNames": { "enum": ["winget", "scoop", "choco", "brew", "apt", "dnf", "pacman", "nix", "npm", "pip", "cargo", "url"] }
+    }
+  },
+  "$defs": {
+    "platform": { "enum": ["windows", "macos", "linux"] },
+    "shellKind": { "enum": ["bash", "zsh", "fish", "pwsh", "powershell", "cmd", "nushell", "other"] },
+    "dangerLevel": { "enum": ["warn", "confirm", "block"] },
+    "localized": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "patternProperties": { "^[a-z]{2}(-[A-Za-z]{2,4})?$": { "type": "string" } },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "argType": {
+      "enum": ["path", "file", "dir", "string", "number", "url", "branch", "remote", "package", "container", "image", "command", "pattern"],
+      "description": "Drives completion: path/file/dir complete from the filesystem, branch/remote/container/image from provider mods, command from PATH."
+    },
+    "arg": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "$ref": "#/$defs/argType" },
+        "optional": { "type": "boolean", "default": false },
+        "variadic": { "type": "boolean", "default": false },
+        "summary": { "$ref": "#/$defs/localized" }
+      }
+    },
+    "option": {
+      "type": "object",
+      "required": ["flags", "summary"],
+      "additionalProperties": false,
+      "properties": {
+        "flags": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "All spellings: [\"-r\", \"-R\", \"--recursive\"]. PowerShell: [\"-Recurse\"]."
+        },
+        "summary": { "$ref": "#/$defs/localized" },
+        "takesValue": { "type": "boolean", "default": false },
+        "valueType": { "$ref": "#/$defs/argType" },
+        "danger": { "$ref": "#/$defs/dangerLevel" },
+        "dangerMessage": { "$ref": "#/$defs/localized", "description": "Shown by danger-guard when this option is present." },
+        "alternative": {
+          "type": "object",
+          "required": ["label", "command"],
+          "additionalProperties": false,
+          "properties": {
+            "label": { "$ref": "#/$defs/localized" },
+            "command": { "type": "string", "description": "Replacement; {args} expands to the original arguments." }
+          }
+        }
+      }
+    },
+    "subcommand": {
+      "type": "object",
+      "required": ["name", "summary"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "aliases": { "type": "array", "items": { "type": "string" } },
+        "summary": { "$ref": "#/$defs/localized" },
+        "description": { "$ref": "#/$defs/localized" },
+        "danger": { "$ref": "#/$defs/dangerLevel" },
+        "dangerMessage": { "$ref": "#/$defs/localized" },
+        "options": { "type": "array", "items": { "$ref": "#/$defs/option" } },
+        "args": { "type": "array", "items": { "$ref": "#/$defs/arg" } },
+        "examples": { "type": "array", "items": { "$ref": "#/$defs/example" } },
+        "errors": { "type": "array", "items": { "$ref": "#/$defs/error" } }
+      }
+    },
+    "example": {
+      "type": "object",
+      "required": ["command", "summary"],
+      "additionalProperties": false,
+      "properties": {
+        "command": { "type": "string" },
+        "summary": { "$ref": "#/$defs/localized" }
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": ["pattern", "hint"],
+      "additionalProperties": false,
+      "properties": {
+        "pattern": { "type": "string", "description": "Regex matched against the block output (case-insensitive, multiline). Named groups are available as {name} in hint/fix." },
+        "exitCode": { "type": "integer", "description": "Optional exact exit code filter." },
+        "hint": { "$ref": "#/$defs/localized" },
+        "fix": { "type": "string", "description": "Command offered via an insert button. Never auto-run." },
+        "allowAi": { "type": "boolean", "default": true }
+      }
+    }
+  }
+}

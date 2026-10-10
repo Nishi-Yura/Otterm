@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Rust (M0 onward)
+target/
+
+# Node (M0 onward)
+node_modules/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# Tauri (M0 onward)
+src-tauri/target/
+src-tauri/gen/
+
+# Local state and logs
+*.log
+.env
+.env.*
+
+# Mascot source binaries are not committed (decision 08 §3.4); SVG sources are.
+assets/mascot/src/*.fig
+assets/mascot/src/*.ai
+assets/mascot/src/*.psd

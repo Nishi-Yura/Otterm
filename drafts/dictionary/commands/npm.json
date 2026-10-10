@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "npm",
+  "summary": { "ja": "Node.js のパッケージ管理ツールです", "en": "Package manager for Node.js" },
+  "install": { "winget": "winget install OpenJS.NodeJS.LTS", "brew": "brew install node", "apt": "sudo apt install nodejs npm", "url": "https://nodejs.org/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["i", "add"],
+      "summary": { "ja": "依存パッケージをインストールします。引数なしなら package.json のすべて", "en": "Installs dependencies; with no arguments, everything in package.json" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [
+        { "flags": ["-D", "--save-dev"], "summary": { "ja": "開発時だけ使う依存として追加", "en": "Add as a dev dependency" } },
+        { "flags": ["-g", "--global"], "summary": { "ja": "このプロジェクトではなく PC 全体にインストール", "en": "Install globally instead of in this project" }, "danger": "warn", "dangerMessage": { "ja": "PC 全体に入ります。プロジェクトの依存にはなりません", "en": "Installs machine-wide, not as a project dependency" } }
+      ],
+      "errors": [
+        { "pattern": "ERESOLVE", "hint": { "ja": "依存関係の衝突です。--legacy-peer-deps で回避できることがあります", "en": "Dependency conflict. --legacy-peer-deps often works around it" }, "fix": "npm install --legacy-peer-deps" },
+        { "pattern": "EACCES.*permission denied", "hint": { "ja": "書き込み権限がありません。sudo は使わず、npm のグローバル先をユーザーフォルダに変えるのが安全です", "en": "No write permission. Avoid sudo; point npm's global prefix at your home folder instead" } },
+        { "pattern": "ENOENT.*package\\.json", "hint": { "ja": "このフォルダに package.json がありません。プロジェクトのフォルダへ移動するか、npm init で作れます", "en": "No package.json here. Move to the project folder or create one with npm init" }, "fix": "npm init -y" }
+      ]
+    },
+    { "name": "run", "summary": { "ja": "package.json の scripts を実行します", "en": "Runs a script from package.json" }, "args": [{ "name": "script", "type": "string" }], "errors": [{ "pattern": "Missing script: \"(?<name>[^\"]+)\"", "hint": { "ja": "scripts に {name} がありません。npm run で一覧を見られます", "en": "No script named {name}. Run npm run to list them" }, "fix": "npm run" }] },
+    { "name": "init", "summary": { "ja": "新しい package.json を作ります", "en": "Creates a new package.json" }, "options": [{ "flags": ["-y", "--yes"], "summary": { "ja": "質問をすべて既定値で", "en": "Accept all defaults" } }] },
+    { "name": "uninstall", "aliases": ["remove", "rm", "un"], "summary": { "ja": "パッケージを削除します", "en": "Removes a package" }, "args": [{ "name": "package", "type": "package", "variadic": true }] },
+    { "name": "update", "summary": { "ja": "依存パッケージを範囲内で更新します", "en": "Updates dependencies within their ranges" } },
+    { "name": "test", "aliases": ["t"], "summary": { "ja": "scripts の test を実行します", "en": "Runs the test script" } },
+    { "name": "start", "summary": { "ja": "scripts の start を実行します", "en": "Runs the start script" } },
+    { "name": "ci", "summary": { "ja": "package-lock.json どおりにクリーンインストール（CI 向け）", "en": "Clean install exactly from package-lock.json (for CI)" } },
+    { "name": "audit", "summary": { "ja": "依存の脆弱性を調べます", "en": "Checks dependencies for known vulnerabilities" }, "options": [{ "flags": ["fix"], "summary": { "ja": "可能なものを自動更新", "en": "Auto-fix what it can" }, "danger": "warn", "dangerMessage": { "ja": "依存のバージョンが変わります。動作確認してください", "en": "Changes dependency versions; test afterwards" } }] },
+    { "name": "publish", "summary": { "ja": "パッケージを npm レジストリに公開します", "en": "Publishes the package to the npm registry" }, "danger": "confirm", "dangerMessage": { "ja": "公開すると取り消しが難しくなります。バージョンと中身を確認してください", "en": "Publishing is hard to undo. Check the version and contents" } }
+  ],
+  "errors": [
+    { "pattern": "npm ERR! code ENOTFOUND|getaddrinfo", "hint": { "ja": "ネットワークに接続できません。プロキシやオフラインを確認してください", "en": "Cannot reach the network. Check your connection or proxy" } }
+  ]
+}
