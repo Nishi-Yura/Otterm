@@ -109,6 +109,8 @@ pub trait SessionManager: Send + Sync {
     fn reveal(&self, id: SessionId, line: u64) -> Result<()>;
     /// Drop the scrollback.
     fn clear_scrollback(&self, id: SessionId) -> Result<()>;
+    /// The pane gained or lost the keyboard; reported to the application when it asked (1004).
+    fn focus(&self, id: SessionId, focused: bool) -> Result<()>;
     /// The name of a program the shell is running (for "close anyway?"), if any.
     fn running_program(&self, id: SessionId) -> Result<Option<String>>;
     /// Turn off modes a crashed program left on; the text stays.
@@ -433,6 +435,14 @@ impl SessionManager for LocalSessionManager {
     fn running_program(&self, id: SessionId) -> Result<Option<String>> {
         let session = self.get(id)?;
         Ok(session.pid.and_then(child_program))
+    }
+
+    fn focus(&self, id: SessionId, focused: bool) -> Result<()> {
+        let session = self.get(id)?;
+        if !session.term.lock().unwrap().modes().focus_events {
+            return Ok(());
+        }
+        session.with_pty(|p| p.write(if focused { b"\x1b[I" } else { b"\x1b[O" }))
     }
 
     fn reset_modes(&self, id: SessionId) -> Result<()> {

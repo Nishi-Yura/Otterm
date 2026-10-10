@@ -467,6 +467,11 @@ fn app_state() -> AppState {
     }
 }
 
+#[tauri::command]
+fn session_focus(state: State<'_, AppState>, id: SessionId, focused: bool) -> CmdResult {
+    state.sessions.focus(id, focused).map_err(err)
+}
+
 /// The theme in use (`#rrggbb`), for programs that ask the terminal for its colors (OSC 10/11/12).
 #[tauri::command]
 fn terminal_colors(state: State<'_, AppState>, foreground: String, background: String, cursor: String) -> CmdResult {
@@ -528,6 +533,7 @@ fn main() {
             config_open,
             launch_problems,
             terminal_colors,
+            session_focus,
             session_create,
             session_write,
             session_key,
@@ -580,6 +586,7 @@ fn main() {
             config_open,
             launch_problems,
             terminal_colors,
+            session_focus,
             session_create,
             session_write,
             session_key,

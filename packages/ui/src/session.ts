@@ -31,6 +31,8 @@ export interface Session {
   /** Scroll so that a line is in view. */
   reveal(line: number): Promise<void>;
   clearScrollback(): Promise<void>;
+  /** The pane gained or lost the keyboard (sent to the program if it asked, mode 1004). */
+  focus(focused: boolean): Promise<void>;
   /** Turn off modes a crashed program left on (alternate screen, mouse, Kitty keys, …). */
   resetModes(): Promise<void>;
   close(): Promise<void>;
@@ -89,6 +91,7 @@ export async function createSession(
     search: (query, opts) => invoke("session_search", { id, query, ...opts }),
     reveal: (line) => invoke("session_reveal", { id, line }),
     clearScrollback: () => invoke("session_clear_scrollback", { id }),
+    focus: (focused) => invoke("session_focus", { id, focused }),
     resetModes: () => invoke("session_reset_modes", { id }),
     close: () => invoke("session_close", { id }),
   };

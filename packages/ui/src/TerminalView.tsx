@@ -192,6 +192,7 @@ export function TerminalView(props: TerminalViewProps) {
     observer.observe(viewport);
 
     const onFocus = (focused: boolean) => () => {
+      session?.focus(focused).catch(() => {});
       r.focused = focused;
       model.dirty.add(model.cursorRow);
       r.schedule();
