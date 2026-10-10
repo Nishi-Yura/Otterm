@@ -44,10 +44,11 @@
 | 方式 | 内容 | 判定 |
 | --- | --- | --- |
 | JSON over IPC | 簡単だが 1 画面 80×24 で数十 KB、シリアライズに数 ms | 不採用 |
-| **バイナリ差分 over Tauri raw IPC** | 変更セルを `(row, col, len, cells...)` のバイナリで送る。Tauri 2 の生ペイロードで JSON を回避 | **v1.0 採用** |
+| バイナリ差分 over Tauri raw IPC | 変更セルを `(row, col, len, cells...)` のバイナリで送る。Tauri 2 の生ペイロードで JSON を回避 | M0 の計測で全画面の差分が Linux / Windows で 2 ms を超えたため不採用（判断 M2） |
+| **バイナリ差分 over ローカル WebSocket** | 同じバイナリ差分を 127.0.0.1 の WebSocket で送る。接続は起動ごとのトークンで認証 | **v1.0 採用**（判断 M2）。全画面の往復 p50 が 3 OS で 0.26〜0.64 ms |
 | 共有メモリ | Rust と WebView で同じバッファを見る。コピーゼロ | WebView の制約で現状は困難。ネイティブレンダラ移行時に自然に実現 |
 
-M0 でバイナリ差分を実測し、段 4 が 2 ms に収まることを確認する。
+M0 で実測した結果は [bench/baseline.md](bench/baseline.md) §4.1、§4.4。
 
 ### 3.4 レンダラは差し替え可能にする
 

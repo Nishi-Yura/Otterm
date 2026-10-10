@@ -16,6 +16,8 @@
 | レイヤ | 技術 | 役割 |
 | --- | --- | --- |
 | アプリシェル | **Tauri 2** | ウィンドウ管理、OS 連携、自動更新、IPC |
+| 画面データの転送 | **ローカル WebSocket**（127.0.0.1、起動ごとのトークンで認証） | グリッド差分と PTY 由来のデータ。コマンドと設定は Tauri IPC（判断 M2） |
+| Windows の PTY ホスト | **`conpty.dll` + `OpenConsole.exe` を同梱**（Microsoft.Windows.Console.ConPTY） | OS 同梱の conhost より大量出力が約 3 倍速い（判断 M3） |
 | コア | **Rust** | PTY 制御（`portable-pty`）、VT パーサ（`vte` クレートを土台に自前グリッド）、グリッド状態、スクロールバック、検索、シェル統合プロトコル、mod サンドボックスのホスト側 |
 | 描画 | **WebGL2 / WebGPU（フォールバック Canvas2D）**。`Renderer` trait で差し替え可能にし、v1.x で **ネイティブ wgpu** バックエンドを追加 | グリッドをアトラス化したグリフで描画。グリッド状態は Rust 側からバイナリ差分で受け取る。詳細と判定基準は [09-performance.md](09-performance.md) |
 | UI | **TypeScript + SolidJS**（軽量・リアクティブ）+ CSS 変数 | タブ、パネル、ダイアログ、設定画面、コマンドパレット |
@@ -50,7 +52,7 @@
 |  |  Updater / Crash reporter                                       |  |
 |  +-----------------------------^-----------------------------------+  |
 |                                | IPC（Tauri command / event）         |
-|                                | + 共有バッファ（グリッド差分）        |
+|                                | + ローカル WebSocket（グリッド差分）  |
 |  +-----------------------------v-----------------------------------+  |
 |  | WebView（UI スレッド）                                           |  |
 |  |  Renderer（WebGL）   Chrome（タブ / パネル / パレット）          |  |
