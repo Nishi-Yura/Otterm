@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "rustc",
   "summary": { "ja": "Rust のソースコードをコンパイルして実行ファイルを作ります。普段は cargo 経由で使います", "en": "Compiles Rust source into an executable; usually invoked through cargo" },
   "description": { "ja": "Rust のコンパイラ（コードを実行できる形に変換するツール）です。1 ファイルの試しには直接使えますが、依存ライブラリ（crate）を使うプロジェクトでは cargo build / cargo run が rustc を呼び出します。エラー番号（E0382 など）は rustc --explain で詳しい説明が読めます", "en": "The Rust compiler. Fine for single-file experiments; projects with dependencies (crates) use cargo build / cargo run, which calls rustc for you. Error codes such as E0382 are explained by rustc --explain" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "whoami",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "今ログインしているユーザー名を表示します", "en": "Prints the name of the user you are logged in as" },

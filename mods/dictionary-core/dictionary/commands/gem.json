@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "gem",
   "summary": { "ja": "Ruby のパッケージ（gem）管理ツールです", "en": "Package manager for Ruby (gems)" },
   "description": { "ja": "Ruby に同梱されています。プロジェクトの依存は Gemfile と bundle で管理し、gem install は単体のツールを入れるときに使うのが一般的です。システムの Ruby に sudo で入れるのは避け、rbenv などで自分用の Ruby を使うと安全です。", "en": "Ships with Ruby. Project dependencies are managed with a Gemfile and bundle; gem install is mostly for standalone tools. Avoid sudo with the system Ruby; a user-level Ruby via rbenv is safer." },

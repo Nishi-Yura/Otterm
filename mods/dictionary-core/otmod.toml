@@ -1,0 +1,13 @@
+[mod]
+id = "otterm.dictionary-core"
+name = "Command Dictionary"
+version = "0.0.0"
+description = "Explanations, completion data, danger marks and error hints for common commands (ja / en)."
+author = "otterm"
+license = "Apache-2.0"
+kind = "dictionary"
+
+[compat]
+otterm = ">=1.0.0 <2.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]

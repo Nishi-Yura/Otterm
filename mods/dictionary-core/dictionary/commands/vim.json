@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "vim",
   "aliases": ["vi"],
   "summary": { "ja": "ターミナル内で動くテキストエディタです。終了は Esc を押してから :q! と入力して Enter", "en": "A text editor that runs inside the terminal. To quit: press Esc, then type :q! and Enter" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "chown",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "ファイルの所有者（持ち主のユーザーやグループ）を変更します", "en": "Changes who owns a file (user and group)" },

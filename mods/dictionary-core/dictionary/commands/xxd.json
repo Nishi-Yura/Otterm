@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "xxd",
   "summary": { "ja": "ファイルを 16 進ダンプ（バイトを 16 進数で並べた表示）にしたり、逆に戻したりします", "en": "Shows a file as a hex dump (bytes in hexadecimal) or converts a hex dump back" },
   "description": { "ja": "バイナリ（文字として読めないデータ）の中身をバイト単位で確認するときに使います。表示は左から「ファイル内の位置」「16 進のバイト列」「文字として読める部分」です。-r で 16 進から元のバイナリに戻せます。vim に同梱されているので、vim を入れると一緒に使えるようになります", "en": "Lets you inspect binary data byte by byte. Each line shows the offset, the bytes in hex, and the printable characters. -r reverses a hex dump back into binary. It ships with vim, so installing vim provides it" },

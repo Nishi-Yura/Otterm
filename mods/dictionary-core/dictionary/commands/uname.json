@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "uname",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "OS の種類やバージョン、CPU の種類など、このコンピューターの基本情報を表示します", "en": "Prints basic facts about this computer: OS, kernel version, CPU type" },

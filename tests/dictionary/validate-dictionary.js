@@ -1,14 +1,15 @@
 // Minimal JSON-Schema (2020-12 subset) validator for the otterm dictionary schema.
 // Supports: type, required, properties, additionalProperties:false, items, enum, oneOf,
 // patternProperties, propertyNames.enum, minItems, minProperties, pattern, $ref (#/$defs/*).
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
-const root = process.argv[2];
-const schema = JSON.parse(fs.readFileSync(path.join(root, "drafts/schemas/dictionary.schema.json"), "utf8"));
+// Usage: node tests/dictionary/validate-dictionary.js [repo-root]
+const root = process.argv[2] ?? path.resolve(__dirname, "../..");
+const schema = JSON.parse(fs.readFileSync(path.join(root, "packages/api/schemas/dictionary.schema.json"), "utf8"));
 
 function resolve(s) {
-  if (s && s.$ref) {
+  if (s?.$ref) {
     const key = s.$ref.replace("#/$defs/", "");
     return resolve(schema.$defs[key]);
   }
@@ -44,16 +45,21 @@ function validate(value, s, p, errs) {
       return;
     }
   }
-  if (typeOf(value) === "string" && s.pattern && !new RegExp(s.pattern).test(value)) errs.push(`${p}: "${value}" does not match /${s.pattern}/`);
+  if (typeOf(value) === "string" && s.pattern && !new RegExp(s.pattern).test(value))
+    errs.push(`${p}: "${value}" does not match /${s.pattern}/`);
   if (typeOf(value) === "array") {
     if (s.minItems && value.length < s.minItems) errs.push(`${p}: fewer than ${s.minItems} items`);
-    if (s.items) value.forEach((v, i) => validate(v, s.items, `${p}[${i}]`, errs));
+    if (s.items)
+      value.forEach((v, i) => {
+        validate(v, s.items, `${p}[${i}]`, errs);
+      });
   }
   if (typeOf(value) === "object") {
     const keys = Object.keys(value);
     if (s.minProperties && keys.length < s.minProperties) errs.push(`${p}: fewer than ${s.minProperties} properties`);
     if (s.required) for (const r of s.required) if (!(r in value)) errs.push(`${p}: missing required "${r}"`);
-    if (s.propertyNames && s.propertyNames.enum) for (const k of keys) if (!s.propertyNames.enum.includes(k)) errs.push(`${p}: key "${k}" not allowed`);
+    if (s.propertyNames?.enum)
+      for (const k of keys) if (!s.propertyNames.enum.includes(k)) errs.push(`${p}: key "${k}" not allowed`);
     for (const k of keys) {
       let matched = false;
       if (s.properties && k in s.properties) {
@@ -70,7 +76,8 @@ function validate(value, s, p, errs) {
       }
       if (!matched) {
         if (s.additionalProperties === false) errs.push(`${p}: unknown key "${k}"`);
-        else if (s.additionalProperties && typeof s.additionalProperties === "object") validate(value[k], s.additionalProperties, `${p}.${k}`, errs);
+        else if (s.additionalProperties && typeof s.additionalProperties === "object")
+          validate(value[k], s.additionalProperties, `${p}.${k}`, errs);
       }
     }
   }
@@ -81,26 +88,28 @@ function semantic(entry, file, errs) {
   if (entry.name !== path.basename(file, ".json")) errs.push(`name "${entry.name}" != filename`);
   const checkErrors = (arr, where) => {
     for (const e of arr || []) {
-      let re;
       try {
-        re = new RegExp(e.pattern, "im");
+        new RegExp(e.pattern, "im");
       } catch (ex) {
         errs.push(`${where} pattern does not compile: ${ex.message}`);
         continue;
       }
       const groups = [...e.pattern.matchAll(/\(\?<([A-Za-z_]\w*)>/g)].map((m) => m[1]);
       const used = new Set();
-      for (const text of [JSON.stringify(e.hint), e.fix || ""]) for (const m of text.matchAll(/\{(\w+)\}/g)) used.add(m[1]);
-      for (const u of used) if (u !== "args" && !groups.includes(u)) errs.push(`${where} uses {${u}} but pattern has no group "${u}"`);
+      for (const text of [JSON.stringify(e.hint), e.fix || ""])
+        for (const m of text.matchAll(/\{(\w+)\}/g)) used.add(m[1]);
+      for (const u of used)
+        if (u !== "args" && !groups.includes(u)) errs.push(`${where} uses {${u}} but pattern has no group "${u}"`);
     }
   };
   const checkLocalized = (v, where) => {
-    if (v && typeof v === "object" && !(("ja" in v) && ("en" in v))) errs.push(`${where} must have both ja and en`);
+    if (v && typeof v === "object" && !("ja" in v && "en" in v)) errs.push(`${where} must have both ja and en`);
   };
   const walk = (node, where) => {
-    for (const k of ["summary", "description", "dangerMessage", "hint", "learn", "label"]) if (k in node) checkLocalized(node[k], `${where}.${k}`);
+    for (const k of ["summary", "description", "dangerMessage", "hint", "learn", "label"])
+      if (k in node) checkLocalized(node[k], `${where}.${k}`);
     for (const o of node.options || []) {
-      walk(o, `${where}.option(${o.flags && o.flags[0]})`);
+      walk(o, `${where}.option(${o.flags?.[0]})`);
       if (o.danger && !o.dangerMessage) errs.push(`${where}.option(${o.flags[0]}) has danger without dangerMessage`);
       if (o.valueType && !o.takesValue) errs.push(`${where}.option(${o.flags[0]}) valueType without takesValue`);
       if (o.alternative) walk(o.alternative, `${where}.option(${o.flags[0]}).alternative`);
@@ -114,11 +123,17 @@ function semantic(entry, file, errs) {
   walk(entry, entry.name);
 }
 
-const dir = path.join(root, "drafts/dictionary/commands");
-const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json")).sort();
+const dir = path.join(root, "mods/dictionary-core/dictionary/commands");
+const files = fs
+  .readdirSync(dir)
+  .filter((f) => f.endsWith(".json"))
+  .sort();
 let problems = 0;
 const stats = { files: 0, subcommands: 0, options: 0, errors: 0, examples: 0, danger: 0, lines: 0 };
-const countDanger = (n) => (n.danger ? 1 : 0) + (n.options || []).filter((o) => o.danger).length + (n.subcommands || []).reduce((a, s) => a + countDanger(s), 0);
+const countDanger = (n) =>
+  (n.danger ? 1 : 0) +
+  (n.options || []).filter((o) => o.danger).length +
+  (n.subcommands || []).reduce((a, s) => a + countDanger(s), 0);
 const countOpts = (n) => (n.options || []).length + (n.subcommands || []).reduce((a, s) => a + countOpts(s), 0);
 const countErrs = (n) => (n.errors || []).length + (n.subcommands || []).reduce((a, s) => a + countErrs(s), 0);
 const countEx = (n) => (n.examples || []).length + (n.subcommands || []).reduce((a, s) => a + countEx(s), 0);
@@ -154,7 +169,7 @@ for (const f of files) {
 }
 
 // rules file
-const rules = JSON.parse(fs.readFileSync(path.join(root, "drafts/dictionary/rules/core.json"), "utf8"));
+const rules = JSON.parse(fs.readFileSync(path.join(root, "mods/dictionary-core/dictionary/rules/core.json"), "utf8"));
 for (const r of rules.rules) {
   if (r.match.regex) {
     try {

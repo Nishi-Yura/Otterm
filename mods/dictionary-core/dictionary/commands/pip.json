@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "pip",
   "aliases": ["pip3"],
   "summary": { "ja": "Python のパッケージ管理ツールです", "en": "Package installer for Python" },

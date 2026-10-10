@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "rustup",
   "summary": { "ja": "Rust 本体（コンパイラやツール）のバージョンを管理します", "en": "Manages versions of the Rust toolchain itself" },
   "description": { "ja": "stable / beta / nightly といったツールチェーンを切り替えたり、rustfmt や clippy などの部品を追加したりします。cargo や rustc は rustup が入れたものを使います。", "en": "Switches between toolchains such as stable, beta and nightly, and adds components like rustfmt and clippy. cargo and rustc come from whatever rustup installed." },

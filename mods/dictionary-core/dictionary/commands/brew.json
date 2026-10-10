@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "brew",
   "platforms": ["macos", "linux"],
   "summary": { "ja": "macOS（と Linux）の定番パッケージ管理ツール Homebrew です", "en": "Homebrew, the standard package manager for macOS (and Linux)" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "openssl",
   "summary": { "ja": "証明書・鍵・暗号を扱う万能ツールです。自己署名証明書の作成やハッシュ計算に使います", "en": "A toolkit for certificates, keys and encryption; makes self-signed certs and computes hashes" },
   "description": { "ja": "証明書（サイトやサーバーが本物であることを示すデータ）の作成・確認、鍵の生成、ファイルの暗号化、ハッシュ値（内容を要約した指紋のような値）の計算などができます。機能はサブコマンドで分かれています。Git for Windows に同梱されているので、Windows でも Git Bash から使えることが多いです", "en": "Creates and inspects certificates, generates keys, encrypts files and computes hashes. Each task is a subcommand. On Windows it is usually available in Git Bash because Git for Windows bundles it" },

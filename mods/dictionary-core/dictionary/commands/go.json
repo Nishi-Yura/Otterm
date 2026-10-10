@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "go",
   "summary": { "ja": "Go 言語のビルド・実行・モジュール管理を行うコマンドです", "en": "Builds, runs and manages modules for the Go language" },
   "description": { "ja": "go.mod にモジュール名と依存を記録します。go get で依存を追加し、go mod tidy で整理します。ビルドやテストはこの go コマンドひとつで行い、別途パッケージマネージャは不要です。", "en": "go.mod records the module name and dependencies. go get adds them and go mod tidy cleans them up. Building and testing all go through this one command; no separate package manager is needed." },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "ssh-keygen",
   "summary": { "ja": "SSH の鍵ペア（秘密鍵と公開鍵）を作ります。GitHub やサーバーへのパスワードなし接続に使います", "en": "Creates an SSH key pair (private + public) for password-less access to GitHub and servers" },
   "description": { "ja": "鍵ペアとは、手元に置く秘密鍵（絶対に他人に渡さない）と、相手に登録する公開鍵（.pub、渡してよい）の組です。公開鍵の中身を GitHub の設定やサーバーの ~/.ssh/authorized_keys に貼り付けると接続できます。注意: 既存の鍵と同じファイル名を指定すると「already exists. Overwrite (y/n)?」と聞かれます。y を押すと古い鍵は復元できず、その鍵で接続していたサーバーに入れなくなります。別の名前を -f で付けるか、n で中止してください", "en": "A key pair is a private key you keep (never share it) and a public key (.pub) you register on GitHub or in ~/.ssh/authorized_keys on a server. Caution: if a key with the same file name exists you are asked \"already exists. Overwrite (y/n)?\". Answering y destroys the old key and locks you out of servers that used it. Choose another name with -f, or answer n" },

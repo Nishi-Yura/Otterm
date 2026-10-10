@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "sort",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "テキストの行を並べ替えます（既定では文字順）", "en": "Sorts the lines of text (alphabetically by default)" },

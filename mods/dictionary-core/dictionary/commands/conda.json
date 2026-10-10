@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "conda",
   "aliases": ["mamba", "micromamba"],
   "summary": { "ja": "Python を含む環境とパッケージを管理するツールです（データサイエンス向け）", "en": "Environment and package manager, including Python itself (popular in data science)" },

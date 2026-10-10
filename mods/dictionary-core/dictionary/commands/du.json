@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "du",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "ファイルやフォルダが使っているディスク容量を調べます", "en": "Shows how much disk space files and folders use" },

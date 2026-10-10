@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "tr",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "文字を別の文字に置き換えたり、削除したりします（1 文字単位）", "en": "Replaces or deletes characters, one character at a time" },

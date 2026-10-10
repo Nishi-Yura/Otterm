@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "hostname",
   "summary": { "ja": "このコンピューターの名前（ホスト名）を表示します", "en": "Prints this computer's name (host name)" },
   "description": {

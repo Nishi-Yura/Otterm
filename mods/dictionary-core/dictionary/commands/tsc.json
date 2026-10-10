@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "tsc",
   "summary": { "ja": "TypeScript を JavaScript に変換し、型のエラーを調べます", "en": "Compiles TypeScript to JavaScript and reports type errors" },
   "description": { "ja": "TypeScript のコンパイラ（型付きのコードを、ブラウザや Node.js が実行できる JavaScript に変換するツール）です。引数なしで実行すると tsconfig.json の設定に従ってプロジェクト全体を処理します。プロジェクトに入れた場合は npx tsc で実行します", "en": "The TypeScript compiler. With no arguments it uses tsconfig.json and processes the whole project. When installed locally in a project, run it as npx tsc" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "java",
   "summary": { "ja": "Java のプログラムを実行します。1 つの .java ファイルならそのまま渡せます", "en": "Runs a Java program; a single .java file can be run directly" },
   "description": { "ja": "Java 仮想マシン（JVM。コンパイル済みの Java を動かす仕組み）を起動します。Java 11 以降は java Main.java のように .java ファイルを直接渡すと、コンパイル（人が読めるコードを機械が実行できる形に変換すること）と実行をまとめて行います。複数ファイルのときは javac でコンパイルしてからクラス名を渡します", "en": "Starts the Java Virtual Machine. Since Java 11, passing a .java file (java Main.java) compiles and runs it in one step. For multiple files, compile with javac first and pass the class name" },

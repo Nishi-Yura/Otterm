@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "kotlinc",
   "summary": { "ja": "Kotlin のソースコードをコンパイルします。-include-runtime -d で単体で動く jar を作れます", "en": "Compiles Kotlin source; -include-runtime -d produces a self-contained jar" },
   "description": { "ja": "Kotlin のコンパイラ（コードを JVM が実行できる形に変換するツール）です。できた jar（Java の実行ファイル形式）は java -jar で実行します。動かすには JDK が必要です。引数なしで起動すると対話モードになります。プロジェクト開発では通常 Gradle から使います", "en": "The Kotlin compiler for the JVM. The resulting jar is run with java -jar, so a JDK is required. With no arguments it starts an interactive prompt. Real projects usually build through Gradle" },

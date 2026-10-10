@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "bundle",
   "aliases": ["bundler"],
   "summary": { "ja": "Ruby プロジェクトの依存（Gemfile）を管理する Bundler です", "en": "Bundler, which manages a Ruby project's dependencies (Gemfile)" },

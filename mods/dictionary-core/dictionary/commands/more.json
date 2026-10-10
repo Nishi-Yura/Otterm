@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "more",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "長いファイルを 1 画面ずつ表示します。スペースで次へ、q で終了します", "en": "Shows a long file one screen at a time. Space for next page, q to quit" },

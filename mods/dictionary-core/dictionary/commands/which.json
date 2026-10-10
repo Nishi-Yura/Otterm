@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "which",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "コマンドの本体がどこにあるか（実行ファイルの場所）を表示します", "en": "Shows where a command's program file lives" },

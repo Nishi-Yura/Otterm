@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "kubectl",
   "summary": { "ja": "Kubernetes クラスター（コンテナを多数動かす基盤）を操作します", "en": "Controls a Kubernetes cluster (a platform that runs many containers)" },
   "description": { "ja": "Kubernetes 公式のコマンドラインツールです。Pod（コンテナの実行単位）や Deployment などのリソースを、kubectl get で見る、kubectl apply -f で YAML から作る・更新する、kubectl delete で消す、という形で扱います。接続先は kubeconfig のコンテキストで切り替わるので、操作前に kubectl config current-context で本番でないか確認する習慣をつけてください", "en": "Kubernetes' official CLI. You view resources such as Pods and Deployments with kubectl get, create or update them from YAML with kubectl apply -f, and remove them with kubectl delete. The target cluster comes from the kubeconfig context, so check kubectl config current-context before acting" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "fnm",
   "summary": { "ja": "高速でクロスプラットフォームな Node.js バージョン管理ツールです", "en": "Fast, cross-platform Node.js version manager" },
   "description": { "ja": "nvm とほぼ同じ使い方で、Rust 製なので速く、Windows でもそのまま動きます。シェルの設定に fnm env の読み込みが必要で、.nvmrc や .node-version を見て自動で切り替えられます。", "en": "Works much like nvm but is written in Rust, so it is fast and runs natively on Windows. Your shell config must load fnm env; it can switch automatically based on .nvmrc or .node-version." },

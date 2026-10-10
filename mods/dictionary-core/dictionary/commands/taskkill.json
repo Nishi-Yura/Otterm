@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "taskkill",
   "platforms": ["windows"],
   "summary": { "ja": "動いているプログラム（プロセス）を名前や PID で終了させます（Windows）", "en": "Ends a running program (process) by name or PID (Windows)" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "php",
   "summary": { "ja": "PHP のプログラムを実行します。-S で開発用の Web サーバーも起動できます", "en": "Runs a PHP script; -S starts a built-in development web server" },
   "description": { "ja": "PHP は Web サイトのサーバー側でよく使われる言語です。このコマンドはターミナルからスクリプトを実行する CLI 版で、php -S localhost:8000 とすると今のフォルダを簡易 Web サーバーとして公開できます。ライブラリは composer で管理します", "en": "PHP is widely used for server-side web code. This is the command-line version; php -S localhost:8000 serves the current folder for development. Libraries are managed with composer" },

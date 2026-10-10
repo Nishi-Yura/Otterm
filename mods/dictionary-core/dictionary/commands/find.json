@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "find",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "名前や種類・日付などの条件で、フォルダの中からファイルを探します", "en": "Searches a folder tree for files by name, type, date and more" },

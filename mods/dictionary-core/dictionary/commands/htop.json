@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "htop",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "動いているプログラムと CPU・メモリの使用量を、色付きで見やすく表示します", "en": "Colorful, easier-to-read live view of running programs and resource use" },

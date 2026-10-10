@@ -1,5 +1,5 @@
 {
-  "$comment": "Cross-command danger rules for danger-guard. DRAFT; target: mods/dictionary-core/dictionary/rules/core.json. Shape mirrors DangerRule in drafts/api/index.d.ts. Per-command dangers live on options/subcommands in commands/*.json; only patterns that span commands or pipelines belong here.",
+  "$comment": "Cross-command danger rules for danger-guard. Shape mirrors DangerRule in packages/api/src/index.d.ts. Per-command dangers live on options/subcommands in commands/*.json; only patterns that span commands or pipelines belong here.",
   "rules": [
     {
       "id": "core.pipe-to-shell",

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "kill",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "動いているプログラム（プロセス）に終了の合図（シグナル）を送ります", "en": "Sends a stop signal to a running program (process)" },

@@ -1,0 +1,14 @@
+{
+  "name": "create-otterm-mod",
+  "version": "0.0.0",
+  "description": "Scaffold a new otterm mod",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p templates/extension"
+  },
+  "devDependencies": {
+    "@otterm/api": "workspace:*"
+  }
+}

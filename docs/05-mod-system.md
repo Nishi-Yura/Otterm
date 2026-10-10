@@ -163,7 +163,7 @@ export function deactivate() {}
 | `ctx.mascot.outfits.register(outfit)` | 衣装を登録（`outfit` kind の mod は自動登録） | なし |
 | `ctx.mascot.reactions.add(rule)` | 「この条件のときラコがこう反応する」ルールを追加 | なし |
 
-ラコ関連 API の詳細は [08-character.md](08-character.md) を参照。全メソッドの正確なシグネチャは型定義の下書き [drafts/api/index.d.ts](../drafts/api/index.d.ts) にあり、食い違う場合は型定義を正とする。
+ラコ関連 API の詳細は [08-character.md](08-character.md) を参照。全メソッドの正確なシグネチャは型定義 [packages/api/src/index.d.ts](../packages/api/src/index.d.ts) にあり、食い違う場合は型定義を正とする。
 
 - すべての API は非同期（Promise）。Worker ↔ UI ↔ Rust の 3 ホップがあるため、同期 API は提供しない
 - `terminal.write` は唯一「ユーザーの代わりにコマンドを実行できる」権限であり、承認画面で赤く強調する。既定では insert（入力欄に入れるだけ）を使うように SDK のドキュメントで誘導する

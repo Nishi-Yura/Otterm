@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "python",
   "aliases": ["python3", "py"],
   "summary": { "ja": "Python のプログラムを実行します。引数なしなら対話モードです", "en": "Runs a Python program; with no arguments, starts the interactive prompt" },

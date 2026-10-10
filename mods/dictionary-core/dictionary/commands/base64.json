@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "base64",
   "summary": { "ja": "データを Base64（文字だけでバイナリを表す形式）に変換したり、元に戻したりします", "en": "Encodes data as Base64 (binary represented with plain characters) or decodes it back" },
   "description": { "ja": "画像や鍵などのバイナリ（文字として読めないデータ）を、メールや JSON に埋め込める英数字の文字列に変換します。暗号化ではないので、誰でも元に戻せます。-d で復号します。GNU 版（Linux）と macOS 版でオプション名が少し違います（改行なしは Linux が -w 0、macOS が -b 0）。Windows では Git Bash や WSL で使えます", "en": "Turns binary data such as images or keys into a text string that fits in email or JSON. It is not encryption: anyone can decode it. -d decodes. GNU (Linux) and macOS differ slightly (no line wrapping is -w 0 on Linux, -b 0 on macOS). On Windows use Git Bash or WSL" },

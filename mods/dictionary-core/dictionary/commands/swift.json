@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "swift",
   "summary": { "ja": "Swift のプログラムを実行・ビルドします。1 ファイルならそのまま渡せます", "en": "Runs and builds Swift programs; a single file can be run directly" },
   "description": { "ja": "Apple が開発した言語 Swift のツール群への入口です。swift main.swift でスクリプトのように実行、swift run で Package.swift のあるフォルダ（パッケージ）をビルドして実行します。コンパイル（コードを実行できる形に変換すること）は swift build が行います", "en": "Entry point to the Swift toolchain. swift main.swift runs a file like a script; swift run builds and runs a package (a folder with Package.swift). swift build compiles without running" },

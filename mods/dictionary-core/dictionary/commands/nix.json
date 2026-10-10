@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "nix",
   "aliases": ["nix-env", "nix-shell", "nix-collect-garbage"],
   "summary": { "ja": "再現性のあるパッケージ管理・ビルドツール Nix です", "en": "Nix, the reproducible package manager and build tool" },

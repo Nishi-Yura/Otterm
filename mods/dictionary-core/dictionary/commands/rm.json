@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "rm",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "ファイルを削除します。ゴミ箱には入らず、元に戻せません", "en": "Deletes files. They do not go to the trash and cannot be recovered" },

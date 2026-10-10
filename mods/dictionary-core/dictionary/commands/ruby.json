@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "ruby",
   "summary": { "ja": "Ruby のプログラムを実行します。引数なしなら標準入力からコードを読みます", "en": "Runs a Ruby program; with no arguments, reads code from standard input" },
   "description": { "ja": "Ruby は読みやすさを重視したスクリプト言語で、Rails などの Web フレームワークで使われます。ライブラリ（gem）は gem install や bundle install で追加します。対話的に試すには irb コマンドが便利です", "en": "Ruby is a readable scripting language known for Rails. Libraries (gems) are added with gem install or bundle install. For an interactive prompt use irb" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "wc",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "ファイルの行数・単語数・文字数を数えます", "en": "Counts lines, words and characters in a file" },

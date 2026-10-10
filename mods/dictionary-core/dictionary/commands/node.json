@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "node",
   "aliases": ["nodejs"],
   "summary": { "ja": "JavaScript のプログラムをブラウザなしで実行します。引数なしなら対話モードです", "en": "Runs JavaScript outside the browser; with no arguments, starts the interactive prompt" },

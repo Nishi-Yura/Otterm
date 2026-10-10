@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "dotnet",
   "summary": { "ja": ".NET（C# など）の実行・ビルド・パッケージ管理を行うコマンドです", "en": "Runs, builds and manages packages for .NET (C# and friends)" },
   "description": { "ja": "SDK を入れると dotnet コマンドひとつでプロジェクト作成からビルド、テスト、NuGet パッケージの追加、実行までできます。プロジェクトの設定は .csproj ファイルにあります。", "en": "With the SDK installed, one dotnet command creates projects, builds, tests, adds NuGet packages and runs apps. Project settings live in the .csproj file." },

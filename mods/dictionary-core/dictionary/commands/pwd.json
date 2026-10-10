@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "pwd",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "今いるフォルダの場所（パス）を表示します", "en": "Shows where you are: the full path of the current folder" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "strings",
   "summary": { "ja": "バイナリファイルの中から、人が読める文字列だけを取り出して表示します", "en": "Extracts the human-readable text from a binary file" },
   "description": { "ja": "実行ファイルや画像などのバイナリ（文字として読めないデータ）に埋め込まれたメッセージ、URL、パスなどを探すときに使います。4 文字以上続く表示可能な文字を 1 行ずつ出力します（-n で長さを変更）。grep と組み合わせるのが定番です。Windows では Git Bash や WSL の strings、または Sysinternals の strings.exe が使えます", "en": "Finds embedded messages, URLs and paths inside binaries such as executables or images. It prints runs of 4 or more printable characters (change with -n). Commonly piped into grep. On Windows use the one in Git Bash / WSL or Sysinternals strings.exe" },

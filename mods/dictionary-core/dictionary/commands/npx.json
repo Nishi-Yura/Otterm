@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "npx",
   "summary": { "ja": "npm パッケージをインストールせずに一時的に実行します", "en": "Runs an npm package without installing it permanently" },
   "description": { "ja": "node_modules にコマンドがあればそれを、なければ一時的にダウンロードして実行します。プロジェクト作成（create-*）や一回きりのツールに便利です。npm に同梱されています。", "en": "Uses the command from node_modules if present, otherwise downloads it temporarily and runs it. Handy for scaffolding (create-*) and one-off tools. Ships with npm." },

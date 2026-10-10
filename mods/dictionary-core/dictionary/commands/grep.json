@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "grep",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "ファイルの中から、指定した文字列を含む行を探して表示します", "en": "Finds lines containing a given text in files" },

@@ -1,7 +1,7 @@
 /**
  * @otterm/api — type definitions for otterm mods.
  *
- * DRAFT. Target location: packages/api/src/index.d.ts
+ * Source of truth for the mod API; docs/05 defers to these types when they disagree.
  * Spec: docs/05-mod-system.md, docs/08-character.md, docs/10-ai-assist.md
  *
  * Design rules
@@ -10,6 +10,22 @@
  * - Capabilities not declared in otmod.toml are *absent* from `ctx` at runtime.
  *   The optional (`?`) members below mark those capability-gated namespaces.
  */
+
+// ---------------------------------------------------------------------------
+// Runtime globals
+// ---------------------------------------------------------------------------
+
+/**
+ * The mod sandbox starts with no host globals (no `fetch`, no DOM). Besides the ES2022
+ * built-ins it provides only these timers; the host clears them on deactivate.
+ * Decision M1 in docs/11-decisions.md.
+ */
+declare global {
+  function setTimeout(callback: () => void, ms?: number): number;
+  function clearTimeout(id: number | undefined): void;
+  function setInterval(callback: () => void, ms?: number): number;
+  function clearInterval(id: number | undefined): void;
+}
 
 // ---------------------------------------------------------------------------
 // Entry points
@@ -89,15 +105,20 @@ export interface ModContext {
 // ---------------------------------------------------------------------------
 
 export type SlotName =
-  | "titlebar.left" | "titlebar.right"
-  | "tabbar.before" | "tabbar.after"
+  | "titlebar.left"
+  | "titlebar.right"
+  | "tabbar.before"
+  | "tabbar.after"
   | "tab.decoration"
-  | "sidebar.left" | "sidebar.right"
+  | "sidebar.left"
+  | "sidebar.right"
   | "panel.bottom"
   | "terminal.overlay"
   | "assist.bar"
-  | "block.gutter" | "block.footer"
-  | "statusbar.left" | "statusbar.right"
+  | "block.gutter"
+  | "block.footer"
+  | "statusbar.left"
+  | "statusbar.right"
   | "mascot";
 
 export type ContextMenuTarget = "context.terminal" | "context.tab" | "context.file" | "context.block";
@@ -177,9 +198,25 @@ export type IconName = string;
 // Declarative UI --------------------------------------------------------------
 
 export type UiNode =
-  | TextNode | HeadingNode | StackNode | RowNode | ListNode | TreeNode | TableNode
-  | ButtonNode | InputNode | SelectNode | ToggleNode | BadgeNode | ProgressNode
-  | CodeNode | MarkdownNode | DividerNode | SpacerNode | SparklineNode | CustomNode;
+  | TextNode
+  | HeadingNode
+  | StackNode
+  | RowNode
+  | ListNode
+  | TreeNode
+  | TableNode
+  | ButtonNode
+  | InputNode
+  | SelectNode
+  | ToggleNode
+  | BadgeNode
+  | ProgressNode
+  | CodeNode
+  | MarkdownNode
+  | DividerNode
+  | SpacerNode
+  | SparklineNode
+  | CustomNode;
 
 interface BaseNode {
   /** Stable key for diffing node arrays. */
@@ -197,8 +234,16 @@ export interface TextNode extends BaseNode {
   muted?: boolean;
   onClick?(): void;
 }
-export interface HeadingNode extends BaseNode { type: "heading"; text: Reactive<LocalizedString>; level?: 1 | 2 | 3 }
-export interface StackNode extends BaseNode { type: "stack"; children: Reactive<UiNode[]>; gap?: "none" | "s" | "m" | "l" }
+export interface HeadingNode extends BaseNode {
+  type: "heading";
+  text: Reactive<LocalizedString>;
+  level?: 1 | 2 | 3;
+}
+export interface StackNode extends BaseNode {
+  type: "stack";
+  children: Reactive<UiNode[]>;
+  gap?: "none" | "s" | "m" | "l";
+}
 export interface RowNode extends BaseNode {
   type: "row";
   children: Reactive<UiNode[]>;
@@ -283,8 +328,16 @@ export interface SelectNode extends BaseNode {
   value: Signal<string>;
   options: Reactive<{ value: string; label: LocalizedString }[]>;
 }
-export interface ToggleNode extends BaseNode { type: "toggle"; value: Signal<boolean>; label?: LocalizedString }
-export interface BadgeNode extends BaseNode { type: "badge"; text: Reactive<string>; kind?: "info" | "success" | "warning" | "danger" | "neutral" }
+export interface ToggleNode extends BaseNode {
+  type: "toggle";
+  value: Signal<boolean>;
+  label?: LocalizedString;
+}
+export interface BadgeNode extends BaseNode {
+  type: "badge";
+  text: Reactive<string>;
+  kind?: "info" | "success" | "warning" | "danger" | "neutral";
+}
 export interface ProgressNode extends BaseNode {
   type: "progress";
   /** 0..1; undefined = indeterminate. */
@@ -300,9 +353,17 @@ export interface CodeNode extends BaseNode {
   copyable?: boolean;
 }
 /** Sanitized Markdown; raw HTML is stripped. */
-export interface MarkdownNode extends BaseNode { type: "markdown"; source: Reactive<string> }
-export interface DividerNode extends BaseNode { type: "divider" }
-export interface SpacerNode extends BaseNode { type: "spacer"; size?: "s" | "m" | "l" | "flex" }
+export interface MarkdownNode extends BaseNode {
+  type: "markdown";
+  source: Reactive<string>;
+}
+export interface DividerNode extends BaseNode {
+  type: "divider";
+}
+export interface SpacerNode extends BaseNode {
+  type: "spacer";
+  size?: "s" | "m" | "l" | "flex";
+}
 export interface SparklineNode extends BaseNode {
   type: "sparkline";
   values: Reactive<number[]>;
@@ -339,7 +400,11 @@ export interface CommandMeta {
 
 export interface CommandsApi {
   /** `id` is namespaced automatically as "<modId>.<id>" unless it already contains a dot. */
-  register(id: string, handler: (args?: Record<string, unknown>) => void | Promise<void>, meta: CommandMeta): Disposable;
+  register(
+    id: string,
+    handler: (args?: Record<string, unknown>) => void | Promise<void>,
+    meta: CommandMeta,
+  ): Disposable;
   run(id: string, args?: Record<string, unknown>): Promise<void>;
 }
 
@@ -427,7 +492,11 @@ export interface TerminalApi {
   onInputChange?(cb: (s: InputState) => void): Disposable;
   /** Veto point. The host waits at most 50 ms (docs/09 §3.1). */
   onBeforeExecute?(
-    cb: (e: { sessionId: SessionId; command: string; cwd: string }) => BeforeExecuteResult | Promise<BeforeExecuteResult>,
+    cb: (e: {
+      sessionId: SessionId;
+      command: string;
+      cwd: string;
+    }) => BeforeExecuteResult | Promise<BeforeExecuteResult>,
   ): Disposable;
   onBlockStart?(cb: (b: Block) => void): Disposable;
   onBlockEnd?(cb: (b: Block) => void): Disposable;
@@ -555,7 +624,12 @@ export interface DictionaryEntry {
   /** Shown when a GUI action performed the equivalent of this command. */
   learn?: LocalizedString;
   /** Package manager → install command, for "command not found" hints. */
-  install?: Partial<Record<"winget" | "scoop" | "choco" | "brew" | "apt" | "dnf" | "pacman" | "nix" | "npm" | "pip" | "cargo" | "url", string>>;
+  install?: Partial<
+    Record<
+      "winget" | "scoop" | "choco" | "brew" | "apt" | "dnf" | "pacman" | "nix" | "npm" | "pip" | "cargo" | "url",
+      string
+    >
+  >;
 }
 export interface DictionarySubcommand {
   name: string;
@@ -579,13 +653,33 @@ export interface DictionaryOption {
 }
 export interface DictionaryArg {
   name: string;
-  type: "path" | "file" | "dir" | "string" | "number" | "url" | "branch" | "remote" | "package" | "container" | "image" | "command" | "pattern";
+  type:
+    | "path"
+    | "file"
+    | "dir"
+    | "string"
+    | "number"
+    | "url"
+    | "branch"
+    | "remote"
+    | "package"
+    | "container"
+    | "image"
+    | "command"
+    | "pattern";
   optional?: boolean;
   variadic?: boolean;
   summary?: LocalizedString;
 }
-export interface DictionaryExample { command: string; summary: LocalizedString }
-export interface DictionaryError { pattern: string; hint: LocalizedString; fix?: string }
+export interface DictionaryExample {
+  command: string;
+  summary: LocalizedString;
+}
+export interface DictionaryError {
+  pattern: string;
+  hint: LocalizedString;
+  fix?: string;
+}
 
 // ---------------------------------------------------------------------------
 // Links
@@ -601,7 +695,10 @@ export interface LinksApi {
     id: string;
     regex: RegExp | string;
     /** Return undefined to drop the match (e.g. the file does not exist). */
-    resolve(match: string, ctx: { sessionId: SessionId; cwd: string }): Promise<LinkTarget | undefined> | LinkTarget | undefined;
+    resolve(
+      match: string,
+      ctx: { sessionId: SessionId; cwd: string },
+    ): Promise<LinkTarget | undefined> | LinkTarget | undefined;
   }): Disposable;
 }
 
@@ -828,8 +925,16 @@ export interface AiApi {
 export type ModKind = "theme" | "layout" | "dictionary" | "workflows" | "outfit" | "extension" | "pack";
 
 export type ManifestEvent =
-  | "session-created" | "session-closed" | "cwd-changed" | "input-changed" | "before-execute"
-  | "block-start" | "block-end" | "output" | "title-changed" | "focus-changed";
+  | "session-created"
+  | "session-closed"
+  | "cwd-changed"
+  | "input-changed"
+  | "before-execute"
+  | "block-start"
+  | "block-end"
+  | "output"
+  | "title-changed"
+  | "focus-changed";
 
 export interface Manifest {
   mod: {
@@ -863,7 +968,15 @@ export interface Manifest {
 
 export type SettingSchema =
   | { type: "boolean"; default: boolean; label: string; description?: string }
-  | { type: "integer" | "number"; default: number; min?: number; max?: number; step?: number; label: string; description?: string }
+  | {
+      type: "integer" | "number";
+      default: number;
+      min?: number;
+      max?: number;
+      step?: number;
+      label: string;
+      description?: string;
+    }
   | { type: "string"; default: string; pattern?: string; label: string; description?: string; secret?: boolean }
   | { type: "enum"; default: string; values: { value: string; label: string }[]; label: string; description?: string }
   | { type: "path"; default: string; mode?: "file" | "dir"; label: string; description?: string }

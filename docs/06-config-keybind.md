@@ -252,4 +252,4 @@ otterm ask [question]              # ラコに聞く（AI mod が有効なとき
 | `paletteOpen` / `panelFocus` / `fileTreeFocus` | 各 UI にフォーカス |
 | `guideLevel >= 2` | ガイドレベル条件 |
 
-記法は 2 章の `[keybindings.bindings]`（アクション ID → キー）と `[[keybindings.custom]]`（引数・when 条件付き）の 2 形式。設定の Rust 構造体は [drafts/config/schema.rs](../drafts/config/schema.rs) を参照。
+記法は 2 章の `[keybindings.bindings]`（アクション ID → キー）と `[[keybindings.custom]]`（引数・when 条件付き）の 2 形式。設定の Rust 構造体は [crates/otterm-config/src/schema.rs](../crates/otterm-config/src/schema.rs) を参照。

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "mvn",
   "aliases": ["mvnw"],
   "summary": { "ja": "Java のビルド・依存管理ツール Maven です", "en": "Maven, the build and dependency tool for Java" },

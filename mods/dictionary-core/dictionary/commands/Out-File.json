@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "Out-File",
   "shells": ["pwsh", "powershell"],
   "summary": { "ja": "コマンドの出力をファイルに保存します（PowerShell）。既存のファイルは上書きされます", "en": "Saves a command's output to a file (PowerShell). An existing file is overwritten" },

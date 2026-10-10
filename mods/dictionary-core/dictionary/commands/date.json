@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "date",
   "summary": { "ja": "今の日付と時刻を表示します", "en": "Prints the current date and time" },
   "description": {

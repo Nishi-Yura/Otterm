@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "awk",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "テキストを行と列に分けて、計算や抜き出しを行います", "en": "Splits text into rows and columns, then extracts or calculates" },

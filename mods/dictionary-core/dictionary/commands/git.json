@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "git",
   "summary": { "ja": "ソースコードの変更履歴を管理するツールです", "en": "Version control for your source code" },
   "install": { "winget": "winget install Git.Git", "brew": "brew install git", "apt": "sudo apt install git", "dnf": "sudo dnf install git", "pacman": "sudo pacman -S git" },

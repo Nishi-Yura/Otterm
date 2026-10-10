@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "gh",
   "summary": { "ja": "GitHub をターミナルから操作します（PR、Issue、リポジトリなど）", "en": "Works with GitHub from the terminal (PRs, issues, repos and more)" },
   "description": { "ja": "GitHub 公式のコマンドラインツールです。ブラウザを開かずに PR（プルリクエスト。変更の取り込み依頼）や Issue を作ったり、リポジトリを複製したりできます。最初に gh auth login でログインが必要です。git リポジトリの中で実行すると、対象のリポジトリは自動で判定されます", "en": "GitHub's official CLI. Create pull requests and issues, clone repos and more without opening a browser. Run gh auth login first. Inside a git repository the target repo is detected automatically" },

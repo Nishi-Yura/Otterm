@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "su",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "別のユーザー（省略時は管理者 root）に切り替えます", "en": "Switches to another user (root if none is given)" },

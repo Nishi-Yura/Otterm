@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "top",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "動いているプログラムの CPU・メモリ使用量をリアルタイムで表示します", "en": "Live view of running programs and their CPU and memory use" },

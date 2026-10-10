@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "volta",
   "summary": { "ja": "プロジェクトごとに Node.js と npm/yarn を自動で切り替えるツールです", "en": "Automatically switches Node.js and npm/yarn per project" },
   "description": { "ja": "package.json の volta 欄にバージョンを記録しておくと、そのフォルダに入るだけで自動的に正しい Node.js が使われます。nvm use のような手動切り替えは不要です。", "en": "Records versions in the volta field of package.json, and the right Node.js is used automatically whenever you are in that folder. No manual switching like nvm use." },

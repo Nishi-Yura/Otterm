@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "uniq",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "連続して重複する行を 1 つにまとめます", "en": "Collapses consecutive duplicate lines into one" },

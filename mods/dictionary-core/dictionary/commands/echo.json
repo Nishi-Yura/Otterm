@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "echo",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "書いた文字をそのまま画面に表示します", "en": "Prints the text you give it" },

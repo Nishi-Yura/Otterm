@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "killall",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "名前を指定して、その名前で動いているプログラムをまとめて終了します", "en": "Stops every running program with the given name" },

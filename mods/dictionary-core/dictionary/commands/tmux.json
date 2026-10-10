@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "tmux",
   "summary": { "ja": "1 つのターミナルで複数の画面を持ち、切断してもプログラムを動かし続けられます", "en": "Multiple terminals in one window; programs keep running after you disconnect" },
   "description": { "ja": "ターミナルマルチプレクサ（1 つの画面を分割したり、セッション＝作業中の画面一式をバックグラウンドに残したりするツール）です。SSH 先で長い処理を走らせたまま切断したいときに便利です。操作はプレフィックスキー Ctrl+b を押してから: d で切り離し（デタッチ）、c で新しいウィンドウ、% で左右分割、\" で上下分割、矢印でペイン移動。Windows では WSL や Git Bash（MSYS2）で使います", "en": "A terminal multiplexer: split the screen and keep sessions running in the background, e.g. long jobs over SSH. Commands start with the prefix Ctrl+b, then: d to detach, c for a new window, % to split left/right, \" to split top/bottom, arrows to move between panes. On Windows use it inside WSL or MSYS2" },

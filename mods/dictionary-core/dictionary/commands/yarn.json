@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "yarn",
   "summary": { "ja": "Node.js のパッケージ管理ツールです（npm の代替）", "en": "Package manager for Node.js (an npm alternative)" },
   "description": { "ja": "v1（Classic）と v2 以降（Berry）でコマンドが少し違います。プロジェクトの .yarnrc.yml や packageManager の記述で見分けられます。ロックファイルは yarn.lock です。", "en": "Commands differ slightly between v1 (Classic) and v2+ (Berry). Check .yarnrc.yml or the packageManager field to tell them apart. The lockfile is yarn.lock." },

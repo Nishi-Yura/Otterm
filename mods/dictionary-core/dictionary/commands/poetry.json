@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "poetry",
   "summary": { "ja": "Python の依存管理とパッケージングのツールです", "en": "Dependency management and packaging for Python" },
   "description": { "ja": "pyproject.toml に依存を記録し、poetry.lock でバージョンを固定します。仮想環境を自動で作るので、poetry run で実行すれば venv の有効化は不要です。", "en": "Records dependencies in pyproject.toml and pins them in poetry.lock. It creates a virtual environment for you, so poetry run works without activating anything." },

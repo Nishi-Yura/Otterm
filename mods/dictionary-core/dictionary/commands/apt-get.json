@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "apt-get",
   "platforms": ["linux"],
   "summary": { "ja": "Debian / Ubuntu 系の低レベルなパッケージ管理ツールです（スクリプト向け）", "en": "Lower-level package tool for Debian and Ubuntu (meant for scripts)" },

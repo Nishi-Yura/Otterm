@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "cargo",
   "summary": { "ja": "Rust のビルドツール兼パッケージ管理ツールです", "en": "Build tool and package manager for Rust" },
   "description": { "ja": "Cargo.toml に依存（crate）を書き、cargo build や cargo run でコンパイルして実行します。成果物は target フォルダに入ります。rustup で Rust を入れると一緒に付いてきます。", "en": "Dependencies (crates) go in Cargo.toml; cargo build and cargo run compile and execute. Output lands in the target folder. It comes with Rust when installed via rustup." },

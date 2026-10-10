@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://otterm.dev/schemas/dictionary.schema.json",
   "title": "otterm command dictionary",
-  "description": "One JSON file per command. DRAFT; target: packages/api/schemas/dictionary.schema.json. Spec: docs/03-core-features.md §8.1. Consumed by cmd-explain (summary/options/parts), completion (subcommands/options/args), danger-guard (danger fields) and error-hint (errors).",
+  "description": "One JSON file per command. Spec: docs/03-core-features.md §8.1. Consumed by cmd-explain (summary/options/parts), completion (subcommands/options/args), danger-guard (danger fields) and error-hint (errors).",
   "type": "object",
   "required": ["name", "summary"],
   "additionalProperties": false,
@@ -22,8 +22,14 @@
     "shells": { "type": "array", "items": { "$ref": "#/$defs/shellKind" }, "description": "Omit for all." },
     "summary": { "$ref": "#/$defs/localized", "description": "One sentence shown in the assist bar." },
     "description": { "$ref": "#/$defs/localized", "description": "Longer text for Lv3 and hover." },
-    "danger": { "$ref": "#/$defs/dangerLevel", "description": "Danger of the bare command (e.g. Set-Content overwrites, sudo). Usually dangers live on options/subcommands." },
-    "dangerMessage": { "$ref": "#/$defs/localized", "description": "Shown by danger-guard when the bare command triggers `danger`." },
+    "danger": {
+      "$ref": "#/$defs/dangerLevel",
+      "description": "Danger of the bare command (e.g. Set-Content overwrites, sudo). Usually dangers live on options/subcommands."
+    },
+    "dangerMessage": {
+      "$ref": "#/$defs/localized",
+      "description": "Shown by danger-guard when the bare command triggers `danger`."
+    },
     "alternative": {
       "type": "object",
       "required": ["label", "command"],
@@ -46,7 +52,9 @@
       "type": "object",
       "description": "How to get the command when 'command not found'. Keys are package managers.",
       "additionalProperties": { "type": "string" },
-      "propertyNames": { "enum": ["winget", "scoop", "choco", "brew", "apt", "dnf", "pacman", "nix", "npm", "pip", "cargo", "url"] }
+      "propertyNames": {
+        "enum": ["winget", "scoop", "choco", "brew", "apt", "dnf", "pacman", "nix", "npm", "pip", "cargo", "url"]
+      }
     }
   },
   "$defs": {
@@ -65,7 +73,21 @@
       ]
     },
     "argType": {
-      "enum": ["path", "file", "dir", "string", "number", "url", "branch", "remote", "package", "container", "image", "command", "pattern"],
+      "enum": [
+        "path",
+        "file",
+        "dir",
+        "string",
+        "number",
+        "url",
+        "branch",
+        "remote",
+        "package",
+        "container",
+        "image",
+        "command",
+        "pattern"
+      ],
       "description": "Drives completion: path/file/dir complete from the filesystem, branch/remote/container/image from provider mods, command from PATH."
     },
     "arg": {
@@ -95,7 +117,10 @@
         "takesValue": { "type": "boolean", "default": false },
         "valueType": { "$ref": "#/$defs/argType" },
         "danger": { "$ref": "#/$defs/dangerLevel" },
-        "dangerMessage": { "$ref": "#/$defs/localized", "description": "Shown by danger-guard when this option is present." },
+        "dangerMessage": {
+          "$ref": "#/$defs/localized",
+          "description": "Shown by danger-guard when this option is present."
+        },
         "alternative": {
           "type": "object",
           "required": ["label", "command"],
@@ -131,7 +156,10 @@
       "additionalProperties": false,
       "properties": {
         "label": { "$ref": "#/$defs/localized" },
-        "command": { "type": "string", "description": "Replacement offered by danger-guard; {args} expands to the original arguments." }
+        "command": {
+          "type": "string",
+          "description": "Replacement offered by danger-guard; {args} expands to the original arguments."
+        }
       }
     },
     "example": {
@@ -148,10 +176,16 @@
       "required": ["pattern", "hint"],
       "additionalProperties": false,
       "properties": {
-        "pattern": { "type": "string", "description": "Regex matched against the block output (case-insensitive, multiline). Named groups are available as {name} in hint/fix." },
+        "pattern": {
+          "type": "string",
+          "description": "Regex matched against the block output (case-insensitive, multiline). Named groups are available as {name} in hint/fix."
+        },
         "exitCode": { "type": "integer", "description": "Optional exact exit code filter." },
         "hint": { "$ref": "#/$defs/localized" },
-        "fix": { "type": "string", "description": "Command offered via an insert button. Never auto-run. {args} expands to the failed command's arguments; {name} to named groups from `pattern`." },
+        "fix": {
+          "type": "string",
+          "description": "Command offered via an insert button. Never auto-run. {args} expands to the failed command's arguments; {name} to named groups from `pattern`."
+        },
         "allowAi": { "type": "boolean", "default": true }
       }
     }

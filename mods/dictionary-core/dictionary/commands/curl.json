@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "curl",
   "summary": { "ja": "Web の URL からデータを取ってきたり、データを送ったりします", "en": "Fetches data from a URL, or sends data to it" },
   "description": {

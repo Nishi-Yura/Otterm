@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "Remove-Item",
   "aliases": ["ri", "rm", "del", "erase", "rmdir", "rd"],
   "shells": ["pwsh", "powershell"],

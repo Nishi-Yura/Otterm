@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "ssh",
   "summary": { "ja": "別のコンピューター（サーバー）に安全に接続し、そのコンピューター上でコマンドを実行できるようにします", "en": "Securely connects to another computer so you can run commands on it" },
   "description": {

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "exit",
   "summary": { "ja": "今のシェル（ターミナルとのやり取り）を終了します", "en": "Ends the current shell session" },
   "description": {

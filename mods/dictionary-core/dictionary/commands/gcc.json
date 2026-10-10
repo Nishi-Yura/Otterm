@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "gcc",
   "aliases": ["cc"],
   "summary": { "ja": "C のソースコードをコンパイルして実行ファイルを作ります", "en": "Compiles C source code into an executable" },

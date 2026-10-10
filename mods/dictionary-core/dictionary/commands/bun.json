@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "bun",
   "summary": { "ja": "高速な JavaScript ランタイム兼パッケージ管理ツールです", "en": "Fast JavaScript runtime and package manager" },
   "description": { "ja": "Node.js の代わりにスクリプトを実行でき、npm 互換のパッケージ管理も内蔵しています。ロックファイルは bun.lock（旧 bun.lockb）です。", "en": "Runs scripts in place of Node.js and includes an npm-compatible package manager. The lockfile is bun.lock (formerly bun.lockb)." },

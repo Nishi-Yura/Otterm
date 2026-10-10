@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "mise",
   "aliases": ["rtx"],
   "summary": { "ja": "Node、Python、Go などあらゆる言語のバージョンをまとめて管理するツールです", "en": "Manages versions of Node, Python, Go and many more tools in one place" },

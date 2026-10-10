@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "flatpak",
   "platforms": ["linux"],
   "summary": { "ja": "Linux 共通のデスクトップアプリ配布形式 Flatpak の管理ツールです", "en": "Manager for Flatpak, the cross-distro Linux desktop app format" },

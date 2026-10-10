@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "Test-Path",
   "shells": ["pwsh", "powershell"],
   "summary": { "ja": "ファイルやフォルダが存在するかを True / False で返します（PowerShell）", "en": "Returns True or False depending on whether a path exists (PowerShell)" },

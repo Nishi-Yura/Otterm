@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "rsync",
   "summary": { "ja": "フォルダの中身を別の場所（手元や別のコンピューター）と同期し、変わった分だけコピーします", "en": "Syncs a folder to another place, local or remote, copying only what changed" },
   "description": {

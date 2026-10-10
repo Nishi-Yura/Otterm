@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "ls",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "フォルダの中身（ファイルとフォルダ）を一覧表示します", "en": "Lists the files and folders in a directory" },

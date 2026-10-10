@@ -1,5 +1,5 @@
 # otterm — Kelp's lines and UI strings (English)
-# DRAFT. Target: packages/ui/locales/en.ftl (host) and mods/otterm.mascot/locales/en.ftl (mascot)
+# Host UI strings and mascot lines. Mascot lines move to mods/otterm.mascot/locales/en.ftl in M4.5
 # Spec: docs/08-character.md §5
 #
 # Rules

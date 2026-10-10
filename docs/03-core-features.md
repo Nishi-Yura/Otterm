@@ -228,7 +228,7 @@ Window
   - 例: `git push -f origin main` → 「ローカルの main ブランチを origin に送ります。`-f` は履歴の不一致を無視して上書きします（危険）」
 - 辞書は mod で追加・上書き可能
 - 辞書にないコマンドの扱い（判断 B9）: **入力中には `--help` を実行しない**。未知のコマンドを裏で起動するのは副作用の危険がある（`--help` を解釈せず動き出すツールがある）。そのコマンドをユーザーが一度実行した後に、`--help` と `man` の冒頭をバックグラウンドで取得してキャッシュし、次回以降の説明に使う。入力中は「辞書にないコマンドです」とだけ表示する
-- 同梱辞書 `dictionary-core` の v1.0 収録範囲（判断 G1）。下書きとして **164 コマンド、サブコマンド 450、オプション 1,164、エラー助言 813、危険マーク 117** を [drafts/dictionary/commands/](../drafts/dictionary/commands/) に書き終えている
+- 同梱辞書 `dictionary-core` の v1.0 収録範囲（判断 G1）。下書きとして **164 コマンド、サブコマンド 450、オプション 1,164、エラー助言 813、危険マーク 117** を [mods/dictionary-core/dictionary/commands/](../mods/dictionary-core/dictionary/commands/) に書き終えている
 
 | 分類 | 件数 | 例 |
 | --- | --- | --- |
@@ -241,9 +241,9 @@ Window
 
 - 辞書の品質基準: すべての文字列が日英、危険マークには必ずメッセージ、エラーパターンは正規表現としてコンパイル可能で、ヒント内の `{name}` はパターンの名前付きグループと一致すること。検証スクリプトを CI に載せる
 
-- 辞書の形式は JSON。1 コマンド = 1 ファイルで、`name / aliases / summary / subcommands / options（型・説明・危険度・代替案）/ args / examples / errors（エラーパターンと助言）/ learn（GUI 操作の学習ヒント）/ install（未導入時の入れ方）` を持つ。1 ファイルで説明・補完・危険判定・エラー助言の 4 機能を賄う。スキーマと見本は [drafts/schemas/dictionary.schema.json](../drafts/schemas/dictionary.schema.json)、[drafts/dictionary/](../drafts/dictionary/) にある
+- 辞書の形式は JSON。1 コマンド = 1 ファイルで、`name / aliases / summary / subcommands / options（型・説明・危険度・代替案）/ args / examples / errors（エラーパターンと助言）/ learn（GUI 操作の学習ヒント）/ install（未導入時の入れ方）` を持つ。1 ファイルで説明・補完・危険判定・エラー助言の 4 機能を賄う。スキーマは [packages/api/schemas/dictionary.schema.json](../packages/api/schemas/dictionary.schema.json)、辞書の本体は [mods/dictionary-core/dictionary/](../mods/dictionary-core/dictionary/) にある。検証は `just validate`（[tests/dictionary/validate-dictionary.js](../tests/dictionary/validate-dictionary.js)）
 - 辞書内の文字列は `{ "ja": "...", "en": "..." }` の **インライン多言語** で書く。UI とラコの台詞は Fluent（判断 C7）だが、辞書はコミュニティが 1 ファイルずつ書くものなので、翻訳キーを別ファイルに分けると書きにくい
-- コマンド横断の危険ルール（`curl | sh`、fork bomb、`sudo rm` など）は辞書とは別の `rules/*.json` に置く（見本: [drafts/dictionary/rules/core.json](../drafts/dictionary/rules/core.json)）
+- コマンド横断の危険ルール（`curl | sh`、fork bomb、`sudo rm` など）は辞書とは別の `rules/*.json` に置く（[mods/dictionary-core/dictionary/rules/core.json](../mods/dictionary-core/dictionary/rules/core.json)）
 - ガイドレベル 0 では非表示、1 では危険時のみ、2〜3 では常時表示
 
 ### 8.2 completion（補完ポップアップ）

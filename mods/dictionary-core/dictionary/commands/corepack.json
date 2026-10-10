@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "corepack",
   "summary": { "ja": "Node.js 同梱の、yarn / pnpm のバージョンを自動管理するツールです", "en": "Node.js' bundled manager for yarn and pnpm versions" },
   "description": { "ja": "package.json の packageManager 欄（例: \"pnpm@9.1.0\"）を読み、そのバージョンの yarn / pnpm を自動で取ってきて実行します。corepack enable を一度実行すると yarn や pnpm コマンドが使えるようになります。Node.js 25 以降は同梱されず、npm で別途入れます。", "en": "Reads the packageManager field in package.json (e.g. \"pnpm@9.1.0\") and fetches and runs exactly that yarn/pnpm. Run corepack enable once to make the yarn and pnpm commands available. From Node.js 25 it is no longer bundled; install it with npm." },

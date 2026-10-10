@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "code",
   "aliases": ["code-insiders", "codium"],
   "summary": { "ja": "Visual Studio Code でファイルやフォルダを開きます", "en": "Opens files or folders in Visual Studio Code" },

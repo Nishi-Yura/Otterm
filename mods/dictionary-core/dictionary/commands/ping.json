@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "ping",
   "summary": { "ja": "相手のコンピューターやサーバーに届くか、応答までに何ミリ秒かかるかを確かめます", "en": "Checks whether a computer or server is reachable and how many milliseconds it takes to answer" },
   "description": {

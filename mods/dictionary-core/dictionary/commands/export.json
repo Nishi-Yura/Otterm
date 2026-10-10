@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "export",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "環境変数（プログラムに渡す設定値）を設定し、この後に起動するプログラムからも見えるようにします", "en": "Sets an environment variable so programs you start afterwards can see it" },

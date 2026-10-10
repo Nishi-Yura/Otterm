@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "docker",
   "summary": { "ja": "コンテナ（隔離されたアプリ実行環境）を作って動かすツールです", "en": "Builds and runs containers (isolated app environments)" },
   "install": { "winget": "winget install Docker.DockerDesktop", "brew": "brew install --cask docker", "url": "https://docs.docker.com/get-docker/" },

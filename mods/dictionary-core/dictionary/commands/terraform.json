@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "terraform",
   "aliases": ["tofu"],
   "summary": { "ja": "クラウドのサーバーやネットワークをコードで定義し、作成・変更・削除します", "en": "Defines cloud infrastructure as code and creates, changes or destroys it" },

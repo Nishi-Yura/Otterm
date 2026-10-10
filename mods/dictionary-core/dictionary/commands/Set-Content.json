@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "Set-Content",
   "aliases": ["sc"],
   "shells": ["pwsh", "powershell"],

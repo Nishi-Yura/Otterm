@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "touch",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "空のファイルを作ります。すでにあるファイルは更新日時だけを今にします", "en": "Creates an empty file, or updates the modified time of an existing one" },

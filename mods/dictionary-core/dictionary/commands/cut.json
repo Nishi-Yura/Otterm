@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "cut",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "各行から指定した列（区切り文字で分けた部分）や文字の範囲だけを取り出します", "en": "Extracts chosen columns or character ranges from each line" },

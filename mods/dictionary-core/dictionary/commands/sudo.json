@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "sudo",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "コマンドを管理者（root）の権限で実行します", "en": "Runs a command with administrator (root) rights" },

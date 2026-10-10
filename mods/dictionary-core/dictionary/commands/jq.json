@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "jq",
   "summary": { "ja": "JSON を整形・抽出・変換するコマンドラインツールです", "en": "Pretty-prints, filters and transforms JSON on the command line" },
   "description": { "ja": "パイプ（| で前のコマンドの出力を渡す仕組み）で JSON を受け取り、フィルター（例: .name、.items[0]、.[] | .id）で欲しい部分を取り出します。フィルター「.」はそのまま整形して表示します。フィルターはシェルに解釈されないようクォートで囲みます。PowerShell ではシングルクォートの中で $ などがそのまま使えます", "en": "Takes JSON from a pipe and extracts parts with a filter such as .name, .items[0] or .[] | .id. The filter . just pretty-prints. Quote the filter so the shell leaves it alone" },

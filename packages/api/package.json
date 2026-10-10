@@ -1,0 +1,21 @@
+{
+  "name": "@otterm/api",
+  "version": "0.0.0",
+  "description": "Type definitions for otterm mods",
+  "license": "MIT",
+  "type": "module",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts"
+    },
+    "./schemas/dictionary.schema.json": "./schemas/dictionary.schema.json"
+  },
+  "files": [
+    "src",
+    "schemas"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p ."
+  }
+}

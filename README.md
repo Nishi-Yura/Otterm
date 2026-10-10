@@ -28,11 +28,21 @@ otterm はシェルを解きほぐして、使う人のそばに寄り添いま�
 | [docs/09-performance.md](docs/09-performance.md) | 性能戦略（遅延の予算、レンダラ差し替え、ベンチマークと CI ゲート） |
 | [docs/10-ai-assist.md](docs/10-ai-assist.md) | AI 補助の仕様（3 層構造、機能、送信内容の扱い、ラコとの統合） |
 | [docs/11-decisions.md](docs/11-decisions.md) | 判断一覧（未決事項の選択肢と推奨、決定の記録） |
-| [drafts/](drafts/README.md) | 型・スキーマによる設計下書き（`@otterm/api` 型定義、辞書スキーマと見本、設定の Rust 構造体） |
 
 ## 状態
 
-仕様策定フェーズ。実装はまだありません。
+M0（骨組み）に着手。仕様書で決めた型とデータは配置済みで、CI で検証している。ターミナルとしてはまだ動かない。
+
+| 場所 | 中身 |
+| --- | --- |
+| [packages/api/](packages/api/) | `@otterm/api` の型定義（mod API の正）と辞書の JSON Schema |
+| [packages/create-mod/](packages/create-mod/) | mod テンプレート（Git Status Bar の見本） |
+| [packages/ui/locales/](packages/ui/locales/) | UI 文言とラコの台詞（Fluent） |
+| [mods/dictionary-core/](mods/dictionary-core/) | 同梱のコマンド辞書（164 コマンド）と危険ルール |
+| [crates/otterm-config/](crates/otterm-config/) | 設定の Rust 構造体（`config.toml` / `workspace.toml`） |
+| [tests/dictionary/](tests/dictionary/) | 辞書の検証スクリプト |
+
+開発には Rust（stable）、Node.js 22 以上、pnpm、[just](https://github.com/casey/just) が要る。`just setup` のあと `just check` で CI と同じ検査が走る。
 
 ## ライセンスと開発方針
 

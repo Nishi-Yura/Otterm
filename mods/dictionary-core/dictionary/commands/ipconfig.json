@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "ipconfig",
   "platforms": ["windows"],
   "summary": { "ja": "このパソコンの IP アドレスなどネットワーク設定を表示します（Windows）", "en": "Shows this PC's IP address and other network settings (Windows)" },

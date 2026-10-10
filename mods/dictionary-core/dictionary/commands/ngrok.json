@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "ngrok",
   "summary": { "ja": "手元の PC で動いているサーバーを、インターネットから見える一時的な URL で公開します", "en": "Exposes a server running on your machine at a temporary public URL" },
   "description": { "ja": "ローカルのポート（例: 3000）へのトンネル（外から中へ通す通り道）を作り、スマホからの確認や Webhook の受信に使います。注意: 公開中は URL を知っている人なら誰でも、あなたの PC のそのサーバーにインターネット経由でアクセスできます。確認が終わったら Ctrl+C で必ず止めてください。初回は ngrok config add-authtoken で認証トークンの登録が必要です", "en": "Creates a tunnel to a local port (e.g. 3000), handy for testing on a phone or receiving webhooks. Caution: while it runs, anyone with the URL can reach that server on your machine over the internet. Stop it with Ctrl+C when done. The first run needs ngrok config add-authtoken" },

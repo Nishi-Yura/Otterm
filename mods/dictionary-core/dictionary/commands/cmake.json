@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "cmake",
   "summary": { "ja": "C / C++ プロジェクトのビルド設定を生成し、ビルドを実行します", "en": "Generates build files for C / C++ projects and drives the build" },
   "description": { "ja": "CMakeLists.txt を読み、OS やコンパイラに合わせた Makefile や Visual Studio プロジェクトを作る「ビルド生成ツール」です。コンパイル（コードを実行できる形に変換すること）自体は生成されたファイル経由で行います。基本の流れは cmake -S . -B build で設定 → cmake --build build でビルドです", "en": "A build generator that reads CMakeLists.txt and produces Makefiles or Visual Studio projects for your platform. Typical flow: cmake -S . -B build to configure, then cmake --build build" },

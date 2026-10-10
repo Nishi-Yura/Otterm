@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "make",
   "aliases": ["gmake", "mingw32-make"],
   "summary": { "ja": "Makefile に書かれた手順でビルド（コードから実行ファイルなどを作ること）を実行します", "en": "Runs the build steps written in a Makefile" },

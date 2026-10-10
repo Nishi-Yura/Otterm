@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "rmdir",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "空のフォルダを削除します。中身があるフォルダは消せません", "en": "Deletes an empty folder. It refuses if anything is inside" },

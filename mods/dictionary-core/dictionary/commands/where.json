@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "where",
   "platforms": ["windows"],
   "summary": { "ja": "コマンド（実行ファイル）がどこにあるかを探します（Windows）。PowerShell では where.exe と打ってください", "en": "Finds where a command (executable) lives (Windows). In PowerShell, type where.exe" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "tasklist",
   "platforms": ["windows"],
   "summary": { "ja": "動いているプログラム（プロセス）の一覧と PID、メモリ使用量を表示します（Windows）", "en": "Lists running programs (processes) with their PID and memory use (Windows)" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "man",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "コマンドの説明書（マニュアル）を表示します", "en": "Shows the manual page for a command" },

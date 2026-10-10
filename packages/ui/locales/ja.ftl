@@ -1,5 +1,5 @@
 # otterm — ラコの台詞と UI 文言（日本語）
-# DRAFT. 配置先: packages/ui/locales/ja.ftl（本体）と mods/otterm.mascot/locales/ja.ftl（ラコ）
+# 本体の UI 文言とラコの台詞。ラコの分は M4.5 で mods/otterm.mascot/locales/ja.ftl に分ける
 # 仕様: docs/08-character.md §5
 #
 # 規約

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "pacman",
   "platforms": ["linux"],
   "summary": { "ja": "Arch Linux 系のパッケージ管理ツールです", "en": "Package manager for Arch Linux and derivatives" },

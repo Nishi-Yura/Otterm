@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "mkdir",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "新しいフォルダを作ります", "en": "Creates a new folder" },

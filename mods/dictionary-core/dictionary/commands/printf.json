@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "printf",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "書式（ひな形）に値をはめ込んで文字を表示します。echo より細かく整えられます", "en": "Prints text using a format template. More precise than echo" },

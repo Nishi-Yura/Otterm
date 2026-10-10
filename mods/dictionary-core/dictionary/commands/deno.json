@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "deno",
   "summary": { "ja": "JavaScript / TypeScript を安全に実行するランタイムです。TypeScript をそのまま動かせます", "en": "A secure JavaScript / TypeScript runtime that runs TypeScript directly" },
   "description": { "ja": "Node.js の作者が作り直したランタイム（プログラムを動かす土台）です。初期状態ではネットワークやファイルへのアクセスが禁止されていて、--allow-net のようなフラグで許可を与えます。整形・テスト・ビルドのツールが同梱されています", "en": "A runtime by the original author of Node.js. Network and file access are denied by default and granted with flags such as --allow-net. Formatter, linter and test runner are built in" },

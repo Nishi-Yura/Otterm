@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "gzip",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "ファイルを 1 つずつ圧縮して .gz にします。元のファイルは圧縮後に置き換わります", "en": "Compresses a file into .gz. The original is replaced by the compressed one" },

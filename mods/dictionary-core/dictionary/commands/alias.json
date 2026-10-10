@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "alias",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "長いコマンドに短い別名を付けます", "en": "Gives a long command a short nickname" },

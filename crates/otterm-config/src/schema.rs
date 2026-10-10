@@ -1,6 +1,6 @@
 //! otterm configuration model.
 //!
-//! DRAFT. Target: crates/otterm-config/src/schema.rs
+//! Source of truth for config.toml and workspace.toml; the JSON Schema for the settings UI is generated from it.
 //! Spec: docs/06-config-keybind.md. Decisions: C6 (schema from Rust types), H4 (no telemetry),
 //! B3/B5 (`Auto<T>` settings), I6 (opaque window), K1 (history DB), K4 (workspace trust).
 //!
@@ -278,13 +278,7 @@ pub struct Window {
 
 impl Default for Window {
     fn default() -> Self {
-        Self {
-            opacity: 1.0,
-            blur: false,
-            background_image: None,
-            background_fit: BackgroundFit::Cover,
-            padding: 12,
-        }
+        Self { opacity: 1.0, blur: false, background_image: None, background_fit: BackgroundFit::Cover, padding: 12 }
     }
 }
 
@@ -476,11 +470,7 @@ pub struct Shell {
 
 impl Default for Shell {
     fn default() -> Self {
-        Self {
-            default_profile: String::new(),
-            integration: true,
-            integration_install: IntegrationInstall::Args,
-        }
+        Self { default_profile: String::new(), integration: true, integration_install: IntegrationInstall::Args }
     }
 }
 
@@ -722,6 +712,7 @@ pub struct Keybindings {
 pub struct CustomBinding {
     pub key: KeyChord,
     pub command: String,
+    #[schemars(with = "BTreeMap<String, serde_json::Value>")]
     pub args: BTreeMap<String, toml::Value>,
     /// e.g. `terminalFocus && !altScreen`
     pub when: Option<String>,
@@ -741,6 +732,7 @@ pub struct Mods {
     /// Show per-mod logs, timings and API calls in Settings.
     pub developer_mode: bool,
     /// Per-mod settings, validated against each mod's `[settings.schema]` at load time.
+    #[schemars(with = "BTreeMap<String, BTreeMap<String, serde_json::Value>>")]
     pub settings: BTreeMap<String, BTreeMap<String, toml::Value>>,
 }
 
@@ -818,6 +810,7 @@ pub struct WorkspaceConfig {
     /// Mascot outfit override.
     pub outfit: Option<String>,
     /// Settings overrides. Keys are dotted paths into [`Config`]; unknown or forbidden keys are ignored with a warning.
+    #[schemars(with = "BTreeMap<String, serde_json::Value>")]
     pub settings: BTreeMap<String, toml::Value>,
 }
 
@@ -848,21 +841,44 @@ pub struct Effective {
     pub file_tree_cd: bool,
 }
 
+fn pick<T: Copy>(a: &Auto<T>, auto: T) -> T {
+    match a {
+        Auto::Value(v) => *v,
+        Auto::Auto(_) => auto,
+    }
+}
+
 impl Effective {
     pub fn resolve(cfg: &Config) -> Self {
         let lv = cfg.general.guide_level;
-        let pick = |a: &Auto<_>, auto| match a {
-            Auto::Value(v) => *v,
-            Auto::Auto(_) => auto,
-        };
         Self {
-            completion_key: pick(&cfg.assist.completion_key, if lv >= 3 { CompletionKey::Tab } else { CompletionKey::CtrlSpace }),
+            completion_key: pick(
+                &cfg.assist.completion_key,
+                if lv >= 3 { CompletionKey::Tab } else { CompletionKey::CtrlSpace },
+            ),
             history_key: pick(&cfg.assist.history_key, if lv >= 1 { HistoryKey::Otterm } else { HistoryKey::Shell }),
             confirm_multiline_paste: pick(&cfg.terminal.confirm_multiline_paste, lv >= 1),
-            right_click: pick(&cfg.terminal.right_click, if lv == 0 { RightClick::Paste } else { RightClick::ContextMenu }),
+            right_click: pick(
+                &cfg.terminal.right_click,
+                if lv == 0 { RightClick::Paste } else { RightClick::ContextMenu },
+            ),
             mascot_visible: pick(&cfg.mascot.visible, lv >= 1),
-            speech: pick(&cfg.mascot.speech, match lv { 0 => Speech::Never, 1 => Speech::AlertOnly, _ => Speech::Always }),
-            explain: pick(&cfg.assist.explain, match lv { 0 => Explain::Off, 1 => Explain::DangerOnly, _ => Explain::Always }),
+            speech: pick(
+                &cfg.mascot.speech,
+                match lv {
+                    0 => Speech::Never,
+                    1 => Speech::AlertOnly,
+                    _ => Speech::Always,
+                },
+            ),
+            explain: pick(
+                &cfg.assist.explain,
+                match lv {
+                    0 => Explain::Off,
+                    1 => Explain::DangerOnly,
+                    _ => Explain::Always,
+                },
+            ),
             learn_hints: pick(&cfg.assist.learn_hints, lv >= 2),
             file_tree_cd: pick(&cfg.assist.file_tree_cd, lv >= 2),
         }

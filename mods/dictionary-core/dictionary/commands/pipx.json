@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "pipx",
   "summary": { "ja": "Python 製の CLI ツールを隔離してインストールします", "en": "Installs Python CLI tools in isolated environments" },
   "description": { "ja": "ツールごとに専用の仮想環境を作り、コマンドだけを PATH に出します。black や poetry のような「ライブラリではなく道具」を入れるのに向いています。プロジェクトの依存には pip や uv を使ってください。", "en": "Gives each tool its own virtual environment and exposes only the command on PATH. Ideal for tools like black or poetry rather than project libraries; use pip or uv for those." },

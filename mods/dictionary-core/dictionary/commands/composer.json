@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "composer",
   "summary": { "ja": "PHP の依存管理ツールです", "en": "Dependency manager for PHP" },
   "description": { "ja": "composer.json に依存を書き、vendor フォルダにインストールします。composer.lock でバージョンが固定されます。パッケージ名は vendor/name の形（例: laravel/laravel）です。", "en": "Dependencies go in composer.json and install into the vendor folder; composer.lock pins versions. Package names look like vendor/name (e.g. laravel/laravel)." },

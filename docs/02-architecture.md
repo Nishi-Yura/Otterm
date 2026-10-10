@@ -167,6 +167,7 @@ otterm/
 |  +- cli/                   # otterm CLI（mod 開発・設定操作）
 |  +- create-mod/            # mod テンプレート生成
 +- mods/                     # 同梱 mod
+|  +- dictionary-core/
 |  +- file-tree/
 |  +- cmd-explain/
 |  +- danger-guard/
@@ -177,6 +178,10 @@ otterm/
 +- shell-integration/        # bash/zsh/fish/pwsh/cmd 用フックスクリプト
 +- docs/
 +- tests/
-   +- vt-conformance/
-   +- e2e/
+|  +- dictionary/            # 辞書の検証（CI）
+|  +- vt-conformance/
+|  +- e2e/
++- Cargo.toml                # Cargo workspace
++- package.json              # pnpm workspace + Turborepo
++- justfile                  # クロス言語のタスク（just check = CI と同じ検査）
 ```

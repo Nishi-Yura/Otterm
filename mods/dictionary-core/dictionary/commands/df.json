@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "df",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "ディスク（ドライブ）ごとの空き容量を表示します", "en": "Shows free space on each disk" },

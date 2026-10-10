@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "less",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "長いファイルを 1 画面ずつスクロールしながら読みます。q で終了します", "en": "Reads a long file one screen at a time. Press q to quit" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "sed",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "テキストの置換や行の抜き出しを自動で行います（ストリームエディタ）", "en": "Replaces text or picks lines automatically (a stream editor)" },

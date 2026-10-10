@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "helm",
   "summary": { "ja": "Kubernetes 用のパッケージ管理ツールです。チャートからアプリをまとめて入れます", "en": "The package manager for Kubernetes; installs apps from charts" },
   "description": { "ja": "チャート（アプリ一式の Kubernetes 設定をまとめたパッケージ）を、リリース（インストールした実体の名前）として入れたり更新したりします。流れは helm repo add でチャートの置き場を登録 → helm install 名前 チャート で導入 → helm upgrade で更新です。設定は --set や -f values.yaml で上書きします", "en": "Installs charts (packaged Kubernetes configs for an app) as named releases. Typical flow: helm repo add to register a chart source, helm install NAME CHART to deploy, helm upgrade to update. Override settings with --set or -f values.yaml" },

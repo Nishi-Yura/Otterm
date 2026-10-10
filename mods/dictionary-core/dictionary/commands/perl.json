@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "perl",
   "summary": { "ja": "Perl のプログラムを実行します。テキスト処理の 1 行コマンドにもよく使われます", "en": "Runs a Perl program; also popular for one-line text processing" },
   "description": { "ja": "Perl は文字列処理と正規表現（文字のパターンを表す書き方）が得意なスクリプト言語です。多くの Linux / macOS に最初から入っています。ライブラリ（モジュール）は cpan や cpanm で追加します", "en": "Perl is a scripting language strong at text processing and regular expressions. It is preinstalled on most Linux and macOS systems. Modules are added with cpan or cpanm" },

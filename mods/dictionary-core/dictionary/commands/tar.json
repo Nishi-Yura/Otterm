@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "tar",
   "shells": ["bash", "zsh", "fish", "nushell", "other"],
   "summary": { "ja": "複数のファイルを 1 つのアーカイブ（.tar / .tar.gz）にまとめたり、取り出したりします", "en": "Bundles files into one archive (.tar / .tar.gz) or extracts them" },

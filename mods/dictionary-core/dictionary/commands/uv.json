@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "uv",
   "summary": { "ja": "超高速な Python のパッケージ・プロジェクト管理ツールです", "en": "Very fast Python package and project manager" },
   "description": { "ja": "pip、venv、pyenv、pipx の役割をひとつにまとめたツールです。uv add や uv run を使うと仮想環境（.venv）を自動で作って管理してくれるので、venv の有効化を忘れる心配がありません。", "en": "Replaces pip, venv, pyenv and pipx in one tool. uv add and uv run create and manage the .venv for you, so you never forget to activate it." },

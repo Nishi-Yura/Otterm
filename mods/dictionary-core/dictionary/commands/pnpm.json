@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "pnpm",
   "summary": { "ja": "ディスク効率のよい Node.js のパッケージ管理ツールです", "en": "Fast, disk-efficient package manager for Node.js" },
   "description": { "ja": "npm と同じ package.json を使いますが、依存を共有ストアに一度だけ保存するので速くて軽いです。ロックファイルは pnpm-lock.yaml です。", "en": "Uses the same package.json as npm but stores each dependency once in a shared store, so it is fast and light. The lockfile is pnpm-lock.yaml." },

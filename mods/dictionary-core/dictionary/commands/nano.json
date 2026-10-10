@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "nano",
   "summary": { "ja": "シンプルなターミナル用テキストエディタです。終了は Ctrl+X", "en": "A simple terminal text editor. Exit with Ctrl+X" },
   "description": { "ja": "開いたらそのまま文字を打てる、メモ帳に近い感覚のエディタです。画面の下にショートカットが表示され、^ は Ctrl キーを意味します。Ctrl+O で保存（ファイル名を確認して Enter）、Ctrl+X で終了（未保存なら保存するか Y / N で聞かれます）、Ctrl+W で検索、Ctrl+K で行を切り取り、Ctrl+U で貼り付け、Ctrl+G でヘルプです", "en": "Works like a basic notepad: type as soon as it opens. Shortcuts are listed at the bottom, where ^ means Ctrl. Ctrl+O saves (confirm the name with Enter), Ctrl+X exits (asks Y / N if unsaved), Ctrl+W searches, Ctrl+K cuts a line, Ctrl+U pastes, Ctrl+G shows help" },

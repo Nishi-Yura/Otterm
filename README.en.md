@@ -17,7 +17,9 @@ The name is otter + term. Sea otters crack shells open with a stone on their bel
 
 ## Status
 
-Specification phase. There is no implementation yet. The Japanese specification in [`docs/`](docs/) is the source of truth; English translations will follow (overview first, the rest by milestone M3).
+Milestone M0 (skeleton) has started. The types and data defined during the spec phase are in place and checked by CI; the terminal itself does not run yet. Run `just setup`, then `just check` (needs Rust stable, Node.js 22+, pnpm and [just](https://github.com/casey/just)).
+
+The Japanese specification in [`docs/`](docs/) is the source of truth; English translations will follow (overview first, the rest by milestone M3).
 
 | Document | Contents |
 | --- | --- |
@@ -33,7 +35,9 @@ Specification phase. There is no implementation yet. The Japanese specification 
 | [docs/09-performance.md](docs/09-performance.md) | Latency budget, renderer backends, benchmarks |
 | [docs/10-ai-assist.md](docs/10-ai-assist.md) | Three-tier AI assist, privacy, step mode |
 | [docs/11-decisions.md](docs/11-decisions.md) | Decision log (108 decisions) |
-| [drafts/](drafts/README.md) | Type definitions, dictionary schema and entries, config structs, Fluent strings |
+| [packages/api/](packages/api/) | `@otterm/api` type definitions (source of truth for the mod API), dictionary JSON Schema |
+| [mods/dictionary-core/](mods/dictionary-core/) | Built-in command dictionary (164 commands) and danger rules |
+| [crates/otterm-config/](crates/otterm-config/) | Config model in Rust |
 
 ## License
 

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "nvm",
   "summary": { "ja": "Node.js のバージョンを切り替えるツールです", "en": "Switches between Node.js versions" },
   "description": { "ja": "複数の Node.js を入れておき、プロジェクトごとに使い分けられます。macOS / Linux の nvm はシェル関数なので、ターミナルを開き直すと設定が読まれます。Windows では別物の nvm-windows（コマンドは同じ nvm）が使われます。.nvmrc にバージョンを書いておくと nvm use だけで切り替わります。", "en": "Keeps several Node.js versions and lets each project use its own. On macOS/Linux nvm is a shell function loaded when you open a terminal. Windows uses the separate nvm-windows (same nvm command). Put a version in .nvmrc and plain nvm use picks it up." },

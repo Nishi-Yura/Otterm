@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "gradle",
   "aliases": ["gradlew"],
   "summary": { "ja": "Java / Kotlin / Android のビルド・依存管理ツール Gradle です", "en": "Gradle, the build and dependency tool for Java, Kotlin and Android" },

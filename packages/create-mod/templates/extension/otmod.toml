@@ -1,0 +1,34 @@
+[mod]
+id = "example.git-status-bar"
+name = "Git Status Bar"
+version = "0.1.0"
+description = "Shows the current branch and the number of changed files in the status bar."
+author = "example"
+license = "MIT"
+kind = "extension"
+
+[compat]
+otterm = ">=1.0.0 <2.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+slot = "statusbar.left"
+label = "Branch name and change count"
+
+[[adds]]
+command = "git-status-bar.refresh"
+label = "Refresh branch info"
+
+[permissions]
+process = ["git"]
+fs.read = ["${cwd}/**"]
+terminal.read = true
+events = ["cwd-changed", "block-end"]
+
+[settings.schema]
+show_dirty_count = { type = "boolean", default = true, label = "Show dirty count" }
+refresh_interval = { type = "integer", default = 5, min = 1, max = 60, label = "Refresh interval (s)" }

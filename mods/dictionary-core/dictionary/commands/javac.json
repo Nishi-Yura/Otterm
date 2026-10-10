@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "javac",
   "summary": { "ja": "Java のソースコードをコンパイルして .class ファイルを作ります", "en": "Compiles Java source files into .class files" },
   "description": { "ja": "コンパイル（人が読めるコードを機械が実行できる形に変換すること）を行う Java のコンパイラです。できた .class ファイルは java コマンドで実行します。JDK（開発キット）に含まれており、実行専用の JRE には入っていません", "en": "The Java compiler. The resulting .class files are run with the java command. It ships with the JDK (development kit), not with the runtime-only JRE" },

@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "cd",
   "aliases": ["Set-Location", "chdir", "sl"],
   "summary": { "ja": "作業フォルダを移動します", "en": "Changes the current directory" },

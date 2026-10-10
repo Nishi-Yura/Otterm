@@ -1,23 +1,11 @@
 /**
  * Example mod: Git Status Bar.
  *
- * DRAFT. Target: packages/create-mod/templates/extension/src/main.ts
- * Completes the example from docs/05-mod-system.md §5 using drafts/api/index.d.ts.
- *
- * Manifest (otmod.toml) this code assumes:
- *
- *   [permissions]
- *   process = ["git"]
- *   fs.read = ["${cwd}/**"]
- *   terminal.read = true
- *   events = ["cwd-changed", "block-end"]
- *
- *   [settings.schema]
- *   show_dirty_count = { type = "boolean", default = true, label = "Show dirty count" }
- *   refresh_interval = { type = "integer", default = 5, min = 1, max = 60, label = "Refresh interval (s)" }
+ * Template for `create-otterm-mod` (kind = "extension"). Completes the example from
+ * docs/05-mod-system.md §5. Permissions and settings are declared in ../otmod.toml.
  */
 
-import type { ModContext, Block, UiNode, Disposable } from "@otterm/api";
+import type { Block, Disposable, ModContext, UiNode } from "@otterm/api";
 
 interface GitState {
   branch?: string;
@@ -29,8 +17,8 @@ interface GitState {
 
 export async function activate(ctx: ModContext) {
   // `process` is declared in the manifest, so it is present. Narrow once for type safety.
+  if (!ctx.process) throw new Error("process permission missing");
   const proc = ctx.process;
-  if (!proc) throw new Error("process permission missing");
 
   const state = ctx.signal<GitState | undefined>(undefined);
   const showDirty = ctx.signal<boolean>(await ctx.settings.get<boolean>("show_dirty_count"));
@@ -63,7 +51,10 @@ export async function activate(ctx: ModContext) {
         type: "text",
         icon: "git-branch",
         text: `${s.branch ?? "(detached)"}${dirty}${sync}`,
-        tooltip: { ja: "現在のブランチ。クリックで Git パネルを開く", en: "Current branch. Click to open the Git panel" },
+        tooltip: {
+          ja: "現在のブランチ。クリックで Git パネルを開く",
+          en: "Current branch. Click to open the Git panel",
+        },
         onClick: () => ctx.commands.run("git-status-bar.open-panel"),
       };
     },
@@ -79,7 +70,8 @@ export async function activate(ctx: ModContext) {
     badge: () => state.get()?.dirty || undefined,
     content: (): UiNode => {
       const s = state.get();
-      if (!s) return { type: "text", text: { ja: "Git リポジトリではありません", en: "Not a git repository" }, muted: true };
+      if (!s)
+        return { type: "text", text: { ja: "Git リポジトリではありません", en: "Not a git repository" }, muted: true };
       return {
         type: "stack",
         gap: "m",
@@ -187,8 +179,8 @@ function parsePorcelain(out: string): GitState {
       }
     } else if (/^[12u?] /.test(line)) {
       const parts = line.split(" ");
-      const status = line[0] === "?" ? "??" : parts[1];
-      const path = parts[parts.length - 1];
+      const status = line[0] === "?" ? "??" : (parts[1] ?? "");
+      const path = parts[parts.length - 1] ?? "";
       s.files.push({ path, status });
       s.dirty++;
     }

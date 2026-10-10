@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "pyenv",
   "summary": { "ja": "Python のバージョンを切り替えるツールです", "en": "Switches between Python versions" },
   "description": { "ja": "複数の Python を入れておき、フォルダごと（.python-version）や全体の既定を切り替えられます。macOS / Linux ではソースからビルドするため、コンパイラやライブラリが必要です。Windows は別実装の pyenv-win（コマンドは同じ）です。", "en": "Keeps several Pythons and switches per folder (.python-version) or globally. On macOS/Linux it builds from source, so a compiler and libraries are required. Windows uses the separate pyenv-win (same commands)." },

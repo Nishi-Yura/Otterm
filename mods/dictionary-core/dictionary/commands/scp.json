@@ -1,5 +1,5 @@
 {
-  "$schema": "../../schemas/dictionary.schema.json",
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
   "name": "scp",
   "summary": { "ja": "ssh のしくみを使って、別のコンピューターとファイルをコピーします", "en": "Copies files to or from another computer over ssh" },
   "description": {
