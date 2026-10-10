@@ -114,6 +114,17 @@ macOS ランナー（仮想マシン）は JS と Rust の時計のずれがラ�
 - 遅い 16 件（1.6 %）は、すべて改行直後の 1 打鍵だった。改行のエコーでフレームを送った直後に次のエコーが来ると、16 ms の間隔待ちに入っていた。直前のフレームが静かな期間の後のものなら待たずに送るよう変え（`otterm-session` の `frame_loop`）、大量出力のときだけ 16 ms あたり最大 2 フレームに抑える
 - 09 §4.4 の判定は WebGL 経路の p99 で行う決まりだが、フォールバックの Canvas 2D 経路ですでに 16 ms を大きく下回る（参照マシンでの再計測は未）。表の「16 ms 以下: 計画通り、ネイティブレンダラは v1.x」に当たる見込み
 
+GitHub Actions（Bench ワークフロー、コミット `0414273`、run 38090223885）。共有ランナーで GPU がなく、目安にとどめる。
+
+| ランナー | p50 | p99 | 最大 |
+| --- | --- | --- | --- |
+| macos-latest（WebKit、時計は 1 ms 単位） | 4 ms | 13 ms | 21 ms |
+| ubuntu-latest（WebKitGTK、Xvfb） | 12 ms | 16 ms | 16 ms |
+| windows-latest（WebView2） | 2.6 ms | 18.8 ms | 693.6 ms |
+
+- Linux の p50 が 12 ms と高い。Xvfb 上の WebKitGTK では `requestAnimationFrame` が 60 Hz の固定タイマーで回り、描画が次のフレーム境界まで待つためと思われる。実機の Linux で確かめる
+- Windows の最大 693.6 ms は 1 回だけで、ランナーの揺れと見る
+
 ### 4.6 起動時間（2026-10-11、開発機、Windows）
 
 `startup`（`node tests/bench/run.js --suite startup`）。プロセス開始（`main`）から、最初のプロンプト（すぐに表示する代役シェル `otterm-bench prompt`）を描き終えるまで。6 回起動し、1 回目と、残り 5 回の中央値。
