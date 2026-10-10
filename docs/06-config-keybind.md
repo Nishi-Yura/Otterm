@@ -229,6 +229,7 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
 | `tab.goto.<1-9>` | `cmd+1` 〜 `cmd+9` | |
 | `pane.split.vertical` / `pane.split.horizontal` | `cmd+d` / `cmd+shift+d` | |
 | `pane.focus.<dir>` | `cmd+alt+arrow<dir>` | `alt+arrow` はシェルの単語移動のために奪わない |
+| `pane.resize.<dir>` / `pane.zoom` / `pane.close` | `cmd+alt+shift+arrow<dir>` / `cmd+shift+enter` / `cmd+shift+w` | 2026-10-11 実装時に決めた既定（iTerm2 の最大化キーに合わせた） |
 | `copy` / `paste` | `cmd+c` / `cmd+v` | `ctrl+c` は常に SIGINT |
 | `search` / `palette` / `settings` | `cmd+f` / `cmd+shift+p` / `cmd+,` | |
 | `history` / `completion.trigger` / `ai.ask` | `ctrl+r` / `ctrl+space` / `cmd+shift+space` | |
@@ -239,6 +240,7 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
 ### 5.3 競合の扱い
 
 - ターミナルアプリ（vim 等）が必要とするキーは、代替画面中は既定で **シェルに優先して渡す**（`ctrl+b`、`ctrl+j`、`ctrl+l` など）。otterm の割当は「通常画面かつ入力待ち」のときだけ効く。設定で `always` に変更可
+  - M1 の実装（2026-10-11、issue #5）: 代替画面中も otterm が使うのは `Ctrl+Shift+…` と `Cmd+…` の割当だけで、`Alt+矢印`・`Ctrl+Tab`・`Ctrl+数字` はアプリに渡す（`keybindings.alt_screen_passthrough = false` で常に otterm）。移動先のペインがないときのペイン移動・リサイズのキーも、シェルに渡す
 - 設定画面のキーバインドタブで競合を赤表示。「キーを押して記録」で設定
 - mod が提案するキーはユーザー設定と競合すると無効になり、設定画面で解決を促す
 
