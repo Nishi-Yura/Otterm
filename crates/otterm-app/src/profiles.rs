@@ -57,6 +57,16 @@ fn detected() -> Vec<Profile> {
         if let Some(p) = git_bash {
             out.push(make("git-bash", "Git Bash", p, &["--login", "-i"]));
         }
+        if let Some(p) = in_path("nu.exe") {
+            out.push(make("nu", "Nushell", p, &[]));
+        }
+        if let Some(wsl) = in_path("wsl.exe") {
+            for name in wsl_distros() {
+                let id =
+                    format!("wsl-{}", name.to_ascii_lowercase().replace(|c: char| !c.is_ascii_alphanumeric(), "-"));
+                out.push(make(&id, &format!("{name} (WSL)"), wsl.clone(), &["-d", name, "--cd", "~"]));
+            }
+        }
     } else {
         for (id, name, path) in [("zsh", "zsh", "/bin/zsh"), ("bash", "bash", "/bin/bash"), ("fish", "fish", "")] {
             let found = if path.is_empty() { in_path(id) } else { Some(PathBuf::from(path)).filter(|p| p.is_file()) };
@@ -65,8 +75,47 @@ fn detected() -> Vec<Profile> {
                 out.push(make(id, name, p, login));
             }
         }
+        if let Some(p) = in_path("nu") {
+            out.push(make("nu", "Nushell", p, &[]));
+        }
+        if let Some(p) = in_path("pwsh") {
+            out.push(make("pwsh", "PowerShell 7", p, &[]));
+        }
     }
     out
+}
+
+/// WSL distributions, read once from the registry with reg.exe (starting WSL itself to list them
+/// would boot its virtual machine).
+#[cfg(windows)]
+fn wsl_distros() -> &'static [String] {
+    use std::os::windows::process::CommandExt;
+    static LIST: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
+    LIST.get_or_init(|| {
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let key = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Lxss";
+        std::process::Command::new("reg.exe")
+            .args(["query", key, "/s", "/v", "DistributionName"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+            .map(|out| parse_distros(&String::from_utf8_lossy(&out.stdout)))
+            .unwrap_or_default()
+    })
+}
+
+#[cfg(not(windows))]
+fn wsl_distros() -> &'static [String] {
+    &[]
+}
+
+/// Distribution names from `reg query ... /v DistributionName` output, without Docker Desktop's
+/// internal ones.
+fn parse_distros(text: &str) -> Vec<String> {
+    text.lines()
+        .filter_map(|line| line.trim().strip_prefix("DistributionName")?.trim().strip_prefix("REG_SZ"))
+        .map(|name| name.trim().to_owned())
+        .filter(|name| !name.is_empty() && !name.starts_with("docker-desktop"))
+        .collect()
 }
 
 fn in_path(exe: &str) -> Option<PathBuf> {
@@ -77,6 +126,13 @@ fn in_path(exe: &str) -> Option<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wsl_distributions_come_from_reg_output() {
+        let out = "\r\nHKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\{a}\r\n    DistributionName    REG_SZ    Ubuntu-22.04\r\n\r\nHKEY_CURRENT_USER\\...\\{b}\r\n    DistributionName    REG_SZ    docker-desktop\r\n    DistributionName    REG_SZ    My Arch\r\n\r\n2 match(es) found.\r\n";
+        assert_eq!(parse_distros(out), ["Ubuntu-22.04", "My Arch"]);
+        assert!(parse_distros("ERROR: The system was unable to find the specified registry key or value.").is_empty());
+    }
 
     #[test]
     fn configured_profiles_come_first_and_win_over_detected_ones() {

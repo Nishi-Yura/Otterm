@@ -85,29 +85,42 @@ export function TerminalView(props: TerminalViewProps) {
 
   // Paths in the output (FR-FILE-06): looked up against the shell's folder before they show as links.
   let cwdNow = props.cwd;
-  /** "folder\ntext" → the absolute path, or null when there is no such file. */
-  const pathCache = new Map<string, string | null>();
-  const pathKey = (text: string) => `${cwdNow ?? ""}\n${text}`;
-  const resolvePath = async (text: string) => {
-    const key = pathKey(text);
-    const known = pathCache.get(key);
+  /**
+   * "folder\ntext" → the absolute path, or null when there is no such file. Entries are kept for a
+   * few seconds only: files come and go while the output stays on screen.
+   */
+  const pathCache = new Map<string, { found: string | null; at: number }>();
+  const PATH_CACHE_MS = 5000;
+  const pathKey = (link: Link) => `${link.base ?? ""}\n${link.url}`;
+  const cachedPath = (link: Link) => {
+    const hit = pathCache.get(pathKey(link));
+    return hit && performance.now() - hit.at < PATH_CACHE_MS ? hit.found : undefined;
+  };
+  const resolvePath = async (link: Link) => {
+    const known = cachedPath(link);
     if (known !== undefined) return known;
-    const found = await invoke<string | null>("path_resolve", { cwd: cwdNow ?? null, text }).catch(() => null);
+    // A failed call is not an answer; it is not cached.
+    const found = await invoke<string | null>("path_resolve", { cwd: link.base ?? null, text: link.url });
     if (pathCache.size > 1000) pathCache.clear();
-    pathCache.set(key, found);
+    pathCache.set(pathKey(link), { found, at: performance.now() });
     return found;
+  };
+  /** The path under a cell, with the folder it is relative to taken now (hover and click agree). */
+  const pathLinkAt = (row: number, col: number) => {
+    const path = pathAt(model, row, col);
+    return path && { ...path, base: cwdNow };
   };
   /** A URL or OSC 8 link under a cell, else a path already known to exist. */
   const knownLinkAt = (row: number, col: number) => {
     const link = linkAt(model, row, col);
     if (link) return link;
-    const path = pathAt(model, row, col);
-    return path && pathCache.get(pathKey(path.url)) ? path : undefined;
+    const path = pathLinkAt(row, col);
+    return path && cachedPath(path) ? path : undefined;
   };
   const openLink = (link: Link) => {
     if (!link.path) return void openUrl(link.url).catch((e) => props.notify(String(e)));
     // A path that is not there (any more) is not worth a message.
-    void invoke("path_open", { cwd: cwdNow ?? null, text: link.url }).catch((e) => {
+    void invoke("path_open", { cwd: link.base ?? null, text: link.url }).catch((e) => {
       if (!String(e).startsWith("not found")) props.notify(String(e));
     });
   };
@@ -255,17 +268,19 @@ export function TerminalView(props: TerminalViewProps) {
         if (copyOnSelect) void copySelection();
       },
       // A click may come before the lookup; path_open checks the path itself.
-      linkAt: (row, col) => linkAt(model, row, col) ?? pathAt(model, row, col),
+      linkAt: (row, col) => linkAt(model, row, col) ?? pathLinkAt(row, col),
       openLink,
       hoverLink: (link) => {
         hovered = link;
         if (!link?.path) return showLink(link, link?.url);
-        const known = pathCache.get(pathKey(link.url));
+        const known = cachedPath(link);
         if (known !== undefined) return showLink(known ? link : undefined, known ?? undefined);
         showLink(undefined);
-        void resolvePath(link.url).then((found) => {
-          if (found && sameLink(hovered, link)) showLink(link, found);
-        });
+        resolvePath(link)
+          .then((found) => {
+            if (found && sameLink(hovered, link)) showLink(link, found);
+          })
+          .catch(() => {});
       },
       menu: (x, y, shift) => rightClick(x, y, shift),
     });

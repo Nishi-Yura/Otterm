@@ -163,11 +163,11 @@ fn session_create(
 #[tauri::command]
 fn session_drop_paths(state: State<'_, AppState>, id: SessionId, paths: Vec<String>) -> CmdResult {
     let shell = state.shells.lock().unwrap().get(&id).cloned().unwrap_or_default();
-    let text = quote::dropped(&paths, quote::Style::for_shell(&shell));
-    if text.is_empty() {
-        return Ok(());
+    let (text, refused) = quote::dropped(&paths, quote::Style::for_shell(&shell));
+    if !text.is_empty() {
+        state.sessions.paste(id, &text).map_err(err)?;
     }
-    state.sessions.paste(id, &text).map_err(err)
+    if refused.is_empty() { Ok(()) } else { Err(format!("cannot be typed safely here: {}", refused.join(", "))) }
 }
 
 #[tauri::command]
@@ -407,7 +407,9 @@ async fn path_open(state: State<'_, AppState>, cwd: Option<String>, text: String
     let target = open::resolve(cwd.as_deref(), &text, Some(&home)).ok_or_else(|| format!("not found: {text}"))?;
     let ext = target.path.extension().map(|e| format!(".{}", e.to_string_lossy().to_lowercase()));
     let config = state.config.config();
-    let rule = ext.and_then(|e| config.open.rules.get(&e).copied());
+    // Programs and shortcuts are never handed to the system opener: that would run them.
+    let runnable = ext.as_deref().is_some_and(open::runs_when_opened);
+    let rule = ext.and_then(|e| config.open.rules.get(&e).copied()).filter(|_| !runnable);
     // There is no preview yet; previewed types open with their app.
     let system = target.path.is_dir() || matches!(rule, Some(r) if r != otterm_config::OpenAction::Editor);
     if system {

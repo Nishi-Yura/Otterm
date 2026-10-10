@@ -7,6 +7,8 @@ export interface Link {
   url: string;
   /** A file path in the text (FR-FILE-06), still to be checked against the file system. */
   path?: boolean;
+  /** For a path: the folder (OSC 7 URL) it is relative to, fixed when it was found. */
+  base?: string;
   start: { row: number; col: number };
   end: { row: number; col: number };
 }

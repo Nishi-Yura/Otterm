@@ -29,11 +29,59 @@ fn split_position(text: &str) -> (&str, Option<u32>, Option<u32>) {
     (text, None, None)
 }
 
+/// Extensions (with the dot, lower case) whose default action is to run something.
+pub fn runs_when_opened(ext: &str) -> bool {
+    const RUN: [&str; 22] = [
+        ".exe",
+        ".com",
+        ".bat",
+        ".cmd",
+        ".ps1",
+        ".psm1",
+        ".vbs",
+        ".vbe",
+        ".js",
+        ".jse",
+        ".wsf",
+        ".wsh",
+        ".msi",
+        ".msp",
+        ".scr",
+        ".lnk",
+        ".url",
+        ".hta",
+        ".cpl",
+        ".reg",
+        ".jar",
+        ".appref-ms",
+    ];
+    RUN.contains(&ext)
+}
+
+/// Only paths on this computer: a UNC path (\\server\share, \\?\, \\.\) would make Windows
+/// connect to that server, sending the user's credentials, just to check whether the file
+/// exists. A drive without a root (C:foo) depends on a per-drive folder otterm does not know.
+fn local(path: &Path) -> bool {
+    use std::path::{Component, Prefix};
+    let s = path.to_string_lossy();
+    if s.starts_with("\\\\") || s.starts_with("//") {
+        return false;
+    }
+    let mut parts = path.components();
+    match parts.next() {
+        Some(Component::Prefix(p)) => {
+            matches!(p.kind(), Prefix::Disk(_)) && matches!(parts.next(), Some(Component::RootDir))
+        }
+        _ => true,
+    }
+}
+
 /// The existing file or folder that `text` names, relative paths resolved against `cwd`.
 pub fn resolve(cwd: Option<&Path>, text: &str, home: Option<&Path>) -> Option<Target> {
     if text.len() > 1024 || text.contains('\0') {
         return None;
     }
+    let cwd = cwd.filter(|c| local(c));
     let (name, line, col) = split_position(text);
     let path = match (name.strip_prefix('~'), home) {
         (Some(rest), Some(home)) if rest.is_empty() || rest.starts_with(['/', '\\']) => {
@@ -41,6 +89,9 @@ pub fn resolve(cwd: Option<&Path>, text: &str, home: Option<&Path>) -> Option<Ta
         }
         _ => PathBuf::from(name),
     };
+    if !local(&path) {
+        return None;
+    }
     let path = if path.is_absolute() { path } else { cwd?.join(path) };
     // Leave out names that only exist as a drive-relative or otherwise odd path.
     let path = std::path::absolute(&path).ok()?;
@@ -59,6 +110,27 @@ mod tests {
         assert_eq!(split_position(r"C:\x\main.rs"), (r"C:\x\main.rs", None, None));
         assert_eq!(split_position("notes.txt:"), ("notes.txt", None, None));
         assert_eq!(split_position(":12"), (":12", None, None));
+    }
+
+    #[test]
+    fn network_and_drive_relative_paths_are_never_looked_up() {
+        assert!(!local(Path::new(r"\\attacker\share\a.txt")));
+        assert!(!local(Path::new("//attacker/share/a.txt")));
+        assert!(!local(Path::new(r"\\?\C:\Windows")));
+        assert!(local(Path::new("src/a.rs")));
+        if cfg!(windows) {
+            assert!(!local(Path::new("C:foo")));
+            assert!(local(Path::new(r"C:\Windows")));
+            assert!(resolve(Some(Path::new(r"\\attacker\share")), "a.txt", None).is_none());
+            assert!(resolve(None, r"\\localhost\c$\Windows", None).is_none());
+            assert!(resolve(Some(Path::new(r"C:\")), "C:Windows", None).is_none());
+        }
+    }
+
+    #[test]
+    fn programs_are_recognised() {
+        assert!(runs_when_opened(".exe") && runs_when_opened(".lnk") && runs_when_opened(".ps1"));
+        assert!(!runs_when_opened(".pdf") && !runs_when_opened(".md"));
     }
 
     #[test]

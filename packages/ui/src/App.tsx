@@ -202,7 +202,7 @@ export function App() {
       if (!pane || session === undefined || e.paths.length === 0) return;
       setActiveTab(pane.tab);
       activatePane(pane.id);
-      void invoke("session_drop_paths", { id: session, paths: e.paths }).catch(() => {});
+      void invoke("session_drop_paths", { id: session, paths: e.paths }).catch((err) => showNotice(String(err)));
     })
     .then((f) => {
       unlistenDrop = f;
