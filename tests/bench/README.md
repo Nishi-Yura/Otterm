@@ -20,7 +20,9 @@ node tests/bench/compare.js old.json new.json --threshold 10
 
 | `typing` | `typing-latency` | Keystroke to drawn frame: a keydown dispatched on the terminal's input element, until the Canvas draw that shows the echoed character ends (inside `requestAnimationFrame`; the compositor adds up to one more frame). The child is `otterm-bench pong`, which only reads, so the PTY's line discipline echoes (no shell work in the number). 1,000 keystrokes after 50 warm-up ones, 20 ms apart | `packages/ui/src/bench.ts`, `crates/otterm-app/src/bench.rs` |
 
-Not yet possible: `startup` (to the first drawn prompt), `memory`, `mod-overhead`, `resize`.
+| `startup` | `startup` | Process start (`main`) to the end of the first draw that shows the prompt of `otterm-bench prompt`, a stand-in shell that prints at once. Six launches: the first, and the median of the other five | `crates/otterm-app/src/bench.rs`, `packages/ui/src/bench.ts` |
+
+Not yet possible: `memory`, `mod-overhead`, `resize`.
 
 ### Notes
 

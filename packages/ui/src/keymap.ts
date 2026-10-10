@@ -105,7 +105,9 @@ function matches(c: Chord, e: KeyboardEvent): boolean {
   if (c.ctrl !== e.ctrlKey || c.shift !== e.shiftKey || c.alt !== e.altKey || c.meta !== e.metaKey) return false;
   const key = e.key.toLowerCase();
   if (key === c.key) return true;
-  // Letters and digits by position too, so Shift or a keyboard layout does not change them.
+  // A letter or digit key means what it says (Dvorak's "k" is not "t").
+  if (/^[a-z0-9]$/.test(key)) return false;
+  // Otherwise (Shift+digit gives a symbol, non-Latin layouts give other letters) go by position.
   if (/^[a-z]$/.test(c.key)) return e.code === `Key${c.key.toUpperCase()}`;
   if (/^[0-9]$/.test(c.key)) return e.code === `Digit${c.key}`;
   return false;

@@ -35,6 +35,7 @@ fn main() -> Result<()> {
         // Child modes.
         "emit" => return emit(opt("--bytes", 0)?),
         "pong" => return pong(),
+        "prompt" => return prompt(),
         _ => bail!("usage: otterm-bench <pty-throughput|pty-roundtrip> [options] [--out FILE]"),
     };
 
@@ -196,6 +197,18 @@ impl Session {
 // ---------------------------------------------------------------------------
 // Child modes
 // ---------------------------------------------------------------------------
+
+/// Print a prompt, then wait for input like a shell that started instantly (startup bench).
+fn prompt() -> Result<()> {
+    let mut out = std::io::stdout().lock();
+    write!(out, "ready> ")?;
+    out.flush()?;
+    drop(out);
+    for line in std::io::stdin().lock().lines() {
+        line?;
+    }
+    Ok(())
+}
 
 /// Write `bytes` of printable text in 100-byte lines, as fast as possible.
 fn emit(bytes: u64) -> Result<()> {

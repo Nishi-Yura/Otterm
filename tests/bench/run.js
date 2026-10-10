@@ -1,6 +1,6 @@
 // Runs otterm's benchmarks and writes one combined result file.
 //
-//   node tests/bench/run.js [--suite pty,ipc,typing] [--quick] [--out tests/bench/results/latest.json]
+//   node tests/bench/run.js [--suite pty,ipc,typing,startup] [--quick] [--out tests/bench/results/latest.json]
 //
 // Result format: tests/bench/README.md. Compare two files with tests/bench/compare.js.
 const { execFileSync, execSync, spawnSync } = require("node:child_process");
@@ -15,7 +15,7 @@ const value = (name, def) => {
   const i = args.indexOf(name);
   return i >= 0 ? args[i + 1] : def;
 };
-const suites = value("--suite", "pty,ipc,typing").split(",");
+const suites = value("--suite", "pty,ipc,typing,startup").split(",");
 const quick = flag("--quick");
 const outFile = path.resolve(root, value("--out", "tests/bench/results/latest.json"));
 const exe = (name) => (process.platform === "win32" ? `${name}.exe` : name);
@@ -102,6 +102,25 @@ if (suites.includes("ipc")) results.push(runApp("ipc"));
 
 // The app types into `otterm-bench pong`, so the echo comes from the PTY, not a shell.
 if (suites.includes("typing")) results.push(runApp("typing", { OTTERM_BENCH_CHILD: buildBenchBin() }));
+
+// Startup: the first run is the coldest this machine allows (files may still be cached), the
+// rest are warm.
+if (suites.includes("startup")) {
+  const runs = [];
+  for (let i = 0; i < (quick ? 3 : 6); i++) {
+    runs.push(runApp("startup", { OTTERM_BENCH_CHILD: buildBenchBin() }).metrics.to_prompt.value);
+  }
+  const warm = runs.slice(1).sort((a, b) => a - b);
+  const metric = (value) => ({ value, unit: "ms", better: "lower" });
+  results.push({
+    suite: "startup",
+    bench: "startup",
+    platform: `${process.platform}-${process.arch}`,
+    params: { runs: runs.length, child: "otterm-bench prompt", to: "end of the first draw showing the prompt" },
+    metrics: { "to_prompt.first": metric(runs[0]), "to_prompt.warm_median": metric(warm[Math.floor(warm.length / 2)]) },
+    samples: runs,
+  });
+}
 
 let commit = "unknown";
 try {

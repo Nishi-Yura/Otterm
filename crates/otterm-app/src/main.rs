@@ -84,7 +84,7 @@ fn session_create(
         opts.cwd = Some(dir);
     }
     #[cfg(feature = "bench")]
-    if let Some((program, args)) = bench::typing_child() {
+    if let Some((program, args)) = bench::bench_child() {
         opts.program = Some(program);
         opts.args = args;
     }
@@ -253,12 +253,13 @@ fn with_clipboard<T>(mut f: impl FnMut(&mut arboard::Clipboard) -> Result<T, arb
 /// Clipboard text, read in Rust: the WebView would ask the user for permission on every read.
 #[tauri::command]
 async fn clipboard_read() -> CmdResult<String> {
-    with_clipboard(|c| c.get_text())
+    // The retries sleep; keep them off the async runtime's threads.
+    tauri::async_runtime::spawn_blocking(|| with_clipboard(|c| c.get_text())).await.map_err(err)?
 }
 
 #[tauri::command]
 async fn clipboard_write(text: String) -> CmdResult {
-    with_clipboard(|c| c.set_text(text.as_str()))
+    tauri::async_runtime::spawn_blocking(move || with_clipboard(|c| c.set_text(text.as_str()))).await.map_err(err)?
 }
 
 /// Open a web link in the default browser (decision I2: Ctrl+click). Only http and https, so a
@@ -410,6 +411,7 @@ mod bench;
 
 #[cfg(feature = "bench")]
 fn main() {
+    bench::STARTED.get_or_init(|| (std::time::Instant::now(), std::time::SystemTime::now()));
     tauri::Builder::default()
         .manage(app_state())
         .manage(bench::BenchState::default())
@@ -440,6 +442,7 @@ fn main() {
             bench::bench_ipc_start,
             bench::bench_ipc_ack,
             bench::bench_typing_done,
+            bench::bench_startup_done,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run otterm");

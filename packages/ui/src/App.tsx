@@ -1,6 +1,6 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
-import { benchMode, runIpcBench, runTypingBench, setExposeInternals } from "./bench";
+import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInternals, startupMark } from "./bench";
 import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
 import { setLanguage, t } from "./i18n";
 import { Keymap } from "./keymap";
@@ -91,6 +91,8 @@ export function App() {
   };
 
   onMount(async () => {
+    startupMark("page start", 0);
+    startupMark("ui mounted");
     const mode = await benchMode();
     if (mode === "ipc") {
       setBench("ipc bench running…");
@@ -100,18 +102,21 @@ export function App() {
     if (mode) setExposeInternals(true);
     try {
       applyConfig(await loadConfig());
+      startupMark("config loaded");
       unlistenConfig = await onConfigChanged(applyConfig);
     } catch (e) {
       showNotice(t("config-unreadable", { error: String(e) }));
     }
     try {
       ws = await connectScreen((frame) => routes.get(frame.session)?.(frame));
+      startupMark("screen socket open");
     } catch (e) {
       showNotice(t("start-failed", { error: String(e) }));
       return;
     }
     newTab();
     setReady(true);
+    if (mode === "startup") runStartupBench().catch((e) => setBench(`startup bench failed: ${String(e)}`));
     if (mode === "typing") {
       runTypingBench(setBench).catch((e) => setBench(`typing bench failed: ${String(e)}`));
     }
@@ -236,7 +241,8 @@ export function App() {
       case "gotoTab": {
         // Like browsers, 9 is the last tab.
         const target = action.index === 8 ? list[list.length - 1] : list[action.index];
-        if (target) setActiveTab(target.id);
+        if (!target) return false;
+        setActiveTab(target.id);
         break;
       }
       case "split":
@@ -255,9 +261,8 @@ export function App() {
         updateTab(tab.id, (x) => ({ ...x, root: resizePane(x.root, x.active, action.dir, RESIZE_STEP) }));
         break;
       case "zoomPane":
-        if (tab && leaves(tab.root).length > 1) {
-          updateTab(tab.id, (x) => ({ ...x, zoomed: x.zoomed === undefined ? x.active : undefined }));
-        }
+        if (!tab || leaves(tab.root).length < 2) return false;
+        updateTab(tab.id, (x) => ({ ...x, zoomed: x.zoomed === undefined ? x.active : undefined }));
         break;
       case "closePane":
         if (tab) closePane(tab.active);

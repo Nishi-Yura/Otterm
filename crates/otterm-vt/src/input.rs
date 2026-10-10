@@ -122,8 +122,15 @@ fn kitty_key(k: &Key, flags: u8) -> Option<Vec<u8>> {
         key => {
             let mut chars = key.chars();
             let (Some(c), None) = (chars.next(), chars.next()) else { return None };
-            // Keys are reported by their unshifted code; for letters that is the lower case.
-            let base = if c.is_ascii_uppercase() { c.to_ascii_lowercase() } else { c };
+            // Keys are reported by their unshifted code: lower case for letters, and for shifted
+            // symbols the key they are on (US layout; others report the symbol itself).
+            let base = if c.is_ascii_uppercase() {
+                c.to_ascii_lowercase()
+            } else if k.shift {
+                unshifted(c)
+            } else {
+                c
+            };
             if all || k.ctrl || k.alt {
                 return Some(csi_u(base as u32));
             }
@@ -131,6 +138,34 @@ fn kitty_key(k: &Key, flags: u8) -> Option<Vec<u8>> {
         }
     };
     (all || m > 1).then(|| csi_u(code))
+}
+
+/// The US-layout key a shifted symbol is on.
+fn unshifted(c: char) -> char {
+    const PAIRS: &[(char, char)] = &[
+        ('!', '1'),
+        ('@', '2'),
+        ('#', '3'),
+        ('$', '4'),
+        ('%', '5'),
+        ('^', '6'),
+        ('&', '7'),
+        ('*', '8'),
+        ('(', '9'),
+        (')', '0'),
+        ('_', '-'),
+        ('+', '='),
+        ('{', '['),
+        ('}', ']'),
+        ('|', '\\'),
+        (':', ';'),
+        ('"', '\''),
+        ('<', ','),
+        ('>', '.'),
+        ('?', '/'),
+        ('~', '`'),
+    ];
+    PAIRS.iter().find(|(s, _)| *s == c).map_or(c, |(_, b)| *b)
 }
 
 /// The C0 byte for Ctrl+`c`, as xterm sends it.
@@ -255,6 +290,7 @@ mod tests {
         assert_eq!(encode_key(&key("Enter", false, false, false), &m).unwrap(), b"\r");
         assert_eq!(encode_key(&key("Enter", false, false, true), &m).unwrap(), b"\x1b[13;2u");
         assert_eq!(encode_key(&key("Backspace", false, false, false), &m).unwrap(), b"\x7f");
+        assert_eq!(encode_key(&key("!", true, false, true), &m).unwrap(), b"\x1b[49;6u", "Ctrl+Shift+1");
         // Cursor keys keep the xterm form.
         assert_eq!(encode_key(&key("ArrowUp", true, false, false), &m).unwrap(), b"\x1b[1;5A");
     }

@@ -1,5 +1,5 @@
-import { createEffect, createSignal, on, onCleanup, onMount } from "solid-js";
-import { exposeInternals } from "./bench";
+import { createEffect, createSignal, on, onCleanup, onMount, Show } from "solid-js";
+import { exposeInternals, startupMark } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
 import type { UiConfig } from "./config";
 import { t } from "./i18n";
@@ -143,6 +143,7 @@ export function TerminalView(props: TerminalViewProps) {
         },
         props.cwd,
       );
+      startupMark("session created");
       if (closed) {
         session.close().catch(() => {});
         return;
@@ -206,7 +207,8 @@ export function TerminalView(props: TerminalViewProps) {
         if (sameLink(r.link, link)) return;
         r.link = link;
         canvas.style.cursor = link ? "pointer" : "";
-        canvas.title = link ? t("link-hint-first") : "";
+        // The target, since an OSC 8 link's text need not be its URL.
+        canvas.title = link ? `${link.url}\n${t("link-hint-first")}` : "";
         r.invalidate();
       },
       menu: (x, y, shift) => rightClick(x, y, shift),
@@ -292,11 +294,12 @@ export function TerminalView(props: TerminalViewProps) {
 
   /** BEL, as `terminal.bell` says: a short flash of the pane, a beep, or both. */
   const bell = () => {
-    props.onBell();
     const mode = props.config()?.bell ?? "visual";
+    if (mode === "none") return;
+    props.onBell();
     // A program printing many BELs (cat of a binary file) should not strobe or buzz.
     const now = performance.now();
-    if (mode === "none" || now - lastBell < 200) return;
+    if (now - lastBell < 200) return;
     lastBell = now;
     if (mode === "visual" || mode === "both") {
       setFlash(true);
@@ -347,7 +350,12 @@ export function TerminalView(props: TerminalViewProps) {
     const write = () => void clipboard.write(data).catch((e) => props.notify(t("copy-failed", { error: String(e) })));
     if (policy === "deny") return;
     if (policy === "allow" || osc52Allowed) return write();
+    // One question at a time: a request while another is open (a paste confirmation, say) is
+    // refused rather than replacing it.
+    if (prompt()) return;
     setPrompt({
+      // Enter alone must not hand the clipboard to a program: focus "deny".
+      focus: 2,
       title: t("osc52-ask", { chars: [...data].length }),
       preview: data.length > 200 ? `${data.slice(0, 200)}…` : data,
       buttons: [
@@ -597,7 +605,9 @@ export function TerminalView(props: TerminalViewProps) {
           style={{ top: `${(thumb()?.top ?? 0) * 100}%`, height: `${(thumb()?.height ?? 0) * 100}%` }}
         />
       )}
-      {prompt() && <PromptBar {...(prompt() as PromptProps)} />}
+      <Show when={prompt()} keyed>
+        {(p) => <PromptBar {...p} />}
+      </Show>
       {status() && <div class="status">{status()}</div>}
     </div>
   );
@@ -611,7 +621,17 @@ let audio: AudioContext | undefined;
 
 /** A short, quiet tone for the audible bell. */
 function beep(): void {
-  audio ??= new AudioContext();
+  try {
+    audio ??= new AudioContext();
+    // Created before any user gesture, the context starts suspended.
+    void audio.resume();
+    tone(audio);
+  } catch {
+    // No audio device: the bell stays silent.
+  }
+}
+
+function tone(audio: AudioContext): void {
   const osc = audio.createOscillator();
   const gain = audio.createGain();
   osc.frequency.value = 880;

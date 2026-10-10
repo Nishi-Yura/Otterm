@@ -12,7 +12,7 @@ export interface Link {
  * http(s) URLs, ASCII only: in Japanese output a link is usually followed directly by text such as
  * 「を参照」 with no space. Trailing punctuation that usually ends a sentence is trimmed afterwards.
  */
-const URL_RE = /\bhttps?:\/\/[!#-;=?-[\]_a-z~]+/gi;
+const URL_RE = /\bhttps?:\/\/[!#-&(-;=?-[\]_a-z~]+/gi;
 const TRAILING = /[.,;:!?)\]}'"]+$/;
 
 /**

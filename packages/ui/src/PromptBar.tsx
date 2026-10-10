@@ -10,15 +10,17 @@ export interface PromptProps {
   body?: string;
   /** Text shown as it will be sent (for example the start of a paste). */
   preview?: string;
-  /** The first button gets the focus; Escape picks `cancel`. */
+  /** Escape picks `cancel`. */
   buttons: PromptButton[];
+  /** Index of the button that gets the focus (the safe choice); default 0. */
+  focus?: number;
   cancel: () => void;
 }
 
 /** A question about the terminal, above its bottom edge: paste confirmation, clipboard requests. */
 export function PromptBar(props: PromptProps) {
   let bar!: HTMLDivElement;
-  onMount(() => (bar.querySelector("button") as HTMLButtonElement | null)?.focus());
+  onMount(() => (bar.querySelectorAll("button")[props.focus ?? 0] as HTMLButtonElement | undefined)?.focus());
   const onKeyDown = (e: KeyboardEvent) => {
     // Keys here answer the question; none of them go to the terminal.
     e.stopPropagation();

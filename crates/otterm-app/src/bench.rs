@@ -5,6 +5,8 @@
 //!   (decision C13).
 //! - `OTTERM_BENCH=typing`: keystroke to drawn frame (docs/09 §4.1 `typing-latency`). The UI
 //!   measures it; see `packages/ui/src/bench.ts`.
+//! - `OTTERM_BENCH=startup`: process start to the first drawn prompt (docs/09 §4.1 `startup`).
+//!   run.js starts the app several times and combines the runs.
 //!
 //! Payload layout: `seq: u32 LE`, `sent_at: f64 LE` (Unix epoch ms), then filler.
 //! JS answers each payload with `seq` and its own receive time on the same clock.
@@ -49,14 +51,49 @@ pub fn bench_mode() -> Option<String> {
     mode()
 }
 
-/// The program the typing bench types into: `otterm-bench pong` (path in `OTTERM_BENCH_CHILD`).
-/// It only blocks reading lines, so the echo comes from the PTY's line discipline (cooked mode),
-/// the same as a shell waiting at its prompt but without the shell's own work.
-pub fn typing_child() -> Option<(String, Vec<String>)> {
-    if mode().as_deref() != Some("typing") {
-        return None;
+/// When the process started, for the startup bench. Set first thing in `main`.
+pub static STARTED: std::sync::OnceLock<(Instant, SystemTime)> = std::sync::OnceLock::new();
+
+/// The program the benches run instead of a shell (`otterm-bench`, path in
+/// `OTTERM_BENCH_CHILD`). Typing: `pong`, which only blocks reading lines, so the echo comes from
+/// the PTY's line discipline (cooked mode). Startup: `prompt`, a shell that starts instantly.
+pub fn bench_child() -> Option<(String, Vec<String>)> {
+    let arg = match mode().as_deref() {
+        Some("typing") => "pong",
+        Some("startup") => "prompt",
+        _ => return None,
+    };
+    std::env::var("OTTERM_BENCH_CHILD").ok().map(|p| (p, vec![arg.to_owned()]))
+}
+
+/// The UI drew the first prompt. Writes the time since the process started and exits. `marks`
+/// are UI milestones as Unix epoch ms (JS `performance.timeOrigin + now()`), reported as ms since
+/// the process started to show where the time goes.
+#[tauri::command]
+pub fn bench_startup_done(app: AppHandle, marks: std::collections::BTreeMap<String, f64>) {
+    let ms = STARTED.get().map_or(f64::NAN, |t| t.0.elapsed().as_secs_f64() * 1000.0);
+    let start_epoch = STARTED
+        .get()
+        .map_or(f64::NAN, |t| t.1.duration_since(UNIX_EPOCH).map_or(f64::NAN, |d| d.as_secs_f64() * 1000.0));
+    let marks: serde_json::Map<String, Value> =
+        marks.into_iter().map(|(k, v)| (k, json!(round3(v - start_epoch)))).collect();
+    let report = json!({
+        "suite": "startup",
+        "bench": "startup",
+        "platform": format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH),
+        "params": {
+            "child": "otterm-bench prompt (prints a prompt at once)",
+            "to": "end of the first draw showing it",
+            "marks_ms": marks,
+        },
+        "metrics": { "to_prompt": { "value": round3(ms), "unit": "ms", "better": "lower" } },
+    });
+    let text = serde_json::to_string_pretty(&report).unwrap();
+    match std::env::var("OTTERM_BENCH_OUT") {
+        Ok(path) => std::fs::write(path, text + "\n").expect("write OTTERM_BENCH_OUT"),
+        Err(_) => println!("{text}"),
     }
-    std::env::var("OTTERM_BENCH_CHILD").ok().map(|p| (p, vec!["pong".to_owned()]))
+    app.exit(0);
 }
 
 /// The UI's typing measurements (ms per keystroke, warm-up excluded). Writes the report and exits.

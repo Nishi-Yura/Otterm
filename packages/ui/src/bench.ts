@@ -105,3 +105,32 @@ export async function runTypingBench(log: (line: string) => void): Promise<void>
   }
   await invoke("bench_typing_done", { samples, warmup: TYPING_WARMUP, gapMs: TYPING_GAP_MS });
 }
+
+const startupMarks: Record<string, number> = {};
+
+/** Record a startup milestone (Unix epoch ms) for the startup bench's breakdown. */
+export function startupMark(name: string, at: number = performance.now()): void {
+  startupMarks[name] = performance.timeOrigin + at;
+}
+
+/** docs/09 §4.1 `startup`: tell Rust when the first prompt has been drawn; it measures from the
+ * start of the process. */
+export async function runStartupBench(): Promise<void> {
+  const exposed = () => (window as unknown as { __otterm?: Exposed }).__otterm;
+  for (let i = 0; i < 400 && !exposed()?.renderer; i++) await sleep(5);
+  const pane = exposed();
+  if (!pane) throw new Error("no terminal");
+  const { model, renderer } = pane;
+  const shown = () => model.lines.some((_, r) => model.text(r).includes("ready>"));
+  if (!shown()) {
+    await new Promise<void>((resolve) => {
+      renderer.afterDraw = () => {
+        if (!shown()) return;
+        renderer.afterDraw = undefined;
+        resolve();
+      };
+    });
+  }
+  startupMark("prompt drawn");
+  await invoke("bench_startup_done", { marks: startupMarks });
+}

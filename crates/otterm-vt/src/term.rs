@@ -89,6 +89,8 @@ impl Default for Modes {
 
 /// Longest OSC 8 target kept; longer ones are shown as plain text.
 const MAX_LINK_LEN: usize = 2048;
+/// Total size of the OSC 8 targets one terminal keeps (they live as long as the session).
+const MAX_LINK_BYTES: usize = 4 << 20;
 
 /// Kitty keyboard flags otterm implements: 1 (disambiguate escape codes) and 8 (report all keys
 /// as escape codes). Event types (2), alternate keys (4) and associated text (16) are not sent, and
@@ -173,6 +175,8 @@ pub struct Terminal {
     kitty_enabled: bool,
     /// OSC 8 hyperlink targets; id `n` is `links[n - 1]`.
     links: Vec<Box<str>>,
+    link_ids: std::collections::HashMap<Box<str>, u16>,
+    link_bytes: usize,
     /// Last printed character, for REP.
     last_char: Option<char>,
     dirty: Vec<bool>,
@@ -210,6 +214,8 @@ impl Terminal {
             kitty: [Vec::new(), Vec::new()],
             kitty_enabled: true,
             links: Vec::new(),
+            link_ids: std::collections::HashMap::new(),
+            link_bytes: 0,
             last_char: None,
             dirty: vec![true; rows],
             full_damage: true,
@@ -336,16 +342,19 @@ impl Terminal {
             return;
         }
         // The same target again (a link split over lines, or a repeated one) reuses its id.
-        let id = match self.links.iter().rposition(|l| &**l == uri) {
-            Some(i) => i + 1,
-            None if self.links.len() < u16::MAX as usize => {
+        let id = match self.link_ids.get(uri) {
+            Some(&id) => id,
+            None if self.links.len() < u16::MAX as usize && self.link_bytes + uri.len() <= MAX_LINK_BYTES => {
                 self.links.push(uri.into());
-                self.links.len()
+                self.link_bytes += uri.len();
+                let id = self.links.len() as u16;
+                self.link_ids.insert(uri.into(), id);
+                id
             }
-            // Out of ids: the text is shown without its link.
+            // Out of ids or memory: the text is shown without its link.
             None => 0,
         };
-        self.pen.link = id as u16;
+        self.pen.link = id;
     }
 
     /// Whether applications may turn on the Kitty keyboard protocol. When off, its requests are
