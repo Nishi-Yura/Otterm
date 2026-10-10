@@ -306,6 +306,11 @@ menu-copy-link = Copy link
 ## Tabs and panes
 
 tab-new = New tab
+tab-new-profile = New tab with…
+profile-pwsh = PowerShell 7
+profile-powershell = Windows PowerShell
+profile-cmd = Command Prompt
+profile-git-bash = Git Bash
 tab-close = Close tab
 tab-untitled = Terminal
 close-running-title = A program is still running

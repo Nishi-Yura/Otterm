@@ -48,6 +48,7 @@ export type Dir = "left" | "right" | "up" | "down";
 /** Window-level actions on tabs and panes; keys for them are in keymap.ts. */
 export type AppAction =
   | { kind: "newTab" }
+  | { kind: "newTabMenu" }
   | { kind: "closeTab" }
   | { kind: "nextTab" }
   | { kind: "prevTab" }

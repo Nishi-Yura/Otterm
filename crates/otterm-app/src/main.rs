@@ -7,6 +7,7 @@
 
 mod config;
 mod launch;
+mod profiles;
 mod screen;
 mod shell;
 mod window_state;
@@ -80,13 +81,20 @@ fn session_create(
     rows: u16,
     events: Channel<UiEvent>,
     cwd: Option<String>,
+    profile: Option<String>,
 ) -> CmdResult<SessionId> {
     let config = state.config.config();
     state.sessions.set_terminal_options(config::terminal_options(&config));
     let mut opts = SpawnOptions { size: PtySize { cols, rows }, ..Default::default() };
-    if let Some(p) = config::default_profile(&config) {
+    // A profile picked in the new-tab menu, else the configured default.
+    let chosen = profile.as_deref().and_then(|id| profiles::find(&config, id));
+    if let Some(p) = chosen.as_ref().or(config::default_profile(&config)) {
         opts.program = Some(p.command.clone());
         opts.args = p.args.clone();
+        // A profile without arguments of its own still gets the shell integration (B6).
+        if opts.args.is_empty() && config.shell.integration {
+            opts.args = shell::integration_args(&p.command);
+        }
         opts.cwd = p.cwd.as_deref().filter(|c| !c.is_empty()).map(expand_home);
         opts.env = p.env.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     } else if config.shell.integration {
@@ -484,6 +492,20 @@ fn terminal_colors(state: State<'_, AppState>, foreground: String, background: S
     Ok(())
 }
 
+/// The new-tab menu: configured profiles, then shells found on this computer.
+#[tauri::command]
+fn profiles_list(state: State<'_, AppState>) -> Vec<profiles::MenuEntry> {
+    let config = state.config.config();
+    profiles::all(&config)
+        .into_iter()
+        .map(|p| profiles::MenuEntry {
+            detected: !config.profiles.iter().any(|c| c.id == p.id),
+            name: if p.name.is_empty() { p.id.clone() } else { p.name },
+            id: p.id,
+        })
+        .collect()
+}
+
 /// Command-line arguments that were not understood, for the UI to mention.
 #[tauri::command]
 fn launch_problems(state: State<'_, AppState>) -> Vec<String> {
@@ -532,6 +554,7 @@ fn main() {
             config_get,
             config_open,
             launch_problems,
+            profiles_list,
             terminal_colors,
             session_focus,
             session_create,
@@ -585,6 +608,7 @@ fn main() {
             config_get,
             config_open,
             launch_problems,
+            profiles_list,
             terminal_colors,
             session_focus,
             session_create,

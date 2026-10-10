@@ -73,10 +73,12 @@ export async function createSession(
   onEvent: (e: SessionEvent) => void,
   /** Start directory: a path or a file:// URL (OSC 7). */
   cwd?: string,
+  /** Profile id from the new-tab menu; the default profile when absent. */
+  profile?: string,
 ): Promise<Session> {
   const events = new Channel<SessionEvent>();
   events.onmessage = onEvent;
-  const id = await invoke<number>("session_create", { cols, rows, events, cwd: cwd ?? null });
+  const id = await invoke<number>("session_create", { cols, rows, events, cwd: cwd ?? null, profile: profile ?? null });
   return {
     id,
     write: (data) => invoke("session_write", { id, data }),

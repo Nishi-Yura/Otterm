@@ -40,6 +40,8 @@ export interface TerminalViewProps {
   active: () => boolean;
   /** Directory to start in (a path or a file:// URL). */
   cwd?: string;
+  /** Profile to start (new-tab menu); the default when absent. */
+  profile?: string;
   onTitle: (title: string) => void;
   onCwd: (url: string) => void;
   onExit: (code: number | null) => void;
@@ -148,6 +150,7 @@ export function TerminalView(props: TerminalViewProps) {
           }
         },
         props.cwd,
+        props.profile,
       );
       startupMark("session created");
       props.onSession(session.id);

@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInternals, startupMark } from "./bench";
+import { ContextMenu, type MenuItem } from "./ContextMenu";
 import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
 import { setLanguage, t } from "./i18n";
 import { Keymap } from "./keymap";
@@ -44,6 +45,8 @@ interface Pane {
   tab: number;
   /** Where it started (inherited from the pane it was split from). */
   cwd?: string;
+  /** Profile it runs (from the new-tab menu). */
+  profile?: string;
 }
 
 /** The window: a tab bar and, per tab, panes laid out by a split tree (docs/03 §3). */
@@ -185,7 +188,7 @@ export function App() {
 
   // Tabs and panes change together (batch), so a new pane is laid out and visible by the time its
   // terminal mounts and measures itself.
-  const newTab = (cwd?: string) => {
+  const newTab = (cwd?: string, profile?: string) => {
     const tabId = nextId++;
     const paneId = nextId++;
     const at = tabs().findIndex((x) => x.id === activeTab());
@@ -194,7 +197,7 @@ export function App() {
     batch(() => {
       setTabs(next);
       setActiveTab(tabId);
-      setPanes([...panes(), { id: paneId, tab: tabId, cwd }]);
+      setPanes([...panes(), { id: paneId, tab: tabId, cwd, profile }]);
     });
   };
 
@@ -316,6 +319,9 @@ export function App() {
       case "newTab":
         newTab(tab ? cwds.get(tab.active) : undefined);
         break;
+      case "newTabMenu":
+        void openProfileMenu();
+        break;
       case "closeTab":
         if (tab) void askThenClose(leaves(tab.root), () => closeTab(tab.id));
         break;
@@ -421,6 +427,25 @@ export function App() {
     window.addEventListener("mouseup", up);
   };
 
+  /** The new-tab menu (Ctrl+Shift+N, or the ∨ next to +): one entry per profile. */
+  const [profileMenu, setProfileMenu] = createSignal<{ x: number; y: number; items: MenuItem[] }>();
+  let newButton!: HTMLButtonElement;
+  const openProfileMenu = async () => {
+    const list = await invoke<{ id: string; name: string; detected: boolean }[]>("profiles_list").catch(() => []);
+    const r = newButton.getBoundingClientRect();
+    const cwd = currentTab() ? cwds.get(currentTab()?.active ?? 0) : undefined;
+    setProfileMenu({
+      x: r.left,
+      y: r.bottom,
+      items: list.map((p) => {
+        // Shells otterm found itself have translated names; the user's own profiles keep theirs.
+        const key = `profile-${p.id}`;
+        const label = p.detected && t(key) !== key ? t(key) : p.name;
+        return { label, action: () => newTab(cwd, p.id) };
+      }),
+    });
+  };
+
   const pct = (n: number) => `${n * 100}%`;
   const newTabHint = platform === "macos" ? "⌘T" : "Ctrl+Shift+T";
 
@@ -470,6 +495,15 @@ export function App() {
         >
           +
         </button>
+        <button
+          ref={newButton}
+          type="button"
+          class="tab-new tab-profiles"
+          title={t("tab-new-profile")}
+          onClick={() => void openProfileMenu()}
+        >
+          ⌄
+        </button>
       </div>
       <div ref={area} class="panes">
         <For each={panes()}>
@@ -491,6 +525,7 @@ export function App() {
                   config={config}
                   active={() => paneActive(p)}
                   cwd={p.cwd}
+                  profile={p.profile}
                   onTitle={(title) => setTitles({ ...titles(), [p.id]: title })}
                   onCwd={(url) => {
                     cwds.set(p.id, url);
@@ -524,6 +559,9 @@ export function App() {
           )}
         </For>
       </div>
+      <Show when={profileMenu()} keyed>
+        {(m) => <ContextMenu x={m.x} y={m.y} items={m.items} close={() => setProfileMenu(undefined)} />}
+      </Show>
       <Show when={confirm()} keyed>
         {(c) => (
           <div class="app-prompt">

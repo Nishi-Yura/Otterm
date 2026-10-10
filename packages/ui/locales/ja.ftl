@@ -306,6 +306,11 @@ menu-copy-link = リンクをコピー
 ## タブとペイン
 
 tab-new = 新しいタブ
+tab-new-profile = シェルを選んで新しいタブ
+profile-pwsh = PowerShell 7
+profile-powershell = Windows PowerShell
+profile-cmd = コマンド プロンプト
+profile-git-bash = Git Bash
 tab-close = タブを閉じる
 tab-untitled = ターミナル
 close-running-title = 実行中のプログラムがあります

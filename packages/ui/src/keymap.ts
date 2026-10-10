@@ -13,6 +13,7 @@ function defaults(): Bindings {
   const mac = platform === "macos";
   const b: Bindings = {
     "tab.new": [mac ? "cmd+t" : "ctrl+shift+t"],
+    "tab.new.profile": [mac ? "cmd+n" : "ctrl+shift+n"],
     "tab.close": [mac ? "cmd+w" : "ctrl+shift+w"],
     "tab.next": ["ctrl+tab"],
     "tab.prev": ["ctrl+shift+tab"],
@@ -36,7 +37,7 @@ function action(id: string): AppAction | undefined {
   const dir = DIRS.find((d) => d === arg);
   switch (`${group}.${verb}`) {
     case "tab.new":
-      return { kind: "newTab" };
+      return arg === "profile" ? { kind: "newTabMenu" } : arg === undefined ? { kind: "newTab" } : undefined;
     case "tab.close":
       return { kind: "closeTab" };
     case "tab.next":
