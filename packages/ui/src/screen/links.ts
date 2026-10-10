@@ -3,7 +3,10 @@ import { Flags } from "./protocol";
 
 /** A link on screen: rows and columns of its first and last cell (inclusive), in view rows. */
 export interface Link {
+  /** The target; for a path, the text as written (with any `:line:col`). */
   url: string;
+  /** A file path in the text (FR-FILE-06), still to be checked against the file system. */
+  path?: boolean;
   start: { row: number; col: number };
   end: { row: number; col: number };
 }
@@ -44,9 +47,8 @@ function hyperlinkAt(model: ScreenModel, row: number, col: number): Link | undef
   return { url, start, end };
 }
 
-/** A URL written out in the text. */
-function urlAt(model: ScreenModel, row: number, col: number): Link | undefined {
-  // The visible logical line around `row`.
+/** The visible logical line around `row`, and for each UTF-16 index of its text the cell it came from. */
+function logicalLine(model: ScreenModel, row: number) {
   let first = row;
   while (first > 0 && model.lines[first - 1]?.wrapped) first--;
   let last = row;
@@ -65,7 +67,22 @@ function urlAt(model: ScreenModel, row: number, col: number): Link | undefined {
       text += s;
     }
   }
+  return { text, cells };
+}
 
+/** Whether (row, col) lies between cells `a` and `b`, inclusive. */
+const between = (row: number, col: number, a: { row: number; col: number }, b: { row: number; col: number }) =>
+  (row > a.row || (row === a.row && col >= a.col)) && (row < b.row || (row === b.row && col <= b.col));
+
+/** The last cell of a match, widened to both halves of a wide character. */
+const endOf = (model: ScreenModel, b: { row: number; col: number }) => {
+  const flags = model.lines[b.row]?.attrs[b.col]?.flags ?? 0;
+  return { row: b.row, col: flags & Flags.WIDE ? b.col + 1 : b.col };
+};
+
+/** A URL written out in the text. */
+function urlAt(model: ScreenModel, row: number, col: number): Link | undefined {
+  const { text, cells } = logicalLine(model, row);
   for (const m of text.matchAll(URL_RE)) {
     const url = m[0].replace(TRAILING, (tail) => keepBalancedParens(m[0], tail));
     const from = m.index;
@@ -73,13 +90,39 @@ function urlAt(model: ScreenModel, row: number, col: number): Link | undefined {
     const a = cells[from];
     const b = cells[to];
     if (!a || !b) continue;
-    const inside = (row > a.row || (row === a.row && col >= a.col)) && (row < b.row || (row === b.row && col <= b.col));
-    if (inside) {
-      const endCell = model.lines[b.row]?.attrs[b.col]?.flags ?? 0;
-      return { url, start: a, end: { row: b.row, col: endCell & Flags.WIDE ? b.col + 1 : b.col } };
-    }
+    if (between(row, col, a, b)) return { url, start: a, end: endOf(model, b) };
   }
   return undefined;
+}
+
+/** Characters that end a path in output: spaces, quotes, brackets and the like. */
+const PATH_STOP = /[\s"'`<>()[\]{}|,;=]/;
+
+/**
+ * The word under a cell if it looks like a file path: it has a slash or backslash, starts with `~`,
+ * or has a dot followed by a letter (`notes.txt`). `:line:col` after it is kept. Whether the file
+ * exists is for the caller to find out.
+ */
+export function pathAt(model: ScreenModel, row: number, col: number): Link | undefined {
+  const { text, cells } = logicalLine(model, row);
+  const at = cells.findIndex((c) => c.row === row && c.col === col);
+  if (at < 0 || PATH_STOP.test(text[at] ?? " ")) return undefined;
+  let from = at;
+  while (from > 0 && !PATH_STOP.test(text[from - 1] ?? " ")) from--;
+  let to = at;
+  while (to < text.length - 1 && !PATH_STOP.test(text[to + 1] ?? " ")) to++;
+  let word = text.slice(from, to + 1);
+  // Sentence punctuation after a path is not part of it ("see src/a.ts.").
+  const trimmed = word.replace(/[.!?]+$/, "");
+  to -= word.length - trimmed.length;
+  word = trimmed;
+  if (to < at || word.includes("://")) return undefined;
+  const looksLikePath = /[\\/]/.test(word) || word.startsWith("~") || /\.[A-Za-z]/.test(word);
+  if (word.length < 2 || !looksLikePath) return undefined;
+  const a = cells[from];
+  const b = cells[to];
+  if (!a || !b) return undefined;
+  return { url: word, path: true, start: a, end: endOf(model, b) };
 }
 
 /** Keep a closing parenthesis that matches one inside the URL (Wikipedia-style links). */

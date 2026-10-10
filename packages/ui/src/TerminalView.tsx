@@ -10,7 +10,7 @@ import { attachPointer } from "./pointer";
 import { SearchBar } from "./SearchBar";
 import { CanvasRenderer, DEFAULT_FONT, type FontConfig } from "./screen/canvasRenderer";
 import { Highlights } from "./screen/highlights";
-import { type Link, linkAt } from "./screen/links";
+import { type Link, linkAt, pathAt } from "./screen/links";
 import { ScreenModel } from "./screen/model";
 import { themeFromConfig } from "./screen/palette";
 import type { Frame } from "./screen/protocol";
@@ -82,6 +82,35 @@ export function TerminalView(props: TerminalViewProps) {
   let unsubscribe: (() => void) | undefined;
   let observer: ResizeObserver | undefined;
   let detachPointer: (() => void) | undefined;
+
+  // Paths in the output (FR-FILE-06): looked up against the shell's folder before they show as links.
+  let cwdNow = props.cwd;
+  /** "folder\ntext" → the absolute path, or null when there is no such file. */
+  const pathCache = new Map<string, string | null>();
+  const pathKey = (text: string) => `${cwdNow ?? ""}\n${text}`;
+  const resolvePath = async (text: string) => {
+    const key = pathKey(text);
+    const known = pathCache.get(key);
+    if (known !== undefined) return known;
+    const found = await invoke<string | null>("path_resolve", { cwd: cwdNow ?? null, text }).catch(() => null);
+    if (pathCache.size > 1000) pathCache.clear();
+    pathCache.set(key, found);
+    return found;
+  };
+  /** A URL or OSC 8 link under a cell, else a path already known to exist. */
+  const knownLinkAt = (row: number, col: number) => {
+    const link = linkAt(model, row, col);
+    if (link) return link;
+    const path = pathAt(model, row, col);
+    return path && pathCache.get(pathKey(path.url)) ? path : undefined;
+  };
+  const openLink = (link: Link) => {
+    if (!link.path) return void openUrl(link.url).catch((e) => props.notify(String(e)));
+    // A path that is not there (any more) is not worth a message.
+    void invoke("path_open", { cwd: cwdNow ?? null, text: link.url }).catch((e) => {
+      if (!String(e).startsWith("not found")) props.notify(String(e));
+    });
+  };
   let renderer: CanvasRenderer | undefined;
   let closed = false;
   /** Fit the grid to the pane again (after a resize or a font change). */
@@ -140,7 +169,10 @@ export function TerminalView(props: TerminalViewProps) {
         rows,
         (e) => {
           if (e.kind === "title") props.onTitle(e.title);
-          if (e.kind === "cwd") props.onCwd(e.url);
+          if (e.kind === "cwd") {
+            cwdNow = e.url;
+            props.onCwd(e.url);
+          }
           if (e.kind === "clipboard") clipboardRequest(e.data);
           if (e.kind === "bell") bell();
           // A view that is gone (its pane was closed) has nothing left to report.
@@ -203,6 +235,16 @@ export function TerminalView(props: TerminalViewProps) {
     input.addEventListener("focus", onFocus(true));
     input.addEventListener("blur", onFocus(false));
     r.onDraw = () => placeInput(r.cursorRect());
+    /** The link (or path still being looked up) under the pointer while Ctrl is held. */
+    let hovered: Link | undefined;
+    const showLink = (link: Link | undefined, target?: string) => {
+      if (sameLink(r.link, link)) return;
+      r.link = link;
+      canvas.style.cursor = link ? "pointer" : "";
+      // The target, since an OSC 8 link's text need not be its URL.
+      canvas.title = link ? `${target ?? link.url}\n${t("link-hint-first")}` : "";
+      r.invalidate();
+    };
     detachPointer = attachPointer({
       canvas,
       renderer: r,
@@ -212,15 +254,18 @@ export function TerminalView(props: TerminalViewProps) {
       onSelect: () => {
         if (copyOnSelect) void copySelection();
       },
-      linkAt: (row, col) => linkAt(model, row, col),
-      openLink: (link) => void openUrl(link.url).catch((e) => props.notify(String(e))),
+      // A click may come before the lookup; path_open checks the path itself.
+      linkAt: (row, col) => linkAt(model, row, col) ?? pathAt(model, row, col),
+      openLink,
       hoverLink: (link) => {
-        if (sameLink(r.link, link)) return;
-        r.link = link;
-        canvas.style.cursor = link ? "pointer" : "";
-        // The target, since an OSC 8 link's text need not be its URL.
-        canvas.title = link ? `${link.url}\n${t("link-hint-first")}` : "";
-        r.invalidate();
+        hovered = link;
+        if (!link?.path) return showLink(link, link?.url);
+        const known = pathCache.get(pathKey(link.url));
+        if (known !== undefined) return showLink(known ? link : undefined, known ?? undefined);
+        showLink(undefined);
+        void resolvePath(link.url).then((found) => {
+          if (found && sameLink(hovered, link)) showLink(link, found);
+        });
       },
       menu: (x, y, shift) => rightClick(x, y, shift),
     });
@@ -472,7 +517,7 @@ export function TerminalView(props: TerminalViewProps) {
     const box = host.getBoundingClientRect();
     const c = canvas.getBoundingClientRect();
     const cell = renderer?.cellAt(clientX - c.left, clientY - c.top);
-    const link = cell ? linkAt(model, cell.row, cell.col) : undefined;
+    const link = cell ? knownLinkAt(cell.row, cell.col) : undefined;
     const hasSelection = selection.active && !selection.empty;
     const items: MenuItem[] = [
       {
@@ -493,7 +538,7 @@ export function TerminalView(props: TerminalViewProps) {
     ];
     if (link) {
       items.unshift(
-        { label: t("menu-open-link"), action: () => void openUrl(link.url).catch((e) => props.notify(String(e))) },
+        { label: t("menu-open-link"), action: () => openLink(link) },
         { label: t("menu-copy-link"), action: () => void clipboard.write(link.url) },
       );
     }

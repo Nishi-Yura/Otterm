@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { modelOf } from "../test-util";
-import { linkAt } from "./links";
+import { linkAt, pathAt } from "./links";
 
 describe("links in text", () => {
   it("finds a URL under a cell and trims sentence punctuation", () => {
@@ -33,5 +33,35 @@ describe("OSC 8 hyperlinks", () => {
     const l = linkAt(m, 0, 8);
     expect(l).toEqual({ url: "https://t.example/", start: { row: 0, col: 4 }, end: { row: 0, col: 13 } });
     expect(linkAt(m, 0, 15)).toBeUndefined();
+  });
+});
+
+describe("paths in text", () => {
+  it("finds a relative path with a line and column, without the trailing colon", () => {
+    const m = modelOf(["src/app.ts:42:7: error TS2304"], 40);
+    const l = pathAt(m, 0, 3);
+    expect(l?.url).toBe("src/app.ts:42:7:");
+    expect(l?.path).toBe(true);
+    expect(l?.start).toEqual({ row: 0, col: 0 });
+    expect(pathAt(m, 0, 20)).toBeUndefined();
+  });
+
+  it("takes Windows paths inside quotes and drops sentence punctuation", () => {
+    const m = modelOf(['  File "C:\\x\\y.py", line 3'], 40);
+    expect(pathAt(m, 0, 10)?.url).toBe("C:\\x\\y.py");
+    expect(pathAt(modelOf(["see notes.txt."], 20), 0, 6)?.url).toBe("notes.txt");
+    expect(pathAt(modelOf(["~/x and more"], 20), 0, 0)?.url).toBe("~/x");
+  });
+
+  it("leaves plain words, numbers and URLs alone", () => {
+    expect(pathAt(modelOf(["hello world"], 20), 0, 2)).toBeUndefined();
+    expect(pathAt(modelOf(["v 1.2.3"], 20), 0, 3)).toBeUndefined();
+    expect(pathAt(modelOf(["https://e.com/a"], 20), 0, 3)).toBeUndefined();
+  });
+
+  it("covers both halves of a wide character at the end", () => {
+    const l = pathAt(modelOf(["資料/メモ"], 20), 0, 0);
+    expect(l?.url).toBe("資料/メモ");
+    expect(l?.end).toEqual({ row: 0, col: 8 });
   });
 });

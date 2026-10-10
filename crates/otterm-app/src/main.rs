@@ -7,6 +7,7 @@
 
 mod config;
 mod launch;
+mod open;
 mod profiles;
 mod quote;
 mod screen;
@@ -321,39 +322,44 @@ fn config_open(state: State<'_, AppState>) -> CmdResult<String> {
         }
         std::fs::write(&path, include_str!("config_template.toml")).map_err(err)?;
     }
-    open_in_editor(&path).map_err(err)?;
+    open_in_editor(&path, None, None).map_err(err)?;
     Ok(path.display().to_string())
 }
 
-/// VS Code when it is on PATH (docs/06 `open.editor`, auto-detect), else the platform's text
-/// editor. The path is one argument, never parsed by a shell.
-fn open_in_editor(path: &std::path::Path) -> std::io::Result<()> {
+/// VS Code when it is on PATH (docs/06 `open.editor`, auto-detect), at `line`:`col` if given, else
+/// the platform's text editor. The path is one argument, never parsed by a shell.
+fn open_in_editor(path: &std::path::Path, line: Option<u32>, col: Option<u32>) -> std::io::Result<()> {
+    let at = line.map(|l| format!("{}:{l}:{}", path.display(), col.unwrap_or(1)));
     // UI tests record it instead (see open_url).
     if let Some(log) = std::env::var_os("OTTERM_TEST_OPEN_LOG") {
         use std::io::Write;
         let mut f = std::fs::OpenOptions::new().create(true).append(true).open(log)?;
-        return writeln!(f, "editor {}", path.display());
+        return writeln!(f, "editor {}", at.unwrap_or_else(|| path.display().to_string()));
     }
     let find = |exe: &str| {
         std::env::var_os("PATH").and_then(|p| std::env::split_paths(&p).map(|d| d.join(exe)).find(|f| f.is_file()))
     };
-    let on_path = |exe: &str| find(exe).is_some();
+    // VS Code takes `-g path:line:col` to go to a line.
+    let code = |program: std::path::PathBuf| {
+        let mut c = std::process::Command::new(program);
+        match &at {
+            Some(at) => c.arg("-g").arg(at),
+            None => c.arg(path),
+        };
+        c
+    };
     let mut cmd = if cfg!(windows) {
-        if let Some(code) = find("code.cmd") {
-            // Run the batch file itself: the standard library then quotes the argument for cmd
-            // safely (and refuses one it cannot).
-            let mut c = std::process::Command::new(code);
-            c.arg(path);
-            c
+        // Run the batch file itself: the standard library then quotes the argument for cmd
+        // safely (and refuses one it cannot).
+        if let Some(program) = find("code.cmd") {
+            code(program)
         } else {
             let mut c = std::process::Command::new("notepad.exe");
             c.arg(path);
             c
         }
-    } else if on_path("code") {
-        let mut c = std::process::Command::new("code");
-        c.arg(path);
-        c
+    } else if let Some(program) = find("code") {
+        code(program)
     } else if cfg!(target_os = "macos") {
         let mut c = std::process::Command::new("open");
         c.arg("-t").arg(path);
@@ -364,6 +370,51 @@ fn open_in_editor(path: &std::path::Path) -> std::io::Result<()> {
         c
     };
     cmd.spawn().map(drop)
+}
+
+/// Open a file with its default app, or a folder in the file manager.
+fn open_with_system(path: &std::path::Path) -> std::io::Result<()> {
+    if let Some(log) = std::env::var_os("OTTERM_TEST_OPEN_LOG") {
+        use std::io::Write;
+        let mut f = std::fs::OpenOptions::new().create(true).append(true).open(log)?;
+        return writeln!(f, "system {}", path.display());
+    }
+    let program = if cfg!(windows) {
+        "explorer.exe"
+    } else if cfg!(target_os = "macos") {
+        "open"
+    } else {
+        "xdg-open"
+    };
+    std::process::Command::new(program).arg(path).spawn().map(drop)
+}
+
+/// The existing file or folder a word in the output names (FR-FILE-06), for the link underline.
+/// Async so that a slow (network) folder does not hold up the main thread.
+#[tauri::command]
+async fn path_resolve(cwd: Option<String>, text: String) -> Option<String> {
+    let cwd = cwd.as_deref().and_then(local_path);
+    let home = expand_home("~");
+    open::resolve(cwd.as_deref(), &text, Some(&home)).map(|t| t.path.display().to_string())
+}
+
+/// Ctrl+click on a path in the output: folders and files that `[open.rules]` sends to the system
+/// open there; other files open in the editor at the line given after the path.
+#[tauri::command]
+async fn path_open(state: State<'_, AppState>, cwd: Option<String>, text: String) -> CmdResult {
+    let cwd = cwd.as_deref().and_then(local_path);
+    let home = expand_home("~");
+    let target = open::resolve(cwd.as_deref(), &text, Some(&home)).ok_or_else(|| format!("not found: {text}"))?;
+    let ext = target.path.extension().map(|e| format!(".{}", e.to_string_lossy().to_lowercase()));
+    let config = state.config.config();
+    let rule = ext.and_then(|e| config.open.rules.get(&e).copied());
+    // There is no preview yet; previewed types open with their app.
+    let system = target.path.is_dir() || matches!(rule, Some(r) if r != otterm_config::OpenAction::Editor);
+    if system {
+        open_with_system(&target.path).map_err(err)
+    } else {
+        open_in_editor(&target.path, target.line, target.col).map_err(err)
+    }
 }
 
 #[tauri::command]
@@ -597,6 +648,8 @@ fn main() {
             clipboard_read,
             clipboard_write,
             open_url,
+            path_resolve,
+            path_open,
             session_close,
         ])
         .run(tauri::generate_context!())
@@ -652,6 +705,8 @@ fn main() {
             clipboard_read,
             clipboard_write,
             open_url,
+            path_resolve,
+            path_open,
             session_close,
             bench::bench_mode,
             bench::bench_ipc_start,
