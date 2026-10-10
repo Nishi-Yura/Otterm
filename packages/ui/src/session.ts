@@ -63,10 +63,16 @@ export const openUrl = (url: string) => invoke<void>("open_url", { url });
 export const SCROLL_TOP = 2 ** 31 - 1;
 export const SCROLL_BOTTOM = -(2 ** 31);
 
-export async function createSession(cols: number, rows: number, onEvent: (e: SessionEvent) => void): Promise<Session> {
+export async function createSession(
+  cols: number,
+  rows: number,
+  onEvent: (e: SessionEvent) => void,
+  /** Start directory: a path or a file:// URL (OSC 7). */
+  cwd?: string,
+): Promise<Session> {
   const events = new Channel<SessionEvent>();
   events.onmessage = onEvent;
-  const id = await invoke<number>("session_create", { cols, rows, events });
+  const id = await invoke<number>("session_create", { cols, rows, events, cwd: cwd ?? null });
   return {
     id,
     write: (data) => invoke("session_write", { id, data }),

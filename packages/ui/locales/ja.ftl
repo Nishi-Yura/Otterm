@@ -298,3 +298,9 @@ menu-clear-scrollback = スクロールバックを消去
 menu-search = 検索
 menu-open-link = リンクを開く
 menu-copy-link = リンクをコピー
+
+## タブとペイン
+
+tab-new = 新しいタブ
+tab-close = タブを閉じる
+tab-untitled = ターミナル

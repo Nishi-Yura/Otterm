@@ -61,9 +61,16 @@ fn config_get(state: State<'_, AppState>) -> UiConfig {
 }
 
 /// Start a shell (the default profile, if one is set). Frames go to the screen socket; everything
-/// else to `events`.
+/// else to `events`. `cwd` (a path or a `file://` URL from OSC 7) opens a split or a new tab in
+/// the directory of the pane it came from (docs/03 §3.2).
 #[tauri::command]
-fn session_create(state: State<'_, AppState>, cols: u16, rows: u16, events: Channel<UiEvent>) -> CmdResult<SessionId> {
+fn session_create(
+    state: State<'_, AppState>,
+    cols: u16,
+    rows: u16,
+    events: Channel<UiEvent>,
+    cwd: Option<String>,
+) -> CmdResult<SessionId> {
     let config = state.config.config();
     state.sessions.set_terminal_options(config::terminal_options(&config));
     let mut opts = SpawnOptions { size: PtySize { cols, rows }, ..Default::default() };
@@ -72,6 +79,9 @@ fn session_create(state: State<'_, AppState>, cols: u16, rows: u16, events: Chan
         opts.args = p.args.clone();
         opts.cwd = p.cwd.as_deref().filter(|c| !c.is_empty()).map(expand_home);
         opts.env = p.env.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+    }
+    if let Some(dir) = cwd.as_deref().and_then(local_path).filter(|d| d.is_dir()) {
+        opts.cwd = Some(dir);
     }
     let screen = std::sync::Arc::clone(&state.screen);
     state
@@ -257,6 +267,30 @@ fn session_close(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.close(id).map_err(err)
 }
 
+/// A local path from a path or a `file://` URL (OSC 7 sends `file://host/path`, percent-encoded).
+fn local_path(s: &str) -> Option<std::path::PathBuf> {
+    let Some(rest) = s.strip_prefix("file://") else { return Some(s.into()) };
+    let path = &rest[rest.find('/')?..];
+    let bytes = path.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%'
+            && let Some(b) = path.get(i + 1..i + 3).and_then(|h| u8::from_str_radix(h, 16).ok())
+        {
+            decoded.push(b);
+            i += 3;
+        } else {
+            decoded.push(bytes[i]);
+            i += 1;
+        }
+    }
+    let path = String::from_utf8(decoded).ok()?;
+    // file:///C:/Users → C:/Users on Windows.
+    let path = if cfg!(windows) && path.as_bytes().get(2) == Some(&b':') { &path[1..] } else { &path[..] };
+    Some(path.into())
+}
+
 /// `~` at the start of a profile's directory is the home directory.
 fn expand_home(path: &str) -> std::path::PathBuf {
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" });
@@ -355,4 +389,19 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("failed to run otterm");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn file_urls_become_paths() {
+        assert_eq!(local_path("/home/a b"), Some("/home/a b".into()));
+        assert_eq!(local_path("file://host/home/a%20b"), Some("/home/a b".into()));
+        if cfg!(windows) {
+            assert_eq!(local_path("file://pc/C:/Users/x"), Some("C:/Users/x".into()));
+        }
+        assert_eq!(local_path("file://no-path"), None);
+    }
 }

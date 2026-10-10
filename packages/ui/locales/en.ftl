@@ -298,3 +298,9 @@ menu-clear-scrollback = Clear scrollback
 menu-search = Find
 menu-open-link = Open link
 menu-copy-link = Copy link
+
+## Tabs and panes
+
+tab-new = New tab
+tab-close = Close tab
+tab-untitled = Terminal

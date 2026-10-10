@@ -43,6 +43,66 @@ export function isSearchShortcut(e: KeyboardEvent): boolean {
   return platform === "macos" ? e.metaKey && !e.ctrlKey : e.ctrlKey && e.shiftKey && !e.metaKey;
 }
 
+export type Dir = "left" | "right" | "up" | "down";
+
+/** Window-level actions on tabs and panes. */
+export type AppAction =
+  | { kind: "newTab" }
+  | { kind: "closeTab" }
+  | { kind: "nextTab" }
+  | { kind: "prevTab" }
+  | { kind: "gotoTab"; index: number }
+  | { kind: "split"; dir: "row" | "column" }
+  | { kind: "focusPane"; dir: Dir }
+  | { kind: "resizePane"; dir: Dir }
+  | { kind: "zoomPane" }
+  | { kind: "closePane" };
+
+const ARROWS: Record<string, Dir> = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" };
+
+/**
+ * Tab and pane shortcuts (docs/03 §3.2, docs/06 §5.2; macOS per decision I14). Splits: "vertical"
+ * (Ctrl+Shift+D) puts the new pane beside the current one, "horizontal" (Ctrl+Shift+E) below it.
+ */
+export function appAction(e: KeyboardEvent): AppAction | undefined {
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  const arrow = ARROWS[e.key];
+  if (e.ctrlKey && !e.altKey && !e.metaKey && key === "Tab") return { kind: e.shiftKey ? "prevTab" : "nextTab" };
+  if (platform === "macos") {
+    if (!e.metaKey || e.ctrlKey) return undefined;
+    if (arrow && e.altKey && !e.shiftKey) return { kind: "focusPane", dir: arrow };
+    if (e.altKey) return undefined;
+    if (key === "t" && !e.shiftKey) return { kind: "newTab" };
+    if (key === "w" && !e.shiftKey) return { kind: "closePane" };
+    if (key === "d") return { kind: "split", dir: e.shiftKey ? "column" : "row" };
+    if (/^[1-9]$/.test(key) && !e.shiftKey) return { kind: "gotoTab", index: Number(key) - 1 };
+    return undefined;
+  }
+  if (arrow && e.altKey && !e.ctrlKey && !e.metaKey) {
+    return e.shiftKey ? { kind: "resizePane", dir: arrow } : { kind: "focusPane", dir: arrow };
+  }
+  if (!e.ctrlKey || e.altKey || e.metaKey) return undefined;
+  if (/^[1-9]$/.test(key) && !e.shiftKey) return { kind: "gotoTab", index: Number(key) - 1 };
+  if (!e.shiftKey) return undefined;
+  // With Shift, e.key is upper case ("T"); `key` is lowered above.
+  switch (key) {
+    case "t":
+      return { kind: "newTab" };
+    case "w":
+      return { kind: "closeTab" };
+    case "d":
+      return { kind: "split", dir: "row" };
+    case "e":
+      return { kind: "split", dir: "column" };
+    case "z":
+      return { kind: "zoomPane" };
+    case "q":
+      return { kind: "closePane" };
+    default:
+      return undefined;
+  }
+}
+
 /** Font size keys (docs/06 §5.2): Ctrl (Cmd on macOS) with `=` / `+` bigger, `-` smaller, `0` reset. */
 export function zoomKey(e: KeyboardEvent): 1 | -1 | 0 | undefined {
   const mod = platform === "macos" ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;

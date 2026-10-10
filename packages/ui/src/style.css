@@ -14,6 +14,123 @@ body,
   background: var(--bg);
 }
 
+/* The window: tab bar on top, panes below (docs/04 §1). */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tabbar {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: 2px;
+  height: 32px;
+  padding: 0 6px;
+  overflow-x: auto;
+  background: color-mix(in srgb, var(--bg) 88%, #000);
+  scrollbar-width: none;
+  font:
+    12px system-ui,
+    sans-serif;
+  color: var(--muted);
+  user-select: none;
+}
+
+.tab {
+  display: flex;
+  flex: 0 1 200px;
+  align-items: center;
+  gap: 6px;
+  min-width: 80px;
+  margin-top: 4px;
+  padding: 0 6px 0 12px;
+  border-radius: 6px 6px 0 0;
+  cursor: default;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.tab:hover:not([aria-selected="true"]) {
+  background: rgb(255 255 255 / 0.05);
+}
+
+.tab-title {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tab-close,
+.tab-new {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tab-new {
+  align-self: center;
+  margin-left: 2px;
+}
+
+.tab-close:hover,
+.tab-new:hover {
+  background: rgb(255 255 255 / 0.12);
+  color: var(--fg);
+}
+
+.panes {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.pane {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.pane.hidden {
+  display: none;
+}
+
+/* Between two panes; drag to resize. */
+.divider {
+  position: absolute;
+  z-index: 5;
+  margin: 0;
+  border: 0;
+  background: rgb(255 255 255 / 0.1);
+  background-clip: content-box;
+}
+
+.divider.row {
+  margin-left: -3px;
+  padding: 0 3px;
+  width: 1px !important;
+  cursor: col-resize;
+}
+
+.divider.column {
+  margin-top: -3px;
+  padding: 3px 0;
+  height: 1px !important;
+  cursor: row-resize;
+}
+
 .terminal {
   position: relative;
   box-sizing: border-box;
