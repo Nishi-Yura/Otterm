@@ -208,19 +208,54 @@ export class CanvasRenderer {
       }
 
       const thickness = Math.max(1, Math.round(this.dpr));
+      const w = cw * span;
+      const under = y + ch - 2 * thickness;
       if (this.inLink(row, col)) {
         ctx.fillStyle = fg;
-        ctx.fillRect(x, y + ch - 2 * thickness, cw * span, thickness);
-      } else if (attr.flags & (Flags.UNDERLINE | Flags.DOUBLE_UNDERLINE | Flags.CURLY_UNDERLINE)) {
+        ctx.fillRect(x, under, w, thickness);
+      } else if (attr.flags & Flags.CURLY_UNDERLINE) {
+        this.wave(x, under, w, thickness, this.palette.resolve(attr.underline, fg));
+      } else if (attr.flags & Flags.DOUBLE_UNDERLINE) {
         ctx.fillStyle = this.palette.resolve(attr.underline, fg);
-        ctx.fillRect(x, y + ch - 2 * thickness, cw * span, thickness);
-        if (attr.flags & Flags.DOUBLE_UNDERLINE) ctx.fillRect(x, y + ch - 4 * thickness, cw * span, thickness);
+        // Two lines with a gap as wide as a line, so they read as two at any size.
+        ctx.fillRect(x, y + ch - thickness, w, thickness);
+        ctx.fillRect(x, y + ch - 3 * thickness, w, thickness);
+      } else if (attr.flags & Flags.UNDERLINE) {
+        ctx.fillStyle = this.palette.resolve(attr.underline, fg);
+        ctx.fillRect(x, under, w, thickness);
+      }
+      if (attr.flags & Flags.OVERLINE) {
+        ctx.fillStyle = fg;
+        ctx.fillRect(x, y, w, thickness);
       }
       if (attr.flags & Flags.STRIKE) {
         ctx.fillStyle = fg;
-        ctx.fillRect(x, y + Math.round(ch / 2), cw * span, thickness);
+        ctx.fillRect(x, y + Math.round(ch / 2), w, thickness);
       }
     }
+  }
+
+  /** Curly underline (SGR 4:3), as used by editors for spelling and diagnostics. The phase follows
+   * the column so neighbouring cells join into one wave. */
+  private wave(x: number, baseline: number, width: number, thickness: number, color: string): void {
+    const { ctx } = this;
+    const amp = thickness * 1.5;
+    const period = Math.max(4, this.cellWidth / 2);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, baseline - amp * 2, width, amp * 4 + thickness);
+    ctx.clip();
+    ctx.beginPath();
+    const start = Math.floor(x / period) * period;
+    for (let px = start; px <= x + width + period; px += 1) {
+      const py = baseline - amp * Math.sin(((px % (2 * period)) / period) * Math.PI);
+      if (px === start) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = thickness;
+    ctx.stroke();
+    ctx.restore();
   }
 
   private inLink(row: number, col: number): boolean {
