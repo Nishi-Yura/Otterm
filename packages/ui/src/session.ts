@@ -1,4 +1,5 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
+import type { KeyInput } from "./keys";
 import { decodeFrame, type Frame } from "./screen/protocol";
 
 /** Bindings for the commands in crates/otterm-app/src/main.rs. */
@@ -13,6 +14,9 @@ export type SessionEvent =
 export interface Session {
   readonly id: number;
   write(data: string): Promise<void>;
+  /** Send a key; Rust encodes it for the terminal's modes. Resolves to false if it has no encoding. */
+  key(input: KeyInput): Promise<boolean>;
+  paste(text: string): Promise<void>;
   resize(cols: number, rows: number): Promise<void>;
   /** Ask for a full frame. */
   redraw(): Promise<void>;
@@ -26,6 +30,8 @@ export async function createSession(cols: number, rows: number, onEvent: (e: Ses
   return {
     id,
     write: (data) => invoke("session_write", { id, data }),
+    key: (input) => invoke<boolean>("session_key", { id, input }),
+    paste: (text) => invoke("session_paste", { id, text }),
     resize: (c, r) => invoke("session_resize", { id, cols: c, rows: r }),
     redraw: () => invoke("session_redraw", { id }),
     close: () => invoke("session_close", { id }),

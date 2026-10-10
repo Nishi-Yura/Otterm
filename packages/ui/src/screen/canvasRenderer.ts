@@ -30,6 +30,8 @@ export class CanvasRenderer {
   private baseline = 0;
   private scheduled = false;
   focused = true;
+  /** Called after each draw, e.g. to move the IME anchor to the cursor. */
+  onDraw: (() => void) | undefined;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -96,6 +98,17 @@ export class CanvasRenderer {
     for (const row of this.model.dirty) this.drawRow(row);
     this.model.dirty.clear();
     this.drawCursor();
+    this.onDraw?.();
+  }
+
+  /** The cursor cell in CSS pixels, relative to the canvas. */
+  cursorRect(): { x: number; y: number; width: number; height: number } {
+    return {
+      x: (this.model.cursorCol * this.cellWidth) / this.dpr,
+      y: (this.model.cursorRow * this.cellHeight) / this.dpr,
+      width: this.cellWidth / this.dpr,
+      height: this.cellHeight / this.dpr,
+    };
   }
 
   private drawRow(row: number): void {

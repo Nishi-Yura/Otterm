@@ -7,8 +7,8 @@
 
 mod screen;
 
-use otterm_session::{LocalSessionManager, PtySize, SessionEvent, SessionId, SessionManager, SpawnOptions};
-use serde::Serialize;
+use otterm_session::{Key, LocalSessionManager, PtySize, SessionEvent, SessionId, SessionManager, SpawnOptions};
+use serde::{Deserialize, Serialize};
 use tauri::State;
 use tauri::ipc::Channel;
 
@@ -81,6 +81,27 @@ fn session_write(state: State<'_, AppState>, id: SessionId, data: String) -> Cmd
     state.sessions.write(id, data.as_bytes()).map_err(err)
 }
 
+/// A key press from the UI (DOM `KeyboardEvent` fields).
+#[derive(Deserialize)]
+struct KeyInput {
+    key: String,
+    ctrl: bool,
+    alt: bool,
+    shift: bool,
+}
+
+/// Returns `false` when the terminal has no encoding for the key.
+#[tauri::command]
+fn session_key(state: State<'_, AppState>, id: SessionId, input: KeyInput) -> CmdResult<bool> {
+    let key = Key { key: input.key, ctrl: input.ctrl, alt: input.alt, shift: input.shift };
+    state.sessions.key(id, &key).map_err(err)
+}
+
+#[tauri::command]
+fn session_paste(state: State<'_, AppState>, id: SessionId, text: String) -> CmdResult {
+    state.sessions.paste(id, &text).map_err(err)
+}
+
 #[tauri::command]
 fn session_resize(state: State<'_, AppState>, id: SessionId, cols: u16, rows: u16) -> CmdResult {
     state.sessions.resize(id, PtySize { cols, rows }).map_err(err)
@@ -111,6 +132,8 @@ fn main() {
             screen_endpoint,
             session_create,
             session_write,
+            session_key,
+            session_paste,
             session_resize,
             session_redraw,
             session_close,
@@ -131,6 +154,8 @@ fn main() {
             screen_endpoint,
             session_create,
             session_write,
+            session_key,
+            session_paste,
             session_resize,
             session_redraw,
             session_close,

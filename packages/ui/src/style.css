@@ -28,8 +28,41 @@ body,
   overflow: hidden;
 }
 
+.viewport {
+  position: relative;
+}
+
 .viewport canvas {
   display: block;
+}
+
+/* Receives keys and IME input; invisible, but kept at the cursor for the candidate window. */
+.input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  opacity: 0;
+  resize: none;
+  overflow: hidden;
+  white-space: nowrap;
+  caret-color: transparent;
+}
+
+/* IME composition, drawn over the cursor with an underline (decision I4). */
+.preedit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0 1px;
+  background: var(--bg);
+  color: var(--fg);
+  text-decoration: underline;
+  white-space: pre;
+  pointer-events: none;
 }
 
 .status {

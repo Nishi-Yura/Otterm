@@ -15,6 +15,7 @@ use std::time::{Duration, Instant};
 use anyhow::{Result, anyhow};
 use otterm_pty::{Pty, Spawned};
 pub use otterm_pty::{PtySize, SpawnOptions};
+pub use otterm_vt::Key;
 use otterm_vt::{Event, Terminal};
 
 pub type SessionId = u64;
@@ -49,6 +50,11 @@ pub trait SessionManager: Send + Sync {
     /// Start a session. `opts.session_id` is overwritten with the new id.
     fn create(&self, opts: SpawnOptions, sink: EventSink) -> Result<SessionId>;
     fn write(&self, id: SessionId, data: &[u8]) -> Result<()>;
+    /// Send a key press, encoded for the terminal's current modes. Returns `false` if the terminal
+    /// has no encoding for the key.
+    fn key(&self, id: SessionId, key: &Key) -> Result<bool>;
+    /// Paste text, with bracketed paste when the application asked for it.
+    fn paste(&self, id: SessionId, text: &str) -> Result<()>;
     fn resize(&self, id: SessionId, size: PtySize) -> Result<()>;
     /// Send the whole screen in the next frame (a UI attached or lost its state).
     fn redraw(&self, id: SessionId) -> Result<()>;
@@ -209,6 +215,22 @@ impl SessionManager for LocalSessionManager {
 
     fn write(&self, id: SessionId, data: &[u8]) -> Result<()> {
         self.get(id)?.with_pty(|p| p.write(data))
+    }
+
+    fn key(&self, id: SessionId, key: &Key) -> Result<bool> {
+        let session = self.get(id)?;
+        let modes = session.term.lock().unwrap().modes();
+        match otterm_vt::encode_key(key, &modes) {
+            Some(bytes) => session.with_pty(|p| p.write(&bytes)).map(|()| true),
+            None => Ok(false),
+        }
+    }
+
+    fn paste(&self, id: SessionId, text: &str) -> Result<()> {
+        let session = self.get(id)?;
+        let modes = session.term.lock().unwrap().modes();
+        let bytes = otterm_vt::encode_paste(text, &modes);
+        session.with_pty(|p| p.write(&bytes))
     }
 
     fn resize(&self, id: SessionId, size: PtySize) -> Result<()> {

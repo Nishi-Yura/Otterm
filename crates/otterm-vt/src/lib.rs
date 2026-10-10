@@ -6,7 +6,9 @@
 
 mod cell;
 pub mod diff;
+mod input;
 mod term;
 
 pub use cell::{Attrs, Cell, Color, Row, flags};
+pub use input::{Key, encode_key, encode_paste};
 pub use term::{Cursor, CursorShape, Damage, Event, Modes, MouseMode, Terminal};

@@ -54,6 +54,13 @@ pub struct Modes {
     newline: bool,
 }
 
+impl Modes {
+    /// LNM: Enter sends CR LF.
+    pub fn newline_mode(&self) -> bool {
+        self.newline
+    }
+}
+
 impl Default for Modes {
     fn default() -> Self {
         Self {
