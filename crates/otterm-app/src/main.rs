@@ -107,9 +107,11 @@ fn session_create(
         opts.args = shell::integration_args(&program);
         opts.program = Some(program);
     }
-    // The folder of the pane this one came from, unless the profile names its own.
+    // The folder of the pane this one came from, unless the profile names its own. That folder
+    // comes from the shell's output (OSC 7), so a network share is not followed: even checking it
+    // would connect to the server with the user's credentials.
     if opts.cwd.is_none()
-        && let Some(dir) = cwd.as_deref().and_then(local_path).filter(|d| d.is_dir())
+        && let Some(dir) = cwd.as_deref().and_then(local_path).filter(|d| open::local(d) && d.is_dir())
     {
         opts.cwd = Some(dir);
     }

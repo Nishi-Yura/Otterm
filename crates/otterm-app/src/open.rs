@@ -61,7 +61,7 @@ pub fn runs_when_opened(ext: &str) -> bool {
 /// Only paths on this computer: a UNC path (\\server\share, \\?\, \\.\) would make Windows
 /// connect to that server, sending the user's credentials, just to check whether the file
 /// exists. A drive without a root (C:foo) depends on a per-drive folder otterm does not know.
-fn local(path: &Path) -> bool {
+pub fn local(path: &Path) -> bool {
     use std::path::{Component, Prefix};
     let s = path.to_string_lossy();
     if s.starts_with("\\\\") || s.starts_with("//") {
