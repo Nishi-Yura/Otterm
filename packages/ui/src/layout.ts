@@ -39,6 +39,12 @@ export function splitPane(node: PaneNode, target: number, added: number, dir: "r
   return { ...node, a: splitPane(node.a, target, added, dir), b: splitPane(node.b, target, added, dir) };
 }
 
+/** Give pane `from` the id `to`, keeping its place. */
+export function renamePane(node: PaneNode, from: number, to: number): PaneNode {
+  if (node.kind === "leaf") return node.id === from ? leaf(to) : node;
+  return { ...node, a: renamePane(node.a, from, to), b: renamePane(node.b, from, to) };
+}
+
 /** Remove a pane; its sibling takes the parent's place. `undefined` when the last pane goes. */
 export function removePane(node: PaneNode, target: number): PaneNode | undefined {
   if (node.kind === "leaf") return node.id === target ? undefined : node;

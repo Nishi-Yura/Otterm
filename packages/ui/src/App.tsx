@@ -16,6 +16,7 @@ import {
   type PaneNode,
   type Rect,
   removePane,
+  renamePane,
   resizePane,
   setRatio,
   splitPane,
@@ -257,6 +258,29 @@ export function App() {
       }));
       setPanes([...panes(), { id: paneId, tab: tab.id, cwd: cwds.get(tab.active) }]);
     });
+  };
+
+  /** The shell in a pane exited: terminal.close_behavior decides what happens to the pane. */
+  const paneExited = (paneId: number) => {
+    const behavior = config()?.closeBehavior ?? "close";
+    if (behavior === "keep") return; // The pane shows the exit message until it is closed.
+    if (behavior === "close") return closePane(paneId);
+    // restart: a new pane (and shell) takes the old one's place and folder.
+    const old = panes().find((p) => p.id === paneId);
+    const tab = tabs().find((x) => leaves(x.root).includes(paneId));
+    if (!old || !tab) return;
+    const fresh = nextId++;
+    batch(() => {
+      updateTab(tab.id, (x) => ({
+        ...x,
+        root: renamePane(x.root, paneId, fresh),
+        active: x.active === paneId ? fresh : x.active,
+        zoomed: x.zoomed === paneId ? fresh : x.zoomed,
+      }));
+      setPanes(panes().map((p) => (p.id === paneId ? { ...old, id: fresh, cwd: cwds.get(paneId) ?? old.cwd } : p)));
+    });
+    cwds.delete(paneId);
+    sessionOf.delete(paneId);
   };
 
   const activatePane = (paneId: number) => {
@@ -592,7 +616,7 @@ export function App() {
                     cwds.set(p.id, url);
                     setFolders({ ...folders(), [p.id]: folderName(url) });
                   }}
-                  onExit={() => closePane(p.id)}
+                  onExit={() => paneExited(p.id)}
                   onSession={(id) => sessionOf.set(p.id, id)}
                   onBell={() => {
                     if (p.tab !== activeTab()) setRang(new Set([...rang(), p.tab]));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { layout, leaf, leaves, neighbor, removePane, resizePane, setRatio, splitPane } from "./layout";
+import { layout, leaf, leaves, neighbor, removePane, renamePane, resizePane, setRatio, splitPane } from "./layout";
 
 // 1 | 2
 //   | 3
@@ -13,6 +13,12 @@ describe("split layout", () => {
     expect(panes.get(3)).toEqual({ x: 0.5, y: 0.5, w: 0.5, h: 0.5 });
     expect(dividers).toHaveLength(2);
     expect(leaves(tree())).toEqual([1, 2, 3]);
+  });
+
+  it("renames a pane in place", () => {
+    const t = renamePane(tree(), 2, 9);
+    expect(leaves(t)).toEqual([1, 9, 3]);
+    expect(layout(t).panes.get(9)).toEqual({ x: 0.5, y: 0, w: 0.5, h: 0.5 });
   });
 
   it("gives a removed pane's place to its sibling", () => {

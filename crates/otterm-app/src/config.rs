@@ -52,6 +52,8 @@ pub struct UiConfig {
     pub bell: Bell,
     /// Ask before closing a tab or the window while a program runs in it.
     pub confirm_close_running: bool,
+    /// What happens to a pane when its shell exits.
+    pub close_behavior: otterm_config::CloseBehavior,
     /// Keys that were ignored, to show once.
     pub warnings: Vec<UiWarning>,
     pub config_path: Option<String>,
@@ -147,6 +149,7 @@ impl ConfigState {
             osc52_clipboard: c.terminal.osc52_clipboard,
             bell: c.terminal.bell,
             confirm_close_running: c.general.confirm_close_running,
+            close_behavior: c.terminal.close_behavior,
             warnings,
             config_path: self.path.as_ref().map(|p| p.display().to_string()),
         }

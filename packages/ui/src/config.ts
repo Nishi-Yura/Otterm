@@ -39,6 +39,8 @@ export interface UiConfig {
   osc52Clipboard: "allow" | "deny" | "ask";
   bell: "none" | "visual" | "sound" | "both";
   confirmCloseRunning: boolean;
+  /** When the shell exits: close the pane, keep it with the exit message, or start a new shell. */
+  closeBehavior: "close" | "keep" | "restart";
   warnings: { key: string; message: string }[];
   configPath: string | null;
 }
