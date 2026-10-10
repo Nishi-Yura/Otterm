@@ -16,6 +16,7 @@ path = "src/main.rs"
 tauri-build.workspace = true
 
 [dependencies]
+arboard = { version = "3.6", default-features = false }
 fontdb = "0.24"
 otterm-config.workspace = true
 getrandom.workspace = true

@@ -294,6 +294,13 @@ impl Terminal {
         self.ambiguous_wide = wide;
     }
 
+    /// Drop the scrollback (the context menu's "clear scrollback"; ED 3 does the same).
+    pub fn clear_scrollback(&mut self) {
+        self.history_base += self.scrollback.len() as u64;
+        self.scrollback.clear();
+        self.full_damage = true;
+    }
+
     /// The cursor style used until an application asks for another (and after it asks for the
     /// default with DECSCUSR 0).
     pub fn set_default_cursor(&mut self, shape: CursorShape, blink: bool) {
@@ -827,11 +834,7 @@ impl Terminal {
                     self.erase_cells(r, 0, cols);
                 }
             }
-            3 => {
-                self.history_base += self.scrollback.len() as u64;
-                self.scrollback.clear();
-                self.full_damage = true;
-            }
+            3 => self.clear_scrollback(),
             _ => {}
         }
         if mode != 3 {

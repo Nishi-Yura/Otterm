@@ -96,6 +96,8 @@ pub trait SessionManager: Send + Sync {
     fn search(&self, id: SessionId, query: &str, opts: SearchOptions) -> Result<Vec<Match>>;
     /// Scroll so that `line` is in view, if it is not already.
     fn reveal(&self, id: SessionId, line: u64) -> Result<()>;
+    /// Drop the scrollback.
+    fn clear_scrollback(&self, id: SessionId) -> Result<()>;
     /// Kill the process. [`SessionEvent::Exited`] follows.
     fn close(&self, id: SessionId) -> Result<()>;
 }
@@ -384,6 +386,14 @@ impl SessionManager for LocalSessionManager {
         let wanted = line.saturating_sub(rows / 3).clamp(term.history_base(), term.screen_top());
         drop(term);
         *session.view_top.lock().unwrap() = Some(wanted);
+        session.frame.notify(false);
+        Ok(())
+    }
+
+    fn clear_scrollback(&self, id: SessionId) -> Result<()> {
+        let session = self.get(id)?;
+        session.term.lock().unwrap().clear_scrollback();
+        *session.view_top.lock().unwrap() = None;
         session.frame.notify(false);
         Ok(())
     }

@@ -1,17 +1,28 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { render } from "solid-js/web";
 import { benchMode, runIpcBench } from "./bench";
+import { ContextMenu, type MenuItem } from "./ContextMenu";
 import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
 import { setLanguage, t } from "./i18n";
-import { isCopyShortcut, isSearchShortcut, scrollKey, terminalKey, zoomKey } from "./keys";
+import { isCopyShortcut, isSearchShortcut, platform, scrollKey, terminalKey, zoomKey } from "./keys";
 import { attachPointer } from "./pointer";
 import { SearchBar } from "./SearchBar";
 import { CanvasRenderer, DEFAULT_FONT, type FontConfig } from "./screen/canvasRenderer";
 import { Highlights } from "./screen/highlights";
+import { type Link, linkAt } from "./screen/links";
 import { ScreenModel } from "./screen/model";
 import { themeFromConfig } from "./screen/palette";
 import { Selection } from "./screen/selection";
-import { connectScreen, createSession, SCROLL_BOTTOM, SCROLL_TOP, type SearchOptions, type Session } from "./session";
+import {
+  clipboard,
+  connectScreen,
+  createSession,
+  openUrl,
+  SCROLL_BOTTOM,
+  SCROLL_TOP,
+  type SearchOptions,
+  type Session,
+} from "./session";
 import "./style.css";
 
 /** PTY resizes are debounced (docs/03 §1.2). */
@@ -29,6 +40,7 @@ function Terminal() {
   const [font, setFont] = createSignal<FontConfig>(DEFAULT_FONT);
   const [notice, setNotice] = createSignal<string>();
   const [searching, setSearching] = createSignal(false);
+  const [menu, setMenu] = createSignal<{ x: number; y: number; items: MenuItem[] }>();
   let host!: HTMLDivElement;
   let viewport!: HTMLDivElement;
   let canvas!: HTMLCanvasElement;
@@ -146,6 +158,16 @@ function Terminal() {
       onSelect: () => {
         if (copyOnSelect) void copySelection();
       },
+      linkAt: (row, col) => linkAt(model, row, col),
+      openLink: (link) => void openUrl(link.url).catch((e) => showNotice(String(e))),
+      hoverLink: (link) => {
+        if (sameLink(r.link, link)) return;
+        r.link = link;
+        canvas.style.cursor = link ? "pointer" : "";
+        canvas.title = link ? t("link-hint-first") : "";
+        r.invalidate();
+      },
+      menu: (x, y) => openMenu(x, y),
     });
     input.focus();
   });
@@ -206,7 +228,56 @@ function Terminal() {
     } else {
       text = await session.text(range.start.line, range.start.col, range.end.line, range.end.col);
     }
-    await navigator.clipboard.writeText(text);
+    await clipboard.write(text);
+  };
+
+  const pasteClipboard = async () => {
+    const text = await clipboard.read().catch(() => "");
+    if (text && session) await session.paste(text);
+  };
+
+  /** Select every line: the scrollback and the screen. */
+  const selectAll = () => {
+    const first = model.topLine - (model.scrollback - model.offset);
+    const last = model.topLine + model.offset + model.rows - 1;
+    selection.start({ line: first, col: 0 }, "line");
+    selection.extend({ line: last, col: 0 });
+    renderer?.invalidate();
+  };
+
+  const shortcut = (key: string, shift = false) =>
+    platform === "macos" ? `⌘${key}` : `Ctrl+${shift ? "Shift+" : ""}${key}`;
+
+  const openMenu = (clientX: number, clientY: number) => {
+    const box = host.getBoundingClientRect();
+    const c = canvas.getBoundingClientRect();
+    const cell = renderer?.cellAt(clientX - c.left, clientY - c.top);
+    const link = cell ? linkAt(model, cell.row, cell.col) : undefined;
+    const hasSelection = selection.active && !selection.empty;
+    const items: MenuItem[] = [
+      {
+        label: t("menu-copy"),
+        hint: shortcut("C", platform === "linux"),
+        disabled: !hasSelection,
+        action: () => void copySelection().then(clearSelection),
+      },
+      { label: t("menu-paste"), hint: shortcut("V", platform === "linux"), action: () => void pasteClipboard() },
+      { label: t("menu-select-all"), action: selectAll },
+      { label: t("menu-search"), hint: shortcut("F", platform !== "macos"), action: () => setSearching(true) },
+      { label: t("menu-clear-scrollback"), action: () => void session?.clearScrollback() },
+    ];
+    if (link) {
+      items.unshift(
+        { label: t("menu-open-link"), action: () => void openUrl(link.url).catch((e) => showNotice(String(e))) },
+        { label: t("menu-copy-link"), action: () => void clipboard.write(link.url) },
+      );
+    }
+    setMenu({ x: clientX - box.left, y: clientY - box.top, items });
+  };
+
+  const closeMenu = () => {
+    setMenu(undefined);
+    input.focus();
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -334,6 +405,7 @@ function Terminal() {
           </span>
         )}
       </div>
+      {menu() && <ContextMenu x={menu()?.x ?? 0} y={menu()?.y ?? 0} items={menu()?.items ?? []} close={closeMenu} />}
       {searching() && (
         <SearchBar
           search={runSearch}
@@ -362,3 +434,7 @@ function Terminal() {
 
 const root = document.getElementById("root");
 if (root) render(() => <Terminal />, root);
+
+function sameLink(a: Link | undefined, b: Link | undefined): boolean {
+  return a?.url === b?.url && a?.start.row === b?.start.row && a?.start.col === b?.start.col;
+}

@@ -1,4 +1,5 @@
 import type { Highlights } from "./highlights";
+import type { Link } from "./links";
 import { DEFAULT_ATTR, type ScreenModel } from "./model";
 import { Palette, type Theme } from "./palette";
 import { CursorShape, Flags } from "./protocol";
@@ -39,6 +40,8 @@ export class CanvasRenderer {
   focused = true;
   selection: Selection | undefined;
   highlights: Highlights | undefined;
+  /** The link under the pointer while Ctrl is held: underlined. */
+  link: Link | undefined;
   /** Called after each draw, e.g. to move the IME anchor to the cursor. */
   onDraw: (() => void) | undefined;
 
@@ -202,7 +205,10 @@ export class CanvasRenderer {
       }
 
       const thickness = Math.max(1, Math.round(this.dpr));
-      if (attr.flags & (Flags.UNDERLINE | Flags.DOUBLE_UNDERLINE | Flags.CURLY_UNDERLINE)) {
+      if (this.inLink(row, col)) {
+        ctx.fillStyle = fg;
+        ctx.fillRect(x, y + ch - 2 * thickness, cw * span, thickness);
+      } else if (attr.flags & (Flags.UNDERLINE | Flags.DOUBLE_UNDERLINE | Flags.CURLY_UNDERLINE)) {
         ctx.fillStyle = this.palette.resolve(attr.underline, fg);
         ctx.fillRect(x, y + ch - 2 * thickness, cw * span, thickness);
         if (attr.flags & Flags.DOUBLE_UNDERLINE) ctx.fillRect(x, y + ch - 4 * thickness, cw * span, thickness);
@@ -212,6 +218,14 @@ export class CanvasRenderer {
         ctx.fillRect(x, y + Math.round(ch / 2), cw * span, thickness);
       }
     }
+  }
+
+  private inLink(row: number, col: number): boolean {
+    const l = this.link;
+    if (!l) return false;
+    const afterStart = row > l.start.row || (row === l.start.row && col >= l.start.col);
+    const beforeEnd = row < l.end.row || (row === l.end.row && col <= l.end.col);
+    return afterStart && beforeEnd;
   }
 
   private drawCursor(): void {

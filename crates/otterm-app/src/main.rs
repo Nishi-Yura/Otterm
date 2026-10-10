@@ -212,6 +212,47 @@ fn session_reveal(state: State<'_, AppState>, id: SessionId, line: u64) -> CmdRe
 }
 
 #[tauri::command]
+fn session_clear_scrollback(state: State<'_, AppState>, id: SessionId) -> CmdResult {
+    state.sessions.clear_scrollback(id).map_err(err)
+}
+
+/// Clipboard text, read in Rust: the WebView would ask the user for permission on every read.
+#[tauri::command]
+fn clipboard_read() -> CmdResult<String> {
+    arboard::Clipboard::new().and_then(|mut c| c.get_text()).map_err(err)
+}
+
+#[tauri::command]
+fn clipboard_write(text: String) -> CmdResult {
+    arboard::Clipboard::new().and_then(|mut c| c.set_text(text)).map_err(err)
+}
+
+/// Open a web link in the default browser (decision I2: Ctrl+click). Only http and https, so a
+/// link in terminal output cannot start a program.
+#[tauri::command]
+fn open_url(url: String) -> CmdResult {
+    let ok_scheme = url.starts_with("https://") || url.starts_with("http://");
+    if !ok_scheme || url.chars().any(|c| c.is_whitespace() || c.is_control()) || url.len() > 4096 {
+        return Err(format!("not an http(s) link: {url}"));
+    }
+    // Automated UI tests set this so that clicking a link records it instead of opening a browser.
+    if let Some(log) = std::env::var_os("OTTERM_TEST_OPEN_LOG") {
+        use std::io::Write;
+        let mut f = std::fs::OpenOptions::new().create(true).append(true).open(log).map_err(err)?;
+        return writeln!(f, "{url}").map_err(err);
+    }
+    // The URL is one argument to a program, never parsed by a shell.
+    let program = if cfg!(windows) {
+        "explorer.exe"
+    } else if cfg!(target_os = "macos") {
+        "open"
+    } else {
+        "xdg-open"
+    };
+    std::process::Command::new(program).arg(&url).spawn().map(drop).map_err(err)
+}
+
+#[tauri::command]
 fn session_close(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.close(id).map_err(err)
 }
@@ -267,6 +308,10 @@ fn main() {
             session_text,
             session_search,
             session_reveal,
+            session_clear_scrollback,
+            clipboard_read,
+            clipboard_write,
+            open_url,
             session_close,
         ])
         .run(tauri::generate_context!())
@@ -299,6 +344,10 @@ fn main() {
             session_text,
             session_search,
             session_reveal,
+            session_clear_scrollback,
+            clipboard_read,
+            clipboard_write,
+            open_url,
             session_close,
             bench::bench_mode,
             bench::bench_ipc_start,

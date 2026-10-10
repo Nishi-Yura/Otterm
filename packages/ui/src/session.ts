@@ -30,6 +30,7 @@ export interface Session {
   search(query: string, opts: SearchOptions): Promise<[number, number, number, number][]>;
   /** Scroll so that a line is in view. */
   reveal(line: number): Promise<void>;
+  clearScrollback(): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -48,6 +49,15 @@ export interface MouseInput {
   alt: boolean;
   ctrl: boolean;
 }
+
+/** The OS clipboard, through Rust (a WebView read would ask the user for permission each time). */
+export const clipboard = {
+  read: () => invoke<string>("clipboard_read"),
+  write: (text: string) => invoke<void>("clipboard_write", { text }),
+};
+
+/** Open an http(s) link in the default browser. */
+export const openUrl = (url: string) => invoke<void>("open_url", { url });
 
 /** Largest scroll step; the Rust side takes an i32 and treats the extremes as top / bottom. */
 export const SCROLL_TOP = 2 ** 31 - 1;
@@ -70,6 +80,7 @@ export async function createSession(cols: number, rows: number, onEvent: (e: Ses
       invoke<string>("session_text", { id, startLine, startCol, endLine, endCol }),
     search: (query, opts) => invoke("session_search", { id, query, ...opts }),
     reveal: (line) => invoke("session_reveal", { id, line }),
+    clearScrollback: () => invoke("session_clear_scrollback", { id }),
     close: () => invoke("session_close", { id }),
   };
 }
