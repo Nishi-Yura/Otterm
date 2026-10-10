@@ -7,6 +7,7 @@
 mod cell;
 pub mod diff;
 mod input;
+mod reflow;
 mod term;
 
 pub use cell::{Attrs, Cell, Color, Row, flags};

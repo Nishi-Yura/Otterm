@@ -240,11 +240,14 @@ fn resize_keeps_cursor_line_visible() {
 }
 
 #[test]
-fn resize_columns_truncates_and_pads() {
+fn resize_columns_rewraps_and_pads() {
     let mut t = term(6, 1, "abc日");
     t.resize(4, 1);
-    assert_eq!(text(&t), ["abc"], "the cut wide character becomes blank");
+    // 日 no longer fits after "abc": it wraps, and "abc" scrolls into history.
+    assert_eq!(text(&t), ["日"]);
+    assert_eq!(t.scrollback()[0].text(), "abc");
     t.resize(8, 1);
+    assert_eq!(text(&t), ["abc日"]);
     assert_eq!(t.screen()[0].cells.len(), 8);
 }
 

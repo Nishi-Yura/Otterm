@@ -74,6 +74,8 @@ function Terminal() {
         const next = fit();
         if (next.cols !== last.cols || next.rows !== last.rows) {
           last = next;
+          // Reflow renumbers lines; a selection would point at other text.
+          clearSelection();
           void session?.resize(next.cols, next.rows);
         } else {
           for (let r = 0; r < model.rows; r++) model.dirty.add(r);

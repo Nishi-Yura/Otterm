@@ -324,7 +324,8 @@ impl Terminal {
 
     // --- resize --------------------------------------------------------------
 
-    /// Change the size. Lines are not reflowed yet: wider rows gain blanks, narrower rows are cut.
+    /// Change the size. On the primary screen a new width rewraps lines (scrollback included); the
+    /// alternate screen is cut or padded, since its application redraws it.
     pub fn resize(&mut self, cols: usize, rows: usize) {
         let cols = cols.max(1);
         let rows = rows.max(1);
@@ -335,7 +336,10 @@ impl Terminal {
 
         // Primary: keep the cursor row on screen. Shrinking pushes top lines into scrollback;
         // growing pulls them back.
-        if rows < self.rows {
+        let mut pending_wrap = false;
+        if cols != self.cols && !self.modes.alt_screen {
+            pending_wrap = self.reflow_primary(cols, rows);
+        } else if rows < self.rows {
             let excess = (self.cursor.row + 1).saturating_sub(rows).min(self.rows - rows);
             for row in self.primary.drain(..excess) {
                 if !self.modes.alt_screen {
@@ -379,13 +383,34 @@ impl Terminal {
         self.rows = rows;
         self.cursor.row = self.cursor.row.min(rows - 1);
         self.cursor.col = self.cursor.col.min(cols - 1);
-        self.cursor.pending_wrap = false;
+        self.cursor.pending_wrap = pending_wrap;
         self.scroll_top = 0;
         self.scroll_bottom = rows - 1;
         self.tabs = default_tabs(cols);
         self.dirty = vec![true; rows];
         self.full_damage = true;
         self.trim_scrollback();
+    }
+
+    /// Rewrap the primary screen and the scrollback for a new width (issue #2). Returns whether
+    /// the cursor ends up waiting to wrap.
+    fn reflow_primary(&mut self, cols: usize, rows: usize) -> bool {
+        let mut all: Vec<Row> = self.scrollback.drain(..).chain(self.primary.drain(..)).collect();
+        let cursor_at = all.len() - self.rows + self.cursor.row;
+        // Blank rows below the cursor hold nothing; without them the text can move down.
+        while all.len() > cursor_at + 1 && all.last().is_some_and(is_blank) {
+            all.pop();
+        }
+        let (mut out, (row, col)) = crate::reflow::reflow(all, cols, (cursor_at, self.cursor.col));
+        // Show the last `rows` rows, unless that would leave the cursor above the screen.
+        let start = out.len().saturating_sub(rows).min(row);
+        let mut screen: VecDeque<Row> = out.drain(start..).take(rows).collect();
+        screen.resize_with(rows, || Row::new(cols, &Attrs::default()));
+        self.scrollback = out.iter().map(Row::compact).collect();
+        self.primary = screen;
+        self.cursor.row = row - start;
+        self.cursor.col = col.min(cols - 1);
+        col >= cols
     }
 
     // --- grid helpers ----------------------------------------------------------
@@ -884,6 +909,11 @@ impl Terminal {
     fn respond(&mut self, s: &str) {
         self.responses.extend_from_slice(s.as_bytes());
     }
+}
+
+/// A row with nothing on it that does not continue on the next one.
+fn is_blank(row: &Row) -> bool {
+    !row.wrapped && row.extra.is_empty() && row.cells.iter().all(|c| *c == Cell::default())
 }
 
 fn default_tabs(cols: usize) -> Vec<bool> {
