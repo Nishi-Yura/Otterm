@@ -38,6 +38,8 @@ interface Tab {
   active: number;
   /** A pane shown alone (Ctrl+Shift+Z), if any. */
   zoomed?: number;
+  /** A name the user gave the tab (double-click); otherwise the title follows the pane. */
+  name?: string;
 }
 
 interface Pane {
@@ -389,7 +391,50 @@ export function App() {
 
   /** Decision I10: the program's title (OSC 0/2) if it set one, else the folder name. */
   const paneTitle = (pane: number) => titles()[pane] || folders()[pane] || "";
-  const tabTitle = (tab: Tab) => paneTitle(tab.active) || t("tab-untitled");
+  const tabTitle = (tab: Tab) => tab.name || paneTitle(tab.active) || t("tab-untitled");
+
+  /** The tab whose name is being edited. */
+  const [renaming, setRenaming] = createSignal<number>();
+  const finishRename = (tabId: number, value: string | undefined) => {
+    if (renaming() !== tabId) return;
+    setRenaming(undefined);
+    // An empty name goes back to the automatic title.
+    if (value !== undefined) updateTab(tabId, (x) => ({ ...x, name: value.trim() || undefined }));
+    focusActive();
+  };
+  const focusActive = () =>
+    setTimeout(() => (document.querySelector(".terminal.active .input") as HTMLElement | null)?.focus());
+
+  /** Drag a tab sideways to reorder (docs/03 §3.2). Starts after a few pixels, so a click selects. */
+  const dragTab = (tabId: number, e: MouseEvent) => {
+    const startX = e.clientX;
+    let dragging = false;
+    const move = (ev: MouseEvent) => {
+      if (!dragging && Math.abs(ev.clientX - startX) < 6) return;
+      dragging = true;
+      const els = [...document.querySelectorAll<HTMLElement>(".tabbar .tab")];
+      const list = tabs();
+      const from = list.findIndex((x) => x.id === tabId);
+      // The slot whose middle the pointer has passed.
+      let to = els.findIndex((el) => {
+        const r = el.getBoundingClientRect();
+        return ev.clientX < r.left + r.width / 2;
+      });
+      if (to === -1) to = list.length - 1;
+      else if (to > from) to -= 1;
+      if (to === from || from === -1) return;
+      const next = [...list];
+      const [moved] = next.splice(from, 1);
+      if (moved) next.splice(to, 0, moved);
+      setTabs(next);
+    };
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
 
   // Looking at a tab clears its bell marker.
   createEffect(() => {
@@ -470,11 +515,27 @@ export function App() {
                   void askThenClose(leaves(tab.root), () => closeTab(tab.id));
                 } else if (e.button === 0) {
                   setActiveTab(tab.id);
+                  if (renaming() !== tab.id) dragTab(tab.id, e);
                 }
               }}
+              onDblClick={() => setRenaming(tab.id)}
             >
               {rang().has(tab.id) && <span class="tab-bell" aria-hidden="true" />}
-              <span class="tab-title">{tabTitle(tab)}</span>
+              <Show when={renaming() === tab.id} fallback={<span class="tab-title">{tabTitle(tab)}</span>}>
+                <input
+                  class="tab-rename"
+                  aria-label={t("tab-rename")}
+                  value={tab.name ?? tabTitle(tab)}
+                  ref={(el) => setTimeout(() => el.select())}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") finishRename(tab.id, e.currentTarget.value);
+                    if (e.key === "Escape") finishRename(tab.id, undefined);
+                  }}
+                  onBlur={(e) => finishRename(tab.id, e.currentTarget.value)}
+                />
+              </Show>
               <button
                 type="button"
                 class="tab-close"

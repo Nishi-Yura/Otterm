@@ -312,6 +312,7 @@ profile-powershell = Windows PowerShell
 profile-cmd = Command Prompt
 profile-git-bash = Git Bash
 tab-close = Close tab
+tab-rename = Tab name
 tab-untitled = Terminal
 close-running-title = A program is still running
 close-running-body = { $program } is running. Closing ends it.

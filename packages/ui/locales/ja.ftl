@@ -312,6 +312,7 @@ profile-powershell = Windows PowerShell
 profile-cmd = コマンド プロンプト
 profile-git-bash = Git Bash
 tab-close = タブを閉じる
+tab-rename = タブの名前
 tab-untitled = ターミナル
 close-running-title = 実行中のプログラムがあります
 close-running-body = { $program } が実行中です。閉じると終了します。

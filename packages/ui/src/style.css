@@ -68,6 +68,19 @@ body,
   background: #f0c674;
 }
 
+/* Renaming a tab in place (double-click). */
+.tab-rename {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 4px;
+  border: 1px solid #4f8cff;
+  border-radius: 3px;
+  outline: none;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
 .tab-title {
   flex: 1;
   overflow: hidden;
