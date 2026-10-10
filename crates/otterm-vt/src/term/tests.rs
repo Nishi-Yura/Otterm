@@ -317,3 +317,29 @@ fn rows_are_fully_cleared_after_scrolling_any_content() {
         assert!(t.screen()[1].extra.is_empty());
     }
 }
+
+#[test]
+fn lines_keep_their_number_when_they_scroll_into_history() {
+    let mut t = Terminal::new(10, 2);
+    t.set_scrollback_limit(2);
+    t.advance(b"l0\r\nl1\r\nl2\r\nl3\r\nl4");
+    // l0 was dropped from the 2-line scrollback.
+    assert_eq!(t.history_base(), 1);
+    assert_eq!(t.screen_top(), 3);
+    assert_eq!(t.line(1).unwrap().text(), "l1");
+    assert_eq!(t.line(4).unwrap().text(), "l4");
+    assert!(t.line(0).is_none());
+    assert!(t.line(5).is_none());
+}
+
+#[test]
+fn text_range_joins_wrapped_lines_and_trims_blanks() {
+    let mut t = Terminal::new(8, 4);
+    t.advance("abcdefghij\r\n日本 x  \r\nlast".as_bytes());
+    // Row 0 "abcdefgh" wraps into row 1 "ij".
+    assert_eq!(t.text_range((0, 0), (3, 1)), "abcdefghij\n日本 x\nla");
+    // Order does not matter; a range inside one line.
+    assert_eq!(t.text_range((2, 3), (2, 0)), "日本");
+    // Starting on a wide character's spacer copies what follows; trailing blanks are dropped.
+    assert_eq!(t.text_range((2, 1), (2, 4)), "本");
+}

@@ -51,6 +51,14 @@ export interface Frame {
   /** Every row is in `lines`; otherwise only the changed ones. */
   full: boolean;
   altScreen: boolean;
+  /** Mouse tracking the application asked for: 0 off, 1 click, 2 drag, 3 any motion. */
+  mouseMode: number;
+  /** Line number of row 0. Lines keep their number as they scroll into history. */
+  topLine: number;
+  /** Scrollback length in lines. */
+  scrollback: number;
+  /** How many lines the view is scrolled up from the live screen. */
+  offset: number;
   lines: FrameRow[];
 }
 
@@ -79,6 +87,10 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
   const cursorCol = u16();
   const cursor = u8();
   const flags = u8();
+  const topLine = Number(v.getBigUint64(p, true));
+  p += 8;
+  const scrollback = u32();
+  const offset = u32();
 
   const table: Attr[] = [];
   for (let n = u16(); n > 0; n--) {
@@ -117,6 +129,10 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
     cursorShape: (cursor >> 2) & 3,
     full: (flags & 1) !== 0,
     altScreen: (flags & 2) !== 0,
+    mouseMode: (flags >> 2) & 3,
+    topLine,
+    scrollback,
+    offset,
     lines,
   };
 }

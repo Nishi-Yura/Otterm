@@ -65,6 +65,17 @@ body,
   pointer-events: none;
 }
 
+/* Position in the scrollback, shown while the view is scrolled up. */
+.scrollbar {
+  position: absolute;
+  right: 2px;
+  width: 4px;
+  min-height: 8px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.3);
+  pointer-events: none;
+}
+
 .status {
   position: absolute;
   right: 12px;

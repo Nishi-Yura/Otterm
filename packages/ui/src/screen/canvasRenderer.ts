@@ -1,6 +1,7 @@
 import { DEFAULT_ATTR, type ScreenModel } from "./model";
 import { Palette } from "./palette";
 import { CursorShape, Flags } from "./protocol";
+import type { Selection } from "./selection";
 
 export interface FontConfig {
   family: string;
@@ -30,6 +31,7 @@ export class CanvasRenderer {
   private baseline = 0;
   private scheduled = false;
   focused = true;
+  selection: Selection | undefined;
   /** Called after each draw, e.g. to move the IME anchor to the cursor. */
   onDraw: (() => void) | undefined;
 
@@ -68,6 +70,27 @@ export class CanvasRenderer {
       cols: Math.max(2, Math.floor((cssWidth * this.dpr) / this.cellWidth)),
       rows: Math.max(1, Math.floor((cssHeight * this.dpr) / this.cellHeight)),
     };
+  }
+
+  /** The cell under a point in CSS pixels relative to the canvas, clamped to the grid. */
+  cellAt(cssX: number, cssY: number): { row: number; col: number } {
+    const col = Math.floor((cssX * this.dpr) / this.cellWidth);
+    const row = Math.floor((cssY * this.dpr) / this.cellHeight);
+    return {
+      row: Math.min(Math.max(row, 0), Math.max(0, this.model.rows - 1)),
+      col: Math.min(Math.max(col, 0), Math.max(0, this.model.cols - 1)),
+    };
+  }
+
+  /** Cell height in CSS pixels. */
+  get lineHeightCss(): number {
+    return this.cellHeight / this.dpr;
+  }
+
+  /** Redraw every row, e.g. after the selection changed. */
+  invalidate(): void {
+    for (let r = 0; r < this.model.rows; r++) this.model.dirty.add(r);
+    this.schedule();
   }
 
   /** Size the canvas for the model's grid. */
@@ -120,6 +143,7 @@ export class CanvasRenderer {
 
     ctx.fillStyle = theme.background;
     ctx.fillRect(0, y, this.model.cols * cw, ch);
+    const selected = this.selection?.colsOn(this.model, this.model.topLine + row);
 
     for (let col = 0; col < this.model.cols; col++) {
       const attr = line.attrs[col] ?? DEFAULT_ATTR;
@@ -128,6 +152,7 @@ export class CanvasRenderer {
       let fg = this.palette.resolve(attr.fg, theme.foreground);
       let bg = this.palette.resolve(attr.bg, theme.background);
       if (attr.flags & Flags.INVERSE) [fg, bg] = [bg, fg];
+      if (selected && col >= selected[0] && col < selected[1]) bg = theme.selection;
       const x = col * cw;
 
       if (bg !== theme.background) {

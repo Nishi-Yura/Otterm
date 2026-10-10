@@ -19,6 +19,13 @@ export class ScreenModel {
   cursorVisible = true;
   cursorBlink = true;
   cursorShape = 0;
+  altScreen = false;
+  mouseMode = 0;
+  /** Line number of row 0 (see Frame.topLine). */
+  topLine = 0;
+  scrollback = 0;
+  /** Lines the view is scrolled up; 0 is the live screen. */
+  offset = 0;
   /** Rows changed since the renderer last drew. */
   readonly dirty = new Set<number>();
 
@@ -49,7 +56,18 @@ export class ScreenModel {
     this.cursorVisible = f.cursorVisible;
     this.cursorBlink = f.cursorBlink;
     this.cursorShape = f.cursorShape;
+    this.altScreen = f.altScreen;
+    this.mouseMode = f.mouseMode;
+    this.topLine = f.topLine;
+    this.scrollback = f.scrollback;
+    this.offset = f.offset;
     this.dirty.add(this.cursorRow);
+  }
+
+  /** Row of a line number in the view, or -1 when it is not visible. */
+  rowOf(line: number): number {
+    const row = line - this.topLine;
+    return row >= 0 && row < this.rows ? row : -1;
   }
 
   /** Visible text of one row (for tests and copy). */

@@ -20,8 +20,28 @@ export interface Session {
   resize(cols: number, rows: number): Promise<void>;
   /** Ask for a full frame. */
   redraw(): Promise<void>;
+  /** Scroll the view up (positive) or down; on the alternate screen this sends arrow keys. */
+  scroll(lines: number): Promise<void>;
+  /** Report a mouse event; resolves to false if the application did not ask for it. */
+  mouse(input: MouseInput): Promise<boolean>;
+  /** Text between two cells (line numbers from the frames), inclusive. */
+  text(startLine: number, startCol: number, endLine: number, endCol: number): Promise<string>;
   close(): Promise<void>;
 }
+
+export interface MouseInput {
+  button: "left" | "middle" | "right" | "wheelUp" | "wheelDown" | "none";
+  action: "press" | "release" | "motion";
+  row: number;
+  col: number;
+  shift: boolean;
+  alt: boolean;
+  ctrl: boolean;
+}
+
+/** Largest scroll step; the Rust side takes an i32 and treats the extremes as top / bottom. */
+export const SCROLL_TOP = 2 ** 31 - 1;
+export const SCROLL_BOTTOM = -(2 ** 31);
 
 export async function createSession(cols: number, rows: number, onEvent: (e: SessionEvent) => void): Promise<Session> {
   const events = new Channel<SessionEvent>();
@@ -34,6 +54,10 @@ export async function createSession(cols: number, rows: number, onEvent: (e: Ses
     paste: (text) => invoke("session_paste", { id, text }),
     resize: (c, r) => invoke("session_resize", { id, cols: c, rows: r }),
     redraw: () => invoke("session_redraw", { id }),
+    scroll: (lines) => invoke("session_scroll", { id, lines }),
+    mouse: (input) => invoke<boolean>("session_mouse", { id, input }),
+    text: (startLine, startCol, endLine, endCol) =>
+      invoke<string>("session_text", { id, startLine, startCol, endLine, endCol }),
     close: () => invoke("session_close", { id }),
   };
 }

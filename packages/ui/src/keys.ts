@@ -27,6 +27,27 @@ export function isPasteShortcut(e: KeyboardEvent): boolean {
 }
 
 /**
+ * The copy shortcut (decision B4): Cmd+C on macOS, Ctrl+Shift+C on Linux and Windows, and on
+ * Windows also Ctrl+C while there is a selection (without one, Ctrl+C stays SIGINT).
+ */
+export function isCopyShortcut(e: KeyboardEvent, hasSelection: boolean): boolean {
+  if (e.key.toLowerCase() !== "c" || e.altKey) return false;
+  if (platform === "macos") return e.metaKey && !e.ctrlKey;
+  if (e.ctrlKey && e.shiftKey) return true;
+  return platform === "windows" && e.ctrlKey && hasSelection;
+}
+
+/** Scrollback keys: Shift+PageUp/PageDown by a page, Ctrl+Shift+Home/End to the top / bottom. */
+export function scrollKey(e: KeyboardEvent, rows: number): number | "top" | "bottom" | undefined {
+  if (!e.shiftKey || e.altKey || e.metaKey) return undefined;
+  if (!e.ctrlKey && e.key === "PageUp") return Math.max(1, rows - 1);
+  if (!e.ctrlKey && e.key === "PageDown") return -Math.max(1, rows - 1);
+  if (e.ctrlKey && e.key === "Home") return "top";
+  if (e.ctrlKey && e.key === "End") return "bottom";
+  return undefined;
+}
+
+/**
  * The key to send, or `undefined` to leave the event to the browser (IME composition, modifiers on
  * their own, macOS Cmd shortcuts, paste).
  */

@@ -136,6 +136,9 @@ pub struct Terminal {
     alt: VecDeque<Row>,
     scrollback: VecDeque<Row>,
     scrollback_limit: usize,
+    /// Line number of `scrollback[0]`. Lines are numbered from the first line ever written and
+    /// keep their number while they move from the screen into scrollback; see [`Self::line`].
+    history_base: u64,
     cursor: Cursor,
     pen: Attrs,
     /// Saved cursor for the primary and the alternate screen (DECSC is per screen).
@@ -170,6 +173,7 @@ impl Terminal {
             alt: (0..rows).map(|_| Row::new(cols, &pen)).collect(),
             scrollback: VecDeque::new(),
             scrollback_limit: 10_000,
+            history_base: 0,
             cursor: Cursor::default(),
             pen,
             saved: [Saved::default(); 2],
@@ -215,6 +219,55 @@ impl Terminal {
     /// Lines that scrolled off the top of the primary screen, oldest first.
     pub fn scrollback(&self) -> &VecDeque<Row> {
         &self.scrollback
+    }
+
+    /// Line number of the oldest scrollback line. Screen row `r` is line `screen_top() + r`.
+    pub fn history_base(&self) -> u64 {
+        self.history_base
+    }
+
+    /// Line number of screen row 0.
+    pub fn screen_top(&self) -> u64 {
+        self.history_base + self.scrollback.len() as u64
+    }
+
+    /// A line of scrollback or of the visible screen by line number; `None` once it was dropped
+    /// from scrollback, or below the screen.
+    pub fn line(&self, line: u64) -> Option<&Row> {
+        let i = usize::try_from(line.checked_sub(self.history_base)?).ok()?;
+        match i.checked_sub(self.scrollback.len()) {
+            None => self.scrollback.get(i),
+            Some(r) => self.screen().get(r),
+        }
+    }
+
+    /// Text from `start` to `end` inclusive, as (line, column); the order of the two does not
+    /// matter. Lines end with `\n` unless they wrapped; trailing blanks are dropped.
+    pub fn text_range(&self, start: (u64, usize), end: (u64, usize)) -> String {
+        let (start, end) = if start <= end { (start, end) } else { (end, start) };
+        let mut out = String::new();
+        for line in start.0..=end.0 {
+            let last = line == end.0;
+            let Some(row) = self.line(line) else { continue };
+            let from = if line == start.0 { start.1 } else { 0 };
+            let to = if last { end.1.saturating_add(1) } else { usize::MAX };
+            let mut text = String::new();
+            for col in from..to.min(row.cells.len()) {
+                if row.cells[col].is_spacer() {
+                    continue;
+                }
+                text.push_str(&row.cell_text(col));
+            }
+            if row.wrapped && !last {
+                out.push_str(&text);
+            } else {
+                out.push_str(text.trim_end_matches(' '));
+                if !last {
+                    out.push('\n');
+                }
+            }
+        }
+        out
     }
 
     pub fn cursor(&self) -> Cursor {
@@ -356,6 +409,7 @@ impl Terminal {
     fn trim_scrollback(&mut self) {
         while self.scrollback.len() > self.scrollback_limit {
             self.scrollback.pop_front();
+            self.history_base += 1;
         }
     }
 
@@ -399,6 +453,7 @@ impl Terminal {
                 self.scrollback.push_back(row.compact());
                 if self.scrollback.len() > self.scrollback_limit {
                     self.scrollback.pop_front();
+                    self.history_base += 1;
                 }
             }
             if row.cells.len() == cols {
@@ -605,7 +660,9 @@ impl Terminal {
         let (cols, rows) = (self.cols, self.rows);
         let limit = self.scrollback_limit;
         let ambiguous = self.ambiguous_wide;
+        let base = self.history_base + self.scrollback.len() as u64;
         *self = Terminal::new(cols, rows);
+        self.history_base = base;
         self.scrollback_limit = limit;
         self.ambiguous_wide = ambiguous;
     }
@@ -733,6 +790,7 @@ impl Terminal {
                 }
             }
             3 => {
+                self.history_base += self.scrollback.len() as u64;
                 self.scrollback.clear();
                 self.full_damage = true;
             }

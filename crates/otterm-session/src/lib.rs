@@ -15,8 +15,9 @@ use std::time::{Duration, Instant};
 use anyhow::{Result, anyhow};
 use otterm_pty::{Pty, Spawned};
 pub use otterm_pty::{PtySize, SpawnOptions};
-pub use otterm_vt::Key;
+use otterm_vt::diff::FrameState;
 use otterm_vt::{Event, Terminal};
+pub use otterm_vt::{Key, Mouse, MouseAction, MouseButton};
 
 pub type SessionId = u64;
 
@@ -58,6 +59,16 @@ pub trait SessionManager: Send + Sync {
     fn resize(&self, id: SessionId, size: PtySize) -> Result<()>;
     /// Send the whole screen in the next frame (a UI attached or lost its state).
     fn redraw(&self, id: SessionId) -> Result<()>;
+    /// Scroll the view `lines` up into the scrollback (negative: down; `i32::MIN` / `i32::MAX` go
+    /// to the bottom / top). On the alternate screen there is no scrollback, so the wheel sends
+    /// arrow keys instead, as xterm's alternateScroll does.
+    fn scroll(&self, id: SessionId, lines: i32) -> Result<()>;
+    /// Report a mouse event to the application. Returns `false` if its mouse mode does not ask
+    /// for it (the UI may then use it, e.g. for selection).
+    fn mouse(&self, id: SessionId, mouse: &Mouse) -> Result<bool>;
+    /// Text between two (line, column) positions, inclusive. Line numbers are those of the frames
+    /// (`otterm_vt::Terminal::line`).
+    fn text(&self, id: SessionId, start: (u64, usize), end: (u64, usize)) -> Result<String>;
     /// Kill the process. [`SessionEvent::Exited`] follows.
     fn close(&self, id: SessionId) -> Result<()>;
 }
@@ -75,10 +86,32 @@ struct Session {
     /// reader on Windows (ConPTY reports no EOF while the master is open).
     pty: Mutex<Option<Pty>>,
     term: Mutex<Terminal>,
+    /// Line number of the top of the view while it is scrolled up; `None` follows the output.
+    /// Holding a line number rather than an offset keeps the view still while output arrives.
+    view_top: Mutex<Option<u64>>,
     frame: FrameSignal,
 }
 
 impl Session {
+    /// How far the view is scrolled up from the bottom, in lines.
+    fn view_offset(&self, term: &Terminal) -> usize {
+        let mut top = self.view_top.lock().unwrap();
+        let Some(t) = *top else { return 0 };
+        let t = t.max(term.history_base());
+        let offset = term.screen_top().saturating_sub(t) as usize;
+        if offset == 0 {
+            *top = None;
+        }
+        offset
+    }
+
+    /// Go back to the live screen, e.g. when the user types.
+    fn follow_output(&self) {
+        if self.view_top.lock().unwrap().take().is_some() {
+            self.frame.notify(false);
+        }
+    }
+
     fn with_pty<T>(&self, f: impl FnOnce(&mut Pty) -> Result<T>) -> Result<T> {
         match self.pty.lock().unwrap().as_mut() {
             Some(pty) => f(pty),
@@ -159,6 +192,7 @@ impl SessionManager for LocalSessionManager {
         let session = Arc::new(Session {
             pty: Mutex::new(Some(pty)),
             term: Mutex::new(Terminal::new(size.cols as usize, size.rows as usize)),
+            view_top: Mutex::new(None),
             frame: FrameSignal::default(),
         });
         self.sessions.lock().unwrap().insert(id, Arc::clone(&session));
@@ -221,7 +255,10 @@ impl SessionManager for LocalSessionManager {
         let session = self.get(id)?;
         let modes = session.term.lock().unwrap().modes();
         match otterm_vt::encode_key(key, &modes) {
-            Some(bytes) => session.with_pty(|p| p.write(&bytes)).map(|()| true),
+            Some(bytes) => {
+                session.follow_output();
+                session.with_pty(|p| p.write(&bytes)).map(|()| true)
+            }
             None => Ok(false),
         }
     }
@@ -230,6 +267,7 @@ impl SessionManager for LocalSessionManager {
         let session = self.get(id)?;
         let modes = session.term.lock().unwrap().modes();
         let bytes = otterm_vt::encode_paste(text, &modes);
+        session.follow_output();
         session.with_pty(|p| p.write(&bytes))
     }
 
@@ -246,6 +284,38 @@ impl SessionManager for LocalSessionManager {
         session.term.lock().unwrap().mark_full_damage();
         session.frame.notify(false);
         Ok(())
+    }
+
+    fn scroll(&self, id: SessionId, lines: i32) -> Result<()> {
+        let session = self.get(id)?;
+        let term = session.term.lock().unwrap();
+        let modes = term.modes();
+        if modes.alt_screen {
+            drop(term);
+            let key = Key::new(if lines > 0 { "ArrowUp" } else { "ArrowDown" });
+            let bytes = otterm_vt::encode_key(&key, &modes).expect("arrow keys have an encoding");
+            return session.with_pty(|p| p.write(&bytes.repeat(lines.unsigned_abs().min(100) as usize)));
+        }
+        let offset = session.view_offset(&term) as i64;
+        let target = (offset + lines as i64).clamp(0, term.scrollback().len() as i64) as u64;
+        let top = term.screen_top() - target;
+        drop(term);
+        *session.view_top.lock().unwrap() = (target > 0).then_some(top);
+        session.frame.notify(false);
+        Ok(())
+    }
+
+    fn mouse(&self, id: SessionId, mouse: &Mouse) -> Result<bool> {
+        let session = self.get(id)?;
+        let modes = session.term.lock().unwrap().modes();
+        match otterm_vt::encode_mouse(mouse, &modes) {
+            Some(bytes) => session.with_pty(|p| p.write(&bytes)).map(|()| true),
+            None => Ok(false),
+        }
+    }
+
+    fn text(&self, id: SessionId, start: (u64, usize), end: (u64, usize)) -> Result<String> {
+        Ok(self.get(id)?.term.lock().unwrap().text_range(start, end))
     }
 
     fn close(&self, id: SessionId) -> Result<()> {
@@ -278,7 +348,7 @@ fn apply_output(session: &Session, sink: &EventSink, bytes: &[u8]) {
 /// Turn screen changes into at most one frame per [`FRAME_INTERVAL`].
 fn frame_loop(id: SessionId, session: &Session, sink: &EventSink) {
     let mut last_frame = Instant::now() - FRAME_INTERVAL;
-    let mut last_cursor = None;
+    let mut last = FrameState::default();
     let mut sync_since: Option<Instant> = None;
     while session.frame.wait() {
         let wait = FRAME_INTERVAL.saturating_sub(last_frame.elapsed());
@@ -299,7 +369,8 @@ fn frame_loop(id: SessionId, session: &Session, sink: &EventSink) {
                 }
             }
             sync_since = None;
-            otterm_vt::diff::encode_frame(&mut term, id as u32, &mut last_cursor, &mut out);
+            let offset = session.view_offset(&term);
+            otterm_vt::diff::encode_frame(&mut term, id as u32, offset, &mut last, &mut out);
         }
         last_frame = Instant::now();
         if !out.is_empty() {
@@ -404,6 +475,43 @@ mod tests {
                 break;
             }
         }
+    }
+
+    /// The view offset of the next full frame (header bytes 27..31).
+    fn next_offset(rx: &mpsc::Receiver<SessionEvent>) -> u32 {
+        loop {
+            if let SessionEvent::Frame(f) = rx.recv_timeout(Duration::from_secs(5)).expect("a frame") {
+                return u32::from_le_bytes(f[27..31].try_into().unwrap());
+            }
+        }
+    }
+
+    #[test]
+    fn scrolling_shows_history_and_typing_returns_to_the_bottom() {
+        let mgr = LocalSessionManager::new();
+        let (id, rx) = start(&mgr);
+        mgr.resize(id, PtySize { cols: 40, rows: 5 }).unwrap();
+        let lines: &[u8] = if cfg!(windows) {
+            b"for /l %i in (1,1,30) do @echo n%i\r"
+        } else {
+            b"for i in $(seq 30); do echo n$i; done\r"
+        };
+        mgr.write(id, lines).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while !mgr.screen_text(id).unwrap().iter().any(|l| l == "n30") {
+            assert!(Instant::now() < deadline, "screen: {:?}", mgr.screen_text(id).unwrap());
+            thread::sleep(Duration::from_millis(20));
+        }
+        thread::sleep(Duration::from_millis(100));
+        while rx.try_recv().is_ok() {}
+
+        mgr.scroll(id, 3).unwrap();
+        assert_eq!(next_offset(&rx), 3);
+        mgr.scroll(id, i32::MAX).unwrap();
+        assert!(next_offset(&rx) > 20, "scrolled to the top of the history");
+        mgr.key(id, &Key::new("x")).unwrap();
+        assert_eq!(next_offset(&rx), 0, "typing follows the output again");
+        mgr.close(id).unwrap();
     }
 
     #[test]

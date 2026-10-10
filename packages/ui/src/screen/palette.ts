@@ -4,6 +4,8 @@ export interface Theme {
   foreground: string;
   background: string;
   cursor: string;
+  /** Background of selected cells. */
+  selection: string;
   /** ANSI 0–15. */
   ansi: string[];
 }
@@ -12,6 +14,7 @@ export const DEFAULT_THEME: Theme = {
   foreground: "#d8dee9",
   background: "#1b1d23",
   cursor: "#88c0d0",
+  selection: "#3d4b63",
   ansi: [
     "#2e3440",
     "#e06c75",

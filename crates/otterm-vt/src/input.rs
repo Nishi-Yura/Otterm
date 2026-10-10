@@ -129,10 +129,110 @@ pub fn encode_paste(text: &str, modes: &Modes) -> Vec<u8> {
     }
 }
 
+/// A mouse button, for [`Mouse`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MouseButton {
+    Left,
+    Middle,
+    Right,
+    WheelUp,
+    WheelDown,
+    /// Motion with no button held.
+    None,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MouseAction {
+    Press,
+    Release,
+    Motion,
+}
+
+/// A mouse event on the grid, as the UI reports it. `row` and `col` are 0-based screen cells.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Mouse {
+    pub button: MouseButton,
+    pub action: MouseAction,
+    pub row: u16,
+    pub col: u16,
+    pub shift: bool,
+    pub alt: bool,
+    pub ctrl: bool,
+}
+
+/// Bytes reporting a mouse event to the application, or `None` if its mouse mode does not ask for
+/// this event. X10-style coordinates stop at 223; past that only SGR (1006) can report.
+pub fn encode_mouse(m: &Mouse, modes: &Modes) -> Option<Vec<u8>> {
+    use crate::term::MouseMode;
+    let wheel = matches!(m.button, MouseButton::WheelUp | MouseButton::WheelDown);
+    match (modes.mouse, m.action) {
+        (MouseMode::Off, _) => return None,
+        // Wheels have no release.
+        (_, MouseAction::Release) if wheel => return None,
+        (MouseMode::Click, MouseAction::Motion) => return None,
+        (MouseMode::Drag, MouseAction::Motion) if m.button == MouseButton::None => return None,
+        _ => {}
+    }
+    let base = match m.button {
+        MouseButton::Left => 0,
+        MouseButton::Middle => 1,
+        MouseButton::Right => 2,
+        MouseButton::None => 3,
+        MouseButton::WheelUp => 64,
+        MouseButton::WheelDown => 65,
+    };
+    let code = base
+        + if m.action == MouseAction::Motion { 32 } else { 0 }
+        + if m.shift { 4 } else { 0 }
+        + if m.alt { 8 } else { 0 }
+        + if m.ctrl { 16 } else { 0 };
+    let (x, y) = (m.col as u32 + 1, m.row as u32 + 1);
+    if modes.mouse_sgr {
+        let end = if m.action == MouseAction::Release { 'm' } else { 'M' };
+        return Some(format!("\x1b[<{code};{x};{y}{end}").into_bytes());
+    }
+    // Legacy encoding: a release does not say which button.
+    let code = if m.action == MouseAction::Release { 3 + (code & !3) } else { code };
+    if x > 223 || y > 223 {
+        return None;
+    }
+    Some(vec![0x1b, b'[', b'M', 32 + code as u8, 32 + x as u8, 32 + y as u8])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::Terminal;
+
+    fn mouse(button: MouseButton, action: MouseAction, row: u16, col: u16) -> Mouse {
+        Mouse { button, action, row, col, shift: false, alt: false, ctrl: false }
+    }
+
+    #[test]
+    fn mouse_reports_follow_the_mode() {
+        let press = mouse(MouseButton::Left, MouseAction::Press, 4, 9);
+        assert_eq!(encode_mouse(&press, &modes("")), None, "off by default");
+
+        let click = modes("\x1b[?1000h");
+        assert_eq!(encode_mouse(&press, &click).unwrap(), b"\x1b[M\x20\x2a\x25");
+        let release = mouse(MouseButton::Left, MouseAction::Release, 4, 9);
+        assert_eq!(encode_mouse(&release, &click).unwrap(), b"\x1b[M\x23\x2a\x25", "legacy release is button 3");
+        let drag = mouse(MouseButton::Left, MouseAction::Motion, 4, 9);
+        assert_eq!(encode_mouse(&drag, &click), None, "1000 has no motion");
+
+        let sgr = modes("\x1b[?1002h\x1b[?1006h");
+        assert_eq!(encode_mouse(&drag, &sgr).unwrap(), b"\x1b[<32;10;5M");
+        assert_eq!(encode_mouse(&release, &sgr).unwrap(), b"\x1b[<0;10;5m");
+        let hover = mouse(MouseButton::None, MouseAction::Motion, 0, 0);
+        assert_eq!(encode_mouse(&hover, &sgr), None, "1002 reports motion only with a button held");
+        assert_eq!(encode_mouse(&hover, &modes("\x1b[?1003h\x1b[?1006h")).unwrap(), b"\x1b[<35;1;1M");
+
+        let wheel = Mouse { ctrl: true, ..mouse(MouseButton::WheelDown, MouseAction::Press, 0, 0) };
+        assert_eq!(encode_mouse(&wheel, &sgr).unwrap(), b"\x1b[<81;1;1M");
+        let far = mouse(MouseButton::Left, MouseAction::Press, 0, 300);
+        assert_eq!(encode_mouse(&far, &click), None, "legacy coordinates stop at 223");
+        assert_eq!(encode_mouse(&far, &sgr).unwrap(), b"\x1b[<0;301;1M");
+    }
 
     fn modes(setup: &str) -> Modes {
         let mut t = Terminal::new(10, 2);

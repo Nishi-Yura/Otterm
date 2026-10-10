@@ -1,10 +1,12 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { render } from "solid-js/web";
 import { benchMode, runIpcBench } from "./bench";
-import { terminalKey } from "./keys";
+import { isCopyShortcut, scrollKey, terminalKey } from "./keys";
+import { attachPointer } from "./pointer";
 import { CanvasRenderer, DEFAULT_FONT } from "./screen/canvasRenderer";
 import { ScreenModel } from "./screen/model";
-import { connectScreen, createSession, type Session } from "./session";
+import { Selection } from "./screen/selection";
+import { connectScreen, createSession, SCROLL_BOTTOM, SCROLL_TOP, type Session } from "./session";
 import "./style.css";
 
 /** PTY resizes are debounced (docs/03 §1.2). */
@@ -15,6 +17,8 @@ function Terminal() {
   /** IME composition in progress (shown at the cursor, not sent to the shell until committed). */
   const [preedit, setPreedit] = createSignal<string>();
   const [anchor, setAnchor] = createSignal({ x: 0, y: 0, height: 0 });
+  /** Scrollbar thumb as fractions of the view height; shown while the view is scrolled up. */
+  const [thumb, setThumb] = createSignal<{ top: number; height: number }>();
   let host!: HTMLDivElement;
   let viewport!: HTMLDivElement;
   let canvas!: HTMLCanvasElement;
@@ -22,9 +26,12 @@ function Terminal() {
   let session: Session | undefined;
   let ws: WebSocket | undefined;
   let observer: ResizeObserver | undefined;
+  let detachPointer: (() => void) | undefined;
+  let renderer: CanvasRenderer | undefined;
   const model = new ScreenModel();
+  const selection = new Selection();
   // Dev builds expose the screen for automated checks (screen text, cursor).
-  if (import.meta.env.DEV) Object.assign(window, { __otterm: { model } });
+  if (import.meta.env.DEV) Object.assign(window, { __otterm: { model, selection } });
 
   onMount(async () => {
     if ((await benchMode()) === "ipc") {
@@ -33,14 +40,17 @@ function Terminal() {
       return;
     }
 
-    const renderer = new CanvasRenderer(canvas, model);
-    const fit = () => renderer.gridSize(viewport.clientWidth, viewport.clientHeight);
+    const r = new CanvasRenderer(canvas, model);
+    renderer = r;
+    r.selection = selection;
+    const fit = () => r.gridSize(viewport.clientWidth, viewport.clientHeight);
 
     try {
       ws = await connectScreen((frame) => {
         if (frame.session !== session?.id) return;
         model.apply(frame);
-        renderer.schedule();
+        updateThumb();
+        r.schedule();
       });
       const { cols, rows } = fit();
       session = await createSession(cols, rows, (e) => {
@@ -60,33 +70,35 @@ function Terminal() {
       clearTimeout(timer);
       timer = setTimeout(() => {
         // The display scale may have changed (window moved to another monitor).
-        renderer.measure();
+        r.measure();
         const next = fit();
         if (next.cols !== last.cols || next.rows !== last.rows) {
           last = next;
           void session?.resize(next.cols, next.rows);
         } else {
           for (let r = 0; r < model.rows; r++) model.dirty.add(r);
-          renderer.schedule();
+          r.schedule();
         }
       }, RESIZE_DEBOUNCE_MS);
     });
     observer.observe(viewport);
 
     const onFocus = (focused: boolean) => () => {
-      renderer.focused = focused;
+      r.focused = focused;
       model.dirty.add(model.cursorRow);
-      renderer.schedule();
+      r.schedule();
     };
     input.addEventListener("focus", onFocus(true));
     input.addEventListener("blur", onFocus(false));
-    renderer.onDraw = () => placeInput(renderer.cursorRect());
+    r.onDraw = () => placeInput(r.cursorRect());
+    detachPointer = attachPointer({ canvas, renderer: r, model, selection, session: () => session });
     input.focus();
   });
 
   // Registered synchronously: cleanups created after an `await` in onMount would never run.
   onCleanup(() => {
     observer?.disconnect();
+    detachPointer?.();
     void session?.close();
     ws?.close();
   });
@@ -98,10 +110,54 @@ function Terminal() {
     setAnchor(r);
   };
 
+  const updateThumb = () => {
+    if (model.offset === 0) return setThumb(undefined);
+    const total = model.scrollback + model.rows;
+    setThumb({ top: (model.scrollback - model.offset) / total, height: model.rows / total });
+  };
+
+  const clearSelection = () => {
+    if (!selection.active) return;
+    selection.clear();
+    renderer?.invalidate();
+  };
+
+  /** Copy the selection to the clipboard. Block selections are copied line by line. */
+  const copySelection = async () => {
+    const range = selection.range(model);
+    if (!range || !session || selection.empty) return;
+    let text: string;
+    if (selection.mode === "block") {
+      const lines: string[] = [];
+      for (let line = range.start.line; line <= range.end.line; line++) {
+        const cols = selection.colsOn(model, line);
+        if (cols) lines.push(await session.text(line, cols[0], line, cols[1] - 1));
+      }
+      text = lines.join("\n");
+    } else {
+      text = await session.text(range.start.line, range.start.col, range.end.line, range.end.col);
+    }
+    await navigator.clipboard.writeText(text);
+  };
+
   const onKeyDown = (e: KeyboardEvent) => {
+    if (!session) return;
+    const hasSelection = selection.active && !selection.empty;
+    if (isCopyShortcut(e, hasSelection)) {
+      e.preventDefault();
+      void copySelection().then(clearSelection);
+      return;
+    }
+    const scroll = model.altScreen ? undefined : scrollKey(e, model.rows);
+    if (scroll !== undefined) {
+      e.preventDefault();
+      void session.scroll(scroll === "top" ? SCROLL_TOP : scroll === "bottom" ? SCROLL_BOTTOM : scroll);
+      return;
+    }
     const key = terminalKey(e);
-    if (key === undefined || !session) return;
+    if (key === undefined) return;
     e.preventDefault();
+    clearSelection();
     void session.key(key);
   };
 
@@ -165,6 +221,12 @@ function Terminal() {
           </span>
         )}
       </div>
+      {thumb() && (
+        <div
+          class="scrollbar"
+          style={{ top: `${(thumb()?.top ?? 0) * 100}%`, height: `${(thumb()?.height ?? 0) * 100}%` }}
+        />
+      )}
       {status() && <div class="status">{status()}</div>}
     </div>
   );

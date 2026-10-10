@@ -7,7 +7,10 @@
 
 mod screen;
 
-use otterm_session::{Key, LocalSessionManager, PtySize, SessionEvent, SessionId, SessionManager, SpawnOptions};
+use otterm_session::{
+    Key, LocalSessionManager, Mouse, MouseAction, MouseButton, PtySize, SessionEvent, SessionId, SessionManager,
+    SpawnOptions,
+};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use tauri::ipc::Channel;
@@ -112,6 +115,63 @@ fn session_redraw(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.redraw(id).map_err(err)
 }
 
+/// Scroll the view; positive is up into the scrollback.
+#[tauri::command]
+fn session_scroll(state: State<'_, AppState>, id: SessionId, lines: i32) -> CmdResult {
+    state.sessions.scroll(id, lines).map_err(err)
+}
+
+/// A mouse event on the grid. `button`: left, middle, right, wheelUp, wheelDown, none.
+/// `action`: press, release, motion.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MouseInput {
+    button: String,
+    action: String,
+    row: u16,
+    col: u16,
+    shift: bool,
+    alt: bool,
+    ctrl: bool,
+}
+
+/// Returns `false` when the application did not ask for this mouse event.
+#[tauri::command]
+fn session_mouse(state: State<'_, AppState>, id: SessionId, input: MouseInput) -> CmdResult<bool> {
+    let button = match input.button.as_str() {
+        "left" => MouseButton::Left,
+        "middle" => MouseButton::Middle,
+        "right" => MouseButton::Right,
+        "wheelUp" => MouseButton::WheelUp,
+        "wheelDown" => MouseButton::WheelDown,
+        "none" => MouseButton::None,
+        other => return Err(format!("unknown mouse button {other}")),
+    };
+    let action = match input.action.as_str() {
+        "press" => MouseAction::Press,
+        "release" => MouseAction::Release,
+        "motion" => MouseAction::Motion,
+        other => return Err(format!("unknown mouse action {other}")),
+    };
+    let mouse =
+        Mouse { button, action, row: input.row, col: input.col, shift: input.shift, alt: input.alt, ctrl: input.ctrl };
+    state.sessions.mouse(id, &mouse).map_err(err)
+}
+
+/// Text between two (line, column) positions of the frames, inclusive. Line numbers come from the
+/// frame header, so they fit in a JS number for any realistic session.
+#[tauri::command]
+fn session_text(
+    state: State<'_, AppState>,
+    id: SessionId,
+    start_line: u64,
+    start_col: usize,
+    end_line: u64,
+    end_col: usize,
+) -> CmdResult<String> {
+    state.sessions.text(id, (start_line, start_col), (end_line, end_col)).map_err(err)
+}
+
 #[tauri::command]
 fn session_close(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.close(id).map_err(err)
@@ -136,6 +196,9 @@ fn main() {
             session_paste,
             session_resize,
             session_redraw,
+            session_scroll,
+            session_mouse,
+            session_text,
             session_close,
         ])
         .run(tauri::generate_context!())
@@ -158,6 +221,9 @@ fn main() {
             session_paste,
             session_resize,
             session_redraw,
+            session_scroll,
+            session_mouse,
+            session_text,
             session_close,
             bench::bench_mode,
             bench::bench_ipc_start,
