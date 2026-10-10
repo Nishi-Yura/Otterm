@@ -1,0 +1,42 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "date",
+  "summary": { "ja": "今の日付と時刻を表示します", "en": "Prints the current date and time" },
+  "description": {
+    "ja": "+\"%Y-%m-%d\" のような書式を付けると表示形式を変えられ、ファイル名に日付を入れるときなどに便利です。PowerShell では Get-Date の別名で、書式の指定方法が違います（例: Get-Date -Format yyyy-MM-dd）。Linux（GNU）と macOS でもオプションが一部異なります。",
+    "en": "Add a format like +\"%Y-%m-%d\" to change the output, handy for putting dates in file names. In PowerShell it is an alias of Get-Date with a different format syntax (e.g. Get-Date -Format yyyy-MM-dd). Linux (GNU) and macOS also differ in some options."
+  },
+  "options": [
+    { "flags": ["-u", "--utc"], "summary": { "ja": "日本時間ではなく世界標準時（UTC）で表示", "en": "Show UTC instead of local time" } },
+    { "flags": ["-d", "--date"], "takesValue": true, "valueType": "string", "summary": { "ja": "今ではなく指定した日時を表示（例: \"tomorrow\", \"2024-01-01\"。Linux）", "en": "Show a given moment instead of now (e.g. \"tomorrow\", \"2024-01-01\"; Linux)" } },
+    { "flags": ["-I", "--iso-8601"], "summary": { "ja": "2024-01-31 のような ISO 形式で表示（Linux）", "en": "ISO format like 2024-01-31 (Linux)" } },
+    { "flags": ["-R", "--rfc-email"], "summary": { "ja": "メールのヘッダーで使う形式で表示", "en": "Email header (RFC 5322) format" } },
+    { "flags": ["-r", "--reference"], "takesValue": true, "valueType": "file", "summary": { "ja": "ファイルの最終更新日時を表示（Linux）", "en": "Show a file's last modification time (Linux)" } },
+    { "flags": ["-Format"], "takesValue": true, "valueType": "string", "summary": { "ja": "表示形式（PowerShell。例: yyyy-MM-dd HH:mm）", "en": "Output format (PowerShell, e.g. yyyy-MM-dd HH:mm)" } }
+  ],
+  "args": [
+    { "name": "format", "type": "string", "optional": true, "summary": { "ja": "+ で始まる書式。%Y 年 %m 月 %d 日 %H 時 %M 分 %S 秒", "en": "Format starting with +. %Y year %m month %d day %H hour %M minute %S second" } }
+  ],
+  "examples": [
+    { "command": "date", "summary": { "ja": "今の日時を表示", "en": "Current date and time" } },
+    { "command": "date +\"%Y-%m-%d\"", "summary": { "ja": "2024-01-31 の形式で今日の日付", "en": "Today as 2024-01-31" } },
+    { "command": "cp report.txt report-$(date +%Y%m%d).txt", "summary": { "ja": "ファイル名に今日の日付を入れてコピー", "en": "Copy a file with today's date in the name" } }
+  ],
+  "errors": [
+    {
+      "pattern": "date: invalid date [‘'](?<d>[^'’]+)[’']",
+      "hint": { "ja": "「{d}」は日時として読めませんでした。\"2024-01-31\" や \"tomorrow\"、\"next monday\" のような書き方が使えます", "en": "'{d}' could not be read as a date. Try forms like \"2024-01-31\", \"tomorrow\" or \"next monday\"" },
+      "fix": "date -d \"tomorrow\""
+    },
+    {
+      "pattern": "date: illegal (time format|option -- (?<opt>\\S))",
+      "hint": { "ja": "macOS の date は Linux とオプションが違います。-d の代わりに -v+1d（1 日後）のように指定するか、brew install coreutils で gdate を使えます", "en": "macOS date differs from Linux. Use -v+1d (one day ahead) instead of -d, or install coreutils and use gdate" },
+      "fix": "date -v+1d"
+    },
+    {
+      "pattern": "date: cannot set date: Operation not permitted|date: settimeofday",
+      "hint": { "ja": "時刻を変更しようとしましたが権限がありません。表示だけなら + から始まる書式を使います（スペースの位置に注意）。変更したい場合は OS の設定から行ってください", "en": "You tried to set the clock without permission. To only display, use a format starting with + (check spacing). To change the time, use the OS settings" },
+      "fix": "date"
+    }
+  ]
+}

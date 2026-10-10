@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "pwd",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "今いるフォルダの場所（パス）を表示します", "en": "Shows where you are: the full path of the current folder" },
+  "description": {
+    "ja": "ターミナルは常にどこか 1 つのフォルダの中で動いています。pwd はその場所をルート（/）からの完全な道のりで表示します。",
+    "en": "The terminal is always working inside one folder. pwd prints that folder's full path from the root (/)."
+  },
+  "learn": {
+    "ja": "ファイルツリーで開いているフォルダが、pwd が表示する場所です",
+    "en": "The folder open in the file tree is what pwd prints"
+  },
+  "options": [
+    {
+      "flags": ["-L", "--logical"],
+      "summary": { "ja": "シンボリックリンク（別名）をたどらず、移動に使った名前のまま表示（既定）", "en": "Show the path as you navigated it, keeping symlink names (default)" }
+    },
+    {
+      "flags": ["-P", "--physical"],
+      "summary": { "ja": "シンボリックリンクを解決した実際の場所を表示", "en": "Resolve symlinks and show the real location" }
+    }
+  ],
+  "examples": [
+    { "command": "pwd", "summary": { "ja": "今いるフォルダのパスを表示", "en": "Print the current folder's path" } },
+    { "command": "pwd -P", "summary": { "ja": "リンクをたどった本当の場所を表示", "en": "Print the real location behind any symlinks" } },
+    { "command": "cd .. && pwd", "summary": { "ja": "1 つ上のフォルダへ移動して、場所を確認", "en": "Go up one folder, then check where you are" } }
+  ],
+  "errors": [
+    {
+      "pattern": "pwd: too many arguments",
+      "hint": { "ja": "pwd に引数は不要です。フォルダを移動したいときは cd を使います", "en": "pwd takes no arguments. To change folder, use cd instead" },
+      "fix": "pwd"
+    },
+    {
+      "pattern": "pwd: (?:error retrieving current directory|couldn't find directory entry)",
+      "hint": { "ja": "今いるフォルダが削除されたか移動された可能性があります。別のフォルダへ移動してください", "en": "The current folder may have been deleted or moved. Change to another folder" },
+      "fix": "cd ~"
+    }
+  ]
+}

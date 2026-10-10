@@ -1,0 +1,72 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "deno",
+  "summary": { "ja": "JavaScript / TypeScript を安全に実行するランタイムです。TypeScript をそのまま動かせます", "en": "A secure JavaScript / TypeScript runtime that runs TypeScript directly" },
+  "description": { "ja": "Node.js の作者が作り直したランタイム（プログラムを動かす土台）です。初期状態ではネットワークやファイルへのアクセスが禁止されていて、--allow-net のようなフラグで許可を与えます。整形・テスト・ビルドのツールが同梱されています", "en": "A runtime by the original author of Node.js. Network and file access are denied by default and granted with flags such as --allow-net. Formatter, linter and test runner are built in" },
+  "install": {
+    "winget": "winget install DenoLand.Deno",
+    "scoop": "scoop install deno",
+    "choco": "choco install deno",
+    "brew": "brew install deno",
+    "npm": "npm install -g deno",
+    "cargo": "cargo install deno --locked",
+    "url": "https://deno.land/"
+  },
+  "subcommands": [
+    {
+      "name": "run",
+      "summary": { "ja": "スクリプトを実行します", "en": "Runs a script" },
+      "args": [{ "name": "script", "type": "file" }, { "name": "args", "type": "string", "optional": true, "variadic": true }],
+      "options": [
+        { "flags": ["-A", "--allow-all"], "summary": { "ja": "すべての権限を許可（開発中の手軽な設定）", "en": "Allow everything (convenient while developing)" } },
+        { "flags": ["--allow-net"], "summary": { "ja": "ネットワークアクセスを許可", "en": "Allow network access" } },
+        { "flags": ["--allow-read"], "summary": { "ja": "ファイルの読み取りを許可", "en": "Allow reading files" } },
+        { "flags": ["--allow-write"], "summary": { "ja": "ファイルの書き込みを許可", "en": "Allow writing files" } },
+        { "flags": ["--allow-env"], "summary": { "ja": "環境変数の読み取りを許可", "en": "Allow reading environment variables" } },
+        { "flags": ["--watch"], "summary": { "ja": "ファイルが変わるたびに再実行", "en": "Restart on file changes" } }
+      ],
+      "examples": [{ "command": "deno run --allow-net server.ts", "summary": { "ja": "ネットワーク許可付きで server.ts を実行", "en": "Run server.ts with network access" } }]
+    },
+    { "name": "test", "summary": { "ja": "Deno.test で書いたテストを実行します", "en": "Runs tests written with Deno.test" }, "args": [{ "name": "files", "type": "file", "optional": true, "variadic": true }] },
+    { "name": "fmt", "summary": { "ja": "コードを自動整形します", "en": "Formats code" }, "options": [{ "flags": ["--check"], "summary": { "ja": "整形せず、崩れていないか確認だけ", "en": "Only check, do not rewrite" } }] },
+    { "name": "lint", "summary": { "ja": "よくある間違いを静的に検査します", "en": "Finds common mistakes without running the code" } },
+    { "name": "task", "summary": { "ja": "deno.json の tasks に書いたコマンドを実行します", "en": "Runs a command defined in deno.json tasks" }, "args": [{ "name": "task", "type": "string", "optional": true }] },
+    { "name": "compile", "summary": { "ja": "単体で動く実行ファイルを作ります", "en": "Builds a standalone executable" }, "args": [{ "name": "script", "type": "file" }], "options": [{ "flags": ["-o", "--output"], "takesValue": true, "valueType": "path", "summary": { "ja": "出力ファイル名", "en": "Output file name" } }] },
+    { "name": "install", "summary": { "ja": "依存パッケージを入れる、またはスクリプトをコマンドとして登録します", "en": "Installs dependencies or registers a script as a command" }, "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }] },
+    { "name": "init", "summary": { "ja": "新しいプロジェクトのひな形を作ります", "en": "Creates a new project skeleton" }, "args": [{ "name": "dir", "type": "dir", "optional": true }] },
+    { "name": "check", "summary": { "ja": "実行せずに型チェックだけ行います", "en": "Type-checks without running" }, "args": [{ "name": "files", "type": "file", "variadic": true }] }
+  ],
+  "examples": [
+    { "command": "deno run -A main.ts", "summary": { "ja": "すべて許可して main.ts を実行", "en": "Run main.ts with all permissions" } },
+    { "command": "deno task dev", "summary": { "ja": "deno.json の dev タスクを実行", "en": "Run the dev task from deno.json" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Requires (?<perm>\\w+) access to \"(?<res>[^\"]+)\"",
+      "hint": { "ja": "{res} への {perm} アクセスが許可されていません。--allow-{perm} を付けて実行してください", "en": "{perm} access to {res} is not allowed. Re-run with --allow-{perm}" },
+      "fix": "deno run --allow-{perm} {args}"
+    },
+    {
+      "pattern": "Module not found \"(?<url>[^\"]+)\"",
+      "hint": { "ja": "{url} が見つかりません。URL やパスのつづり、拡張子（.ts を省略できません）を確認してください", "en": "{url} was not found. Check the URL or path, including the extension (.ts cannot be omitted)" }
+    },
+    {
+      "pattern": "Relative import path \"(?<spec>[^\"]+)\" not prefixed with",
+      "hint": { "ja": "\"{spec}\" のような裸の名前では読み込めません。npm:{spec} や jsr: を付けるか、deno.json の imports に登録してください", "en": "Bare specifiers like \"{spec}\" cannot be imported. Use npm:{spec} / jsr:, or add it to imports in deno.json" },
+      "fix": "deno add npm:{spec}"
+    },
+    {
+      "pattern": "TS(?<code>\\d+) \\[ERROR\\]: (?<msg>.+)",
+      "hint": { "ja": "型エラー TS{code}: {msg}。急いで動かしたいときは --no-check で型チェックを飛ばせます", "en": "Type error TS{code}: {msg}. Use --no-check to skip type checking temporarily" }
+    },
+    {
+      "pattern": "Task not found: (?<task>\\S+)",
+      "hint": { "ja": "タスク {task} が deno.json にありません。deno task だけを実行すると一覧が出ます", "en": "Task {task} is not defined in deno.json. Run deno task alone to list tasks" },
+      "fix": "deno task"
+    },
+    {
+      "pattern": "'deno' is not recognized|deno: command not found",
+      "hint": { "ja": "Deno が見つかりません。インストール後にターミナルを開き直してください", "en": "Deno was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

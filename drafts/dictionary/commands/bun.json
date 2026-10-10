@@ -1,0 +1,89 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "bun",
+  "summary": { "ja": "高速な JavaScript ランタイム兼パッケージ管理ツールです", "en": "Fast JavaScript runtime and package manager" },
+  "description": { "ja": "Node.js の代わりにスクリプトを実行でき、npm 互換のパッケージ管理も内蔵しています。ロックファイルは bun.lock（旧 bun.lockb）です。", "en": "Runs scripts in place of Node.js and includes an npm-compatible package manager. The lockfile is bun.lock (formerly bun.lockb)." },
+  "install": { "npm": "npm install -g bun", "winget": "winget install Oven-sh.Bun", "scoop": "scoop install bun", "brew": "brew install oven-sh/bun/bun", "url": "https://bun.sh/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["i"],
+      "summary": { "ja": "package.json の依存をすべてインストールします", "en": "Installs all dependencies from package.json" },
+      "options": [
+        { "flags": ["--frozen-lockfile"], "summary": { "ja": "ロックファイルを変更しない（CI 向け）", "en": "Do not change the lockfile (for CI)" } },
+        { "flags": ["-p", "--production"], "summary": { "ja": "devDependencies を入れない", "en": "Skip devDependencies" } }
+      ],
+      "errors": [
+        { "pattern": "lockfile had changes, but lockfile is frozen", "hint": { "ja": "ロックファイルが package.json と合っていません。--frozen-lockfile なしで実行して更新してください", "en": "The lockfile is out of sync with package.json. Run without --frozen-lockfile to update it" }, "fix": "bun install" },
+        { "pattern": "No package\\.json", "hint": { "ja": "このフォルダに package.json がありません。bun init で作れます", "en": "No package.json here. Create one with bun init" }, "fix": "bun init -y" }
+      ]
+    },
+    {
+      "name": "add",
+      "aliases": ["a"],
+      "summary": { "ja": "パッケージを追加してインストールします", "en": "Adds and installs a package" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-d", "--dev"], "summary": { "ja": "開発時だけ使う依存として追加", "en": "Add as a dev dependency" } },
+        { "flags": ["-g", "--global"], "summary": { "ja": "PC 全体にインストール", "en": "Install globally" }, "danger": "warn", "dangerMessage": { "ja": "PC 全体に入ります。プロジェクトの依存にはなりません", "en": "Installs machine-wide, not as a project dependency" } }
+      ],
+      "examples": [{ "command": "bun add -d @types/bun", "summary": { "ja": "Bun の型定義を開発依存として追加", "en": "Add Bun's type definitions as a dev dependency" } }],
+      "errors": [{ "pattern": "error: package \"(?<pkg>[^\"]+)\" not found|GET .*/(?<pkg2>[^/\\s]+) - 404", "hint": { "ja": "パッケージがレジストリに見つかりません。名前のスペルを確認してください", "en": "Package not found in the registry. Check the spelling" } }]
+    },
+    {
+      "name": "remove",
+      "aliases": ["rm"],
+      "summary": { "ja": "パッケージを削除します", "en": "Removes a package" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "ファイルまたは package.json の scripts を実行します", "en": "Runs a file or a script from package.json" },
+      "args": [{ "name": "script", "type": "string", "summary": { "ja": "スクリプト名か .ts/.js ファイル", "en": "Script name or a .ts/.js file" } }],
+      "options": [
+        { "flags": ["--watch"], "summary": { "ja": "ファイルが変わったら再実行", "en": "Rerun when files change" } },
+        { "flags": ["--hot"], "summary": { "ja": "プロセスを保ったままコードを差し替え", "en": "Hot-reload without restarting" } }
+      ],
+      "examples": [{ "command": "bun run index.ts", "summary": { "ja": "TypeScript をそのまま実行", "en": "Run TypeScript directly" } }],
+      "errors": [{ "pattern": "Script not found \"(?<name>[^\"]+)\"", "hint": { "ja": "scripts に {name} がありません。bun run で一覧を見られます", "en": "No script named {name}. Run bun run to list them" }, "fix": "bun run" }]
+    },
+    {
+      "name": "x",
+      "aliases": ["bunx"],
+      "summary": { "ja": "パッケージをインストールせず一時的に実行します（npx 相当）", "en": "Runs a package without installing it (like npx)" },
+      "args": [{ "name": "package", "type": "package" }],
+      "examples": [{ "command": "bunx create-next-app my-app", "summary": { "ja": "Next.js のプロジェクトを作る", "en": "Scaffold a Next.js project" } }]
+    },
+    {
+      "name": "init",
+      "summary": { "ja": "新しいプロジェクトを作ります", "en": "Creates a new project" },
+      "options": [{ "flags": ["-y", "--yes"], "summary": { "ja": "質問をすべて既定値で", "en": "Accept all defaults" } }]
+    },
+    {
+      "name": "test",
+      "summary": { "ja": "テストを実行します（Jest 互換）", "en": "Runs tests (Jest-compatible)" },
+      "options": [{ "flags": ["--watch"], "summary": { "ja": "変更を監視して再実行", "en": "Rerun on changes" } }]
+    },
+    {
+      "name": "update",
+      "summary": { "ja": "依存を範囲内で更新します", "en": "Updates dependencies within their ranges" },
+      "options": [{ "flags": ["--latest"], "summary": { "ja": "範囲を無視して最新に", "en": "Ignore ranges and go to latest" }, "danger": "warn", "dangerMessage": { "ja": "メジャーバージョンが上がり、動かなくなることがあります", "en": "May bump major versions and break things" } }]
+    },
+    {
+      "name": "build",
+      "summary": { "ja": "JS/TS をバンドルします", "en": "Bundles JS/TS" },
+      "args": [{ "name": "entry", "type": "file" }],
+      "options": [
+        { "flags": ["--outdir"], "takesValue": true, "valueType": "dir", "summary": { "ja": "出力先フォルダ", "en": "Output folder" } },
+        { "flags": ["--target"], "takesValue": true, "valueType": "string", "summary": { "ja": "browser / bun / node", "en": "browser / bun / node" } }
+      ]
+    },
+    { "name": "upgrade", "summary": { "ja": "bun 自体を最新版に更新します", "en": "Updates bun itself" } }
+  ],
+  "errors": [
+    { "pattern": "'bun' is not recognized|bun: command not found", "hint": { "ja": "bun が入っていません。公式サイトのインストーラか npm で入れられます", "en": "bun is not installed. Use the official installer or npm" }, "fix": "npm install -g bun" },
+    { "pattern": "error: ConnectionRefused|error: FailedToOpenSocket|ENOTFOUND", "hint": { "ja": "レジストリに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the registry. Check your network or proxy" } },
+    { "pattern": "error: Cannot find module ['\"](?<mod>[^'\"]+)['\"]", "hint": { "ja": "{mod} が見つかりません。bun install を実行したか、インポートのパスを確認してください", "en": "{mod} was not found. Make sure bun install ran, or check the import path" }, "fix": "bun install" },
+    { "pattern": "EACCES.*permission denied", "hint": { "ja": "書き込み権限がありません。sudo は使わず、フォルダの権限を確認してください", "en": "No write permission. Avoid sudo; check folder permissions" } }
+  ]
+}

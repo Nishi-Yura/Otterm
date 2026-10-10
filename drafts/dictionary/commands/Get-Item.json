@@ -1,0 +1,72 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Get-Item",
+  "aliases": ["gi"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "指定したファイルやフォルダそのものの情報を取得します（PowerShell）", "en": "Gets information about one file or folder itself (PowerShell)" },
+  "description": { "ja": "Get-ChildItem がフォルダの「中身」を一覧するのに対し、Get-Item は指定したものそのもの（サイズ、更新日時、属性など）を返します。結果を変数に入れて .Length や .LastWriteTime を見たり、Select-Object で項目を選んだりできます。", "en": "Get-ChildItem lists what is inside a folder; Get-Item returns the item itself with its size, dates and attributes. Store the result in a variable and read .Length or .LastWriteTime, or pick properties with Select-Object." },
+  "options": [
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "情報を取得する対象", "en": "Item to inspect" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "隠しファイル・システムファイルも対象にする", "en": "Include hidden and system items" }
+    },
+    {
+      "flags": ["-Filter"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "名前のパターンで絞り込み（例: *.log）", "en": "Filter by name pattern (e.g. *.log)" }
+    },
+    {
+      "flags": ["-Exclude"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "パターンに一致するものを除外", "en": "Skip items matching the pattern" }
+    },
+    {
+      "flags": ["-LiteralPath"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "ワイルドカードを展開せず、書いたとおりのパスとして扱う（[ ] を含む名前に）", "en": "Use the path exactly as written, no wildcards (for names containing [ ])" }
+    },
+    {
+      "flags": ["-Stream"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "NTFS の代替データストリームを取得（例: Zone.Identifier）", "en": "Get an NTFS alternate data stream (e.g. Zone.Identifier)" }
+    }
+  ],
+  "args": [{ "name": "path", "type": "path", "variadic": true }],
+  "examples": [
+    { "command": "Get-Item report.pdf", "summary": { "ja": "ファイルのサイズや更新日時を見る", "en": "See a file's size and modified date" } },
+    { "command": "(Get-Item report.pdf).Length", "summary": { "ja": "サイズ（バイト）だけ取り出す", "en": "Get just the size in bytes" } },
+    { "command": "Get-Item . | Select-Object FullName, LastWriteTime", "summary": { "ja": "今いるフォルダのフルパスと更新日時", "en": "Full path and modified date of the current folder" } },
+    { "command": "Get-Item *.log -Force", "summary": { "ja": "隠しも含めて .log ファイルを取得", "en": "Get .log files including hidden ones" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot find path '(?<path>[^']+)' because it does not exist",
+      "hint": { "ja": "{path} は存在しません。スペルと今いるフォルダを確認してください", "en": "{path} does not exist. Check the spelling and current folder" },
+      "fix": "Get-ChildItem"
+    },
+    {
+      "pattern": "Cannot find drive\\. A drive with the name '(?<drive>[^']+)' does not exist",
+      "hint": { "ja": "{drive} というドライブはありません。コロンの位置や USB の接続を確認してください", "en": "There is no drive named {drive}. Check the colon position or that the drive is connected" },
+      "fix": "Get-PSDrive"
+    },
+    {
+      "pattern": "Access to the path '(?<path>[^']+)' is denied",
+      "hint": { "ja": "{path} を読む権限がありません。管理者権限が必要な場所です", "en": "No permission to read {path}. Admin rights may be needed" }
+    },
+    {
+      "pattern": "The term '(?<term>[^']+)' is not recognized as a name of a cmdlet",
+      "hint": { "ja": "{term} というコマンドはありません。Get-Item のスペルを確認してください", "en": "{term} is not a command. Check the spelling of Get-Item" },
+      "fix": "Get-Item"
+    }
+  ]
+}

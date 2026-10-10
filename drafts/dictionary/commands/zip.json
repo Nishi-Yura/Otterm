@@ -1,0 +1,44 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "zip",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルやフォルダを .zip ファイルに圧縮してまとめます", "en": "Compresses files and folders into a .zip file" },
+  "description": {
+    "ja": "最初に作る .zip の名前、その後にまとめたいファイルを書きます。フォルダを中身ごと入れるには -r が必要です。Windows や Mac の「圧縮」と同じ形式です。",
+    "en": "Write the .zip name first, then the files to add. Folders need -r to include their contents. Same format as \"Compress\" on Windows and Mac."
+  },
+  "options": [
+    { "flags": ["-r", "--recurse-paths"], "summary": { "ja": "フォルダを中身ごと入れる（フォルダには必須）", "en": "Include folders with their contents (required for folders)" } },
+    { "flags": ["-e", "--encrypt"], "summary": { "ja": "パスワードを付ける（入力を求められる）", "en": "Protect with a password (you will be prompted)" } },
+    { "flags": ["-x", "--exclude"], "takesValue": true, "valueType": "pattern", "summary": { "ja": "除外するファイル（例: -x \"*.log\"）", "en": "Files to leave out (e.g. -x \"*.log\")" } },
+    { "flags": ["-u", "--update"], "summary": { "ja": "すでにある .zip に、新しい・変更されたファイルだけ追加", "en": "Add only new or changed files to an existing .zip" } },
+    { "flags": ["-j", "--junk-paths"], "summary": { "ja": "フォルダ構造を入れず、ファイル名だけで保存", "en": "Store file names only, without folder paths" } },
+    { "flags": ["-q", "--quiet"], "summary": { "ja": "進行状況を表示しない", "en": "Do not print progress" } },
+    { "flags": ["-9"], "summary": { "ja": "最大限に圧縮（時間はかかる）", "en": "Best compression (slower)" } }
+  ],
+  "args": [
+    { "name": "archive", "type": "file", "summary": { "ja": "作る .zip ファイルの名前", "en": "Name of the .zip to create" } },
+    { "name": "file", "type": "path", "variadic": true, "summary": { "ja": "まとめるファイルやフォルダ", "en": "Files or folders to add" } }
+  ],
+  "examples": [
+    { "command": "zip -r photos.zip photos/", "summary": { "ja": "photos フォルダを中身ごと圧縮", "en": "Zip the photos folder with its contents" } },
+    { "command": "zip report.zip report.pdf data.csv", "summary": { "ja": "2 つのファイルを 1 つの zip に", "en": "Put two files into one zip" } },
+    { "command": "zip -r src.zip src -x \"*/node_modules/*\"", "summary": { "ja": "node_modules を除いて圧縮", "en": "Zip while skipping node_modules" } }
+  ],
+  "errors": [
+    {
+      "pattern": "zip warning: name not matched: (?<path>[^\\n]+)",
+      "hint": { "ja": "{path} が見つかりません。zip の名前を先、入れるファイルを後に書く順番か、スペルを確認してください", "en": "{path} was not found. Make sure the zip name comes first, then the files, and check the spelling" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "zip error: Nothing to do!",
+      "hint": { "ja": "入れるファイルが 1 つも見つかりませんでした。フォルダを指定したときは -r が必要です", "en": "No files were found to add. Folders need -r" },
+      "fix": "zip -r"
+    },
+    {
+      "pattern": "zip error: Zip file structure invalid \\((?<path>[^)]+)\\)",
+      "hint": { "ja": "{path} は壊れているか zip 形式ではありません。別の名前で新しく作ってください", "en": "{path} is damaged or not a zip. Create a new archive under another name" }
+    }
+  ]
+}

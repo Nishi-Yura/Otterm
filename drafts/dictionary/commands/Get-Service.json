@@ -1,0 +1,70 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Get-Service",
+  "aliases": ["gsv"],
+  "shells": ["pwsh", "powershell"],
+  "platforms": ["windows"],
+  "summary": { "ja": "Windows のサービス（裏で動くプログラム）の一覧と状態を表示します（PowerShell）", "en": "Lists Windows services (background programs) and their status (PowerShell)" },
+  "description": { "ja": "「サービス」管理ツール（services.msc）の内容を表示します。Status 列が Running なら動作中、Stopped なら停止中です。名前には内部名（Name）と表示名（DisplayName）があり、どちらでも検索できます。起動や停止は Start-Service / Stop-Service / Restart-Service で行い、通常は管理者権限が必要です。", "en": "Shows what the Services tool (services.msc) shows. Status is Running or Stopped. Services have an internal Name and a DisplayName; you can search by either. Use Start-Service / Stop-Service / Restart-Service to control them, usually as administrator." },
+  "options": [
+    {
+      "flags": ["-Name"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "サービスの内部名で絞り込み（例: wuauserv, win*）", "en": "Filter by service name (e.g. wuauserv, win*)" }
+    },
+    {
+      "flags": ["-DisplayName"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "表示名で絞り込み（例: \"Windows Update\"）", "en": "Filter by display name (e.g. \"Windows Update\")" }
+    },
+    {
+      "flags": ["-DependentServices"],
+      "summary": { "ja": "このサービスに依存しているサービスを表示", "en": "Show services that depend on this one" }
+    },
+    {
+      "flags": ["-RequiredServices"],
+      "summary": { "ja": "このサービスが必要とするサービスを表示", "en": "Show services this one requires" }
+    },
+    {
+      "flags": ["-Include"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "パターンに一致するものだけ", "en": "Only services matching the pattern" }
+    },
+    {
+      "flags": ["-Exclude"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "パターンに一致するものを除外", "en": "Skip services matching the pattern" }
+    }
+  ],
+  "args": [{ "name": "name", "type": "string", "optional": true, "variadic": true }],
+  "examples": [
+    { "command": "Get-Service", "summary": { "ja": "すべてのサービスを表示", "en": "List all services" } },
+    { "command": "Get-Service | Where-Object Status -eq Running", "summary": { "ja": "動作中のサービスだけ", "en": "Only running services" } },
+    { "command": "Get-Service -DisplayName \"*update*\"", "summary": { "ja": "表示名に update を含むサービス", "en": "Services whose display name contains update" } },
+    { "command": "Get-Service spooler | Restart-Service", "summary": { "ja": "印刷スプーラーを再起動（管理者権限が必要）", "en": "Restart the print spooler (needs admin rights)" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot find any service with service name '(?<name>[^']+)'",
+      "hint": { "ja": "{name} というサービスはありません。表示名なら -DisplayName、一部一致なら {name}* のようにワイルドカードを使います", "en": "No service named {name}. Use -DisplayName for the display name, or a wildcard like {name}*" },
+      "fix": "Get-Service -DisplayName \"*{name}*\""
+    },
+    {
+      "pattern": "Cannot find any service with display name '(?<name>[^']+)'",
+      "hint": { "ja": "表示名 {name} のサービスはありません。\"*{name}*\" のようにワイルドカードで探してみてください", "en": "No service with display name {name}. Try a wildcard like \"*{name}*\"" },
+      "fix": "Get-Service -DisplayName \"*{name}*\""
+    },
+    {
+      "pattern": "Cannot open (?<name>\\S+) service on computer|Service '(?<name>[^']+)' cannot be (started|stopped)",
+      "hint": { "ja": "サービスを操作する権限がありません。PowerShell を「管理者として実行」してください", "en": "No permission to control the service. Run PowerShell as administrator" }
+    },
+    {
+      "pattern": "The term 'Get-Service' is not recognized",
+      "hint": { "ja": "Get-Service は Windows 専用です。macOS / Linux では使えません", "en": "Get-Service is Windows-only and is not available on macOS / Linux" }
+    }
+  ]
+}

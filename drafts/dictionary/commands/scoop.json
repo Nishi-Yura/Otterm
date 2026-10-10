@@ -1,0 +1,80 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "scoop",
+  "platforms": ["windows"],
+  "shells": ["pwsh", "powershell", "cmd"],
+  "summary": { "ja": "管理者権限なしで使える Windows のパッケージ管理ツールです", "en": "Package manager for Windows that needs no admin rights" },
+  "description": { "ja": "ユーザーフォルダ（~\\scoop）に入れるので UAC が出ません。開発ツールのインストールに向いています。bucket を追加すると入れられるものが増えます。", "en": "Installs into your user folder (~\\scoop), so no UAC prompts. Great for developer tools. Adding buckets expands what is available." },
+  "install": { "url": "https://scoop.sh/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": { "ja": "アプリをインストールします", "en": "Installs an app" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [{ "flags": ["-g", "--global"], "summary": { "ja": "全ユーザー向けに入れる（管理者権限が必要）", "en": "Install for all users (needs admin)" }, "danger": "warn", "dangerMessage": { "ja": "管理者権限で C:\\ProgramData に入ります", "en": "Installs into C:\\ProgramData with admin rights" } }],
+      "examples": [{ "command": "scoop install git 7zip", "summary": { "ja": "git と 7zip を入れる", "en": "Install git and 7zip" } }],
+      "errors": [
+        { "pattern": "Couldn't find manifest for '(?<pkg>[^']+)'", "hint": { "ja": "{pkg} が見つかりません。scoop search で探すか、extras などの bucket を追加してください", "en": "{pkg} was not found. Try scoop search or add a bucket such as extras" }, "fix": "scoop search {pkg}" },
+        { "pattern": "'(?<pkg>[^']+)' \\(.*\\) is already installed", "hint": { "ja": "{pkg} はすでに入っています。更新は scoop update です", "en": "{pkg} is already installed. Use scoop update to upgrade it" }, "fix": "scoop update {pkg}" },
+        { "pattern": "Hash check failed", "hint": { "ja": "ダウンロードしたファイルの検証に失敗しました。scoop update で定義を最新にして再実行してください", "en": "Downloaded file failed verification. Run scoop update to refresh manifests and retry" }, "fix": "scoop update" }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "aliases": ["rm", "remove"],
+      "summary": { "ja": "アプリを削除します", "en": "Removes an app" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [{ "flags": ["-p", "--purge"], "summary": { "ja": "設定や保存データも消す", "en": "Also delete persisted data" }, "danger": "warn", "dangerMessage": { "ja": "アプリの設定やデータも消えます", "en": "App settings and data are deleted too" } }]
+    },
+    {
+      "name": "update",
+      "summary": { "ja": "scoop 自体と bucket を更新、または指定アプリを更新します", "en": "Updates scoop and buckets, or upgrades a given app" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["*"], "summary": { "ja": "すべてのアプリを更新", "en": "Upgrade every app" } }],
+      "examples": [
+        { "command": "scoop update", "summary": { "ja": "scoop と bucket を最新に", "en": "Refresh scoop and buckets" } },
+        { "command": "scoop update *", "summary": { "ja": "すべてのアプリを更新", "en": "Upgrade all apps" } }
+      ]
+    },
+    {
+      "name": "search",
+      "summary": { "ja": "アプリを検索します", "en": "Searches for apps" },
+      "args": [{ "name": "query", "type": "string" }]
+    },
+    { "name": "list", "summary": { "ja": "インストール済み一覧", "en": "Lists installed apps" } },
+    { "name": "status", "summary": { "ja": "更新があるアプリを表示します", "en": "Shows apps with updates available" } },
+    {
+      "name": "info",
+      "summary": { "ja": "アプリの詳細を表示", "en": "Shows app details" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "bucket",
+      "summary": { "ja": "パッケージ定義の置き場（bucket）を追加・削除します", "en": "Adds or removes buckets (manifest repositories)" },
+      "options": [
+        { "flags": ["add"], "summary": { "ja": "追加（extras、versions、java など）", "en": "Add (extras, versions, java, ...)" } },
+        { "flags": ["rm"], "summary": { "ja": "削除", "en": "Remove" } },
+        { "flags": ["list"], "summary": { "ja": "一覧", "en": "List" } },
+        { "flags": ["known"], "summary": { "ja": "公式に知られている bucket の一覧", "en": "List well-known buckets" } }
+      ],
+      "examples": [{ "command": "scoop bucket add extras", "summary": { "ja": "GUI アプリの多い extras を追加", "en": "Add extras, which has many GUI apps" } }]
+    },
+    {
+      "name": "cleanup",
+      "summary": { "ja": "古いバージョンを削除します", "en": "Removes old versions" },
+      "args": [{ "name": "package", "type": "package", "optional": true }],
+      "options": [
+        { "flags": ["*"], "summary": { "ja": "すべてのアプリで", "en": "For every app" } },
+        { "flags": ["-k", "--cache"], "summary": { "ja": "ダウンロードキャッシュも消す", "en": "Also clear the download cache" } }
+      ]
+    },
+    { "name": "checkup", "summary": { "ja": "scoop の環境に問題がないか診断します", "en": "Checks your scoop setup for problems" } }
+  ],
+  "errors": [
+    { "pattern": "'scoop' is not recognized|scoop : The term 'scoop'", "hint": { "ja": "scoop が入っていません。scoop.sh の 2 行のコマンドでインストールできます", "en": "scoop is not installed. The two-line command at scoop.sh sets it up" } },
+    { "pattern": "running scripts is disabled on this system", "hint": { "ja": "PowerShell の実行ポリシーで止められています。ユーザー単位で RemoteSigned にすると動きます", "en": "PowerShell's execution policy blocks it. Setting RemoteSigned for your user fixes it" }, "fix": "Set-ExecutionPolicy -Scope CurrentUser RemoteSigned" },
+    { "pattern": "The remote name could not be resolved|Unable to connect to the remote server|Download failed", "hint": { "ja": "ダウンロードできません。ネットワークやプロキシを確認してください", "en": "Download failed. Check your network or proxy" } },
+    { "pattern": "Access to the path .* is denied", "hint": { "ja": "ファイルが使用中か権限がありません。そのアプリを閉じてから再実行してください", "en": "File in use or no permission. Close the app and retry" } },
+    { "pattern": "Scoop uses 'git' to update itself", "hint": { "ja": "scoop の更新には git が必要です", "en": "scoop needs git to update itself" }, "fix": "scoop install git" }
+  ]
+}

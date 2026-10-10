@@ -1,0 +1,63 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "mvn",
+  "aliases": ["mvnw"],
+  "summary": { "ja": "Java のビルド・依存管理ツール Maven です", "en": "Maven, the build and dependency tool for Java" },
+  "description": { "ja": "pom.xml に依存とビルド設定を書きます。コマンドは「フェーズ」（compile → test → package → install）を指定し、指定したフェーズまでが順に実行されます。プロジェクトに mvnw があればそれを使うと Maven 自体のインストールが不要です。依存は ~/.m2 にキャッシュされます。", "en": "Dependencies and build settings live in pom.xml. You name a phase (compile, test, package, install) and every phase up to it runs in order. If the project has mvnw, use it and you need no Maven install. Dependencies are cached in ~/.m2." },
+  "install": { "winget": "winget install Apache.Maven", "scoop": "scoop install maven", "choco": "choco install maven", "brew": "brew install maven", "apt": "sudo apt install maven", "dnf": "sudo dnf install maven", "pacman": "sudo pacman -S maven", "url": "https://maven.apache.org/download.cgi" },
+  "subcommands": [
+    {
+      "name": "compile",
+      "summary": { "ja": "ソースをコンパイルします", "en": "Compiles the sources" },
+      "errors": [
+        { "pattern": "COMPILATION ERROR|\\[ERROR\\] .*\\.java:\\[(?<line>\\d+),\\d+\\]", "hint": { "ja": "Java のコンパイルエラーです。[ERROR] の行に示されたファイルと行番号を確認してください", "en": "A Java compile error. Check the file and line number shown on the [ERROR] lines" } },
+        { "pattern": "invalid target release: (?<ver>\\d+)|release version (?<ver2>\\d+) not supported", "hint": { "ja": "pom.xml が求める Java のバージョンより古い JDK を使っています。JDK を更新するか JAVA_HOME を確認してください", "en": "Your JDK is older than the Java version pom.xml targets. Update the JDK or check JAVA_HOME" } }
+      ]
+    },
+    {
+      "name": "test",
+      "summary": { "ja": "コンパイルしてテストを実行します", "en": "Compiles and runs tests" },
+      "options": [
+        { "flags": ["-Dtest="], "summary": { "ja": "指定クラスのテストだけ（-Dtest=FooTest）", "en": "Only one test class (-Dtest=FooTest)" } },
+        { "flags": ["-DskipTests"], "summary": { "ja": "テストを飛ばす", "en": "Skip tests" } }
+      ],
+      "errors": [{ "pattern": "Tests run: \\d+, Failures: (?<fail>[1-9]\\d*)", "hint": { "ja": "{fail} 件のテストが失敗しました。上の FAILURE の行で原因を確認してください", "en": "{fail} test(s) failed. See the FAILURE lines above" } }]
+    },
+    {
+      "name": "package",
+      "summary": { "ja": "テストを実行して jar / war を作ります", "en": "Runs tests and builds the jar/war" },
+      "options": [{ "flags": ["-DskipTests"], "summary": { "ja": "テストを飛ばして速くビルド", "en": "Skip tests for a faster build" } }],
+      "examples": [{ "command": "mvn clean package -DskipTests", "summary": { "ja": "きれいにしてからテストなしで jar を作る", "en": "Clean, then build the jar without tests" } }]
+    },
+    { "name": "install", "summary": { "ja": "package した成果物をローカルリポジトリ（~/.m2）に入れます", "en": "Builds and installs the artifact into the local repository (~/.m2)" } },
+    { "name": "clean", "summary": { "ja": "target フォルダを削除します", "en": "Deletes the target folder" } },
+    { "name": "verify", "summary": { "ja": "package に加えて統合テストや検証を実行します", "en": "Runs package plus integration tests and checks" } },
+    {
+      "name": "dependency:tree",
+      "summary": { "ja": "依存関係をツリー表示します（バージョン衝突の調査に）", "en": "Shows the dependency tree (to debug version conflicts)" },
+      "options": [{ "flags": ["-Dincludes="], "summary": { "ja": "指定ライブラリだけ表示", "en": "Only show a given library" } }]
+    },
+    { "name": "dependency:resolve", "summary": { "ja": "依存をすべてダウンロードします", "en": "Downloads every dependency" } },
+    {
+      "name": "archetype:generate",
+      "summary": { "ja": "テンプレートから新しいプロジェクトを作ります", "en": "Creates a new project from a template" },
+      "examples": [{ "command": "mvn archetype:generate -DgroupId=com.example -DartifactId=my-app -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false", "summary": { "ja": "最小構成の Java プロジェクトを作る", "en": "Create a minimal Java project" } }]
+    },
+    { "name": "spring-boot:run", "summary": { "ja": "Spring Boot アプリを起動します", "en": "Starts a Spring Boot app" } }
+  ],
+  "options": [
+    { "flags": ["-q", "--quiet"], "summary": { "ja": "出力を減らす", "en": "Less output" } },
+    { "flags": ["-o", "--offline"], "summary": { "ja": "ダウンロードせずキャッシュだけで", "en": "Use only cached dependencies" } },
+    { "flags": ["-U", "--update-snapshots"], "summary": { "ja": "SNAPSHOT 依存を取り直す", "en": "Refresh SNAPSHOT dependencies" } },
+    { "flags": ["-pl", "--projects"], "takesValue": true, "valueType": "string", "summary": { "ja": "マルチモジュールで対象モジュールを指定", "en": "Select modules in a multi-module build" } },
+    { "flags": ["-X", "--debug"], "summary": { "ja": "詳細ログ", "en": "Debug output" } }
+  ],
+  "errors": [
+    { "pattern": "'mvn' is not recognized|mvn: command not found", "hint": { "ja": "Maven が入っていません。プロジェクトに mvnw があればそれを使えます（./mvnw または mvnw.cmd）", "en": "Maven is not installed. If the project has mvnw, use that instead (./mvnw or mvnw.cmd)" } },
+    { "pattern": "JAVA_HOME is not defined correctly|JAVA_HOME should point to a JDK|No compiler is provided in this environment", "hint": { "ja": "JDK が見つかりません。JDK を入れて JAVA_HOME をその場所に設定してください", "en": "No JDK found. Install a JDK and point JAVA_HOME at it" } },
+    { "pattern": "there is no POM in this directory", "hint": { "ja": "このフォルダに pom.xml がありません。プロジェクトのフォルダへ移動してください", "en": "No pom.xml here. Move to the project folder" } },
+    { "pattern": "Could not resolve dependencies|Could not transfer artifact|Unknown host|Connection timed out", "hint": { "ja": "依存をダウンロードできません。ネットワークやプロキシ（~/.m2/settings.xml）を確認してください", "en": "Could not download dependencies. Check your network or proxy settings in ~/.m2/settings.xml" } },
+    { "pattern": "Could not find artifact (?<art>\\S+)", "hint": { "ja": "{art} がリポジトリにありません。groupId / artifactId / version を確認してください", "en": "{art} is not in any repository. Check its groupId, artifactId and version" } },
+    { "pattern": "BUILD FAILURE", "hint": { "ja": "ビルドが失敗しました。最初の [ERROR] 行に原因があります", "en": "The build failed. The first [ERROR] line shows why" } }
+  ]
+}

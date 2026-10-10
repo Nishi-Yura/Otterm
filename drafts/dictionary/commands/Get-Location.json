@@ -1,0 +1,55 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Get-Location",
+  "aliases": ["pwd", "gl"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "今いるフォルダのパスを表示します（PowerShell）。pwd と打っても同じです", "en": "Shows the folder you are currently in (PowerShell). pwd is an alias" },
+  "description": { "ja": "ターミナルは常に「どこかのフォルダの中」で動いています。Get-Location はその場所を教えてくれます。別のフォルダへ移動するには Set-Location（cd）を使います。パスは $PWD という変数でも参照できます。", "en": "A terminal always works inside some folder. Get-Location tells you which one. Use Set-Location (cd) to move elsewhere. The path is also available in the $PWD variable." },
+  "options": [
+    {
+      "flags": ["-Stack"],
+      "summary": { "ja": "Push-Location で積んだフォルダの履歴を表示", "en": "Show folders saved with Push-Location" }
+    },
+    {
+      "flags": ["-StackName"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "名前付きの履歴スタックを指定", "en": "Named location stack to show" }
+    },
+    {
+      "flags": ["-PSDrive"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "指定したドライブ（例: D）での現在位置を表示", "en": "Current location on the given drive (e.g. D)" }
+    },
+    {
+      "flags": ["-PSProvider"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "指定したプロバイダー（例: Registry）での現在位置を表示", "en": "Current location in the given provider (e.g. Registry)" }
+    }
+  ],
+  "examples": [
+    { "command": "Get-Location", "summary": { "ja": "今いるフォルダを表示", "en": "Show the current folder" } },
+    { "command": "pwd", "summary": { "ja": "短い別名で同じことをする", "en": "Same thing with the short alias" } },
+    { "command": "(Get-Location).Path", "summary": { "ja": "パスの文字列だけを取り出す", "en": "Get just the path string" } },
+    { "command": "Get-Location -Stack", "summary": { "ja": "Push-Location で保存したフォルダの一覧", "en": "List folders saved with Push-Location" } }
+  ],
+  "errors": [
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は Get-Location にはありません。Linux の pwd の -P などは使えません。そのまま Get-Location と打ってください", "en": "-{p} is not a parameter here. Linux pwd flags like -P do not work. Just run Get-Location" },
+      "fix": "Get-Location"
+    },
+    {
+      "pattern": "Cannot find drive\\. A drive with the name '(?<drive>[^']+)' does not exist",
+      "hint": { "ja": "{drive} というドライブはありません。Get-PSDrive で一覧を確認できます", "en": "There is no drive named {drive}. Run Get-PSDrive to list drives" },
+      "fix": "Get-PSDrive"
+    },
+    {
+      "pattern": "Cannot find a provider with the name '(?<name>[^']+)'",
+      "hint": { "ja": "{name} というプロバイダーはありません。FileSystem や Registry などを指定します", "en": "There is no provider named {name}. Use FileSystem, Registry, etc." },
+      "fix": "Get-PSProvider"
+    }
+  ]
+}

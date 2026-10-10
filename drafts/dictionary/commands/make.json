@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "make",
+  "aliases": ["gmake", "mingw32-make"],
+  "summary": { "ja": "Makefile に書かれた手順でビルド（コードから実行ファイルなどを作ること）を実行します", "en": "Runs the build steps written in a Makefile" },
+  "description": { "ja": "今のフォルダの Makefile を読み、変更されたファイルだけを再ビルドします。make だけで最初のターゲット（手順の名前）、make clean のように名前を付けるとそのターゲットを実行します。Makefile のコマンド行は Tab で始める必要があります（スペースだとエラー）", "en": "Reads the Makefile in the current folder and rebuilds only what changed. Plain make runs the first target; make clean runs the target named clean. Command lines in a Makefile must start with a Tab, not spaces" },
+  "install": {
+    "winget": "winget install GnuWin32.Make",
+    "scoop": "scoop install make",
+    "choco": "choco install make",
+    "brew": "brew install make",
+    "apt": "sudo apt install make",
+    "dnf": "sudo dnf install make",
+    "pacman": "sudo pacman -S make"
+  },
+  "options": [
+    { "flags": ["-f", "--file"], "takesValue": true, "valueType": "file", "summary": { "ja": "Makefile 以外のファイル名を使う", "en": "Use a file other than Makefile" } },
+    { "flags": ["-j", "--jobs"], "takesValue": true, "valueType": "number", "summary": { "ja": "並列で実行する数（例: -j4）", "en": "Number of parallel jobs (e.g. -j4)" } },
+    { "flags": ["-n", "--dry-run"], "summary": { "ja": "実行せずに何をするか表示だけ", "en": "Show what would run without running it" } },
+    { "flags": ["-B", "--always-make"], "summary": { "ja": "変更がなくてもすべて作り直す", "en": "Rebuild everything regardless of timestamps" } },
+    { "flags": ["-C", "--directory"], "takesValue": true, "valueType": "dir", "summary": { "ja": "指定フォルダに移動してから実行", "en": "Change to a folder first" } },
+    { "flags": ["-k", "--keep-going"], "summary": { "ja": "エラーがあっても続けられる所まで続ける", "en": "Keep going after errors where possible" } },
+    { "flags": ["-s", "--silent"], "summary": { "ja": "実行するコマンドを表示しない", "en": "Do not echo commands" } }
+  ],
+  "args": [
+    { "name": "target", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "実行するターゲット名（例: all, clean, test）", "en": "Target names to build (e.g. all, clean, test)" } }
+  ],
+  "examples": [
+    { "command": "make", "summary": { "ja": "最初のターゲットをビルド", "en": "Build the first target" } },
+    { "command": "make -j4", "summary": { "ja": "4 並列で速くビルド", "en": "Build with 4 parallel jobs" } },
+    { "command": "make clean", "summary": { "ja": "生成物を削除してきれいにする", "en": "Remove build outputs" } }
+  ],
+  "errors": [
+    {
+      "pattern": "No rule to make target [`'](?<target>[^'`]+)'",
+      "hint": { "ja": "{target} を作る手順が Makefile にありません。ターゲット名のつづりか、必要な入力ファイルが存在するか確認してください", "en": "The Makefile has no rule for {target}. Check the target name, or whether a required input file is missing" },
+      "fix": "make -n"
+    },
+    {
+      "pattern": "No targets specified and no makefile found",
+      "hint": { "ja": "今のフォルダに Makefile がありません。プロジェクトのフォルダに移動するか、-f でファイルを指定してください", "en": "There is no Makefile in the current folder. Move to the project folder or pass -f" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "missing separator",
+      "hint": { "ja": "Makefile のコマンド行がスペースで始まっています。行頭を Tab 文字にしてください", "en": "A command line in the Makefile starts with spaces. It must start with a Tab character" }
+    },
+    {
+      "pattern": "make(?:\\[\\d+\\])?: \\*\\*\\* \\[(?<target>[^\\]]+)\\] Error (?<code>\\d+)",
+      "hint": { "ja": "ターゲット {target} のコマンドが終了コード {code} で失敗しました。原因はこの行より上に出ているコンパイルエラーなどです", "en": "The command for target {target} failed with exit code {code}. The real cause (e.g. a compile error) is printed above" }
+    },
+    {
+      "pattern": "make: (?<cmd>\\S+): (No such file or directory|command not found)",
+      "hint": { "ja": "Makefile が使うコマンド {cmd} が入っていません。インストールしてください", "en": "The Makefile needs the command {cmd}, which is not installed" }
+    },
+    {
+      "pattern": "Nothing to be done for [`'](?<t>[^'`]+)'",
+      "hint": { "ja": "{t} はすでに最新なので何もしませんでした。エラーではありません", "en": "{t} is already up to date, so nothing ran. This is not an error" },
+      "allowAi": false
+    },
+    {
+      "pattern": "'make' is not recognized|make: command not found",
+      "hint": { "ja": "make が見つかりません。Windows では MinGW 付属の mingw32-make か、scoop / winget で GNU Make を入れてください", "en": "make was not found. On Windows use mingw32-make from MinGW, or install GNU Make via scoop / winget" }
+    }
+  ]
+}

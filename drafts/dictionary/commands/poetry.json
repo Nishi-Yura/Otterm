@@ -1,0 +1,90 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "poetry",
+  "summary": { "ja": "Python の依存管理とパッケージングのツールです", "en": "Dependency management and packaging for Python" },
+  "description": { "ja": "pyproject.toml に依存を記録し、poetry.lock でバージョンを固定します。仮想環境を自動で作るので、poetry run で実行すれば venv の有効化は不要です。", "en": "Records dependencies in pyproject.toml and pins them in poetry.lock. It creates a virtual environment for you, so poetry run works without activating anything." },
+  "install": { "pip": "pipx install poetry", "brew": "brew install poetry", "scoop": "scoop install poetry", "url": "https://python-poetry.org/docs/#installation" },
+  "subcommands": [
+    {
+      "name": "new",
+      "summary": { "ja": "新しいプロジェクトのフォルダ一式を作ります", "en": "Creates a new project folder structure" },
+      "args": [{ "name": "dir", "type": "dir" }],
+      "examples": [{ "command": "poetry new my-app", "summary": { "ja": "my-app プロジェクトを作る", "en": "Create the my-app project" } }]
+    },
+    {
+      "name": "init",
+      "summary": { "ja": "既存フォルダに pyproject.toml を対話的に作ります", "en": "Creates pyproject.toml interactively in an existing folder" },
+      "options": [{ "flags": ["-n", "--no-interaction"], "summary": { "ja": "質問せず既定値で", "en": "No questions, use defaults" } }]
+    },
+    {
+      "name": "add",
+      "summary": { "ja": "依存を追加してインストールします", "en": "Adds and installs a dependency" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-G", "--group"], "takesValue": true, "valueType": "string", "summary": { "ja": "依存グループ（例: dev）に追加", "en": "Add to a dependency group (e.g. dev)" } },
+        { "flags": ["-D", "--dev"], "summary": { "ja": "開発依存として追加（--group dev と同じ）", "en": "Add as dev dependency (same as --group dev)" } }
+      ],
+      "examples": [{ "command": "poetry add --group dev pytest", "summary": { "ja": "pytest を開発依存に追加", "en": "Add pytest to the dev group" } }],
+      "errors": [
+        { "pattern": "SolverProblemError|version solving failed", "hint": { "ja": "依存のバージョンが両立しません。pyproject.toml の python の範囲や、衝突しているパッケージの条件を緩めてください", "en": "Dependency versions conflict. Loosen the python range or the conflicting constraints in pyproject.toml" } },
+        { "pattern": "Could not find a matching version of package (?<pkg>\\S+)|Package (?<pkg2>\\S+) .* not found", "hint": { "ja": "パッケージが見つかりません。名前のスペルを確認してください", "en": "Package not found. Check the spelling" } },
+        { "pattern": "Poetry could not find a pyproject\\.toml file", "hint": { "ja": "ここは Poetry プロジェクトではありません。poetry init で作るか、プロジェクトのフォルダへ移動してください", "en": "Not a Poetry project. Run poetry init or move to the project folder" }, "fix": "poetry init" }
+      ]
+    },
+    {
+      "name": "remove",
+      "summary": { "ja": "依存を削除します", "en": "Removes a dependency" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }]
+    },
+    {
+      "name": "install",
+      "summary": { "ja": "poetry.lock どおりに依存をインストールします", "en": "Installs dependencies from poetry.lock" },
+      "options": [
+        { "flags": ["--no-root"], "summary": { "ja": "自分のプロジェクト自体はインストールしない", "en": "Do not install the project itself" } },
+        { "flags": ["--without"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定グループを除外（例: dev）", "en": "Skip a group (e.g. dev)" } },
+        { "flags": ["--sync"], "summary": { "ja": "ロックにないものを環境から削除して揃える", "en": "Remove anything not in the lockfile" } }
+      ],
+      "errors": [
+        { "pattern": "pyproject\\.toml changed significantly since poetry\\.lock was last generated", "hint": { "ja": "ロックファイルが古いです。poetry lock で更新してください", "en": "The lockfile is stale. Run poetry lock to refresh it" }, "fix": "poetry lock" },
+        { "pattern": "The current project could not be installed: No file/folder found for package", "hint": { "ja": "パッケージのフォルダが見つかりません。ライブラリでないなら --no-root を付けるか、pyproject.toml に package-mode = false を書きます", "en": "No package folder found. Use --no-root, or set package-mode = false in pyproject.toml if this is not a library" }, "fix": "poetry install --no-root" }
+      ]
+    },
+    {
+      "name": "update",
+      "summary": { "ja": "依存を範囲内で最新にしてロックを更新します", "en": "Updates dependencies within ranges and refreshes the lock" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "プロジェクトの仮想環境でコマンドを実行します", "en": "Runs a command inside the project's virtual environment" },
+      "args": [{ "name": "command", "type": "command" }],
+      "examples": [{ "command": "poetry run python main.py", "summary": { "ja": "main.py を実行", "en": "Run main.py" } }]
+    },
+    {
+      "name": "shell",
+      "summary": { "ja": "仮想環境を有効にしたシェルを開きます（Poetry 2 では別途 shell プラグインが必要）", "en": "Opens a shell with the environment activated (Poetry 2 needs the shell plugin)" },
+      "errors": [{ "pattern": "The command \"shell\" does not exist", "hint": { "ja": "Poetry 2 では shell は別プラグインです。poetry env activate の出力を実行するか、プラグインを入れてください", "en": "In Poetry 2 shell is a plugin. Run the output of poetry env activate, or install the plugin" }, "fix": "poetry self add poetry-plugin-shell" }]
+    },
+    {
+      "name": "env",
+      "summary": { "ja": "仮想環境の情報と管理", "en": "Inspects and manages virtual environments" },
+      "options": [
+        { "flags": ["info"], "summary": { "ja": "環境の場所などを表示", "en": "Show environment details" } },
+        { "flags": ["use"], "summary": { "ja": "使う Python を切り替える", "en": "Switch the Python interpreter" } },
+        { "flags": ["remove"], "summary": { "ja": "仮想環境を削除", "en": "Delete the environment" }, "danger": "warn", "dangerMessage": { "ja": "環境を削除します。poetry install で作り直せます", "en": "Deletes the environment; poetry install recreates it" } }
+      ]
+    },
+    {
+      "name": "publish",
+      "summary": { "ja": "PyPI に公開します", "en": "Publishes to PyPI" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "公開すると同じバージョンは二度と上げられません。バージョンと中身を確認してください", "en": "A published version can never be re-uploaded. Check the version and contents" },
+      "options": [{ "flags": ["--build"], "summary": { "ja": "ビルドしてから公開", "en": "Build first, then publish" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'poetry' is not recognized|poetry: command not found", "hint": { "ja": "poetry が入っていません。pipx install poetry が一番簡単です", "en": "poetry is not installed. pipx install poetry is the easiest way" }, "fix": "pipx install poetry" },
+    { "pattern": "The currently activated Python version (?<cur>[0-9.]+) is not supported by the project \\((?<req>[^)]+)\\)", "hint": { "ja": "今の Python {cur} はプロジェクトの条件 {req} に合いません。poetry env use で対応する Python を指定してください", "en": "Current Python {cur} does not satisfy the project's {req}. Pick a matching interpreter with poetry env use" } },
+    { "pattern": "Max retries exceeded|Connection refused|Temporary failure in name resolution", "hint": { "ja": "PyPI に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach PyPI. Check your network or proxy" } }
+  ]
+}

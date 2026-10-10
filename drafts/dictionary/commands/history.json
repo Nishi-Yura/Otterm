@@ -1,0 +1,46 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "history",
+  "summary": { "ja": "これまでに実行したコマンドの一覧を表示します", "en": "Lists the commands you have run before" },
+  "description": {
+    "ja": "番号付きで表示され、bash / zsh では !番号 で再実行できます。Ctrl+R で過去のコマンドを検索するのも便利です。PowerShell では Get-History の別名で、オプションが異なります。",
+    "en": "Entries are numbered; in bash / zsh you can rerun one with !number. Ctrl+R searches history interactively. In PowerShell this is an alias of Get-History with different options."
+  },
+  "options": [
+    {
+      "flags": ["-c"],
+      "summary": { "ja": "このセッションの履歴をすべて消す", "en": "Clear this session's history" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "コマンド履歴がすべて消え、元に戻せません", "en": "All command history is deleted and cannot be recovered" }
+    },
+    { "flags": ["-d"], "takesValue": true, "valueType": "number", "summary": { "ja": "指定した番号の履歴 1 件だけを消す", "en": "Delete one entry by number" } },
+    { "flags": ["-w"], "summary": { "ja": "今の履歴を履歴ファイル（~/.bash_history など）に書き出す", "en": "Write the current history to the history file" } },
+    { "flags": ["-a"], "summary": { "ja": "このセッションで増えた分だけ履歴ファイルに追記する", "en": "Append new entries to the history file" } },
+    { "flags": ["-r"], "summary": { "ja": "履歴ファイルを読み込み直す（他のタブの履歴を取り込む）", "en": "Reload the history file (pick up other tabs' entries)" } },
+    { "flags": ["-Count"], "takesValue": true, "valueType": "number", "summary": { "ja": "表示する件数（PowerShell）", "en": "Number of entries to show (PowerShell)" } }
+  ],
+  "args": [
+    { "name": "n", "type": "number", "optional": true, "summary": { "ja": "直近 n 件だけ表示（bash / zsh）", "en": "Show only the last n entries (bash / zsh)" } }
+  ],
+  "examples": [
+    { "command": "history 20", "summary": { "ja": "直近 20 件を表示", "en": "Last 20 commands" } },
+    { "command": "history | grep ssh", "summary": { "ja": "過去に使った ssh コマンドを探す", "en": "Find ssh commands you ran before" } },
+    { "command": "!105", "summary": { "ja": "履歴番号 105 のコマンドを再実行", "en": "Rerun history entry 105" } }
+  ],
+  "errors": [
+    {
+      "pattern": "history: (?<pos>\\S+): history position out of range",
+      "hint": { "ja": "番号 {pos} の履歴はありません。history で番号を確認してください", "en": "There is no entry {pos}. Check the numbers with history" },
+      "fix": "history | tail -20"
+    },
+    {
+      "pattern": "history: (?<opt>-\\S+): invalid option",
+      "hint": { "ja": "{opt} というオプションはこのシェルの history にはありません。シェルによってオプションが違います", "en": "{opt} is not an option of this shell's history. Options differ between shells" },
+      "fix": "history"
+    },
+    {
+      "pattern": "event not found",
+      "hint": { "ja": "! に続く番号や文字に一致する履歴がありません。文字列の中で ! を使うときは引用符で囲むか \\! と書きます", "en": "No history entry matches after !. Inside text, quote the ! or write \\!" }
+    }
+  ]
+}

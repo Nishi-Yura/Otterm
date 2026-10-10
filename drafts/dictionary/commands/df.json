@@ -1,0 +1,43 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "df",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ディスク（ドライブ）ごとの空き容量を表示します", "en": "Shows free space on each disk" },
+  "description": {
+    "ja": "du が「このフォルダがどれだけ使っているか」なのに対し、df は「ディスク全体にあとどれだけ空きがあるか」を見るコマンドです。-h を付けると読みやすくなります。",
+    "en": "Where du asks how much a folder uses, df asks how much space is left on the whole disk. Add -h for readable sizes."
+  },
+  "options": [
+    { "flags": ["-h", "--human-readable"], "summary": { "ja": "サイズを KB / MB / GB で表示", "en": "Sizes in KB / MB / GB" } },
+    { "flags": ["-H", "--si"], "summary": { "ja": "1000 単位（商品表記と同じ）で表示", "en": "Use powers of 1000, like product labels" } },
+    { "flags": ["-T", "--print-type"], "summary": { "ja": "ファイルシステムの種類（ext4, apfs など）も表示", "en": "Show the file system type (ext4, apfs...)" } },
+    { "flags": ["-i", "--inodes"], "summary": { "ja": "容量ではなくファイル数の上限（inode）の使用状況を表示", "en": "Show inode (file count limit) usage instead of bytes" } },
+    { "flags": ["-a", "--all"], "summary": { "ja": "仮想的なものも含めてすべてのファイルシステムを表示", "en": "Include pseudo file systems" } },
+    { "flags": ["-l", "--local"], "summary": { "ja": "ネットワーク上のディスクは除いて表示", "en": "Local disks only, no network mounts" } },
+    { "flags": ["--total"], "summary": { "ja": "最後に合計行を追加", "en": "Add a total line" } }
+  ],
+  "args": [
+    { "name": "path", "type": "path", "optional": true, "variadic": true, "summary": { "ja": "このパスが載っているディスクだけ表示する", "en": "Only show the disk that holds this path" } }
+  ],
+  "examples": [
+    { "command": "df -h", "summary": { "ja": "すべてのディスクの空き容量を見やすく表示", "en": "Free space on every disk, readable sizes" } },
+    { "command": "df -h .", "summary": { "ja": "今いるフォルダがあるディスクの空き容量", "en": "Free space on the disk holding the current folder" } }
+  ],
+  "errors": [
+    {
+      "pattern": "df: (?<path>\\S+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。空きを知りたいディスク上の実在するフォルダを指定してください", "en": "{path} was not found. Give an existing folder on the disk you want to check" },
+      "fix": "df -h ."
+    },
+    {
+      "pattern": "df: illegal option -- (?<opt>\\S)",
+      "hint": { "ja": "-{opt} は macOS の df にはありません。ファイルシステムの種類を見るなら -Y、見やすいサイズなら -h を使ってください", "en": "-{opt} does not exist in macOS df. Use -Y for the file system type, or -h for readable sizes" },
+      "fix": "df -h"
+    },
+    {
+      "pattern": "df: no file systems processed",
+      "hint": { "ja": "表示できるディスクがありませんでした。指定したパスやオプションを見直してください", "en": "No disks could be shown. Check the path or options you passed" },
+      "fix": "df -h"
+    }
+  ]
+}

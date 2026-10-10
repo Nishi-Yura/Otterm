@@ -1,0 +1,86 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "yarn",
+  "summary": { "ja": "Node.js のパッケージ管理ツールです（npm の代替）", "en": "Package manager for Node.js (an npm alternative)" },
+  "description": { "ja": "v1（Classic）と v2 以降（Berry）でコマンドが少し違います。プロジェクトの .yarnrc.yml や packageManager の記述で見分けられます。ロックファイルは yarn.lock です。", "en": "Commands differ slightly between v1 (Classic) and v2+ (Berry). Check .yarnrc.yml or the packageManager field to tell them apart. The lockfile is yarn.lock." },
+  "install": { "npm": "npm install -g yarn", "winget": "winget install Yarn.Yarn", "scoop": "scoop install yarn", "brew": "brew install yarn", "url": "https://yarnpkg.com/getting-started/install" },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": { "ja": "package.json の依存をすべてインストールします（yarn だけでも同じ）", "en": "Installs all dependencies from package.json (bare yarn does the same)" },
+      "options": [
+        { "flags": ["--frozen-lockfile"], "summary": { "ja": "yarn.lock を変更しない（v1、CI 向け）", "en": "Do not change yarn.lock (v1, for CI)" } },
+        { "flags": ["--immutable"], "summary": { "ja": "yarn.lock を変更しない（v2 以降、CI 向け）", "en": "Do not change yarn.lock (v2+, for CI)" } }
+      ],
+      "errors": [
+        { "pattern": "The lockfile would have been modified", "hint": { "ja": "yarn.lock が package.json と合っていません。--immutable なしで実行して更新してください", "en": "yarn.lock is out of sync with package.json. Run without --immutable to update it" }, "fix": "yarn install" },
+        { "pattern": "Your lockfile needs to be updated", "hint": { "ja": "yarn.lock の更新が必要です。--frozen-lockfile なしで実行してください", "en": "yarn.lock needs updating. Run without --frozen-lockfile" }, "fix": "yarn install" },
+        { "pattern": "Couldn't find a package\\.json", "hint": { "ja": "このフォルダに package.json がありません。プロジェクトのフォルダへ移動するか yarn init で作れます", "en": "No package.json here. Move to the project folder or create one with yarn init" }, "fix": "yarn init -y" }
+      ]
+    },
+    {
+      "name": "add",
+      "summary": { "ja": "パッケージを追加してインストールします", "en": "Adds and installs a package" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-D", "--dev"], "summary": { "ja": "開発時だけ使う依存として追加", "en": "Add as a dev dependency" } },
+        { "flags": ["-E", "--exact"], "summary": { "ja": "バージョンを固定して追加", "en": "Pin the exact version" } }
+      ],
+      "examples": [{ "command": "yarn add -D eslint", "summary": { "ja": "ESLint を開発依存として追加", "en": "Add ESLint as a dev dependency" } }],
+      "errors": [
+        { "pattern": "Couldn't find package \"(?<pkg>[^\"]+)\"|Package not found.*\"?(?<pkg2>[^\"\\s]+)", "hint": { "ja": "パッケージがレジストリに見つかりません。名前のスペルを確認してください", "en": "Package not found in the registry. Check the spelling" } },
+        { "pattern": "Running this command will add the dependency to the workspace root", "hint": { "ja": "ワークスペースのルートに追加するには -W を付けます", "en": "Adding to the workspace root needs -W" }, "fix": "yarn add -W {args}" }
+      ]
+    },
+    {
+      "name": "remove",
+      "summary": { "ja": "パッケージを削除します", "en": "Removes a package" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "package.json の scripts を実行します（yarn <script> でも可）", "en": "Runs a script from package.json (yarn <script> also works)" },
+      "args": [{ "name": "script", "type": "string" }],
+      "errors": [{ "pattern": "Command \"(?<name>[^\"]+)\" not found|Couldn't find a script named \"(?<name2>[^\"]+)\"", "hint": { "ja": "そのスクリプトは scripts にありません。yarn run で一覧を見られます", "en": "No such script. Run yarn run to list them" }, "fix": "yarn run" }]
+    },
+    {
+      "name": "dlx",
+      "summary": { "ja": "パッケージをインストールせず一時的に実行します（v2 以降、npx 相当）", "en": "Runs a package without installing it (v2+, like npx)" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "init",
+      "summary": { "ja": "新しい package.json を作ります", "en": "Creates a new package.json" },
+      "options": [{ "flags": ["-y", "--yes"], "summary": { "ja": "質問をすべて既定値で（v1）", "en": "Accept all defaults (v1)" } }]
+    },
+    {
+      "name": "upgrade",
+      "aliases": ["up"],
+      "summary": { "ja": "依存を更新します（v1 は upgrade、v2 以降は up）", "en": "Updates dependencies (upgrade in v1, up in v2+)" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["--latest"], "summary": { "ja": "範囲を無視して最新に（v1）", "en": "Ignore ranges and go to latest (v1)" }, "danger": "warn", "dangerMessage": { "ja": "メジャーバージョンが上がり、動かなくなることがあります", "en": "May bump major versions and break things" } }]
+    },
+    {
+      "name": "workspaces",
+      "aliases": ["workspace"],
+      "summary": { "ja": "モノレポ内の各パッケージを操作します", "en": "Works with packages in a monorepo" },
+      "options": [
+        { "flags": ["list"], "summary": { "ja": "ワークスペース一覧（v2 以降）", "en": "List workspaces (v2+)" } },
+        { "flags": ["foreach"], "summary": { "ja": "全ワークスペースでコマンドを実行（v2 以降）", "en": "Run a command in every workspace (v2+)" } }
+      ]
+    },
+    {
+      "name": "set",
+      "summary": { "ja": "yarn 自体のバージョンを切り替えます", "en": "Switches the version of yarn itself" },
+      "examples": [{ "command": "yarn set version stable", "summary": { "ja": "最新の安定版 yarn に切り替える", "en": "Switch to the latest stable yarn" } }]
+    },
+    { "name": "publish", "aliases": ["npm publish"], "summary": { "ja": "パッケージを npm レジストリに公開します", "en": "Publishes the package to the npm registry" }, "danger": "confirm", "dangerMessage": { "ja": "公開すると取り消しが難しくなります。バージョンと中身を確認してください", "en": "Publishing is hard to undo. Check the version and contents" } }
+  ],
+  "errors": [
+    { "pattern": "'yarn' is not recognized|yarn: command not found", "hint": { "ja": "yarn が入っていません。Node.js 付属の corepack enable で有効にできます", "en": "yarn is not installed. corepack enable (bundled with Node.js) turns it on" }, "fix": "corepack enable yarn" },
+    { "pattern": "This project's package\\.json defines \"packageManager\": \"yarn@(?<ver>[^\"]+)\"", "hint": { "ja": "このプロジェクトは yarn {ver} を使います。corepack enable で自動的に正しい版が使われます", "en": "This project wants yarn {ver}. corepack enable makes the right version run automatically" }, "fix": "corepack enable" },
+    { "pattern": "ENOTFOUND|getaddrinfo|ETIMEDOUT|There appears to be trouble with your network connection", "hint": { "ja": "レジストリに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the registry. Check your network or proxy" } },
+    { "pattern": "EACCES.*permission denied", "hint": { "ja": "書き込み権限がありません。sudo は使わず、グローバル先をユーザーフォルダに変えるのが安全です", "en": "No write permission. Avoid sudo; point the global folder at your home directory instead" } },
+    { "pattern": "running scripts is disabled on this system", "hint": { "ja": "PowerShell の実行ポリシーで yarn.ps1 が止められています。ユーザー単位で RemoteSigned にすると動きます", "en": "PowerShell's execution policy blocks yarn.ps1. Setting RemoteSigned for your user fixes it" }, "fix": "Set-ExecutionPolicy -Scope CurrentUser RemoteSigned" }
+  ]
+}

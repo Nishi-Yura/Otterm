@@ -1,0 +1,63 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Set-ExecutionPolicy",
+  "shells": ["pwsh", "powershell"],
+  "platforms": ["windows"],
+  "summary": { "ja": "PowerShell スクリプト（.ps1）の実行を許可するかどうかの設定を変えます", "en": "Changes whether PowerShell scripts (.ps1) are allowed to run" },
+  "description": { "ja": "Windows の初期設定ではスクリプトの実行が禁止されており、.ps1 を実行すると「running scripts is disabled」というエラーになります。おすすめは Set-ExecutionPolicy RemoteSigned -Scope CurrentUser です。自分で作ったスクリプトは動き、インターネットから取得したものは署名が必要になります。Unrestricted や Bypass はすべてのスクリプトを無条件に動かすため、避けてください。-Scope CurrentUser を付ければ管理者権限は不要で、自分のアカウントにだけ適用されます。", "en": "By default Windows blocks scripts, so running a .ps1 gives a 'running scripts is disabled' error. The recommended fix is Set-ExecutionPolicy RemoteSigned -Scope CurrentUser: your own scripts run, downloaded ones need a signature. Avoid Unrestricted and Bypass, which run every script unconditionally. With -Scope CurrentUser no admin rights are needed and only your account is affected." },
+  "danger": "warn",
+  "options": [
+    {
+      "flags": ["-ExecutionPolicy"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "ポリシー名（Restricted / RemoteSigned / Unrestricted / Bypass など）", "en": "Policy name (Restricted / RemoteSigned / Unrestricted / Bypass, ...)" }
+    },
+    {
+      "flags": ["-Scope"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "適用範囲。CurrentUser（自分だけ、管理者権限不要）がおすすめ", "en": "Where it applies. CurrentUser (you only, no admin needed) is recommended" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "確認メッセージを出さずに変更", "en": "Change without the confirmation prompt" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "確認なしでセキュリティ設定を変更します", "en": "Changes a security setting without confirmation" }
+    },
+    {
+      "flags": ["-WhatIf"],
+      "summary": { "ja": "実際には変えず、何が起きるかだけ表示（安全な予行演習）", "en": "Show what would change without doing it (safe dry run)" }
+    }
+  ],
+  "args": [
+    { "name": "policy", "type": "string", "summary": { "ja": "Restricted（すべて禁止・初期値）/ RemoteSigned（おすすめ）/ Unrestricted（すべて許可、警告あり）/ Bypass（すべて許可、警告なし）", "en": "Restricted (block all, default) / RemoteSigned (recommended) / Unrestricted (allow all with warnings) / Bypass (allow all, no warnings)" } }
+  ],
+  "examples": [
+    { "command": "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser", "summary": { "ja": "おすすめ設定。自分のスクリプトが動くようになる", "en": "Recommended. Lets your own scripts run" } },
+    { "command": "Get-ExecutionPolicy -List", "summary": { "ja": "今の設定を範囲ごとに確認", "en": "Check the current setting for each scope" } },
+    { "command": "Set-ExecutionPolicy Restricted -Scope CurrentUser", "summary": { "ja": "元の禁止状態に戻す", "en": "Go back to blocking scripts" } }
+  ],
+  "errors": [
+    {
+      "pattern": "cannot be loaded because running scripts is disabled on this system",
+      "hint": { "ja": "スクリプトの実行が禁止されています。自分のアカウントだけ許可するには次のコマンドを実行してください", "en": "Scripts are blocked. Allow them for your account only with the command below" },
+      "fix": "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser"
+    },
+    {
+      "pattern": "Access to the registry key '(?<key>[^']+)' is denied",
+      "hint": { "ja": "全体の設定を変えるには管理者権限が必要です。自分だけに適用する -Scope CurrentUser を付ければ管理者権限なしで変えられます", "en": "Changing the machine-wide setting needs admin rights. Add -Scope CurrentUser to change it for yourself without admin" },
+      "fix": "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser"
+    },
+    {
+      "pattern": "updated your execution policy successfully, but the setting is overridden by a policy defined at a more specific scope",
+      "hint": { "ja": "変更は保存されましたが、より優先度の高い範囲の設定が効いています。Get-ExecutionPolicy -List で確認し、その範囲（通常 CurrentUser か Process）を変えてください", "en": "The change was saved but a more specific scope overrides it. Check Get-ExecutionPolicy -List and change that scope (usually CurrentUser or Process)" },
+      "fix": "Get-ExecutionPolicy -List"
+    },
+    {
+      "pattern": "Cannot bind parameter 'ExecutionPolicy'\\. Cannot convert value \"(?<v>[^\"]+)\"",
+      "hint": { "ja": "{v} はポリシー名ではありません。Restricted、RemoteSigned、AllSigned、Unrestricted、Bypass のいずれかを指定します", "en": "{v} is not a policy name. Use Restricted, RemoteSigned, AllSigned, Unrestricted or Bypass" },
+      "fix": "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser"
+    }
+  ]
+}

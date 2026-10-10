@@ -1,0 +1,43 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "tail",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルの末尾だけ（既定では 10 行）を表示します", "en": "Shows the end of a file (10 lines by default)" },
+  "description": {
+    "ja": "ログファイルの最新の部分を見るのによく使います。-f を付けると、追記される内容をリアルタイムで表示し続けます（Ctrl+C で止めます）。",
+    "en": "Most often used to see the latest part of a log. With -f it keeps printing new lines as they are added (stop with Ctrl+C)."
+  },
+  "options": [
+    { "flags": ["-n", "--lines"], "takesValue": true, "valueType": "number", "summary": { "ja": "表示する行数（例: -n 50）。+5 で 5 行目以降をすべて表示", "en": "Number of lines (e.g. -n 50); +5 shows from line 5 to the end" } },
+    { "flags": ["-f", "--follow"], "summary": { "ja": "追記を待ち続けて表示（ログの監視向け、Ctrl+C で止める）", "en": "Keep showing new lines as they arrive (for logs; Ctrl+C to stop)" } },
+    { "flags": ["-F"], "summary": { "ja": "-f と同じだが、ファイルが作り直されても追いかけ続ける", "en": "Like -f, but keeps following even if the file is replaced" } },
+    { "flags": ["-c", "--bytes"], "takesValue": true, "valueType": "number", "summary": { "ja": "行ではなく末尾からのバイト数で指定", "en": "Show this many bytes instead of lines" } },
+    { "flags": ["-q", "--quiet", "--silent"], "summary": { "ja": "複数ファイルのとき、ファイル名の見出しを出さない", "en": "No file-name headers when showing several files" } },
+    { "flags": ["--pid"], "takesValue": true, "valueType": "number", "summary": { "ja": "-f と併用し、指定したプロセスが終わったら止める", "en": "With -f, stop when the given process exits" } }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "表示するファイル（省略すると前のコマンドの出力を読みます）", "en": "Files to show (omit to read the previous command's output)" } }
+  ],
+  "examples": [
+    { "command": "tail server.log", "summary": { "ja": "ログの最後の 10 行を見る", "en": "See the last 10 lines of a log" } },
+    { "command": "tail -f server.log", "summary": { "ja": "ログに追記される内容を見続ける", "en": "Watch the log as it grows" } },
+    { "command": "tail -n 100 app.log | grep ERROR", "summary": { "ja": "最後の 100 行からエラーだけ探す", "en": "Find errors in the last 100 lines" } }
+  ],
+  "errors": [
+    {
+      "pattern": "tail: (?:cannot open )?[‘']?(?<path>[^’':\\n]+)[’']?(?: for reading)?: No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "tail: (?:error reading )?[‘']?(?<path>[^’':\\n]+)[’']?: Is a directory",
+      "hint": { "ja": "{path} はフォルダです。中のファイルを指定してください", "en": "{path} is a folder. Point tail at a file inside it" },
+      "fix": "ls {path}"
+    },
+    {
+      "pattern": "tail: (?:invalid|illegal) (?:number of lines|offset|option)[: ]*[‘']?(?<value>[^’'\\n]*)",
+      "hint": { "ja": "行数の指定が正しくありません。-n のあとに数字を書きます（例: tail -n 50 file）", "en": "The line count is not valid. Put a number after -n (e.g. tail -n 50 file)" },
+      "fix": "tail -n 50"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Add-Content",
+  "aliases": ["ac"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "ファイルの末尾に文字列を追記します（PowerShell）。既存の内容は残ります", "en": "Appends text to the end of a file (PowerShell). Existing content stays" },
+  "description": { "ja": "ファイルがなければ新しく作ります。中身をまるごと置き換えたいときは Set-Content、コマンドの出力を保存したいときは Out-File -Append を使います。ログやメモに 1 行足すときに便利です。", "en": "Creates the file if missing. To replace the contents use Set-Content; to save a command's output use Out-File -Append. Handy for adding a line to a log or notes file." },
+  "options": [
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "追記するファイル", "en": "File to append to" }
+    },
+    {
+      "flags": ["-Value"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "追記する内容", "en": "Text to append" }
+    },
+    {
+      "flags": ["-Encoding"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "文字コードを指定（例: utf8）。既存ファイルと合わせます", "en": "Text encoding (e.g. utf8). Match the existing file" }
+    },
+    {
+      "flags": ["-NoNewline"],
+      "summary": { "ja": "末尾に改行を付けない", "en": "Do not add a trailing newline" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "読み取り専用や隠しファイルにも追記", "en": "Append to read-only or hidden files too" }
+    },
+    {
+      "flags": ["-WhatIf"],
+      "summary": { "ja": "実際には書き込まず、何が起きるかだけ表示（安全な予行演習）", "en": "Show what would happen without writing (safe dry run)" }
+    }
+  ],
+  "args": [{ "name": "path", "type": "file" }, { "name": "value", "type": "string", "optional": true }],
+  "examples": [
+    { "command": "Add-Content memo.txt \"買い物: 牛乳\"", "summary": { "ja": "memo.txt の末尾に 1 行追加", "en": "Add one line to the end of memo.txt" } },
+    { "command": "Add-Content log.txt (Get-Date)", "summary": { "ja": "今の日時をログに追記", "en": "Append the current date and time to a log" } },
+    { "command": "Get-Content a.txt | Add-Content all.txt", "summary": { "ja": "a.txt の中身を all.txt の末尾につなげる", "en": "Append the contents of a.txt to all.txt" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Could not find a part of the path '(?<path>[^']+)'",
+      "hint": { "ja": "{path} の途中のフォルダが存在しません。先にフォルダを作ってください", "en": "A folder in {path} does not exist. Create it first" },
+      "fix": "New-Item -ItemType Directory -Path ."
+    },
+    {
+      "pattern": "Access to the path '(?<path>[^']+)' is denied",
+      "hint": { "ja": "{path} に書き込む権限がありません。読み取り専用か、管理者権限が必要な場所です", "en": "No permission to write {path}. It may be read-only or need admin rights" }
+    },
+    {
+      "pattern": "The process cannot access the file '(?<path>[^']+)' because it is being used by another process",
+      "hint": { "ja": "{path} は他のプログラムが開いています。閉じてから再試行してください", "en": "{path} is open in another program. Close it and retry" }
+    },
+    {
+      "pattern": "Cannot bind argument to parameter 'Value' because it is null",
+      "hint": { "ja": "追記する内容が空です。文字列を引用符で囲んで渡してください", "en": "Nothing to append. Pass the text in quotes" },
+      "fix": "Add-Content memo.txt \"text\""
+    }
+  ]
+}

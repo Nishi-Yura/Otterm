@@ -1,0 +1,83 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Invoke-RestMethod",
+  "aliases": ["irm"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "Web API を呼び出し、JSON などの応答を PowerShell のオブジェクトとして受け取ります（PowerShell）。irm と打っても同じです", "en": "Calls a web API and returns the JSON (or XML) response as PowerShell objects (PowerShell). irm is an alias" },
+  "description": { "ja": "Invoke-WebRequest と似ていますが、JSON の応答を自動で変換してくれるので、.name のようにそのまま項目を取り出せます。API を使うときはこちらが便利です。応答をファイルとして保存したいだけなら Invoke-WebRequest -OutFile を使います。取得した内容をそのまま実行するのは危険なので避けてください。", "en": "Like Invoke-WebRequest, but JSON responses are converted automatically so you can read fields like .name directly. Prefer it for APIs. To just save a file, use Invoke-WebRequest -OutFile. Avoid running fetched content directly." },
+  "options": [
+    {
+      "flags": ["-Uri"],
+      "takesValue": true,
+      "valueType": "url",
+      "summary": { "ja": "呼び出す URL", "en": "URL to call" }
+    },
+    {
+      "flags": ["-Method"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "HTTP メソッド（GET, POST, PUT, DELETE）", "en": "HTTP method (GET, POST, PUT, DELETE)" }
+    },
+    {
+      "flags": ["-Headers"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "送信するヘッダー（例: @{ Authorization = \"Bearer ...\" }）", "en": "Headers to send (e.g. @{ Authorization = \"Bearer ...\" })" }
+    },
+    {
+      "flags": ["-Body"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "送信するデータ（JSON 文字列やハッシュテーブル）", "en": "Data to send (JSON string or hashtable)" }
+    },
+    {
+      "flags": ["-ContentType"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "送信データの種類（例: application/json）", "en": "Content type of the body (e.g. application/json)" }
+    },
+    {
+      "flags": ["-OutFile"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "応答をファイルに保存", "en": "Save the response to a file" }
+    },
+    {
+      "flags": ["-SkipCertificateCheck"],
+      "summary": { "ja": "証明書の検証をスキップ（PowerShell 7）", "en": "Skip certificate validation (PowerShell 7)" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "証明書の検証を無効にすると、偽サイトでも接続してしまいます。信頼できるテスト環境以外では使わないでください", "en": "Disabling certificate checks lets fake sites through. Use only in trusted test environments" }
+    },
+    {
+      "flags": ["-TimeoutSec"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "待つ最大秒数", "en": "Maximum seconds to wait" }
+    }
+  ],
+  "args": [{ "name": "url", "type": "url" }],
+  "examples": [
+    { "command": "Invoke-RestMethod https://api.github.com/repos/PowerShell/PowerShell", "summary": { "ja": "API を呼び、応答をオブジェクトとして表示", "en": "Call an API and show the response as an object" } },
+    { "command": "(irm https://api.github.com/users/octocat).name", "summary": { "ja": "応答の name 項目だけを取り出す", "en": "Read just the name field of the response" } },
+    { "command": "Invoke-RestMethod https://example.com/api -Method Post -Body (@{ q = \"test\" } | ConvertTo-Json) -ContentType application/json", "summary": { "ja": "JSON を POST で送る", "en": "Send JSON with POST" } }
+  ],
+  "errors": [
+    {
+      "pattern": "The remote name could not be resolved: '(?<host>[^']+)'|No such host is known",
+      "hint": { "ja": "サーバー名が見つかりません。URL のスペルとインターネット接続を確認してください", "en": "The server name could not be found. Check the URL spelling and your internet connection" }
+    },
+    {
+      "pattern": "The remote server returned an error: \\((?<code>\\d+)\\)|Response status code does not indicate success: (?<code>\\d+)",
+      "hint": { "ja": "サーバーがエラー {code} を返しました。404 は URL の間違い、401/403 は認証や API キー、429 は呼びすぎ、5xx はサーバー側の問題です", "en": "The server returned error {code}. 404 means a wrong URL, 401/403 authentication or API key, 429 too many requests, 5xx a server-side problem" }
+    },
+    {
+      "pattern": "Invalid JSON primitive|Conversion from JSON failed",
+      "hint": { "ja": "応答が JSON ではありませんでした。URL が API ではなく通常のページを指しているかもしれません。Invoke-WebRequest で中身を確認してください", "en": "The response was not JSON. The URL may point to a normal web page rather than an API. Inspect it with Invoke-WebRequest" },
+      "fix": "Invoke-WebRequest"
+    },
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は Invoke-RestMethod にはありません。Linux の curl とは別物で、データは -Body、ヘッダーは -Headers で渡します", "en": "-{p} is not a parameter here. This is not Linux curl; pass data with -Body and headers with -Headers" }
+    }
+  ]
+}

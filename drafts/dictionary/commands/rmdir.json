@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "rmdir",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "空のフォルダを削除します。中身があるフォルダは消せません", "en": "Deletes an empty folder. It refuses if anything is inside" },
+  "description": {
+    "ja": "中身が空のフォルダだけを削除する安全なコマンドです。ファイルが残っているとエラーになるので、間違えて消す心配がありません。",
+    "en": "A safe way to remove folders: it only works on empty ones, so you cannot delete contents by mistake."
+  },
+  "learn": { "ja": "空のフォルダをファイルツリーで削除するのと同じです。中身があるものはゴミ箱へ送る方が安全です", "en": "Same as deleting an empty folder in the file tree. For non-empty folders, the trash is safer" },
+  "options": [
+    { "flags": ["-p", "--parents"], "summary": { "ja": "空になった親フォルダも順に削除（a/b/c なら c, b, a の順）", "en": "Also remove parent folders that become empty (a/b/c removes c, b, a)" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "削除したフォルダ名を表示", "en": "Print each folder as it is removed" } },
+    { "flags": ["--ignore-fail-on-non-empty"], "summary": { "ja": "中身があって消せなくてもエラーにしない", "en": "Do not report an error when a folder is not empty" } }
+  ],
+  "args": [
+    { "name": "dir", "type": "dir", "variadic": true, "summary": { "ja": "削除する空のフォルダ", "en": "Empty folders to delete" } }
+  ],
+  "examples": [
+    { "command": "rmdir old-folder", "summary": { "ja": "空のフォルダを 1 つ削除", "en": "Delete one empty folder" } },
+    { "command": "rmdir -p a/b/c", "summary": { "ja": "c, b, a が空なら順に削除", "en": "Remove c, then b, then a if each is empty" } }
+  ],
+  "errors": [
+    {
+      "pattern": "rmdir: (?:failed to remove )?[‘']?(?<path>[^’':]+)[’']?: Directory not empty",
+      "hint": { "ja": "{path} の中にまだファイルがあります。中身ごと消すならゴミ箱に送るのが安全です", "en": "{path} still has files inside. To remove it with its contents, the trash is the safe option" },
+      "fix": "otterm trash {path}"
+    },
+    {
+      "pattern": "rmdir: (?:failed to remove )?[‘']?(?<path>[^’':]+)[’']?: No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "rmdir: (?:failed to remove )?[‘']?(?<path>[^’':]+)[’']?: Not a directory",
+      "hint": { "ja": "{path} はフォルダではなくファイルです。ファイルを消すには rm を使います", "en": "{path} is a file, not a folder. Use rm to delete files" },
+      "fix": "rm {path}"
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "pacman",
+  "platforms": ["linux"],
+  "summary": { "ja": "Arch Linux 系のパッケージ管理ツールです", "en": "Package manager for Arch Linux and derivatives" },
+  "description": { "ja": "-S（同期・インストール）、-R（削除）、-Q（問い合わせ）といった大文字の操作に小文字のオプションを組み合わせます。インストールや削除には sudo が必要で、パスワード入力中は何も表示されません。更新は必ず -Syu で全体をまとめて行い、一部だけ更新しないでください。", "en": "Combine a capital operation (-S sync/install, -R remove, -Q query) with lowercase modifiers. Installing or removing needs sudo; nothing shows while you type the password. Always update the whole system with -Syu; partial upgrades break Arch." },
+  "install": { "url": "https://wiki.archlinux.org/title/Pacman" },
+  "subcommands": [
+    {
+      "name": "-S",
+      "aliases": ["--sync"],
+      "summary": { "ja": "パッケージをインストールします", "en": "Installs packages" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["--needed"], "summary": { "ja": "すでに最新なら入れ直さない", "en": "Skip packages already up to date" } },
+        { "flags": ["--noconfirm"], "summary": { "ja": "確認なしで進める", "en": "Do not ask for confirmation" } }
+      ],
+      "examples": [{ "command": "sudo pacman -S --needed git base-devel", "summary": { "ja": "git とビルドツール一式を入れる", "en": "Install git and the build tools" } }],
+      "errors": [
+        { "pattern": "error: target not found: (?<pkg>\\S+)", "hint": { "ja": "{pkg} が公式リポジトリにありません。pacman -Ss で探すか、AUR のパッケージかもしれません", "en": "{pkg} is not in the official repos. Try pacman -Ss, or it may be an AUR package" }, "fix": "pacman -Ss {pkg}" },
+        { "pattern": "failed retrieving file .* from (?<mirror>\\S+)", "hint": { "ja": "ミラー {mirror} から取得できません。pacman -Syy で一覧を取り直すか、ミラーを変えてください", "en": "Could not fetch from mirror {mirror}. Refresh with pacman -Syy or change mirrors" } },
+        { "pattern": "signature from .* is (unknown trust|invalid)", "hint": { "ja": "署名の検証に失敗しました。keyring を更新してください", "en": "Signature check failed. Update the keyring" }, "fix": "sudo pacman -Sy archlinux-keyring" }
+      ]
+    },
+    {
+      "name": "-Syu",
+      "summary": { "ja": "パッケージ一覧を更新してシステム全体を最新にします", "en": "Refreshes the package list and upgrades the whole system" },
+      "description": { "ja": "Arch の更新はこれ一択です。-Sy だけ（一覧更新のみ）や特定パッケージだけの更新は「部分更新」となり、ライブラリの不整合でシステムが壊れることがあります。", "en": "This is the one way to update Arch. Running only -Sy, or upgrading single packages, is a partial upgrade and can break the system through library mismatches." },
+      "options": [{ "flags": ["--noconfirm"], "summary": { "ja": "確認なし", "en": "No prompts" } }],
+      "examples": [{ "command": "sudo pacman -Syu", "summary": { "ja": "システム全体を更新", "en": "Upgrade the whole system" } }],
+      "errors": [
+        { "pattern": "conflicting files|exists in filesystem", "hint": { "ja": "既存ファイルと衝突しています。どのパッケージのものか pacman -Qo で調べてから対処してください。--overwrite は最終手段です", "en": "A file conflict. Check which package owns it with pacman -Qo before acting; --overwrite is a last resort" } },
+        { "pattern": "unable to lock database|db\\.lck", "hint": { "ja": "別の pacman が動いているか、ロックファイルが残っています。他に動いていなければ /var/lib/pacman/db.lck を削除してください", "en": "Another pacman is running or a stale lock remains. If nothing is running, remove /var/lib/pacman/db.lck" } }
+      ]
+    },
+    { "name": "-Sy", "summary": { "ja": "パッケージ一覧だけ更新します（単独で使うのは危険）", "en": "Refreshes the package list only (dangerous on its own)" }, "danger": "warn", "dangerMessage": { "ja": "この後に -S で個別に入れると部分更新になります。代わりに -Syu を使ってください", "en": "Installing afterwards with -S causes a partial upgrade. Use -Syu instead" } },
+    {
+      "name": "-Ss",
+      "summary": { "ja": "リポジトリからパッケージを検索します", "en": "Searches the repositories" },
+      "args": [{ "name": "query", "type": "pattern" }]
+    },
+    {
+      "name": "-R",
+      "aliases": ["--remove"],
+      "summary": { "ja": "パッケージを削除します", "en": "Removes packages" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "システム全体から削除します", "en": "Removes system-wide" },
+      "errors": [{ "pattern": "error: failed to prepare transaction \\(could not satisfy dependencies\\)|required by (?<dep>\\S+)", "hint": { "ja": "他のパッケージが依存しています。本当に消すなら依存元も含めて確認してください", "en": "Other packages depend on it. Review the dependents before removing" } }]
+    },
+    {
+      "name": "-Rns",
+      "summary": { "ja": "パッケージを依存と設定ごと削除します", "en": "Removes a package with its unneeded dependencies and config" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "danger": "confirm",
+      "dangerMessage": { "ja": "依存パッケージと設定ファイルもまとめて消えます。表示される一覧をよく確認してください", "en": "Dependencies and config files are removed too. Read the list carefully" }
+    },
+    {
+      "name": "-Q",
+      "aliases": ["--query"],
+      "summary": { "ja": "インストール済みパッケージの一覧", "en": "Lists installed packages" },
+      "args": [{ "name": "package", "type": "package", "optional": true }]
+    },
+    {
+      "name": "-Qo",
+      "summary": { "ja": "そのファイルがどのパッケージのものか調べます", "en": "Finds which package owns a file" },
+      "args": [{ "name": "file", "type": "file" }]
+    },
+    {
+      "name": "-Qdt",
+      "summary": { "ja": "もう必要ない依存パッケージを一覧します", "en": "Lists orphaned dependencies" },
+      "examples": [{ "command": "sudo pacman -Rns $(pacman -Qdtq)", "summary": { "ja": "不要な依存をまとめて削除", "en": "Remove all orphans" } }]
+    },
+    {
+      "name": "-Sc",
+      "summary": { "ja": "古いパッケージキャッシュを削除します", "en": "Clears old package caches" },
+      "options": [{ "flags": ["-Scc"], "summary": { "ja": "キャッシュをすべて削除", "en": "Clear every cached package" }, "danger": "warn", "dangerMessage": { "ja": "ダウングレード用の古い版も消えます", "en": "Old versions used for downgrading are gone too" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "pacman: command not found", "hint": { "ja": "この Linux は pacman を使いません。Ubuntu なら apt、Fedora なら dnf です", "en": "This Linux does not use pacman. Ubuntu uses apt; Fedora uses dnf" } },
+    { "pattern": "error: you cannot perform this operation unless you are root", "hint": { "ja": "管理者権限が必要です。先頭に sudo を付けてください。パスワード入力中は何も表示されません", "en": "Root is required. Prefix the command with sudo. Nothing shows while you type the password" }, "fix": "sudo pacman {args}" },
+    { "pattern": "is not in the sudoers file", "hint": { "ja": "このユーザーは sudo を使えません。管理者に権限をもらってください", "en": "This user cannot use sudo. Ask an administrator" } },
+    { "pattern": "Could not resolve host|Connection timed out|failed to synchronize all databases", "hint": { "ja": "ミラーに接続できません。ネットワークやミラーリストを確認してください", "en": "Cannot reach the mirror. Check your network or mirror list" } },
+    { "pattern": "error: invalid option|unrecognized option", "hint": { "ja": "操作（-S / -R / -Q）とオプションの組み合わせが違います。例: インストールは -S、削除は -R、検索は -Ss", "en": "Wrong operation/option combination. Install is -S, remove is -R, search is -Ss" } }
+  ]
+}

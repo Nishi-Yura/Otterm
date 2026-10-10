@@ -1,0 +1,104 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "uv",
+  "summary": { "ja": "超高速な Python のパッケージ・プロジェクト管理ツールです", "en": "Very fast Python package and project manager" },
+  "description": { "ja": "pip、venv、pyenv、pipx の役割をひとつにまとめたツールです。uv add や uv run を使うと仮想環境（.venv）を自動で作って管理してくれるので、venv の有効化を忘れる心配がありません。", "en": "Replaces pip, venv, pyenv and pipx in one tool. uv add and uv run create and manage the .venv for you, so you never forget to activate it." },
+  "install": { "winget": "winget install astral-sh.uv", "scoop": "scoop install uv", "brew": "brew install uv", "pip": "pip install uv", "cargo": "cargo install --git https://github.com/astral-sh/uv uv", "url": "https://docs.astral.sh/uv/getting-started/installation/" },
+  "subcommands": [
+    {
+      "name": "init",
+      "summary": { "ja": "新しい Python プロジェクト（pyproject.toml）を作ります", "en": "Creates a new Python project (pyproject.toml)" },
+      "args": [{ "name": "dir", "type": "dir", "optional": true }],
+      "options": [
+        { "flags": ["--python", "-p"], "takesValue": true, "valueType": "string", "summary": { "ja": "使う Python のバージョン", "en": "Python version to use" } },
+        { "flags": ["--lib"], "summary": { "ja": "ライブラリとして作る", "en": "Create a library" } }
+      ],
+      "examples": [{ "command": "uv init my-app", "summary": { "ja": "my-app フォルダにプロジェクトを作る", "en": "Create a project in my-app" } }]
+    },
+    {
+      "name": "add",
+      "summary": { "ja": "依存を pyproject.toml に追加してインストールします", "en": "Adds a dependency to pyproject.toml and installs it" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["--dev"], "summary": { "ja": "開発時だけ使う依存として追加", "en": "Add as a dev dependency" } },
+        { "flags": ["-r", "--requirements"], "takesValue": true, "valueType": "file", "summary": { "ja": "requirements.txt から取り込む", "en": "Import from a requirements file" } }
+      ],
+      "examples": [{ "command": "uv add requests", "summary": { "ja": "requests を追加", "en": "Add requests" } }],
+      "errors": [
+        { "pattern": "No solution found when resolving dependencies", "hint": { "ja": "依存のバージョンが両立しません。メッセージ中の衝突しているパッケージの条件を緩めてください", "en": "Dependency versions conflict. Loosen the constraints named in the message" } },
+        { "pattern": "Package `(?<pkg>[^`]+)` was not found in the registry", "hint": { "ja": "{pkg} が PyPI に見つかりません。名前のスペルを確認してください", "en": "{pkg} was not found on PyPI. Check the spelling" } },
+        { "pattern": "No `pyproject.toml` found", "hint": { "ja": "ここは uv プロジェクトではありません。uv init で作るか、単発なら uv pip install を使います", "en": "Not a uv project. Run uv init, or use uv pip install for one-off installs" }, "fix": "uv init" }
+      ]
+    },
+    {
+      "name": "remove",
+      "summary": { "ja": "依存を pyproject.toml から削除します", "en": "Removes a dependency from pyproject.toml" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "プロジェクトの仮想環境でコマンドを実行します（venv の有効化は不要）", "en": "Runs a command in the project's environment (no activation needed)" },
+      "args": [{ "name": "command", "type": "command" }],
+      "options": [{ "flags": ["--with"], "takesValue": true, "valueType": "package", "summary": { "ja": "一時的にパッケージを足して実行", "en": "Temporarily include a package" } }],
+      "examples": [
+        { "command": "uv run main.py", "summary": { "ja": "main.py を実行", "en": "Run main.py" } },
+        { "command": "uv run pytest", "summary": { "ja": "テストを実行", "en": "Run tests" } }
+      ]
+    },
+    {
+      "name": "sync",
+      "summary": { "ja": "ロックファイルどおりに .venv を揃えます", "en": "Makes .venv match the lockfile" },
+      "options": [
+        { "flags": ["--frozen"], "summary": { "ja": "ロックファイルを更新しない", "en": "Do not update the lockfile" } },
+        { "flags": ["--no-dev"], "summary": { "ja": "開発依存を入れない", "en": "Skip dev dependencies" } }
+      ]
+    },
+    {
+      "name": "lock",
+      "summary": { "ja": "uv.lock を更新します", "en": "Updates uv.lock" },
+      "options": [{ "flags": ["--upgrade", "-U"], "summary": { "ja": "すべての依存を最新に", "en": "Upgrade all dependencies" } }]
+    },
+    {
+      "name": "pip",
+      "summary": { "ja": "pip 互換のコマンド群です（uv pip install など）", "en": "pip-compatible commands (uv pip install etc.)" },
+      "options": [
+        { "flags": ["install"], "summary": { "ja": "有効な環境にパッケージをインストール", "en": "Install into the active environment" } },
+        { "flags": ["list"], "summary": { "ja": "インストール済み一覧", "en": "List installed packages" } },
+        { "flags": ["freeze"], "summary": { "ja": "requirements 形式で出力", "en": "Output in requirements format" } }
+      ],
+      "errors": [{ "pattern": "No virtual environment found", "hint": { "ja": "仮想環境がありません。uv venv で作ってから実行してください", "en": "No virtual environment. Create one with uv venv first" }, "fix": "uv venv" }]
+    },
+    {
+      "name": "venv",
+      "summary": { "ja": "仮想環境（.venv）を作ります", "en": "Creates a virtual environment (.venv)" },
+      "args": [{ "name": "dir", "type": "dir", "optional": true }],
+      "options": [{ "flags": ["--python", "-p"], "takesValue": true, "valueType": "string", "summary": { "ja": "使う Python のバージョン", "en": "Python version to use" } }]
+    },
+    {
+      "name": "python",
+      "summary": { "ja": "Python 自体のバージョンを管理します", "en": "Manages Python versions themselves" },
+      "options": [
+        { "flags": ["install"], "summary": { "ja": "指定バージョンの Python を入れる", "en": "Install a Python version" } },
+        { "flags": ["list"], "summary": { "ja": "利用できるバージョン一覧", "en": "List available versions" } },
+        { "flags": ["pin"], "summary": { "ja": "このフォルダで使うバージョンを .python-version に書く", "en": "Pin the version for this folder in .python-version" } }
+      ],
+      "examples": [{ "command": "uv python install 3.12", "summary": { "ja": "Python 3.12 を入れる", "en": "Install Python 3.12" } }]
+    },
+    {
+      "name": "tool",
+      "aliases": ["uvx"],
+      "summary": { "ja": "CLI ツールを隔離して実行・インストールします（pipx 相当）", "en": "Runs or installs CLI tools in isolation (like pipx)" },
+      "options": [
+        { "flags": ["run"], "summary": { "ja": "一時的に実行（uvx と同じ）", "en": "Run temporarily (same as uvx)" } },
+        { "flags": ["install"], "summary": { "ja": "常用ツールとしてインストール", "en": "Install as a persistent tool" } }
+      ],
+      "examples": [{ "command": "uvx ruff check .", "summary": { "ja": "ruff を一時的に実行", "en": "Run ruff temporarily" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'uv' is not recognized|uv: command not found", "hint": { "ja": "uv が入っていません。公式インストーラか pip で入れられます", "en": "uv is not installed. Use the official installer or pip" }, "fix": "pip install uv" },
+    { "pattern": "No interpreter found for Python (?<ver>[0-9.]+)", "hint": { "ja": "Python {ver} が見つかりません。uv python install で入れられます", "en": "Python {ver} was not found. Install it with uv python install" }, "fix": "uv python install {ver}" },
+    { "pattern": "error sending request for url|Connection refused|dns error", "hint": { "ja": "PyPI に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach PyPI. Check your network or proxy" } },
+    { "pattern": "Failed to build `(?<pkg>[^`]+)`", "hint": { "ja": "{pkg} のビルドに失敗しました。コンパイラや Python のバージョン対応を確認してください", "en": "Building {pkg} failed. Check compiler availability or Python version support" } }
+  ]
+}

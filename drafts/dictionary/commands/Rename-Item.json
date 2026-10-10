@@ -1,0 +1,65 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Rename-Item",
+  "aliases": ["ren", "rni"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "ファイルやフォルダの名前を変えます（PowerShell）。ren と打っても同じです", "en": "Renames a file or folder (PowerShell). ren is an alias" },
+  "description": { "ja": "新しい名前には名前だけを書きます（フォルダのパスは書きません）。別のフォルダへ移しながら名前を変えたいときは Move-Item を使います。同じ名前のものがすでにあるとエラーになります。", "en": "Give only the new name, not a path to another folder. To move and rename at once, use Move-Item. Fails if an item with the new name already exists." },
+  "learn": { "ja": "ファイルツリーで F2 や右クリックから名前を変えるのは Rename-Item（ren）と同じです", "en": "Renaming with F2 or the context menu in the file tree does what Rename-Item (ren) does" },
+  "options": [
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "名前を変えるもの", "en": "Item to rename" }
+    },
+    {
+      "flags": ["-NewName"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "新しい名前", "en": "New name" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "隠しファイルや読み取り専用でも名前を変える", "en": "Rename hidden or read-only items too" }
+    },
+    {
+      "flags": ["-WhatIf"],
+      "summary": { "ja": "実際には変えず、何が起きるかだけ表示（安全な予行演習）", "en": "Show what would be renamed without doing it (safe dry run)" }
+    },
+    {
+      "flags": ["-Confirm"],
+      "summary": { "ja": "変える前に確認", "en": "Ask before renaming" }
+    },
+    {
+      "flags": ["-PassThru"],
+      "summary": { "ja": "変更後のものを画面にも表示", "en": "Also print the renamed item" }
+    }
+  ],
+  "args": [{ "name": "path", "type": "path" }, { "name": "newName", "type": "string" }],
+  "examples": [
+    { "command": "Rename-Item draft.txt final.txt", "summary": { "ja": "draft.txt を final.txt に改名", "en": "Rename draft.txt to final.txt" } },
+    { "command": "ren photo.jpeg photo.jpg", "summary": { "ja": "拡張子だけ変える", "en": "Change only the extension" } },
+    { "command": "Get-ChildItem *.txt | Rename-Item -NewName { $_.Name -replace '\\.txt$', '.md' }", "summary": { "ja": "すべての .txt を .md に一括改名", "en": "Rename every .txt to .md at once" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot rename because item at '(?<path>[^']+)' does not exist",
+      "hint": { "ja": "{path} は存在しません。スペルと今いるフォルダを確認してください", "en": "{path} does not exist. Check the spelling and current folder" },
+      "fix": "Get-ChildItem"
+    },
+    {
+      "pattern": "Cannot rename the specified target, because it represents a path or device name",
+      "hint": { "ja": "新しい名前にはフォルダのパスを含められません。別フォルダへ移すには Move-Item を使います", "en": "The new name cannot include a folder path. Use Move-Item to move into another folder" },
+      "fix": "Move-Item"
+    },
+    {
+      "pattern": "Cannot create a file when that file already exists",
+      "hint": { "ja": "その名前のファイルがすでにあります。別の名前を選んでください", "en": "A file with that name already exists. Choose a different name" }
+    },
+    {
+      "pattern": "Access to the path '(?<path>[^']+)' is denied|because it is being used by another process",
+      "hint": { "ja": "名前を変えられません。他のプログラムが開いているか、権限がありません", "en": "Cannot rename. Another program has it open or you lack permission" }
+    }
+  ]
+}

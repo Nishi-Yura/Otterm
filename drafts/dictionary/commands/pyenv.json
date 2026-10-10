@@ -1,0 +1,70 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "pyenv",
+  "summary": { "ja": "Python のバージョンを切り替えるツールです", "en": "Switches between Python versions" },
+  "description": { "ja": "複数の Python を入れておき、フォルダごと（.python-version）や全体の既定を切り替えられます。macOS / Linux ではソースからビルドするため、コンパイラやライブラリが必要です。Windows は別実装の pyenv-win（コマンドは同じ）です。", "en": "Keeps several Pythons and switches per folder (.python-version) or globally. On macOS/Linux it builds from source, so a compiler and libraries are required. Windows uses the separate pyenv-win (same commands)." },
+  "install": { "brew": "brew install pyenv", "pip": "pip install pyenv-win --target $HOME/.pyenv", "url": "https://github.com/pyenv/pyenv#installation" },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": { "ja": "指定バージョンの Python をビルドして入れます", "en": "Builds and installs a Python version" },
+      "args": [{ "name": "version", "type": "string", "optional": true, "summary": { "ja": "3.12、3.12.4 など。省略時は .python-version", "en": "3.12, 3.12.4; defaults to .python-version" } }],
+      "options": [
+        { "flags": ["-l", "--list"], "summary": { "ja": "インストールできるバージョンの一覧", "en": "List installable versions" } },
+        { "flags": ["-s", "--skip-existing"], "summary": { "ja": "入っていればスキップ", "en": "Skip if already installed" } }
+      ],
+      "examples": [{ "command": "pyenv install 3.12", "summary": { "ja": "3.12 系の最新を入れる", "en": "Install the latest 3.12" } }],
+      "errors": [
+        { "pattern": "BUILD FAILED", "hint": { "ja": "ビルドに失敗しました。ビルドに必要なライブラリ（openssl、zlib、readline など）が足りないことが多いです。pyenv wiki の Suggested build environment を参照してください", "en": "The build failed, usually from missing libraries (openssl, zlib, readline...). See 'Suggested build environment' in the pyenv wiki" } },
+        { "pattern": "python-build: definition not found: (?<ver>\\S+)", "hint": { "ja": "{ver} の定義がありません。pyenv を更新するか pyenv install -l で確認してください", "en": "No definition for {ver}. Update pyenv or check pyenv install -l" }, "fix": "pyenv install -l" },
+        { "pattern": "ModuleNotFoundError: No module named '_ssl'|The Python ssl extension was not compiled", "hint": { "ja": "OpenSSL の開発ライブラリがない状態でビルドされました。libssl-dev などを入れて再インストールしてください", "en": "Built without OpenSSL headers. Install libssl-dev (or equivalent) and reinstall" } }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "summary": { "ja": "指定バージョンを削除します", "en": "Removes a version" },
+      "args": [{ "name": "version", "type": "string" }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "そのバージョンに入れたパッケージもすべて消えます", "en": "Every package installed into that version is removed too" }
+    },
+    { "name": "versions", "summary": { "ja": "インストール済みバージョンの一覧（* が有効なもの）", "en": "Lists installed versions (* marks the active one)" } },
+    { "name": "version", "summary": { "ja": "今使っているバージョンと、それが決まった理由を表示", "en": "Shows the active version and why it was chosen" } },
+    {
+      "name": "global",
+      "summary": { "ja": "全体の既定バージョンを設定します", "en": "Sets the global default version" },
+      "args": [{ "name": "version", "type": "string", "optional": true }],
+      "examples": [{ "command": "pyenv global 3.12", "summary": { "ja": "既定を 3.12 にする", "en": "Make 3.12 the default" } }]
+    },
+    {
+      "name": "local",
+      "summary": { "ja": "このフォルダで使うバージョンを .python-version に書きます", "en": "Writes the version for this folder to .python-version" },
+      "args": [{ "name": "version", "type": "string", "optional": true }],
+      "options": [{ "flags": ["--unset"], "summary": { "ja": ".python-version を削除", "en": "Remove .python-version" } }],
+      "examples": [{ "command": "pyenv local 3.11", "summary": { "ja": "このプロジェクトは 3.11", "en": "This project uses 3.11" } }]
+    },
+    {
+      "name": "shell",
+      "summary": { "ja": "このターミナルだけバージョンを切り替えます", "en": "Switches the version in this terminal only" },
+      "args": [{ "name": "version", "type": "string", "optional": true }],
+      "options": [{ "flags": ["--unset"], "summary": { "ja": "解除", "en": "Unset" } }]
+    },
+    {
+      "name": "which",
+      "summary": { "ja": "そのコマンド（python、pip など）の実体の場所を表示", "en": "Shows where a command (python, pip, ...) actually lives" },
+      "args": [{ "name": "command", "type": "command" }]
+    },
+    { "name": "rehash", "summary": { "ja": "コマンドの対応表を作り直します（pip でツールを入れた後に）", "en": "Rebuilds the command shims (after installing tools with pip)" } },
+    {
+      "name": "init",
+      "summary": { "ja": "シェルに読み込ませる設定を出力します（初期設定用）", "en": "Prints the shell setup to be evaluated (for your shell config)" },
+      "examples": [{ "command": "eval \"$(pyenv init -)\"", "summary": { "ja": "bash / zsh の設定ファイルに書く行", "en": "The line for your bash / zsh config" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "pyenv: command not found|'pyenv' is not recognized", "hint": { "ja": "pyenv が入っていないか PATH にありません。インストール後にシェルの設定を追加し、ターミナルを開き直してください", "en": "pyenv is missing or not on PATH. Add the shell setup after installing and reopen the terminal" } },
+    { "pattern": "pyenv: version `(?<ver>[^']+)' is not installed", "hint": { "ja": "{ver} は未インストールです。pyenv install {ver} で入れてください", "en": "{ver} is not installed. Run pyenv install {ver}" }, "fix": "pyenv install {ver}" },
+    { "pattern": "pyenv: (?<cmd>\\S+): command not found", "hint": { "ja": "今の Python に {cmd} がありません。pip install で入れた後は pyenv rehash が必要なことがあります", "en": "{cmd} is not in the active Python. After pip install you may need pyenv rehash" }, "fix": "pyenv rehash" },
+    { "pattern": "Could not resolve host|curl: \\(\\d+\\)|Failed to connect", "hint": { "ja": "python.org からダウンロードできません。ネットワークやプロキシを確認してください", "en": "Cannot download from python.org. Check your network or proxy" } },
+    { "pattern": "running scripts is disabled on this system", "hint": { "ja": "PowerShell の実行ポリシーで止められています。ユーザー単位で RemoteSigned にすると動きます", "en": "PowerShell's execution policy blocks it. Setting RemoteSigned for your user fixes it" }, "fix": "Set-ExecutionPolicy -Scope CurrentUser RemoteSigned" }
+  ]
+}

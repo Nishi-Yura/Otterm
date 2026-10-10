@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Measure-Object",
+  "aliases": ["measure"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "パイプで流れてきたものの件数や合計・平均などを数えます（PowerShell）。measure と打っても同じです", "en": "Counts items from the pipeline, or sums and averages a property (PowerShell). measure is an alias" },
+  "description": { "ja": "Get-ChildItem | Measure-Object で件数、Measure-Object Length -Sum でサイズ合計のように使います。Linux の wc に相当し、-Line / -Word / -Character で行数・単語数・文字数も数えられます。結果は表で返るので、数字だけ欲しいときは (… | Measure-Object).Count のように取り出します。", "en": "Get-ChildItem | Measure-Object counts items; Measure-Object Length -Sum totals sizes. Like wc on Linux, -Line / -Word / -Character count lines, words and characters. The result is an object, so use (... | Measure-Object).Count to get the plain number." },
+  "options": [
+    {
+      "flags": ["-Property"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "計算するプロパティ名（例: Length）", "en": "Property to calculate on (e.g. Length)" }
+    },
+    {
+      "flags": ["-Sum"],
+      "summary": { "ja": "合計", "en": "Sum" }
+    },
+    {
+      "flags": ["-Average"],
+      "summary": { "ja": "平均", "en": "Average" }
+    },
+    {
+      "flags": ["-Maximum"],
+      "summary": { "ja": "最大値", "en": "Maximum" }
+    },
+    {
+      "flags": ["-Minimum"],
+      "summary": { "ja": "最小値", "en": "Minimum" }
+    },
+    {
+      "flags": ["-Line"],
+      "summary": { "ja": "行数を数える（文字列向け）", "en": "Count lines (for text)" }
+    },
+    {
+      "flags": ["-Word"],
+      "summary": { "ja": "単語数を数える", "en": "Count words" }
+    },
+    {
+      "flags": ["-Character"],
+      "summary": { "ja": "文字数を数える", "en": "Count characters" }
+    }
+  ],
+  "examples": [
+    { "command": "Get-ChildItem | Measure-Object", "summary": { "ja": "フォルダ内の件数を数える", "en": "Count items in the folder" } },
+    { "command": "Get-ChildItem -Recurse -File | Measure-Object Length -Sum", "summary": { "ja": "サブフォルダも含めた合計サイズ（バイト）", "en": "Total size in bytes, including subfolders" } },
+    { "command": "Get-Content notes.txt | Measure-Object -Line -Word", "summary": { "ja": "ファイルの行数と単語数", "en": "Line and word count of a file" } },
+    { "command": "(Get-Process | measure).Count", "summary": { "ja": "プロセス数を数字だけで取り出す（measure は別名）", "en": "Process count as a plain number (measure is an alias)" } }
+  ],
+  "errors": [
+    {
+      "pattern": "The property \"(?<p>[^\"]+)\" cannot be found in the input for any objects",
+      "hint": { "ja": "{p} というプロパティはありません。Get-Member でプロパティ名を確認してください（ファイルサイズは Length です）", "en": "No property named {p}. Check names with Get-Member (file size is Length)" },
+      "fix": "Measure-Object Length -Sum"
+    },
+    {
+      "pattern": "Input object \"(?<v>[^\"]+)\" is not numeric",
+      "hint": { "ja": "{v} は数値ではないので合計や平均が計算できません。数値のプロパティを -Property で指定してください", "en": "{v} is not a number, so it cannot be summed or averaged. Point -Property at a numeric property" }
+    },
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は Measure-Object にはありません。Linux の wc とは別物で、行数は -Line、単語数は -Word、文字数は -Character です", "en": "-{p} is not a parameter here. This is not Linux wc; use -Line, -Word and -Character" },
+      "fix": "Measure-Object -Line"
+    }
+  ]
+}

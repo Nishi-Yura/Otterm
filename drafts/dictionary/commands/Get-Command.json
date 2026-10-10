@@ -1,0 +1,72 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Get-Command",
+  "aliases": ["gcm"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "使えるコマンドを探したり、コマンドの正体（場所や種類）を調べたりします（PowerShell）", "en": "Finds available commands and shows what a command really is (PowerShell)" },
+  "description": { "ja": "「こんなことをするコマンドはないか」を探すときに使います。Get-Command *service* のようにワイルドカードで検索でき、Get-Command ls と打てば ls が Get-ChildItem の別名だとわかります。実行ファイルの場所を知りたいときは (Get-Command python).Source を見ます（Linux の which に相当）。", "en": "Use it to discover commands. Search with wildcards like Get-Command *service*, or run Get-Command ls to learn that ls is an alias of Get-ChildItem. (Get-Command python).Source shows where an executable lives (like which on Linux)." },
+  "options": [
+    {
+      "flags": ["-Name"],
+      "takesValue": true,
+      "valueType": "command",
+      "summary": { "ja": "探すコマンド名（ワイルドカード可）", "en": "Command name to find (wildcards OK)" }
+    },
+    {
+      "flags": ["-Verb"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "動詞部分で絞り込み（例: Get, Set）", "en": "Filter by verb (e.g. Get, Set)" }
+    },
+    {
+      "flags": ["-Noun"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "名詞部分で絞り込み（例: Item, Process）", "en": "Filter by noun (e.g. Item, Process)" }
+    },
+    {
+      "flags": ["-Module"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "モジュール名で絞り込み", "en": "Filter by module" }
+    },
+    {
+      "flags": ["-CommandType", "-Type"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "種類で絞り込み（Cmdlet, Alias, Function, Application）", "en": "Filter by kind (Cmdlet, Alias, Function, Application)" }
+    },
+    {
+      "flags": ["-Syntax"],
+      "summary": { "ja": "構文（使えるパラメーター）だけを表示", "en": "Show only the syntax (available parameters)" }
+    },
+    {
+      "flags": ["-All"],
+      "summary": { "ja": "同名のコマンドがあればすべて表示", "en": "Show every command with that name" }
+    }
+  ],
+  "args": [{ "name": "name", "type": "command", "optional": true, "variadic": true }],
+  "examples": [
+    { "command": "Get-Command *process*", "summary": { "ja": "名前に process を含むコマンドを探す", "en": "Find commands with process in the name" } },
+    { "command": "Get-Command ls", "summary": { "ja": "ls の正体（Get-ChildItem の別名）を確認", "en": "See what ls really is (an alias of Get-ChildItem)" } },
+    { "command": "(Get-Command python).Source", "summary": { "ja": "python の実行ファイルの場所（which 相当）", "en": "Where the python executable is (like which)" } },
+    { "command": "Get-Command -Noun Item", "summary": { "ja": "名詞が Item のコマンド一覧（Get-Item, Copy-Item など）", "en": "Commands whose noun is Item (Get-Item, Copy-Item, ...)" } }
+  ],
+  "errors": [
+    {
+      "pattern": "The term '(?<term>[^']+)' is not recognized as (a|the) name of a cmdlet",
+      "hint": { "ja": "{term} というコマンドは見つかりません。インストールされていないか、PATH に入っていません。Get-Command *{term}* で似た名前を探せます", "en": "No command named {term}. It may not be installed or not on PATH. Try Get-Command *{term}* for similar names" },
+      "fix": "Get-Command *{term}*"
+    },
+    {
+      "pattern": "Cannot bind parameter 'CommandType'\\. Cannot convert value \"(?<v>[^\"]+)\"",
+      "hint": { "ja": "-CommandType に {v} は使えません。Cmdlet, Alias, Function, Application などを指定します", "en": "{v} is not a valid -CommandType. Use Cmdlet, Alias, Function, Application, etc." },
+      "fix": "Get-Command -CommandType Cmdlet"
+    },
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は Get-Command にはありません。Linux の which や type とは別物です。名前はそのまま渡します", "en": "-{p} is not a parameter here. This differs from Linux which / type. Just pass the name" },
+      "fix": "Get-Command"
+    }
+  ]
+}

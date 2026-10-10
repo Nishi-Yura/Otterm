@@ -1,0 +1,68 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "php",
+  "summary": { "ja": "PHP のプログラムを実行します。-S で開発用の Web サーバーも起動できます", "en": "Runs a PHP script; -S starts a built-in development web server" },
+  "description": { "ja": "PHP は Web サイトのサーバー側でよく使われる言語です。このコマンドはターミナルからスクリプトを実行する CLI 版で、php -S localhost:8000 とすると今のフォルダを簡易 Web サーバーとして公開できます。ライブラリは composer で管理します", "en": "PHP is widely used for server-side web code. This is the command-line version; php -S localhost:8000 serves the current folder for development. Libraries are managed with composer" },
+  "install": {
+    "winget": "winget install PHP.PHP.8.3",
+    "scoop": "scoop install php",
+    "choco": "choco install php",
+    "brew": "brew install php",
+    "apt": "sudo apt install php-cli",
+    "dnf": "sudo dnf install php-cli",
+    "pacman": "sudo pacman -S php",
+    "url": "https://www.php.net/downloads"
+  },
+  "learn": { "ja": "ファイルツリーで .php を右クリックして「実行」を選ぶと、このコマンドが入力されます", "en": "Right-click a .php file in the tree and choose Run to get this command" },
+  "options": [
+    { "flags": ["-S"], "takesValue": true, "valueType": "string", "summary": { "ja": "開発用 Web サーバーを起動（例: -S localhost:8000）", "en": "Start the development web server (e.g. -S localhost:8000)" } },
+    { "flags": ["-r"], "takesValue": true, "valueType": "string", "summary": { "ja": "文字列をコードとして実行（<?php は不要）", "en": "Run the given string as code (no <?php needed)" } },
+    { "flags": ["-l"], "summary": { "ja": "実行せずに文法だけ確認", "en": "Check syntax without running" } },
+    { "flags": ["-a"], "summary": { "ja": "対話モード", "en": "Interactive shell" } },
+    { "flags": ["-v", "--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } },
+    { "flags": ["-m"], "summary": { "ja": "入っている拡張モジュールの一覧", "en": "List loaded extensions" } },
+    { "flags": ["-i"], "summary": { "ja": "設定情報を表示（phpinfo）", "en": "Show configuration (phpinfo)" } }
+  ],
+  "args": [
+    { "name": "script", "type": "file", "optional": true, "summary": { "ja": "実行する .php ファイル", "en": "The .php file to run" } },
+    { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "スクリプトに渡す引数", "en": "Arguments for the script" } }
+  ],
+  "examples": [
+    { "command": "php index.php", "summary": { "ja": "index.php を実行", "en": "Run index.php" } },
+    { "command": "php -S localhost:8000", "summary": { "ja": "今のフォルダを http://localhost:8000 で公開", "en": "Serve the current folder at http://localhost:8000" } },
+    { "command": "php -l index.php", "summary": { "ja": "文法だけ確認する", "en": "Only check the syntax" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Parse error:\\s+(?<msg>.+?) in (?<file>\\S+) on line (?<line>\\d+)",
+      "hint": { "ja": "{file} の {line} 行目に文法エラー: {msg}。直前の行のセミコロンや括弧の閉じ忘れを確認してください", "en": "Syntax error on line {line} of {file}: {msg}. Check the previous line for a missing semicolon or bracket" }
+    },
+    {
+      "pattern": "Call to undefined function (?<fn>\\w+)\\(\\)",
+      "hint": { "ja": "関数 {fn}() がありません。つづりの間違いか、拡張モジュールや require の忘れです", "en": "Function {fn}() does not exist. Check the spelling, or a missing extension / require" }
+    },
+    {
+      "pattern": "Class \"(?<cls>[^\"]+)\" not found",
+      "hint": { "ja": "クラス {cls} が見つかりません。composer のパッケージなら composer install、自作なら require や名前空間を確認してください", "en": "Class {cls} was not found. Run composer install for packages, or check your require / namespace" },
+      "fix": "composer install"
+    },
+    {
+      "pattern": "Could not open input file: (?<path>\\S+)",
+      "hint": { "ja": "{path} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{path} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "Undefined variable \\$(?<var>\\w+)",
+      "hint": { "ja": "変数 ${var} が使う前に定義されていません。つづりや代入の順番を確認してください", "en": "Variable ${var} is used before being set. Check the spelling and the order of assignments" }
+    },
+    {
+      "pattern": "Failed to listen on (?<addr>\\S+) \\(reason: (?<reason>[^)]+)\\)",
+      "hint": { "ja": "{addr} で待ち受けできません（{reason}）。ポートが使用中なら別の番号にしてください", "en": "Cannot listen on {addr} ({reason}). If the port is in use, pick another one" },
+      "fix": "php -S localhost:8080"
+    },
+    {
+      "pattern": "'php' is not recognized|php: command not found",
+      "hint": { "ja": "PHP が見つかりません。インストール後にターミナルを開き直してください", "en": "PHP was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

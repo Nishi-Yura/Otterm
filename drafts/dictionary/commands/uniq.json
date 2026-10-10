@@ -1,0 +1,42 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "uniq",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "連続して重複する行を 1 つにまとめます", "en": "Collapses consecutive duplicate lines into one" },
+  "description": {
+    "ja": "「隣り合った」同じ行しかまとめないので、先に sort で並べてから使うのが基本です（sort file | uniq）。-c を付けると何回出てきたかも分かります。",
+    "en": "Only adjacent duplicates are merged, so sort first (sort file | uniq). Add -c to see how many times each line appeared."
+  },
+  "options": [
+    { "flags": ["-c", "--count"], "summary": { "ja": "各行の出現回数を先頭に付ける", "en": "Prefix each line with how many times it appeared" } },
+    { "flags": ["-d", "--repeated"], "summary": { "ja": "重複していた行だけを表示", "en": "Show only lines that were repeated" } },
+    { "flags": ["-u", "--unique"], "summary": { "ja": "1 回しか出てこない行だけを表示", "en": "Show only lines that appeared once" } },
+    { "flags": ["-i", "--ignore-case"], "summary": { "ja": "大文字と小文字を区別しない", "en": "Ignore upper/lower case" } },
+    { "flags": ["-f", "--skip-fields"], "takesValue": true, "valueType": "number", "summary": { "ja": "先頭の N 列を比べない", "en": "Ignore the first N columns when comparing" } },
+    { "flags": ["-w", "--check-chars"], "takesValue": true, "valueType": "number", "summary": { "ja": "先頭の N 文字だけで比べる", "en": "Compare only the first N characters" } }
+  ],
+  "args": [
+    { "name": "input", "type": "file", "optional": true, "summary": { "ja": "読むファイル（省略すると前のコマンドの出力を読む）", "en": "File to read (omit to read the previous command's output)" } },
+    { "name": "output", "type": "file", "optional": true, "summary": { "ja": "結果を書き込むファイル", "en": "File to write the result to" } }
+  ],
+  "examples": [
+    { "command": "sort names.txt | uniq", "summary": { "ja": "重複を除いた名前の一覧", "en": "Names with duplicates removed" } },
+    { "command": "sort access.log | uniq -c | sort -rn | head", "summary": { "ja": "出現回数が多い行のトップ 10", "en": "Top 10 most frequent lines" } }
+  ],
+  "errors": [
+    {
+      "pattern": "uniq: (?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "uniq: (?:error reading )?[‘']?(?<path>[^’':\\n]+)[’']?: Is a directory",
+      "hint": { "ja": "{path} はフォルダです。中のファイルを指定してください", "en": "{path} is a folder. Give uniq a file inside it" }
+    },
+    {
+      "pattern": "uniq: extra operand [‘'](?<path>[^’']+)[’']",
+      "hint": { "ja": "uniq に渡せるファイルは入力 1 つと出力 1 つまでです。複数ファイルをまとめるなら cat でつなげてから渡します", "en": "uniq takes at most one input and one output file. To combine files, join them with cat first" },
+      "fix": "cat *.txt | sort | uniq"
+    }
+  ]
+}

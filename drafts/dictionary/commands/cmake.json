@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "cmake",
+  "summary": { "ja": "C / C++ プロジェクトのビルド設定を生成し、ビルドを実行します", "en": "Generates build files for C / C++ projects and drives the build" },
+  "description": { "ja": "CMakeLists.txt を読み、OS やコンパイラに合わせた Makefile や Visual Studio プロジェクトを作る「ビルド生成ツール」です。コンパイル（コードを実行できる形に変換すること）自体は生成されたファイル経由で行います。基本の流れは cmake -S . -B build で設定 → cmake --build build でビルドです", "en": "A build generator that reads CMakeLists.txt and produces Makefiles or Visual Studio projects for your platform. Typical flow: cmake -S . -B build to configure, then cmake --build build" },
+  "install": {
+    "winget": "winget install Kitware.CMake",
+    "scoop": "scoop install cmake",
+    "choco": "choco install cmake",
+    "brew": "brew install cmake",
+    "apt": "sudo apt install cmake",
+    "dnf": "sudo dnf install cmake",
+    "pacman": "sudo pacman -S cmake",
+    "pip": "pip install cmake",
+    "url": "https://cmake.org/download/"
+  },
+  "options": [
+    { "flags": ["-S"], "takesValue": true, "valueType": "dir", "summary": { "ja": "ソース（CMakeLists.txt のある）フォルダ", "en": "Source folder (where CMakeLists.txt is)" } },
+    { "flags": ["-B"], "takesValue": true, "valueType": "dir", "summary": { "ja": "ビルド用フォルダ（生成物の置き場）", "en": "Build folder for generated files" } },
+    { "flags": ["--build"], "takesValue": true, "valueType": "dir", "summary": { "ja": "設定済みのビルドフォルダでビルドを実行", "en": "Run the build in a configured build folder" } },
+    { "flags": ["-D"], "takesValue": true, "valueType": "string", "summary": { "ja": "変数を設定（例: -DCMAKE_BUILD_TYPE=Release）", "en": "Set a variable (e.g. -DCMAKE_BUILD_TYPE=Release)" } },
+    { "flags": ["-G"], "takesValue": true, "valueType": "string", "summary": { "ja": "生成する形式（例: \"Ninja\"、\"Visual Studio 17 2022\"）", "en": "Generator to use (e.g. \"Ninja\", \"Visual Studio 17 2022\")" } },
+    { "flags": ["--install"], "takesValue": true, "valueType": "dir", "summary": { "ja": "ビルド結果をインストール", "en": "Install the build output" } },
+    { "flags": ["--preset"], "takesValue": true, "valueType": "string", "summary": { "ja": "CMakePresets.json の設定名を使う", "en": "Use a preset from CMakePresets.json" } },
+    { "flags": ["--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "path", "type": "dir", "optional": true, "summary": { "ja": "ソースフォルダ（-S の省略形）", "en": "Source folder (shorthand for -S)" } }
+  ],
+  "examples": [
+    { "command": "cmake -S . -B build", "summary": { "ja": "build フォルダにビルド設定を生成", "en": "Configure into the build folder" } },
+    { "command": "cmake --build build", "summary": { "ja": "build フォルダでビルドを実行", "en": "Build using the build folder" } },
+    { "command": "cmake -S . -B build -DCMAKE_BUILD_TYPE=Release", "summary": { "ja": "最適化ありのリリース設定で生成", "en": "Configure an optimized Release build" } }
+  ],
+  "errors": [
+    {
+      "pattern": "The source directory \"(?<dir>[^\"]+)\" does not appear to contain CMakeLists.txt",
+      "hint": { "ja": "{dir} に CMakeLists.txt がありません。-S でプロジェクトのルートを指定してください", "en": "{dir} has no CMakeLists.txt. Point -S at the project root" }
+    },
+    {
+      "pattern": "Could not find a package configuration file provided by \"(?<pkg>[^\"]+)\"|Could NOT find (?<pkg2>\\w+)",
+      "hint": { "ja": "ライブラリ {pkg}{pkg2} が見つかりません。開発用パッケージをインストールするか、-DCMAKE_PREFIX_PATH で場所を教えてください", "en": "Library {pkg}{pkg2} was not found. Install its dev package or pass its location with -DCMAKE_PREFIX_PATH" }
+    },
+    {
+      "pattern": "CMAKE_C_COMPILER not set|No CMAKE_CXX_COMPILER could be found|The C compiler identification is unknown",
+      "hint": { "ja": "C / C++ コンパイラが見つかりません。gcc や Visual Studio Build Tools をインストールしてください", "en": "No C / C++ compiler was found. Install gcc or Visual Studio Build Tools" }
+    },
+    {
+      "pattern": "Error: could not load cache",
+      "hint": { "ja": "まだ設定（configure）していないフォルダです。先に cmake -S . -B build を実行してください", "en": "This folder is not configured yet. Run cmake -S . -B build first" },
+      "fix": "cmake -S . -B build"
+    },
+    {
+      "pattern": "The current CMakeCache.txt directory .* is different than the directory",
+      "hint": { "ja": "ビルドフォルダが別の場所から移動されています。build フォルダを削除して設定し直してください", "en": "The build folder was moved. Delete it and configure again" }
+    },
+    {
+      "pattern": "CMake Error at (?<file>\\S+):(?<line>\\d+) \\((?<cmd>\\w+)\\):\\s*(?<msg>.+)",
+      "hint": { "ja": "{file} の {line} 行目（{cmd}）でエラー: {msg}", "en": "Error at line {line} of {file} ({cmd}): {msg}" }
+    },
+    {
+      "pattern": "'cmake' is not recognized|cmake: command not found",
+      "hint": { "ja": "CMake が見つかりません。インストール後にターミナルを開き直してください", "en": "CMake was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

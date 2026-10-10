@@ -1,0 +1,73 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "openssl",
+  "summary": { "ja": "証明書・鍵・暗号を扱う万能ツールです。自己署名証明書の作成やハッシュ計算に使います", "en": "A toolkit for certificates, keys and encryption; makes self-signed certs and computes hashes" },
+  "description": { "ja": "証明書（サイトやサーバーが本物であることを示すデータ）の作成・確認、鍵の生成、ファイルの暗号化、ハッシュ値（内容を要約した指紋のような値）の計算などができます。機能はサブコマンドで分かれています。Git for Windows に同梱されているので、Windows でも Git Bash から使えることが多いです", "en": "Creates and inspects certificates, generates keys, encrypts files and computes hashes. Each task is a subcommand. On Windows it is usually available in Git Bash because Git for Windows bundles it" },
+  "install": {
+    "winget": "winget install ShiningLight.OpenSSL.Light",
+    "scoop": "scoop install openssl",
+    "choco": "choco install openssl",
+    "brew": "brew install openssl@3",
+    "apt": "sudo apt install openssl",
+    "dnf": "sudo dnf install openssl",
+    "pacman": "sudo pacman -S openssl"
+  },
+  "subcommands": [
+    {
+      "name": "req",
+      "summary": { "ja": "証明書の申請（CSR）や自己署名証明書を作ります", "en": "Creates certificate requests (CSR) or self-signed certificates" },
+      "options": [
+        { "flags": ["-x509"], "summary": { "ja": "申請ではなく自己署名証明書を直接作る", "en": "Make a self-signed certificate instead of a request" } },
+        { "flags": ["-newkey"], "takesValue": true, "valueType": "string", "summary": { "ja": "鍵も一緒に作る（例: rsa:2048）", "en": "Also create a key (e.g. rsa:2048)" } },
+        { "flags": ["-nodes"], "summary": { "ja": "鍵にパスワードを付けない", "en": "Do not password-protect the key" } },
+        { "flags": ["-days"], "takesValue": true, "valueType": "number", "summary": { "ja": "有効日数", "en": "Validity in days" } },
+        { "flags": ["-subj"], "takesValue": true, "valueType": "string", "summary": { "ja": "名前を対話なしで指定（例: /CN=localhost）", "en": "Subject without prompts (e.g. /CN=localhost)" } }
+      ],
+      "examples": [{ "command": "openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 365 -subj \"/CN=localhost\"", "summary": { "ja": "開発用の自己署名証明書と鍵を作る", "en": "Create a self-signed cert and key for local development" } }]
+    },
+    {
+      "name": "x509",
+      "summary": { "ja": "証明書の内容を表示・変換します", "en": "Shows or converts certificates" },
+      "options": [{ "flags": ["-in"], "takesValue": true, "valueType": "file", "summary": { "ja": "読み込む証明書", "en": "Certificate to read" } }, { "flags": ["-text"], "summary": { "ja": "人が読める形で表示", "en": "Print in readable form" } }, { "flags": ["-noout"], "summary": { "ja": "元データは出力しない", "en": "Do not echo the raw data" } }, { "flags": ["-enddate"], "summary": { "ja": "有効期限だけ表示", "en": "Show only the expiry date" } }],
+      "examples": [{ "command": "openssl x509 -in cert.pem -text -noout", "summary": { "ja": "証明書の中身を確認", "en": "Inspect a certificate" } }]
+    },
+    { "name": "genpkey", "summary": { "ja": "秘密鍵を作ります", "en": "Generates a private key" }, "options": [{ "flags": ["-algorithm"], "takesValue": true, "valueType": "string", "summary": { "ja": "方式（RSA / ED25519）", "en": "Algorithm (RSA / ED25519)" } }, { "flags": ["-out"], "takesValue": true, "valueType": "file", "summary": { "ja": "出力ファイル", "en": "Output file" } }] },
+    { "name": "s_client", "summary": { "ja": "サーバーに TLS で接続し、証明書の問題を調べます", "en": "Connects to a server over TLS to debug certificates" }, "options": [{ "flags": ["-connect"], "takesValue": true, "valueType": "string", "summary": { "ja": "接続先 host:port", "en": "Target host:port" } }, { "flags": ["-servername"], "takesValue": true, "valueType": "string", "summary": { "ja": "SNI 用のホスト名", "en": "Host name for SNI" } }], "examples": [{ "command": "openssl s_client -connect example.com:443 -servername example.com", "summary": { "ja": "サイトの証明書チェーンを確認", "en": "Check a site's certificate chain" } }] },
+    { "name": "dgst", "summary": { "ja": "ハッシュ値を計算します（-sha256 など）", "en": "Computes hashes (e.g. -sha256)" }, "args": [{ "name": "file", "type": "file", "optional": true }] },
+    { "name": "enc", "summary": { "ja": "ファイルを暗号化・復号します（-d で復号）", "en": "Encrypts or decrypts files (-d to decrypt)" }, "options": [{ "flags": ["-aes-256-cbc"], "summary": { "ja": "AES-256 で暗号化", "en": "Use AES-256" } }, { "flags": ["-pbkdf2"], "summary": { "ja": "安全な鍵導出（付けるのを推奨）", "en": "Safer key derivation (recommended)" } }, { "flags": ["-d"], "summary": { "ja": "復号する", "en": "Decrypt" } }] },
+    { "name": "rand", "summary": { "ja": "乱数を生成します（-hex 32 でランダムな文字列）", "en": "Generates random bytes (-hex 32 for a random string)" } },
+    { "name": "pkcs12", "summary": { "ja": "証明書と鍵を .pfx / .p12 にまとめたり取り出したりします", "en": "Bundles or extracts certificates and keys as .pfx / .p12" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Can't open [\"']?(?<path>[^\"'\\s]+)[\"']? for reading, No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{path} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "unable to load certificate|Could not read certificate|unable to load Private Key",
+      "hint": { "ja": "ファイルを証明書や鍵として読めません。形式が違う（PEM と DER）か、別の種類のファイルです。-inform DER を試してください", "en": "The file could not be parsed as a certificate or key. It may be DER rather than PEM, or a different kind of file. Try -inform DER" }
+    },
+    {
+      "pattern": "bad decrypt",
+      "hint": { "ja": "復号に失敗しました。パスワードが違うか、暗号化したときと同じ方式・オプション（-pbkdf2 など）を付けていません", "en": "Decryption failed. The password is wrong, or the cipher / options (e.g. -pbkdf2) differ from encryption" }
+    },
+    {
+      "pattern": "verify error:num=(?<num>\\d+):(?<msg>[^\\n]+)",
+      "hint": { "ja": "証明書の検証エラー {num}: {msg}。中間証明書が不足しているか、自己署名です。信頼する CA を -CAfile で渡せます", "en": "Certificate verification error {num}: {msg}. An intermediate cert is missing or it is self-signed. Pass a trusted CA with -CAfile" }
+    },
+    {
+      "pattern": "connect:errno=|Connection refused",
+      "hint": { "ja": "サーバーに接続できません。ホスト名とポート番号、サーバーが起動しているかを確認してください", "en": "Could not connect. Check the host, the port and whether the server is running" }
+    },
+    {
+      "pattern": "'(?<cmd>[^']+)' is an invalid command",
+      "hint": { "ja": "{cmd} というサブコマンドはありません。openssl help で一覧を確認してください", "en": "{cmd} is not an openssl subcommand. See openssl help" },
+      "fix": "openssl help"
+    },
+    {
+      "pattern": "'openssl' is not recognized|openssl: command not found",
+      "hint": { "ja": "openssl が見つかりません。Windows では Git Bash から使うか、インストールしてください", "en": "openssl was not found. On Windows use it from Git Bash or install it" }
+    }
+  ]
+}

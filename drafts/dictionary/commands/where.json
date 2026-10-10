@@ -1,0 +1,57 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "where",
+  "platforms": ["windows"],
+  "summary": { "ja": "コマンド（実行ファイル）がどこにあるかを探します（Windows）。PowerShell では where.exe と打ってください", "en": "Finds where a command (executable) lives (Windows). In PowerShell, type where.exe" },
+  "description": { "ja": "Linux の which に相当し、PATH の中から実行ファイルを探してフルパスを表示します。cmd ではそのまま where、PowerShell では where が Where-Object（絞り込み）の別名になっているため、必ず where.exe と打ちます。PowerShell なら Get-Command python の方が自然です。見つからないと「Could not find files」と表示されます。", "en": "Like which on Linux: searches PATH for an executable and prints its full path. In cmd just type where; in PowerShell where is an alias of Where-Object (filtering), so you must type where.exe. In PowerShell, Get-Command python is the more natural choice. If nothing is found it prints 'Could not find files'." },
+  "options": [
+    {
+      "flags": ["/r"],
+      "takesValue": true,
+      "valueType": "dir",
+      "summary": { "ja": "指定フォルダ以下を再帰的に探す（例: /r C:\\ *.log）", "en": "Search a folder tree recursively (e.g. /r C:\\ *.log)" }
+    },
+    {
+      "flags": ["/q"],
+      "summary": { "ja": "表示せず、見つかったかを終了コードだけで返す", "en": "Quiet: report only via the exit code" }
+    },
+    {
+      "flags": ["/f"],
+      "summary": { "ja": "パスを引用符で囲んで表示", "en": "Wrap paths in quotes" }
+    },
+    {
+      "flags": ["/t"],
+      "summary": { "ja": "サイズと更新日時も表示", "en": "Also show size and modified date" }
+    }
+  ],
+  "args": [{ "name": "pattern", "type": "command", "variadic": true }],
+  "examples": [
+    { "command": "where.exe python", "summary": { "ja": "python がどこにあるか（複数あれば全部）表示", "en": "Show where python is (all copies if several)" } },
+    { "command": "where.exe git", "summary": { "ja": "git がインストールされ PATH に入っているか確認", "en": "Check that git is installed and on PATH" } },
+    { "command": "where.exe /r . *.json", "summary": { "ja": "今いるフォルダ以下の .json を探す", "en": "Find .json files under the current folder" } },
+    { "command": "Get-Command python", "summary": { "ja": "PowerShell ならこちらが自然", "en": "The natural PowerShell equivalent" } }
+  ],
+  "errors": [
+    {
+      "pattern": "INFO: Could not find files for the given pattern",
+      "exitCode": 1,
+      "hint": { "ja": "そのコマンドは見つかりません。インストールされていないか、PATH に入っていません。インストール後はターミナルを開き直してください", "en": "The command was not found. It may not be installed or not on PATH. Reopen the terminal after installing" },
+      "fix": "Get-Command"
+    },
+    {
+      "pattern": "ERROR: Invalid pattern (?<p>.+) is specified",
+      "hint": { "ja": "{p} の書き方が違います。/r のあとはフォルダ、次に探す名前の順に書きます", "en": "{p} is malformed. After /r give the folder, then the name pattern" },
+      "fix": "where.exe /r . *.txt"
+    },
+    {
+      "pattern": "ERROR: Invalid argument/option - '(?<opt>[^']+)'",
+      "hint": { "ja": "{opt} は where のオプションではありません。オプションは /r のように / で始まります", "en": "{opt} is not a where option. Options start with /, like /r" },
+      "fix": "where.exe /?"
+    },
+    {
+      "pattern": "Where-Object : |Cannot bind argument to parameter 'Property'|Where-Object\\.Property",
+      "hint": { "ja": "PowerShell では where は Where-Object になります。実行ファイルを探すなら where.exe か Get-Command を使ってください", "en": "In PowerShell, where runs Where-Object. To locate an executable use where.exe or Get-Command" },
+      "fix": "where.exe"
+    }
+  ]
+}

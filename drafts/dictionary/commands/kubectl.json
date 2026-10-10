@@ -1,0 +1,98 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "kubectl",
+  "summary": { "ja": "Kubernetes クラスター（コンテナを多数動かす基盤）を操作します", "en": "Controls a Kubernetes cluster (a platform that runs many containers)" },
+  "description": { "ja": "Kubernetes 公式のコマンドラインツールです。Pod（コンテナの実行単位）や Deployment などのリソースを、kubectl get で見る、kubectl apply -f で YAML から作る・更新する、kubectl delete で消す、という形で扱います。接続先は kubeconfig のコンテキストで切り替わるので、操作前に kubectl config current-context で本番でないか確認する習慣をつけてください", "en": "Kubernetes' official CLI. You view resources such as Pods and Deployments with kubectl get, create or update them from YAML with kubectl apply -f, and remove them with kubectl delete. The target cluster comes from the kubeconfig context, so check kubectl config current-context before acting" },
+  "install": {
+    "winget": "winget install Kubernetes.kubectl",
+    "scoop": "scoop install kubectl",
+    "choco": "choco install kubernetes-cli",
+    "brew": "brew install kubectl",
+    "pacman": "sudo pacman -S kubectl",
+    "url": "https://kubernetes.io/docs/tasks/tools/"
+  },
+  "subcommands": [
+    {
+      "name": "get",
+      "summary": { "ja": "リソースの一覧や状態を表示します", "en": "Lists resources and their status" },
+      "args": [{ "name": "resource", "type": "string" }, { "name": "name", "type": "string", "optional": true }],
+      "options": [
+        { "flags": ["-n", "--namespace"], "takesValue": true, "valueType": "string", "summary": { "ja": "名前空間を指定", "en": "Namespace" } },
+        { "flags": ["-A", "--all-namespaces"], "summary": { "ja": "すべての名前空間から", "en": "Across all namespaces" } },
+        { "flags": ["-o"], "takesValue": true, "valueType": "string", "summary": { "ja": "出力形式（wide / yaml / json）", "en": "Output format (wide / yaml / json)" } },
+        { "flags": ["-w", "--watch"], "summary": { "ja": "変化をリアルタイムで追う", "en": "Watch for changes" } }
+      ],
+      "examples": [{ "command": "kubectl get pods -A", "summary": { "ja": "すべての Pod を一覧", "en": "List every Pod" } }]
+    },
+    { "name": "describe", "summary": { "ja": "リソースの詳細とイベント（起動失敗の理由など）を表示します", "en": "Shows details and events for a resource (e.g. why it failed to start)" }, "args": [{ "name": "resource", "type": "string" }, { "name": "name", "type": "string", "optional": true }] },
+    {
+      "name": "apply",
+      "summary": { "ja": "YAML ファイルの内容でリソースを作成・更新します", "en": "Creates or updates resources from YAML files" },
+      "options": [
+        { "flags": ["-f", "--filename"], "takesValue": true, "valueType": "path", "summary": { "ja": "YAML ファイルまたはフォルダ", "en": "YAML file or folder" } },
+        { "flags": ["--dry-run"], "takesValue": true, "valueType": "string", "summary": { "ja": "適用せず確認だけ（--dry-run=server）", "en": "Preview only (--dry-run=server)" } },
+        { "flags": ["--force"], "summary": { "ja": "更新できないときに削除して作り直す", "en": "Delete and recreate when an update is impossible" }, "danger": "warn", "dangerMessage": { "ja": "リソースを一度削除して作り直すため、一時的に停止します", "en": "The resource is deleted and recreated, causing downtime" } }
+      ],
+      "examples": [{ "command": "kubectl apply -f deployment.yaml", "summary": { "ja": "deployment.yaml を適用", "en": "Apply deployment.yaml" } }]
+    },
+    {
+      "name": "delete",
+      "summary": { "ja": "リソースを削除します", "en": "Deletes resources" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "指定したリソースがクラスターから消えます。先に同じ引数で kubectl get を実行して対象を確認してください", "en": "The resources are removed from the cluster. Run kubectl get with the same arguments first to preview what will go" },
+      "args": [{ "name": "resource", "type": "string" }, { "name": "name", "type": "string", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["-f", "--filename"], "takesValue": true, "valueType": "path", "summary": { "ja": "YAML で定義したものを削除", "en": "Delete what a YAML file defines" } }]
+    },
+    {
+      "name": "logs",
+      "summary": { "ja": "Pod のログを表示します", "en": "Shows a Pod's logs" },
+      "args": [{ "name": "pod", "type": "string" }],
+      "options": [{ "flags": ["-f", "--follow"], "summary": { "ja": "リアルタイムで追い続ける", "en": "Follow in real time" } }, { "flags": ["--previous"], "summary": { "ja": "再起動前のログ", "en": "Logs from the previous crash" } }, { "flags": ["-c", "--container"], "takesValue": true, "valueType": "string", "summary": { "ja": "複数コンテナ時に 1 つを指定", "en": "Pick a container in a multi-container Pod" } }]
+    },
+    { "name": "exec", "summary": { "ja": "Pod の中でコマンドを実行します", "en": "Runs a command inside a Pod" }, "args": [{ "name": "pod", "type": "string" }, { "name": "command", "type": "command" }], "options": [{ "flags": ["-it"], "summary": { "ja": "対話モード（シェルを使うとき）", "en": "Interactive (for a shell)" } }], "examples": [{ "command": "kubectl exec -it web-0 -- sh", "summary": { "ja": "web-0 の中でシェルを開く", "en": "Open a shell inside web-0" } }] },
+    { "name": "port-forward", "summary": { "ja": "クラスター内のポートを手元の PC に転送します", "en": "Forwards a port from the cluster to your machine" }, "args": [{ "name": "target", "type": "string" }, { "name": "ports", "type": "string" }], "examples": [{ "command": "kubectl port-forward svc/web 8080:80", "summary": { "ja": "localhost:8080 で web サービスにアクセス", "en": "Reach the web service at localhost:8080" } }] },
+    { "name": "config", "summary": { "ja": "接続先（コンテキスト）を確認・切り替えます", "en": "Views and switches contexts (target clusters)" }, "options": [{ "flags": ["current-context"], "summary": { "ja": "今の接続先を表示", "en": "Show the current context" } }, { "flags": ["get-contexts"], "summary": { "ja": "接続先の一覧", "en": "List contexts" } }, { "flags": ["use-context"], "summary": { "ja": "接続先を切り替える", "en": "Switch context" } }] },
+    { "name": "rollout", "summary": { "ja": "Deployment の更新状況の確認や巻き戻しをします", "en": "Checks or rolls back Deployment updates" }, "options": [{ "flags": ["status"], "summary": { "ja": "更新の進み具合", "en": "Update progress" } }, { "flags": ["restart"], "summary": { "ja": "Pod を順に再起動", "en": "Restart Pods one by one" } }, { "flags": ["undo"], "summary": { "ja": "前のバージョンに戻す", "en": "Roll back to the previous version" } }] },
+    {
+      "name": "drain",
+      "summary": { "ja": "ノード（サーバー）上の Pod をすべて退避させます（メンテナンス前）", "en": "Evicts every Pod from a node (before maintenance)" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "そのノードで動く Pod がすべて停止・移動されます。先に kubectl get pods -o wide で影響範囲を確認してください", "en": "Every Pod on the node is stopped and moved. Check the impact first with kubectl get pods -o wide" },
+      "args": [{ "name": "node", "type": "string" }]
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "connection to the server (?<host>\\S+) was refused|Unable to connect to the server",
+      "hint": { "ja": "クラスターに接続できません。クラスターが起動しているか、接続先（コンテキスト）が正しいか確認してください", "en": "Cannot reach the cluster. Check that it is running and that the current context is right" },
+      "fix": "kubectl config get-contexts"
+    },
+    {
+      "pattern": "You must be logged in to the server \\(Unauthorized\\)",
+      "hint": { "ja": "認証に失敗しました。クラウドの CLI でログインし直すか、kubeconfig を更新してください", "en": "Authentication failed. Log in again with your cloud CLI or refresh the kubeconfig" }
+    },
+    {
+      "pattern": "Error from server \\(NotFound\\): (?<res>\\S+) \"(?<name>[^\"]+)\" not found",
+      "hint": { "ja": "{res} の {name} が見つかりません。名前空間が違うことが多いので -A で探してみてください", "en": "{res} {name} was not found. It is often in another namespace; search with -A" },
+      "fix": "kubectl get {res} -A"
+    },
+    {
+      "pattern": "Error from server \\(Forbidden\\): (?<msg>.+)",
+      "hint": { "ja": "権限がありません: {msg}。クラスター管理者にロール（RBAC）の付与を依頼してください", "en": "Permission denied: {msg}. Ask the cluster admin for the required role (RBAC)" }
+    },
+    {
+      "pattern": "the server doesn't have a resource type \"(?<type>[^\"]+)\"",
+      "hint": { "ja": "{type} というリソースはありません。つづりか、必要な CRD が入っているか確認してください", "en": "No resource type named {type}. Check the spelling or whether the required CRD is installed" },
+      "fix": "kubectl api-resources"
+    },
+    {
+      "pattern": "no context exists with the name: \"(?<ctx>[^\"]+)\"",
+      "hint": { "ja": "コンテキスト {ctx} はありません。一覧から正しい名前を選んでください", "en": "There is no context named {ctx}. Pick one from the list" },
+      "fix": "kubectl config get-contexts"
+    },
+    {
+      "pattern": "'kubectl' is not recognized|kubectl: command not found",
+      "hint": { "ja": "kubectl が見つかりません。インストール後にターミナルを開き直してください", "en": "kubectl was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

@@ -228,16 +228,18 @@ Window
   - 例: `git push -f origin main` → 「ローカルの main ブランチを origin に送ります。`-f` は履歴の不一致を無視して上書きします（危険）」
 - 辞書は mod で追加・上書き可能
 - 辞書にないコマンドの扱い（判断 B9）: **入力中には `--help` を実行しない**。未知のコマンドを裏で起動するのは副作用の危険がある（`--help` を解釈せず動き出すツールがある）。そのコマンドをユーザーが一度実行した後に、`--help` と `man` の冒頭をバックグラウンドで取得してキャッシュし、次回以降の説明に使う。入力中は「辞書にないコマンドです」とだけ表示する
-- 同梱辞書 `dictionary-core` の v1.0 収録範囲（判断 G1、合計 200 コマンド）
+- 同梱辞書 `dictionary-core` の v1.0 収録範囲（判断 G1）。下書きとして **164 コマンド、サブコマンド 450、オプション 1,164、エラー助言 813、危険マーク 117** を [drafts/dictionary/commands/](../drafts/dictionary/commands/) に書き終えている
 
 | 分類 | 件数 | 例 |
 | --- | --- | --- |
-| ファイル・テキスト操作（coreutils 系） | 60 | ls, cd, pwd, cp, mv, rm, mkdir, cat, less, grep, find, head, tail, sort, wc, tar, zip, chmod, ssh, curl, wget |
-| git | 40 | status, add, commit, push, pull, fetch, branch, checkout, switch, merge, rebase, log, diff, stash, reset, clone, remote, tag |
-| パッケージ管理 | 40 | npm, pnpm, yarn, pip, uv, cargo, brew, winget, apt, dnf, scoop |
-| docker / compose | 20 | run, ps, exec, logs, build, compose up/down |
-| 言語ランタイム | 20 | python, node, deno, bun, java, go, dotnet, ruby |
-| Windows / PowerShell 固有 | 20 | Get-ChildItem, Set-Location, Remove-Item, Get-Content, Select-String, Get-Process, Stop-Process, Invoke-WebRequest |
+| ファイル・テキスト・システム操作（coreutils 系） | 61 | ls, cd, pwd, cp, mv, rm, mkdir, cat, less, grep, find, sed, awk, tar, zip, chmod, ps, kill, ssh, scp, rsync, curl, wget, sudo |
+| git | 1（サブコマンド 17） | status, add, commit, push, pull, fetch, branch, checkout, switch, merge, rebase, log, diff, stash, reset, clone, remote |
+| パッケージ・ツールチェーン管理 | 36 | npm, pnpm, yarn, bun, npx, pip, uv, poetry, conda, cargo, rustup, brew, winget, scoop, choco, apt, dnf, pacman, nix, gem, composer, nvm, mise, mvn, gradle, dotnet, go |
+| コンテナ・インフラ | 5 | docker（compose 含む）, kubectl, helm, terraform, ngrok |
+| 言語ランタイム・開発ツール | 27 | python, node, deno, java, javac, ruby, perl, php, gcc, g++, make, cmake, tsc, rustc, swift, kotlinc, gh, code, vim, nano, jq, tmux, ssh-keygen, openssl |
+| Windows / PowerShell 固有 | 34 | Get-ChildItem, Remove-Item, Get-Content, Set-Content, Copy-Item, Move-Item, New-Item, Select-String, Get-Process, Stop-Process, Invoke-WebRequest, Where-Object, ForEach-Object, Select-Object, Set-ExecutionPolicy, ipconfig, tasklist, taskkill |
+
+- 辞書の品質基準: すべての文字列が日英、危険マークには必ずメッセージ、エラーパターンは正規表現としてコンパイル可能で、ヒント内の `{name}` はパターンの名前付きグループと一致すること。検証スクリプトを CI に載せる
 
 - 辞書の形式は JSON。1 コマンド = 1 ファイルで、`name / aliases / summary / subcommands / options（型・説明・危険度・代替案）/ args / examples / errors（エラーパターンと助言）/ learn（GUI 操作の学習ヒント）/ install（未導入時の入れ方）` を持つ。1 ファイルで説明・補完・危険判定・エラー助言の 4 機能を賄う。スキーマと見本は [drafts/schemas/dictionary.schema.json](../drafts/schemas/dictionary.schema.json)、[drafts/dictionary/](../drafts/dictionary/) にある
 - 辞書内の文字列は `{ "ja": "...", "en": "..." }` の **インライン多言語** で書く。UI とラコの台詞は Fluent（判断 C7）だが、辞書はコミュニティが 1 ファイルずつ書くものなので、翻訳キーを別ファイルに分けると書きにくい

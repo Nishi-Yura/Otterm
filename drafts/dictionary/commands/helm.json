@@ -1,0 +1,95 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "helm",
+  "summary": { "ja": "Kubernetes 用のパッケージ管理ツールです。チャートからアプリをまとめて入れます", "en": "The package manager for Kubernetes; installs apps from charts" },
+  "description": { "ja": "チャート（アプリ一式の Kubernetes 設定をまとめたパッケージ）を、リリース（インストールした実体の名前）として入れたり更新したりします。流れは helm repo add でチャートの置き場を登録 → helm install 名前 チャート で導入 → helm upgrade で更新です。設定は --set や -f values.yaml で上書きします", "en": "Installs charts (packaged Kubernetes configs for an app) as named releases. Typical flow: helm repo add to register a chart source, helm install NAME CHART to deploy, helm upgrade to update. Override settings with --set or -f values.yaml" },
+  "install": {
+    "winget": "winget install Helm.Helm",
+    "scoop": "scoop install helm",
+    "choco": "choco install kubernetes-helm",
+    "brew": "brew install helm",
+    "pacman": "sudo pacman -S helm",
+    "url": "https://helm.sh/docs/intro/install/"
+  },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": { "ja": "チャートをリリースとして導入します", "en": "Installs a chart as a release" },
+      "args": [{ "name": "release", "type": "string" }, { "name": "chart", "type": "string" }],
+      "options": [
+        { "flags": ["-n", "--namespace"], "takesValue": true, "valueType": "string", "summary": { "ja": "名前空間（--create-namespace で作成も）", "en": "Namespace (--create-namespace to create it)" } },
+        { "flags": ["-f", "--values"], "takesValue": true, "valueType": "file", "summary": { "ja": "設定ファイル（values.yaml）", "en": "Values file (values.yaml)" } },
+        { "flags": ["--set"], "takesValue": true, "valueType": "string", "summary": { "ja": "設定を 1 つ上書き（key=value）", "en": "Override one value (key=value)" } },
+        { "flags": ["--dry-run"], "summary": { "ja": "適用せず生成される YAML を確認", "en": "Preview the generated YAML" } }
+      ],
+      "examples": [{ "command": "helm install my-nginx bitnami/nginx -n web --create-namespace", "summary": { "ja": "nginx を web 名前空間に導入", "en": "Install nginx into the web namespace" } }]
+    },
+    {
+      "name": "upgrade",
+      "summary": { "ja": "リリースを新しい設定やバージョンに更新します", "en": "Updates a release to new values or a new chart version" },
+      "args": [{ "name": "release", "type": "string" }, { "name": "chart", "type": "string" }],
+      "options": [
+        { "flags": ["-i", "--install"], "summary": { "ja": "なければ install する（CI でよく使う）", "en": "Install if it does not exist (common in CI)" } },
+        { "flags": ["-f", "--values"], "takesValue": true, "valueType": "file", "summary": { "ja": "設定ファイル", "en": "Values file" } },
+        { "flags": ["--set"], "takesValue": true, "valueType": "string", "summary": { "ja": "設定を 1 つ上書き", "en": "Override one value" } }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "aliases": ["delete", "del", "un"],
+      "summary": { "ja": "リリースを削除します（作られたリソースもすべて消えます）", "en": "Removes a release and everything it created" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "このリリースが作った Deployment や Service などがすべて削除されます。先に helm status で対象を確認してください", "en": "Every Deployment, Service and other resource the release created will be deleted. Check with helm status first" },
+      "args": [{ "name": "release", "type": "string" }]
+    },
+    { "name": "list", "aliases": ["ls"], "summary": { "ja": "導入済みリリースの一覧", "en": "Lists installed releases" }, "options": [{ "flags": ["-A", "--all-namespaces"], "summary": { "ja": "すべての名前空間から", "en": "Across all namespaces" } }] },
+    { "name": "status", "summary": { "ja": "リリースの状態と作られたリソースを表示", "en": "Shows a release's status and resources" }, "args": [{ "name": "release", "type": "string" }] },
+    {
+      "name": "repo",
+      "summary": { "ja": "チャートの置き場（リポジトリ）を管理します", "en": "Manages chart repositories" },
+      "options": [
+        { "flags": ["add"], "summary": { "ja": "リポジトリを登録（名前 URL）", "en": "Register a repo (NAME URL)" } },
+        { "flags": ["update"], "summary": { "ja": "チャート一覧を最新にする", "en": "Refresh the chart index" } },
+        { "flags": ["list"], "summary": { "ja": "登録済みの一覧", "en": "List repos" } }
+      ],
+      "examples": [{ "command": "helm repo add bitnami https://charts.bitnami.com/bitnami", "summary": { "ja": "Bitnami のチャートを使えるようにする", "en": "Make Bitnami charts available" } }]
+    },
+    { "name": "search", "summary": { "ja": "チャートを探します（search repo 名前 / search hub 名前）", "en": "Searches for charts (search repo NAME / search hub NAME)" }, "args": [{ "name": "keyword", "type": "string" }] },
+    { "name": "rollback", "summary": { "ja": "リリースを前のリビジョンに戻します", "en": "Rolls a release back to a previous revision" }, "args": [{ "name": "release", "type": "string" }, { "name": "revision", "type": "number", "optional": true }] },
+    { "name": "template", "summary": { "ja": "適用せずに生成される YAML を表示します", "en": "Renders the YAML without applying it" }, "args": [{ "name": "release", "type": "string" }, { "name": "chart", "type": "string" }] }
+  ],
+  "errors": [
+    {
+      "pattern": "cannot re-use a name that is still in use",
+      "hint": { "ja": "同じ名前のリリースがすでにあります。更新したいなら install ではなく upgrade を使ってください", "en": "A release with that name already exists. Use upgrade instead of install to update it" }
+    },
+    {
+      "pattern": "Error: repo (?<repo>\\S+) not found",
+      "hint": { "ja": "リポジトリ {repo} が登録されていません。helm repo add で追加してください", "en": "Repo {repo} is not registered. Add it with helm repo add" },
+      "fix": "helm repo list"
+    },
+    {
+      "pattern": "chart \"(?<chart>[^\"]+)\" not found in (?<repo>\\S+) index|failed to download \"(?<chart2>[^\"]+)\"",
+      "hint": { "ja": "チャート {chart}{chart2} が見つかりません。一覧が古いかもしれないので helm repo update してから名前を確認してください", "en": "Chart {chart}{chart2} was not found. The index may be stale; run helm repo update and check the name" },
+      "fix": "helm repo update"
+    },
+    {
+      "pattern": "Kubernetes cluster unreachable: (?<msg>.+)",
+      "hint": { "ja": "クラスターに接続できません（{msg}）。kubectl で接続できるか、コンテキストが正しいか確認してください", "en": "The cluster is unreachable ({msg}). Check that kubectl works and the context is right" },
+      "fix": "kubectl config current-context"
+    },
+    {
+      "pattern": "release: not found",
+      "hint": { "ja": "そのリリースはありません。名前空間が違う可能性があるので helm list -A で探してください", "en": "No such release. It may be in another namespace; look with helm list -A" },
+      "fix": "helm list -A"
+    },
+    {
+      "pattern": "UPGRADE FAILED: \"(?<rel>[^\"]+)\" has no deployed releases",
+      "hint": { "ja": "{rel} は前回の導入が失敗したまま残っています。helm uninstall してから入れ直すか、upgrade --install を試してください", "en": "{rel} is stuck from a failed install. Uninstall it and reinstall, or try upgrade --install" }
+    },
+    {
+      "pattern": "'helm' is not recognized|helm: command not found",
+      "hint": { "ja": "Helm が見つかりません。インストール後にターミナルを開き直してください", "en": "Helm was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

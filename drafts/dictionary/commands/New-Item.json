@@ -1,0 +1,71 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "New-Item",
+  "aliases": ["ni"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "新しいファイルやフォルダを作ります（PowerShell）", "en": "Creates a new file or folder (PowerShell)" },
+  "description": { "ja": "-ItemType File で空のファイル、-ItemType Directory でフォルダを作ります。指定しないとファイルになります。-ItemType は Type でも通じ、mkdir と打つとフォルダ作成（New-Item -ItemType Directory）の省略形になります。", "en": "-ItemType File creates an empty file, -ItemType Directory a folder. Without it you get a file. mkdir is a shortcut for New-Item -ItemType Directory." },
+  "learn": { "ja": "ファイルツリーの「新規ファイル」「新規フォルダ」は New-Item と同じです", "en": "New File and New Folder in the file tree do what New-Item does" },
+  "options": [
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "作る場所（名前を含めてもよい）", "en": "Where to create it (may include the name)" }
+    },
+    {
+      "flags": ["-Name"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "作るものの名前", "en": "Name of the new item" }
+    },
+    {
+      "flags": ["-ItemType", "-Type"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "File（ファイル）か Directory（フォルダ）", "en": "File or Directory" }
+    },
+    {
+      "flags": ["-Value"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "ファイルの初期内容", "en": "Initial contents of the file" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "途中のフォルダも作る。既存ファイルは空に上書きされるので注意", "en": "Create missing parent folders. Caution: an existing file is replaced with an empty one" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "同名のファイルがあると中身が空になります", "en": "A same-named existing file will be emptied" }
+    },
+    {
+      "flags": ["-WhatIf"],
+      "summary": { "ja": "実際には作らず、何が起きるかだけ表示（安全な予行演習）", "en": "Show what would be created without doing it (safe dry run)" }
+    }
+  ],
+  "args": [{ "name": "path", "type": "path" }],
+  "examples": [
+    { "command": "New-Item notes.txt", "summary": { "ja": "空のファイルを作る", "en": "Create an empty file" } },
+    { "command": "New-Item -ItemType Directory project", "summary": { "ja": "project フォルダを作る（mkdir project と同じ）", "en": "Create the project folder (same as mkdir project)" } },
+    { "command": "New-Item -Path src\\lib -ItemType Directory -Force", "summary": { "ja": "途中の src も含めてフォルダを一気に作る", "en": "Create nested folders, including the missing src" } },
+    { "command": "New-Item readme.md -Value \"# My Project\"", "summary": { "ja": "初期内容つきでファイルを作る", "en": "Create a file with initial contents" } }
+  ],
+  "errors": [
+    {
+      "pattern": "The file '(?<path>[^']+)' already exists",
+      "hint": { "ja": "{path} はすでに存在します。別の名前にするか、内容を空にしてよければ -Force を付けます", "en": "{path} already exists. Choose another name, or add -Force if emptying it is OK" }
+    },
+    {
+      "pattern": "An item with the specified name (?<path>\\S+) already exists",
+      "hint": { "ja": "{path} という名前のフォルダはすでにあります。そのまま使えます", "en": "A folder named {path} already exists. You can just use it" }
+    },
+    {
+      "pattern": "Could not find a part of the path '(?<path>[^']+)'",
+      "hint": { "ja": "{path} の途中のフォルダが存在しません。-Force を付けると途中のフォルダも作られます", "en": "A folder in {path} does not exist. Add -Force to create missing parents" },
+      "fix": "New-Item -ItemType Directory -Force"
+    },
+    {
+      "pattern": "Access to the path '(?<path>[^']+)' is denied",
+      "hint": { "ja": "{path} に作る権限がありません。管理者権限が必要な場所です。自分のユーザーフォルダ内で試してください", "en": "No permission to create in {path}. Try inside your own user folder instead" }
+    }
+  ]
+}

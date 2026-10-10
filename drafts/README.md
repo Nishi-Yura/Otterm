@@ -8,7 +8,9 @@
 | [api/index.d.ts](api/index.d.ts) | `@otterm/api` の型定義。ModContext の全名前空間、宣言的 UI 18 種、イベント、マニフェスト | `packages/api/src/index.d.ts` | [docs/05-mod-system.md](../docs/05-mod-system.md)、[08](../docs/08-character.md)、[10](../docs/10-ai-assist.md) |
 | [api/example-git-status-bar.ts](api/example-git-status-bar.ts) | 型定義を使った mod の見本（05 の例を完成させたもの） | `packages/create-mod/templates/extension/src/main.ts` | 05 §5 |
 | [schemas/dictionary.schema.json](schemas/dictionary.schema.json) | コマンド辞書の JSON Schema | `packages/api/schemas/dictionary.schema.json` | [docs/03-core-features.md](../docs/03-core-features.md) §8.1 |
-| [dictionary/commands/*.json](dictionary/commands/) | 見本 10 コマンド（ls, cd, rm, git, npm, pip, docker, python, Get-ChildItem, Remove-Item） | `mods/dictionary-core/dictionary/commands/` | 03 §8.1、§8.3、§8.4 |
+| [dictionary/commands/*.json](dictionary/commands/) | 164 コマンド（coreutils 系 61、パッケージ管理 36、Windows / PowerShell 34、ランタイム・開発ツール 27、git、docker、kubectl、helm、terraform、ngrok）。サブコマンド 450、エラー助言 813、危険マーク 117 | `mods/dictionary-core/dictionary/commands/` | 03 §8.1、§8.3、§8.4 |
+| [scripts/validate-dictionary.js](scripts/validate-dictionary.js) | 辞書の検証スクリプト（スキーマ準拠、日英の両方があるか、危険マークにメッセージがあるか、正規表現がコンパイルできるか、`{name}` がグループと一致するか）。`node drafts/scripts/validate-dictionary.js .` | `tests/dictionary/` と CI | 03 §8.1 |
+| [locales/ja.ftl](locales/ja.ftl) / [en.ftl](locales/en.ftl) | ラコの台詞と UI 文言（Fluent 形式、約 170 メッセージ） | `packages/ui/locales/`、`mods/otterm.mascot/locales/` | 08 §5 |
 | [dictionary/rules/core.json](dictionary/rules/core.json) | コマンド横断の危険ルール（`curl | sh`、fork bomb など） | `mods/dictionary-core/dictionary/rules/` | 03 §8.3 |
 | [config/schema.rs](config/schema.rs) | 設定の Rust 構造体。`serde` + `schemars` で JSON Schema を生成する前提 | `crates/otterm-config/src/schema.rs` | [docs/06-config-keybind.md](../docs/06-config-keybind.md) |
 

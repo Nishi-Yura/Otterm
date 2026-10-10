@@ -1,0 +1,79 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "snap",
+  "platforms": ["linux"],
+  "summary": { "ja": "Ubuntu 発のアプリ配布形式 snap のパッケージ管理ツールです", "en": "Package manager for snaps, Ubuntu's app format" },
+  "description": { "ja": "アプリを依存ごと隔離して入れるので、どの Linux でも同じように動きます。インストールや削除には sudo が必要で、パスワード入力中は何も表示されません。更新は自動で行われます。", "en": "Apps ship with their dependencies in a sandbox, so they behave the same on any Linux. Installing or removing needs sudo; nothing shows while you type the password. Updates happen automatically." },
+  "install": { "apt": "sudo apt install snapd", "dnf": "sudo dnf install snapd", "pacman": "sudo pacman -S snapd", "url": "https://snapcraft.io/docs/installing-snapd" },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": { "ja": "snap をインストールします", "en": "Installs a snap" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["--classic"], "summary": { "ja": "隔離を緩めて入れる（エディタや開発ツールで必要なことが多い）", "en": "Install with relaxed confinement (often needed for editors and dev tools)" }, "danger": "warn", "dangerMessage": { "ja": "このアプリはシステム全体にアクセスできます", "en": "This app gets full system access" } },
+        { "flags": ["--channel"], "takesValue": true, "valueType": "string", "summary": { "ja": "stable / beta / edge など", "en": "stable / beta / edge etc." } }
+      ],
+      "examples": [{ "command": "sudo snap install code --classic", "summary": { "ja": "VS Code を入れる", "en": "Install VS Code" } }],
+      "errors": [
+        { "pattern": "error: snap \"(?<pkg>[^\"]+)\" not found", "hint": { "ja": "{pkg} が見つかりません。snap find で名前を確認してください", "en": "{pkg} was not found. Check the name with snap find" }, "fix": "snap find {pkg}" },
+        { "pattern": "requires classic confinement", "hint": { "ja": "この snap は --classic が必要です", "en": "This snap needs --classic" }, "fix": "sudo snap install {args} --classic" },
+        { "pattern": "snap \"(?<pkg>[^\"]+)\" is already installed", "hint": { "ja": "{pkg} はすでに入っています。更新は snap refresh です", "en": "{pkg} is already installed. Use snap refresh to update it" }, "fix": "sudo snap refresh {pkg}" }
+      ]
+    },
+    {
+      "name": "remove",
+      "summary": { "ja": "snap を削除します", "en": "Removes a snap" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "アプリとそのデータがシステムから消えます（スナップショットは一定期間残ります）", "en": "Removes the app and its data from the system (a snapshot is kept for a while)" },
+      "options": [{ "flags": ["--purge"], "summary": { "ja": "スナップショットも残さない", "en": "Keep no snapshot" }, "danger": "warn", "dangerMessage": { "ja": "データの復元ができなくなります", "en": "Data can no longer be restored" } }]
+    },
+    {
+      "name": "refresh",
+      "summary": { "ja": "snap を更新します（引数なしで全部）", "en": "Updates snaps (all of them with no argument)" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["--channel"], "takesValue": true, "valueType": "string", "summary": { "ja": "チャンネルを切り替える", "en": "Switch channel" } }],
+      "errors": [{ "pattern": "cannot refresh \"(?<pkg>[^\"]+)\": snap \"(?<pkg2>[^\"]+)\" has running apps", "hint": { "ja": "アプリが起動中なので更新できません。閉じてから再実行してください", "en": "The app is running, so it cannot be refreshed. Close it and retry" } }]
+    },
+    {
+      "name": "find",
+      "aliases": ["search"],
+      "summary": { "ja": "snap を検索します", "en": "Searches for snaps" },
+      "args": [{ "name": "query", "type": "string" }]
+    },
+    {
+      "name": "list",
+      "summary": { "ja": "インストール済み一覧", "en": "Lists installed snaps" },
+      "options": [{ "flags": ["--all"], "summary": { "ja": "古いリビジョンも表示", "en": "Include old revisions" } }]
+    },
+    {
+      "name": "info",
+      "summary": { "ja": "snap の詳細を表示", "en": "Shows snap details" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "revert",
+      "summary": { "ja": "直前のバージョンに戻します", "en": "Rolls back to the previous version" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "connect",
+      "summary": { "ja": "snap に権限（カメラやホームフォルダなど）を与えます", "en": "Grants a snap permissions (camera, home folder, ...)" },
+      "args": [{ "name": "plug", "type": "string", "summary": { "ja": "snap名:権限名", "en": "snap:interface" } }],
+      "examples": [{ "command": "sudo snap connect code:removable-media", "summary": { "ja": "VS Code に外部ドライブへのアクセスを許可", "en": "Let VS Code access removable drives" } }]
+    },
+    {
+      "name": "connections",
+      "summary": { "ja": "snap の権限の一覧", "en": "Lists a snap's permissions" },
+      "args": [{ "name": "package", "type": "package", "optional": true }]
+    }
+  ],
+  "errors": [
+    { "pattern": "snap: command not found", "hint": { "ja": "snapd が入っていません。apt などで snapd を入れてください", "en": "snapd is not installed. Install snapd with your package manager" }, "fix": "sudo apt install snapd" },
+    { "pattern": "error: access denied \\(try with sudo\\)|error: cannot communicate with server: Post .* permission denied", "hint": { "ja": "管理者権限が必要です。先頭に sudo を付けてください。パスワード入力中は何も表示されません", "en": "Root is required. Prefix the command with sudo. Nothing shows while you type the password" }, "fix": "sudo snap {args}" },
+    { "pattern": "cannot communicate with server|snapd is not running|Unit snapd.socket", "hint": { "ja": "snapd が動いていません。サービスを起動してください", "en": "snapd is not running. Start the service" }, "fix": "sudo systemctl enable --now snapd.socket" },
+    { "pattern": "error: too early for operation, device not yet seeded", "hint": { "ja": "snapd の初期化がまだ終わっていません。少し待つか再起動してください", "en": "snapd has not finished initializing. Wait a moment or reboot" } },
+    { "pattern": "Temporary failure in name resolution|dial tcp.*connect: network is unreachable|Could not resolve", "hint": { "ja": "snap ストアに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the snap store. Check your network or proxy" } }
+  ]
+}

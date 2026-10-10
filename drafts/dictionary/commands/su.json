@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "su",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "別のユーザー（省略時は管理者 root）に切り替えます", "en": "Switches to another user (root if none is given)" },
+  "description": {
+    "ja": "切り替えた相手のパスワードを聞かれます（sudo と違い、自分のパスワードではありません）。切り替え後は exit で元のユーザーに戻ります。root のままにしておくと間違いが取り返しのつかないことになるため、ふだんは必要なコマンドだけ sudo で実行する方が安全です。",
+    "en": "Asks for the target user's password (not your own, unlike sudo). Type exit to return. Staying as root makes mistakes irreversible, so running single commands with sudo is usually safer."
+  },
+  "danger": "warn",
+  "options": [
+    { "flags": ["-", "-l", "--login"], "summary": { "ja": "そのユーザーでログインし直したのと同じ環境（ホームや PATH）にする。ほぼ常に付けます", "en": "Set up the full login environment (home, PATH) of that user. Almost always wanted" } },
+    { "flags": ["-c", "--command"], "takesValue": true, "valueType": "string", "summary": { "ja": "シェルを開かず、指定したコマンドだけ実行して戻る", "en": "Run one command as that user, then return" } },
+    { "flags": ["-s", "--shell"], "takesValue": true, "valueType": "path", "summary": { "ja": "切り替え後に使うシェルを指定", "en": "Shell to use after switching" } },
+    { "flags": ["-m", "-p", "--preserve-environment"], "summary": { "ja": "今の環境変数を引き継ぐ", "en": "Keep the current environment variables" } }
+  ],
+  "args": [
+    { "name": "user", "type": "string", "optional": true, "summary": { "ja": "切り替え先のユーザー名（省略時は root）", "en": "User to switch to (default root)" } }
+  ],
+  "examples": [
+    { "command": "su -", "summary": { "ja": "root に切り替える（root のパスワードが必要）", "en": "Become root (needs the root password)" } },
+    { "command": "su - alice", "summary": { "ja": "ユーザー alice に切り替える", "en": "Switch to user alice" } },
+    { "command": "su - alice -c \"ls ~\"", "summary": { "ja": "alice として 1 コマンドだけ実行する", "en": "Run one command as alice" } }
+  ],
+  "errors": [
+    {
+      "pattern": "su: Authentication failure",
+      "hint": { "ja": "パスワードが違います。su では切り替え先ユーザー（root など）のパスワードが必要です。root にパスワードがない環境（Ubuntu など）では sudo -i を使ってください", "en": "Wrong password. su needs the target user's password (e.g. root). On systems where root has no password (like Ubuntu), use sudo -i instead" },
+      "fix": "sudo -i"
+    },
+    {
+      "pattern": "su: user (?<user>\\S+) does not exist",
+      "hint": { "ja": "ユーザー {user} は存在しません。名前を確認してください。ユーザー一覧は cat /etc/passwd で見られます", "en": "User {user} does not exist. Check the name; cat /etc/passwd lists users" }
+    },
+    {
+      "pattern": "su: Sorry",
+      "hint": { "ja": "パスワードが違うか、このユーザーには切り替えが許可されていません（macOS では admin グループのみ）。sudo -i を試してください", "en": "Wrong password, or this user may not switch (on macOS only admin group members can). Try sudo -i" },
+      "fix": "sudo -i"
+    }
+  ]
+}

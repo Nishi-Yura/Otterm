@@ -1,0 +1,91 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "cargo",
+  "summary": { "ja": "Rust のビルドツール兼パッケージ管理ツールです", "en": "Build tool and package manager for Rust" },
+  "description": { "ja": "Cargo.toml に依存（crate）を書き、cargo build や cargo run でコンパイルして実行します。成果物は target フォルダに入ります。rustup で Rust を入れると一緒に付いてきます。", "en": "Dependencies (crates) go in Cargo.toml; cargo build and cargo run compile and execute. Output lands in the target folder. It comes with Rust when installed via rustup." },
+  "install": { "winget": "winget install Rustlang.Rustup", "scoop": "scoop install rustup", "brew": "brew install rustup", "url": "https://rustup.rs/" },
+  "subcommands": [
+    {
+      "name": "new",
+      "summary": { "ja": "新しいプロジェクトのフォルダを作ります", "en": "Creates a new project folder" },
+      "args": [{ "name": "dir", "type": "dir" }],
+      "options": [
+        { "flags": ["--bin"], "summary": { "ja": "実行ファイルを作る（既定）", "en": "Make an executable (default)" } },
+        { "flags": ["--lib"], "summary": { "ja": "ライブラリを作る", "en": "Make a library" } }
+      ],
+      "examples": [{ "command": "cargo new hello", "summary": { "ja": "hello プロジェクトを作る", "en": "Create the hello project" } }]
+    },
+    {
+      "name": "build",
+      "aliases": ["b"],
+      "summary": { "ja": "コンパイルします", "en": "Compiles the project" },
+      "options": [{ "flags": ["--release", "-r"], "summary": { "ja": "最適化した本番用ビルド", "en": "Optimized release build" } }],
+      "errors": [
+        { "pattern": "error\\[E(?<code>\\d{4})\\]", "hint": { "ja": "コンパイルエラー E{code} です。rustc --explain E{code} で詳しい説明が読めます", "en": "Compile error E{code}. rustc --explain E{code} gives a full explanation" }, "fix": "rustc --explain E{code}" },
+        { "pattern": "linker `(?<linker>[^`]+)` not found|link\\.exe.*not found", "hint": { "ja": "C/C++ のリンカが見つかりません。Windows は Visual Studio Build Tools、Linux は build-essential を入れてください", "en": "The C/C++ linker is missing. Install Visual Studio Build Tools on Windows or build-essential on Linux" } },
+        { "pattern": "could not find `Cargo\\.toml`", "hint": { "ja": "ここは Cargo プロジェクトではありません。プロジェクトのフォルダへ移動するか cargo init で作れます", "en": "Not a Cargo project here. Move into one or run cargo init" }, "fix": "cargo init" }
+      ]
+    },
+    {
+      "name": "run",
+      "aliases": ["r"],
+      "summary": { "ja": "ビルドして実行します", "en": "Builds and runs the program" },
+      "args": [{ "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "-- の後ろにプログラムへの引数", "en": "Program arguments after --" } }],
+      "options": [
+        { "flags": ["--release", "-r"], "summary": { "ja": "最適化ビルドで実行", "en": "Run the release build" } },
+        { "flags": ["--bin"], "takesValue": true, "valueType": "string", "summary": { "ja": "複数ある実行ファイルから選ぶ", "en": "Pick one of several binaries" } }
+      ],
+      "examples": [{ "command": "cargo run -- --help", "summary": { "ja": "プログラムに --help を渡して実行", "en": "Run and pass --help to the program" } }]
+    },
+    {
+      "name": "test",
+      "aliases": ["t"],
+      "summary": { "ja": "テストを実行します", "en": "Runs tests" },
+      "args": [{ "name": "filter", "type": "string", "optional": true, "summary": { "ja": "名前にこれを含むテストだけ", "en": "Only tests whose name contains this" } }],
+      "options": [{ "flags": ["--", "--nocapture"], "summary": { "ja": "テスト中の println! を表示", "en": "Show println! output from tests" } }]
+    },
+    { "name": "check", "aliases": ["c"], "summary": { "ja": "実行ファイルを作らずにエラーだけ確認します（速い）", "en": "Checks for errors without producing a binary (fast)" } },
+    {
+      "name": "add",
+      "summary": { "ja": "依存 crate を Cargo.toml に追加します", "en": "Adds a crate to Cargo.toml" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["--features", "-F"], "takesValue": true, "valueType": "string", "summary": { "ja": "有効にする機能（カンマ区切り）", "en": "Features to enable (comma-separated)" } },
+        { "flags": ["--dev"], "summary": { "ja": "開発・テスト時だけの依存", "en": "Dev-dependency only" } }
+      ],
+      "examples": [{ "command": "cargo add serde --features derive", "summary": { "ja": "serde を derive 機能つきで追加", "en": "Add serde with the derive feature" } }],
+      "errors": [{ "pattern": "the crate `(?<pkg>[^`]+)` could not be found in registry index", "hint": { "ja": "{pkg} が crates.io に見つかりません。名前のスペルを確認してください", "en": "{pkg} was not found on crates.io. Check the spelling" } }]
+    },
+    {
+      "name": "remove",
+      "aliases": ["rm"],
+      "summary": { "ja": "依存 crate を Cargo.toml から削除します", "en": "Removes a crate from Cargo.toml" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }]
+    },
+    {
+      "name": "update",
+      "summary": { "ja": "Cargo.lock の依存を範囲内で更新します", "en": "Updates Cargo.lock within version ranges" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }]
+    },
+    {
+      "name": "install",
+      "summary": { "ja": "Rust 製のコマンドラインツールを PC にインストールします", "en": "Installs a Rust command-line tool on your machine" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "examples": [{ "command": "cargo install ripgrep", "summary": { "ja": "高速 grep の ripgrep を入れる", "en": "Install ripgrep, a fast grep" } }],
+      "errors": [{ "pattern": "warning: be sure to add `(?<dir>[^`]+)` to your PATH", "hint": { "ja": "{dir} が PATH にありません。追加してターミナルを開き直してください", "en": "{dir} is not on PATH. Add it and reopen the terminal" } }]
+    },
+    {
+      "name": "publish",
+      "summary": { "ja": "crates.io に公開します", "en": "Publishes to crates.io" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "公開したバージョンは削除できません（yank のみ）。バージョンと中身を確認してください", "en": "Published versions cannot be deleted, only yanked. Check the version and contents" },
+      "options": [{ "flags": ["--dry-run"], "summary": { "ja": "公開せずに確認だけ", "en": "Check without publishing" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'cargo' is not recognized|cargo: command not found", "hint": { "ja": "cargo が入っていません。rustup で Rust を入れると付いてきます", "en": "cargo is not installed. Installing Rust via rustup brings it along" } },
+    { "pattern": "failed to get `(?<pkg>[^`]+)` as a dependency|failed to fetch|Could not resolve host|network failure", "hint": { "ja": "crates.io に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach crates.io. Check your network or proxy" } },
+    { "pattern": "Blocking waiting for file lock on (?<what>.+)", "hint": { "ja": "別の cargo（エディタの rust-analyzer など）が実行中です。終わるまで待ってください", "en": "Another cargo process (e.g. rust-analyzer) is running. Wait for it to finish" } },
+    { "pattern": "Permission denied|Access is denied", "hint": { "ja": "ファイルに書き込めません。実行中のプログラムを止めるか、フォルダの権限を確認してください", "en": "Cannot write a file. Stop the running program or check folder permissions" } }
+  ]
+}

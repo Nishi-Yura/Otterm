@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "gcc",
+  "aliases": ["cc"],
+  "summary": { "ja": "C のソースコードをコンパイルして実行ファイルを作ります", "en": "Compiles C source code into an executable" },
+  "description": { "ja": "GNU の C コンパイラです。コンパイル（人が読めるコードを機械が実行できる形に変換すること）とリンク（複数の部品を 1 つの実行ファイルにまとめること）をまとめて行います。-o を付けないと a.out（Windows では a.exe）という名前で出力されます。macOS では gcc と打つと clang が代わりに動きます", "en": "The GNU C compiler. It compiles source into machine code and links the pieces into one executable. Without -o the output is named a.out (a.exe on Windows). On macOS, gcc is an alias for clang" },
+  "install": {
+    "winget": "winget install BrechtSanders.WinLibs.POSIX.UCRT",
+    "scoop": "scoop install gcc",
+    "choco": "choco install mingw",
+    "brew": "brew install gcc",
+    "apt": "sudo apt install build-essential",
+    "dnf": "sudo dnf install gcc",
+    "pacman": "sudo pacman -S gcc",
+    "url": "https://gcc.gnu.org/install/binaries.html"
+  },
+  "options": [
+    { "flags": ["-o"], "takesValue": true, "valueType": "path", "summary": { "ja": "出力する実行ファイルの名前", "en": "Name of the output file" } },
+    { "flags": ["-Wall"], "summary": { "ja": "よくあるミスの警告を表示（常に付けるのがおすすめ）", "en": "Enable common warnings (recommended always)" } },
+    { "flags": ["-Wextra"], "summary": { "ja": "さらに多くの警告を表示", "en": "Enable even more warnings" } },
+    { "flags": ["-g"], "summary": { "ja": "デバッグ情報を埋め込む（gdb で行番号が出る）", "en": "Include debug info (line numbers in gdb)" } },
+    { "flags": ["-O2"], "summary": { "ja": "速度を最適化する", "en": "Optimize for speed" } },
+    { "flags": ["-c"], "summary": { "ja": "リンクせずにオブジェクトファイル（.o）だけ作る", "en": "Compile only, producing a .o object file" } },
+    { "flags": ["-std"], "takesValue": true, "valueType": "string", "summary": { "ja": "C の規格を指定（例: -std=c17）", "en": "Choose the C standard (e.g. -std=c17)" } },
+    { "flags": ["-l"], "takesValue": true, "valueType": "string", "summary": { "ja": "ライブラリをリンク（例: -lm で数学関数）", "en": "Link a library (e.g. -lm for math)" } }
+  ],
+  "args": [
+    { "name": "sources", "type": "file", "variadic": true, "summary": { "ja": "コンパイルする .c ファイル", "en": ".c files to compile" } }
+  ],
+  "examples": [
+    { "command": "gcc -Wall -o hello hello.c", "summary": { "ja": "hello.c から hello という実行ファイルを作る", "en": "Build an executable named hello from hello.c" } },
+    { "command": "gcc -g -O0 -o app main.c util.c", "summary": { "ja": "複数ファイルをデバッグ用にコンパイル", "en": "Compile several files for debugging" } },
+    { "command": "gcc -o calc calc.c -lm", "summary": { "ja": "math.h の関数を使うプログラムをリンク", "en": "Link a program that uses math.h functions" } }
+  ],
+  "errors": [
+    {
+      "pattern": "fatal error: (?<hdr>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "ヘッダー {hdr} が見つかりません。自作なら -I でフォルダを指定、外部ライブラリなら開発用パッケージ（-dev / -devel）を入れてください", "en": "Header {hdr} was not found. Use -I for your own folders, or install the library's dev package (-dev / -devel)" }
+    },
+    {
+      "pattern": "undefined reference to [`'](?<sym>[^'`]+)'",
+      "hint": { "ja": "{sym} の実体が見つかりません（リンクエラー）。定義している .c ファイルを一緒に渡すか、-l でライブラリを追加してください（例: sqrt なら -lm）", "en": "No definition found for {sym} (link error). Pass the .c file that defines it, or add the library with -l (e.g. -lm for sqrt)" }
+    },
+    {
+      "pattern": "implicit declaration of function '(?<fn>[^']+)'",
+      "hint": { "ja": "関数 {fn} の宣言がありません。対応する #include を忘れているか、関数名のつづりが違います", "en": "Function {fn} is used without a declaration. A #include is missing or the name is misspelled" }
+    },
+    {
+      "pattern": "(?<file>[^:\\s]+\\.[ch]):(?<line>\\d+):(?<col>\\d+): error: (?<msg>.+)",
+      "hint": { "ja": "{file} の {line} 行目: {msg}。セミコロンや括弧の閉じ忘れは 1 行前にあることが多いです", "en": "Line {line} of {file}: {msg}. A missing semicolon or bracket is often on the previous line" }
+    },
+    {
+      "pattern": "collect2: error: ld returned 1 exit status",
+      "hint": { "ja": "リンクに失敗しました。この行の上にある undefined reference などの行が原因です", "en": "Linking failed. The cause is in the lines above (e.g. undefined reference)" }
+    },
+    {
+      "pattern": "gcc: error: (?<file>\\S+): No such file or directory",
+      "hint": { "ja": "{file} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{file} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "'gcc' is not recognized|gcc: command not found",
+      "hint": { "ja": "gcc が見つかりません。Windows では MinGW / WinLibs、macOS では xcode-select --install で入ります", "en": "gcc was not found. On Windows install MinGW / WinLibs; on macOS run xcode-select --install" }
+    }
+  ]
+}

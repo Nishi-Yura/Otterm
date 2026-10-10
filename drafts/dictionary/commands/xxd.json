@@ -1,0 +1,53 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "xxd",
+  "summary": { "ja": "ファイルを 16 進ダンプ（バイトを 16 進数で並べた表示）にしたり、逆に戻したりします", "en": "Shows a file as a hex dump (bytes in hexadecimal) or converts a hex dump back" },
+  "description": { "ja": "バイナリ（文字として読めないデータ）の中身をバイト単位で確認するときに使います。表示は左から「ファイル内の位置」「16 進のバイト列」「文字として読める部分」です。-r で 16 進から元のバイナリに戻せます。vim に同梱されているので、vim を入れると一緒に使えるようになります", "en": "Lets you inspect binary data byte by byte. Each line shows the offset, the bytes in hex, and the printable characters. -r reverses a hex dump back into binary. It ships with vim, so installing vim provides it" },
+  "install": {
+    "winget": "winget install vim.vim",
+    "scoop": "scoop install vim",
+    "choco": "choco install vim",
+    "brew": "brew install vim",
+    "apt": "sudo apt install xxd",
+    "dnf": "sudo dnf install vim-common",
+    "pacman": "sudo pacman -S vim"
+  },
+  "options": [
+    { "flags": ["-r"], "summary": { "ja": "逆変換（16 進ダンプ → バイナリ）", "en": "Reverse: hex dump back to binary" } },
+    { "flags": ["-p", "-ps"], "summary": { "ja": "位置や文字列なしで 16 進だけを連続出力", "en": "Plain hex only, no offsets or text" } },
+    { "flags": ["-l"], "takesValue": true, "valueType": "number", "summary": { "ja": "先頭から N バイトだけ表示", "en": "Show only the first N bytes" } },
+    { "flags": ["-s"], "takesValue": true, "valueType": "number", "summary": { "ja": "N バイト目から表示を始める", "en": "Start at byte offset N" } },
+    { "flags": ["-c"], "takesValue": true, "valueType": "number", "summary": { "ja": "1 行あたりのバイト数（既定 16）", "en": "Bytes per line (default 16)" } },
+    { "flags": ["-g"], "takesValue": true, "valueType": "number", "summary": { "ja": "何バイトごとに区切るか（1 で区切りなし表示に近い）", "en": "Group size in bytes" } },
+    { "flags": ["-i"], "summary": { "ja": "C 言語の配列として出力（組み込み用）", "en": "Output as a C array (for embedding)" } },
+    { "flags": ["-b"], "summary": { "ja": "16 進ではなく 2 進で表示", "en": "Binary digits instead of hex" } }
+  ],
+  "args": [
+    { "name": "infile", "type": "file", "optional": true, "summary": { "ja": "表示するファイル（省略時は標準入力）", "en": "File to dump (default: standard input)" } },
+    { "name": "outfile", "type": "file", "optional": true, "summary": { "ja": "出力先ファイル", "en": "Output file" } }
+  ],
+  "examples": [
+    { "command": "xxd -l 64 app.bin", "summary": { "ja": "ファイルの先頭 64 バイトを確認（ファイル形式の判別に便利）", "en": "Look at the first 64 bytes (handy for identifying file types)" } },
+    { "command": "echo -n \"hi\" | xxd -p", "summary": { "ja": "文字列を 16 進に変換（6869）", "en": "Convert a string to hex (6869)" } },
+    { "command": "xxd -r -p hex.txt > out.bin", "summary": { "ja": "16 進の文字列からバイナリファイルを作る", "en": "Build a binary file from hex text" } }
+  ],
+  "errors": [
+    {
+      "pattern": "xxd: (?<file>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{file} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{file} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "xxd: sorry, cannot seek",
+      "hint": { "ja": "パイプからの入力では -s で位置を飛ばせません。ファイル名を直接渡してください", "en": "-s cannot skip ahead in piped input. Pass the file name directly" }
+    },
+    {
+      "pattern": "xxd: (?<file>[^:\\n]+): Permission denied",
+      "hint": { "ja": "{file} を読む権限がありません。sudo を付けるか、所有者に確認してください", "en": "No permission to read {file}. Use sudo or check the file's owner" }
+    },
+    {
+      "pattern": "'xxd' is not recognized|xxd: command not found",
+      "hint": { "ja": "xxd がありません。vim をインストールすると一緒に入ります。Windows では Git Bash にも同梱されています", "en": "xxd is missing. Installing vim provides it; on Windows it is also bundled with Git Bash" }
+    }
+  ]
+}

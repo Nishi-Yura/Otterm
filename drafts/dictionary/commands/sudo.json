@@ -1,0 +1,55 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "sudo",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "コマンドを管理者（root）の権限で実行します", "en": "Runs a command with administrator (root) rights" },
+  "description": {
+    "ja": "管理者権限ではシステムのどんなファイルでも変更・削除できるため、間違えるとパソコンが起動しなくなることもあります。パスワードを聞かれたら自分のログインパスワードを入力します（打っても画面には何も表示されません）。「Permission denied」が出たからといって反射的に付けないでください。",
+    "en": "With admin rights any system file can be changed or deleted, and a mistake can leave the computer unable to boot. When asked for a password, type your own login password (nothing is shown while typing). Do not add sudo reflexively just because you saw 'Permission denied'."
+  },
+  "danger": "warn",
+  "options": [
+    {
+      "flags": ["-i", "--login"],
+      "summary": { "ja": "管理者としてシェルを開いたままにする", "en": "Open an interactive shell as root" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "以後すべてのコマンドが管理者権限で動きます。用が済んだら exit で抜けてください", "en": "Every following command runs as root. Type exit when done" }
+    },
+    {
+      "flags": ["-s", "--shell"],
+      "summary": { "ja": "管理者としてシェルを開く（今の設定を引き継ぐ）", "en": "Open a shell as root, keeping your current settings" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "以後すべてのコマンドが管理者権限で動きます。用が済んだら exit で抜けてください", "en": "Every following command runs as root. Type exit when done" }
+    },
+    { "flags": ["-u", "--user"], "takesValue": true, "valueType": "string", "summary": { "ja": "root ではなく指定したユーザーとして実行", "en": "Run as this user instead of root" } },
+    { "flags": ["-E", "--preserve-env"], "summary": { "ja": "自分の環境変数（PATH や HOME）を引き継ぐ", "en": "Keep your environment variables (PATH, HOME)" } },
+    { "flags": ["-k", "--reset-timestamp"], "summary": { "ja": "次回また必ずパスワードを聞くようにする", "en": "Forget the cached password" } },
+    { "flags": ["-l", "--list"], "summary": { "ja": "自分が sudo で何を実行できるか表示", "en": "Show what you are allowed to run" } },
+    { "flags": ["-v", "--validate"], "summary": { "ja": "パスワードだけ先に入力しておく", "en": "Enter the password now without running anything" } },
+    { "flags": ["-n", "--non-interactive"], "summary": { "ja": "パスワード入力が必要ならエラーで終わる（スクリプト向け）", "en": "Fail instead of asking for a password (for scripts)" } }
+  ],
+  "args": [
+    { "name": "command", "type": "command", "summary": { "ja": "管理者権限で実行するコマンド", "en": "Command to run as root" } },
+    { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "そのコマンドへの引数", "en": "Arguments for that command" } }
+  ],
+  "examples": [
+    { "command": "sudo apt update", "summary": { "ja": "パッケージ一覧を管理者権限で更新", "en": "Update the package list as root" } },
+    { "command": "sudo !!", "summary": { "ja": "直前のコマンドを sudo 付きでやり直す", "en": "Rerun the previous command with sudo" } },
+    { "command": "sudo -u postgres psql", "summary": { "ja": "postgres ユーザーとして psql を実行", "en": "Run psql as the postgres user" } }
+  ],
+  "errors": [
+    {
+      "pattern": "(?<user>\\S+) is not in the sudoers file",
+      "hint": { "ja": "ユーザー {user} には sudo を使う許可がありません。管理者に権限を付けてもらう必要があります", "en": "User {user} is not allowed to use sudo. An administrator must grant it" }
+    },
+    {
+      "pattern": "sudo: (?<cmd>\\S+): command not found",
+      "hint": { "ja": "{cmd} が見つかりません。sudo は PATH を引き継がないので、フルパスで指定するか sudo -E や sudo env PATH=\"$PATH\" を試してください", "en": "{cmd} was not found. sudo does not keep your PATH; give the full path, or try sudo -E or sudo env PATH=\"$PATH\"" },
+      "fix": "which {cmd}"
+    },
+    {
+      "pattern": "Sorry, try again|sudo: (?<n>\\d+) incorrect password attempts",
+      "hint": { "ja": "パスワードが違います。自分のログインパスワードを入力します。入力中は何も表示されません", "en": "Wrong password. Enter your own login password; nothing is shown while typing" }
+    }
+  ]
+}

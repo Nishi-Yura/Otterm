@@ -1,0 +1,80 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Copy-Item",
+  "aliases": ["cp", "copy", "cpi"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "ファイルやフォルダをコピーします（PowerShell）。cp や copy と打っても同じです", "en": "Copies files or folders (PowerShell). cp and copy are aliases" },
+  "description": { "ja": "PowerShell では cp は Copy-Item の別名なので、Linux の cp のオプション（-r など）は使えません。フォルダごとコピーするには -Recurse を付けます。コピー先に同名ファイルがあると既定では上書きせずエラーになります。", "en": "In PowerShell, cp is an alias of Copy-Item, so Linux-style flags like -r do not work. Use -Recurse to copy a folder with its contents. By default an existing file at the destination causes an error instead of being overwritten." },
+  "learn": { "ja": "ファイルツリーで Ctrl を押しながらドラッグするのは Copy-Item（cp）と同じです", "en": "Ctrl-dragging in the file tree does what Copy-Item (cp) does" },
+  "options": [
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "コピー元", "en": "Source" }
+    },
+    {
+      "flags": ["-Destination"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "コピー先", "en": "Destination" }
+    },
+    {
+      "flags": ["-Recurse"],
+      "summary": { "ja": "フォルダの中身ごとコピー", "en": "Copy a folder with everything inside" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "コピー先に同名ファイルがあっても上書き", "en": "Overwrite existing files at the destination" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "コピー先の同名ファイルを確認なしで上書きします", "en": "Overwrites same-named files at the destination without asking" }
+    },
+    {
+      "flags": ["-Filter"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "名前のパターンに一致するものだけ（例: *.jpg）", "en": "Only items matching the pattern (e.g. *.jpg)" }
+    },
+    {
+      "flags": ["-Exclude"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "パターンに一致するものを除外", "en": "Skip items matching the pattern" }
+    },
+    {
+      "flags": ["-WhatIf"],
+      "summary": { "ja": "実際にはコピーせず、何が起きるかだけ表示（安全な予行演習）", "en": "Show what would be copied without doing it (safe dry run)" }
+    },
+    {
+      "flags": ["-PassThru"],
+      "summary": { "ja": "コピーしたものを画面にも表示", "en": "Also print the copied items" }
+    }
+  ],
+  "args": [{ "name": "source", "type": "path" }, { "name": "destination", "type": "path" }],
+  "examples": [
+    { "command": "Copy-Item report.docx report-backup.docx", "summary": { "ja": "ファイルを別名でコピー", "en": "Copy a file under a new name" } },
+    { "command": "cp photo.jpg ..\\album\\", "summary": { "ja": "1 つ上の album フォルダへコピー", "en": "Copy into the album folder one level up" } },
+    { "command": "Copy-Item src -Destination backup -Recurse", "summary": { "ja": "src フォルダを中身ごと backup にコピー", "en": "Copy the src folder with its contents to backup" } },
+    { "command": "Copy-Item *.txt docs\\ -WhatIf", "summary": { "ja": "何がコピーされるか確認だけする", "en": "Preview which files would be copied" } }
+  ],
+  "errors": [
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は PowerShell の cp にはありません。Linux の cp とは別物です。フォルダごとコピーは -Recurse です", "en": "-{p} is not a parameter here. PowerShell's cp differs from Linux cp. Use -Recurse for folders" },
+      "fix": "Copy-Item -Recurse"
+    },
+    {
+      "pattern": "Cannot find path '(?<path>[^']+)' because it does not exist",
+      "hint": { "ja": "{path} は存在しません。コピー元のスペルと今いるフォルダを確認してください", "en": "{path} does not exist. Check the source spelling and current folder" },
+      "fix": "Get-ChildItem"
+    },
+    {
+      "pattern": "Container cannot be copied onto existing leaf item",
+      "hint": { "ja": "コピー先に同じ名前のファイルがあるため、フォルダをコピーできません。コピー先の名前を変えてください", "en": "A file with that name exists at the destination, so the folder cannot be copied. Pick another destination name" }
+    },
+    {
+      "pattern": "Access to the path '(?<path>[^']+)' is denied",
+      "hint": { "ja": "{path} に書き込む権限がありません。管理者権限が必要な場所かもしれません", "en": "No permission to write {path}. Admin rights may be needed" }
+    }
+  ]
+}

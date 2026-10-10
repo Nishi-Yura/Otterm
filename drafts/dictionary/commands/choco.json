@@ -1,0 +1,89 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "choco",
+  "aliases": ["chocolatey"],
+  "platforms": ["windows"],
+  "shells": ["pwsh", "powershell", "cmd"],
+  "summary": { "ja": "Windows の老舗パッケージ管理ツール Chocolatey です", "en": "Chocolatey, the long-standing Windows package manager" },
+  "description": { "ja": "ほとんどの操作に管理者権限が必要です。PowerShell を「管理者として実行」で開いてから使ってください。", "en": "Most operations need admin rights. Open PowerShell with 'Run as administrator' before using it." },
+  "install": { "url": "https://chocolatey.org/install" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["i"],
+      "summary": { "ja": "パッケージをインストールします", "en": "Installs a package" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-y", "--yes"], "summary": { "ja": "確認をすべて自動で承認", "en": "Confirm all prompts automatically" } },
+        { "flags": ["--version"], "takesValue": true, "valueType": "string", "summary": { "ja": "特定のバージョンを入れる", "en": "Install a specific version" } },
+        { "flags": ["--params"], "takesValue": true, "valueType": "string", "summary": { "ja": "インストーラへのパラメータ", "en": "Parameters for the installer" } }
+      ],
+      "examples": [{ "command": "choco install git -y", "summary": { "ja": "Git を確認なしで入れる", "en": "Install Git without prompts" } }],
+      "errors": [
+        { "pattern": "The package was not found with the source\\(s\\) listed|(?<pkg>\\S+) not installed\\. The package was not found", "hint": { "ja": "パッケージが見つかりません。choco search で名前を確認してください", "en": "Package not found. Check the name with choco search" }, "fix": "choco search {args}" },
+        { "pattern": "already installed\\.", "hint": { "ja": "すでに入っています。更新は choco upgrade、入れ直しは --force です", "en": "Already installed. Use choco upgrade to update, or --force to reinstall" }, "fix": "choco upgrade {args}" },
+        { "pattern": "Checksum .* did not match|Checksums do not match", "hint": { "ja": "ダウンロードしたファイルの検証に失敗しました。しばらく待って再実行してください", "en": "Downloaded file failed verification. Retry later" } }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "summary": { "ja": "パッケージを削除します", "en": "Removes a package" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-y", "--yes"], "summary": { "ja": "確認なし", "en": "No prompts" } },
+        { "flags": ["-x", "--force-dependencies"], "summary": { "ja": "依存パッケージも一緒に削除", "en": "Also remove dependencies" }, "danger": "warn", "dangerMessage": { "ja": "他のアプリが使っているパッケージも消えることがあります", "en": "May remove packages other apps rely on" } }
+      ]
+    },
+    {
+      "name": "upgrade",
+      "summary": { "ja": "パッケージを新しいバージョンにします", "en": "Upgrades packages" },
+      "args": [{ "name": "package", "type": "package", "variadic": true, "summary": { "ja": "名前、または all", "en": "Name, or all" } }],
+      "options": [{ "flags": ["-y", "--yes"], "summary": { "ja": "確認なし", "en": "No prompts" } }],
+      "examples": [{ "command": "choco upgrade all -y", "summary": { "ja": "すべて更新", "en": "Upgrade everything" } }]
+    },
+    {
+      "name": "search",
+      "aliases": ["find"],
+      "summary": { "ja": "パッケージを検索します", "en": "Searches for packages" },
+      "args": [{ "name": "query", "type": "string" }],
+      "options": [{ "flags": ["--exact"], "summary": { "ja": "完全一致", "en": "Exact match" } }]
+    },
+    { "name": "list", "summary": { "ja": "インストール済み一覧", "en": "Lists installed packages" } },
+    { "name": "outdated", "summary": { "ja": "更新があるパッケージを表示します", "en": "Shows packages with updates" } },
+    {
+      "name": "info",
+      "summary": { "ja": "パッケージの詳細を表示", "en": "Shows package details" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "pin",
+      "summary": { "ja": "パッケージを更新対象から外す（固定）", "en": "Pins a package so upgrade all skips it" },
+      "options": [
+        { "flags": ["add", "-n"], "summary": { "ja": "固定する（-n 名前）", "en": "Add a pin (-n name)" } },
+        { "flags": ["remove"], "summary": { "ja": "固定を解除", "en": "Remove a pin" } },
+        { "flags": ["list"], "summary": { "ja": "一覧", "en": "List pins" } }
+      ]
+    },
+    {
+      "name": "source",
+      "summary": { "ja": "パッケージの取得元を管理します", "en": "Manages package sources" },
+      "options": [
+        { "flags": ["add"], "summary": { "ja": "追加", "en": "Add" } },
+        { "flags": ["remove"], "summary": { "ja": "削除", "en": "Remove" } },
+        { "flags": ["list"], "summary": { "ja": "一覧", "en": "List" } }
+      ]
+    },
+    {
+      "name": "feature",
+      "summary": { "ja": "choco の機能設定を切り替えます", "en": "Toggles choco features" },
+      "examples": [{ "command": "choco feature enable -n allowGlobalConfirmation", "summary": { "ja": "毎回 -y を付けなくてよくする", "en": "Stop needing -y every time" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'choco' is not recognized|choco : The term 'choco'", "hint": { "ja": "Chocolatey が入っていません。chocolatey.org/install の手順で管理者 PowerShell からインストールしてください", "en": "Chocolatey is not installed. Follow chocolatey.org/install from an admin PowerShell" } },
+    { "pattern": "not running from an elevated command shell|Access to the path .* is denied|ChocolateyInstall.*Access is denied", "hint": { "ja": "管理者権限が必要です。PowerShell を「管理者として実行」で開き直してください", "en": "Admin rights are required. Reopen PowerShell with 'Run as administrator'" } },
+    { "pattern": "Unable to connect to the remote server|The remote name could not be resolved|Error retrieving packages from source", "hint": { "ja": "取得元に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the source. Check your network or proxy" } },
+    { "pattern": "Chocolatey detected you are not running from an elevated command shell", "hint": { "ja": "管理者ではない PowerShell です。一部の操作は失敗します", "en": "This PowerShell is not elevated. Some operations will fail" } },
+    { "pattern": "Exit code indicates a reboot is required|3010", "hint": { "ja": "インストールは成功しましたが再起動が必要です", "en": "Installed, but a reboot is required" } }
+  ]
+}

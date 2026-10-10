@@ -1,0 +1,76 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Select-Object",
+  "aliases": ["select"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "パイプで流れてきたものから、表示する列や件数を選びます（PowerShell）。select と打っても同じです", "en": "Picks which columns or how many items to keep from the pipeline (PowerShell). select is an alias" },
+  "description": { "ja": "Get-Process | Select-Object Name, CPU のように、| の後ろで列（プロパティ）を選びます。-First 5 で先頭 5 件、-Last 3 で末尾 3 件だけに絞れます。-ExpandProperty で値そのもの（表ではなく文字列など）を取り出せます。Sort-Object と組み合わせると「上位 N 件」が作れます。", "en": "Used after a pipe to choose properties, e.g. Get-Process | Select-Object Name, CPU. -First 5 keeps the first five items, -Last 3 the last three. -ExpandProperty returns the raw value instead of a table. Combine with Sort-Object for top-N lists." },
+  "options": [
+    {
+      "flags": ["-Property"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "表示する列（プロパティ）名。カンマ区切りで複数可", "en": "Properties (columns) to show, comma-separated" }
+    },
+    {
+      "flags": ["-First"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "先頭から N 件だけ", "en": "Only the first N items" }
+    },
+    {
+      "flags": ["-Last"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "末尾から N 件だけ", "en": "Only the last N items" }
+    },
+    {
+      "flags": ["-Skip"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "先頭の N 件を飛ばす", "en": "Skip the first N items" }
+    },
+    {
+      "flags": ["-Unique"],
+      "summary": { "ja": "重複を取り除く", "en": "Remove duplicates" }
+    },
+    {
+      "flags": ["-ExpandProperty"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "1 つのプロパティの値そのものを取り出す", "en": "Return the raw value of one property" }
+    },
+    {
+      "flags": ["-ExcludeProperty"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "指定した列を除外", "en": "Leave out the given properties" }
+    }
+  ],
+  "examples": [
+    { "command": "Get-Process | Sort-Object CPU -Descending | Select-Object -First 5", "summary": { "ja": "CPU 使用の多い上位 5 件", "en": "Top 5 processes by CPU" } },
+    { "command": "Get-ChildItem | Select-Object Name, Length, LastWriteTime", "summary": { "ja": "名前・サイズ・更新日時の列だけ表示", "en": "Show only name, size and modified date" } },
+    { "command": "Get-ChildItem | select -ExpandProperty FullName", "summary": { "ja": "フルパスの文字列だけを取り出す（select は別名）", "en": "Get just the full-path strings (select is an alias)" } },
+    { "command": "Get-Content names.txt | Select-Object -Unique", "summary": { "ja": "重複する行を取り除く", "en": "Drop duplicate lines" } }
+  ],
+  "errors": [
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は Select-Object にはありません。件数は -First / -Last、列名は -Property（省略可）で指定します", "en": "-{p} is not a parameter here. Use -First / -Last for counts and -Property (optional) for columns" },
+      "fix": "Select-Object -First 5"
+    },
+    {
+      "pattern": "Cannot bind parameter '(?<p>First|Last|Skip)'\\. Cannot convert value \"(?<v>[^\"]+)\" to type \"System\\.Int32\"",
+      "hint": { "ja": "-{p} には数字を指定します。{v} は数字ではありません", "en": "-{p} needs a number; {v} is not one" },
+      "fix": "Select-Object -{p} 5"
+    },
+    {
+      "pattern": "Cannot process argument because the value of argument \"(?<a>[^\"]+)\" is not valid",
+      "hint": { "ja": "{a} の指定が正しくありません。列名はカンマ区切り（Name, CPU）で書きます", "en": "{a} is not valid. Write property names comma-separated (Name, CPU)" }
+    },
+    {
+      "pattern": "Select-Object : A positional parameter cannot be found that accepts argument '(?<a>[^']+)'",
+      "hint": { "ja": "{a} の位置が解釈できません。列名を複数書くときはカンマで区切ってください", "en": "Could not place {a}. Separate multiple property names with commas" }
+    }
+  ]
+}

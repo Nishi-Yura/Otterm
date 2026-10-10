@@ -1,0 +1,64 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "javac",
+  "summary": { "ja": "Java のソースコードをコンパイルして .class ファイルを作ります", "en": "Compiles Java source files into .class files" },
+  "description": { "ja": "コンパイル（人が読めるコードを機械が実行できる形に変換すること）を行う Java のコンパイラです。できた .class ファイルは java コマンドで実行します。JDK（開発キット）に含まれており、実行専用の JRE には入っていません", "en": "The Java compiler. The resulting .class files are run with the java command. It ships with the JDK (development kit), not with the runtime-only JRE" },
+  "install": {
+    "winget": "winget install EclipseAdoptium.Temurin.21.JDK",
+    "scoop": "scoop bucket add java && scoop install temurin21-jdk",
+    "choco": "choco install temurin21",
+    "brew": "brew install openjdk@21",
+    "apt": "sudo apt install default-jdk",
+    "dnf": "sudo dnf install java-21-openjdk-devel",
+    "pacman": "sudo pacman -S jdk-openjdk",
+    "url": "https://adoptium.net/"
+  },
+  "options": [
+    { "flags": ["-d"], "takesValue": true, "valueType": "dir", "summary": { "ja": ".class ファイルの出力先フォルダ", "en": "Output folder for .class files" } },
+    { "flags": ["-cp", "-classpath", "--class-path"], "takesValue": true, "valueType": "path", "summary": { "ja": "参照するクラスや jar の場所", "en": "Where to find referenced classes and jars" } },
+    { "flags": ["-encoding"], "takesValue": true, "valueType": "string", "summary": { "ja": "ソースの文字コード（日本語なら UTF-8 を指定）", "en": "Source file encoding (use UTF-8 for Japanese text)" } },
+    { "flags": ["--release"], "takesValue": true, "valueType": "number", "summary": { "ja": "対象の Java バージョン（例: --release 17）", "en": "Target Java version (e.g. --release 17)" } },
+    { "flags": ["-Xlint"], "summary": { "ja": "推奨される警告をすべて表示", "en": "Show all recommended warnings" } },
+    { "flags": ["-version", "--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "sources", "type": "file", "variadic": true, "summary": { "ja": "コンパイルする .java ファイル", "en": ".java files to compile" } }
+  ],
+  "examples": [
+    { "command": "javac Main.java", "summary": { "ja": "Main.java をコンパイルして Main.class を作る", "en": "Compile Main.java into Main.class" } },
+    { "command": "javac -d out src/*.java", "summary": { "ja": "src の全ファイルをコンパイルし out に出力", "en": "Compile everything in src into out" } },
+    { "command": "javac -encoding UTF-8 Main.java", "summary": { "ja": "日本語を含むソースを文字化けせずにコンパイル", "en": "Compile a source file containing non-ASCII text" } }
+  ],
+  "errors": [
+    {
+      "pattern": "(?<file>\\S+\\.java):(?<line>\\d+): error: cannot find symbol",
+      "hint": { "ja": "{file} の {line} 行目で、名前が見つかりません。つづり、大文字小文字、import の忘れを確認してください", "en": "Line {line} of {file} uses a name that does not exist. Check spelling, case and missing imports" }
+    },
+    {
+      "pattern": "(?<file>\\S+\\.java):(?<line>\\d+): error: ';' expected",
+      "hint": { "ja": "{file} の {line} 行目の末尾にセミコロン（;）が足りません", "en": "A semicolon (;) is missing at the end of line {line} in {file}" }
+    },
+    {
+      "pattern": "class (?<cls>\\w+) is public, should be declared in a file named (?<file>\\S+)",
+      "hint": { "ja": "public クラス {cls} はファイル名 {file} と一致させる必要があります", "en": "Public class {cls} must be in a file named {file}" }
+    },
+    {
+      "pattern": "unmappable character .* for encoding",
+      "hint": { "ja": "ソースの文字コードが合っていません。-encoding UTF-8 を付けてください", "en": "The source encoding does not match. Add -encoding UTF-8" },
+      "fix": "javac -encoding UTF-8 {args}"
+    },
+    {
+      "pattern": "(?<file>\\S+\\.java):(?<line>\\d+): error: incompatible types: (?<msg>.+)",
+      "hint": { "ja": "{file} の {line} 行目で型が合いません: {msg}。変数の型か代入する値を見直してください", "en": "Type mismatch on line {line} of {file}: {msg}. Check the variable type or the assigned value" }
+    },
+    {
+      "pattern": "error: file not found: (?<file>\\S+)",
+      "hint": { "ja": "{file} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{file} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "'javac' is not recognized|javac: command not found",
+      "hint": { "ja": "javac が見つかりません。実行専用の JRE ではなく JDK をインストールしてください", "en": "javac was not found. Install a JDK, not just the runtime (JRE)" }
+    }
+  ]
+}

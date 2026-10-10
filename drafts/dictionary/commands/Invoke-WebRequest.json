@@ -1,0 +1,82 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Invoke-WebRequest",
+  "aliases": ["iwr", "curl", "wget"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "Web ページやファイルをインターネットから取得します（PowerShell）。iwr と打っても同じです", "en": "Fetches a web page or downloads a file from the internet (PowerShell). iwr is an alias" },
+  "description": { "ja": "Windows PowerShell 5.1 では curl と wget は Invoke-WebRequest の別名なので、Linux の curl のオプション（-o、-L、-H など）は使えません。PowerShell 7 では curl は本物の curl.exe が動きます。ファイルを保存するには -OutFile を使います。取得した内容（スクリプト）をそのまま実行するのは危険なので避けてください。", "en": "In Windows PowerShell 5.1, curl and wget are aliases of Invoke-WebRequest, so Linux-style curl flags (-o, -L, -H) do not work. In PowerShell 7, curl runs the real curl.exe. Use -OutFile to save a download. Avoid running downloaded script content directly." },
+  "options": [
+    {
+      "flags": ["-Uri"],
+      "takesValue": true,
+      "valueType": "url",
+      "summary": { "ja": "取得する URL", "en": "URL to fetch" }
+    },
+    {
+      "flags": ["-OutFile"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "保存先のファイル名（ダウンロード）", "en": "Save the response to this file (download)" }
+    },
+    {
+      "flags": ["-Method"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "HTTP メソッド（GET, POST など）", "en": "HTTP method (GET, POST, ...)" }
+    },
+    {
+      "flags": ["-Headers"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "送信するヘッダー（例: @{ Authorization = \"Bearer ...\" }）", "en": "Headers to send (e.g. @{ Authorization = \"Bearer ...\" })" }
+    },
+    {
+      "flags": ["-Body"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "送信するデータ（POST 時など）", "en": "Data to send (e.g. for POST)" }
+    },
+    {
+      "flags": ["-UseBasicParsing"],
+      "summary": { "ja": "Internet Explorer エンジンを使わずに解析（Windows PowerShell 5.1 で必要なことがある）", "en": "Parse without the Internet Explorer engine (sometimes needed in Windows PowerShell 5.1)" }
+    },
+    {
+      "flags": ["-SkipCertificateCheck"],
+      "summary": { "ja": "証明書の検証をスキップ（PowerShell 7）", "en": "Skip certificate validation (PowerShell 7)" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "証明書の検証を無効にすると、偽サイトでも接続してしまいます。信頼できるテスト環境以外では使わないでください", "en": "Disabling certificate checks lets fake sites through. Use only in trusted test environments" }
+    },
+    {
+      "flags": ["-TimeoutSec"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "待つ最大秒数", "en": "Maximum seconds to wait" }
+    }
+  ],
+  "args": [{ "name": "url", "type": "url" }],
+  "examples": [
+    { "command": "Invoke-WebRequest https://example.com", "summary": { "ja": "ページを取得して状態コードや内容を見る", "en": "Fetch a page and see its status and content" } },
+    { "command": "Invoke-WebRequest https://example.com/file.zip -OutFile file.zip", "summary": { "ja": "ファイルをダウンロードして保存", "en": "Download a file and save it" } },
+    { "command": "(iwr https://example.com).Links.href", "summary": { "ja": "ページ内のリンク一覧を取り出す", "en": "Extract the links on a page" } }
+  ],
+  "errors": [
+    {
+      "pattern": "The remote name could not be resolved: '(?<host>[^']+)'|No such host is known",
+      "hint": { "ja": "サーバー名が見つかりません。URL のスペルとインターネット接続を確認してください", "en": "The server name could not be found. Check the URL spelling and your internet connection" }
+    },
+    {
+      "pattern": "The remote server returned an error: \\((?<code>\\d+)\\)|Response status code does not indicate success: (?<code>\\d+)",
+      "hint": { "ja": "サーバーがエラー {code} を返しました。404 は URL の間違い、401/403 は認証や権限、5xx はサーバー側の問題です", "en": "The server returned error {code}. 404 means a wrong URL, 401/403 authentication or permission, 5xx a server-side problem" }
+    },
+    {
+      "pattern": "The response content cannot be parsed because the Internet Explorer engine is not available",
+      "hint": { "ja": "Windows PowerShell 5.1 の既知の問題です。-UseBasicParsing を付けてください", "en": "A known Windows PowerShell 5.1 issue. Add -UseBasicParsing" },
+      "fix": "Invoke-WebRequest -UseBasicParsing"
+    },
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は Invoke-WebRequest にはありません。ここでの curl は Linux の curl とは別物です。保存は -OutFile、ヘッダーは -Headers を使います", "en": "-{p} is not a parameter here. This curl is not Linux curl. Use -OutFile to save and -Headers for headers" },
+      "fix": "Invoke-WebRequest -OutFile"
+    }
+  ]
+}

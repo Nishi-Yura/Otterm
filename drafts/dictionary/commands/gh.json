@@ -1,0 +1,100 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "gh",
+  "summary": { "ja": "GitHub をターミナルから操作します（PR、Issue、リポジトリなど）", "en": "Works with GitHub from the terminal (PRs, issues, repos and more)" },
+  "description": { "ja": "GitHub 公式のコマンドラインツールです。ブラウザを開かずに PR（プルリクエスト。変更の取り込み依頼）や Issue を作ったり、リポジトリを複製したりできます。最初に gh auth login でログインが必要です。git リポジトリの中で実行すると、対象のリポジトリは自動で判定されます", "en": "GitHub's official CLI. Create pull requests and issues, clone repos and more without opening a browser. Run gh auth login first. Inside a git repository the target repo is detected automatically" },
+  "install": {
+    "winget": "winget install GitHub.cli",
+    "scoop": "scoop install gh",
+    "choco": "choco install gh",
+    "brew": "brew install gh",
+    "apt": "sudo apt install gh",
+    "dnf": "sudo dnf install gh",
+    "pacman": "sudo pacman -S github-cli",
+    "url": "https://cli.github.com/"
+  },
+  "subcommands": [
+    {
+      "name": "auth",
+      "summary": { "ja": "GitHub にログイン・ログアウトします", "en": "Logs in to or out of GitHub" },
+      "options": [
+        { "flags": ["login"], "summary": { "ja": "ブラウザ経由でログイン（最初に 1 回）", "en": "Log in via the browser (once)" } },
+        { "flags": ["status"], "summary": { "ja": "ログイン状態を確認", "en": "Show login status" } },
+        { "flags": ["logout"], "summary": { "ja": "ログアウト", "en": "Log out" } }
+      ],
+      "examples": [{ "command": "gh auth login", "summary": { "ja": "GitHub にログインする", "en": "Log in to GitHub" } }]
+    },
+    {
+      "name": "repo",
+      "summary": { "ja": "リポジトリの作成・複製・表示をします", "en": "Creates, clones and views repositories" },
+      "options": [
+        { "flags": ["clone"], "summary": { "ja": "リポジトリを複製（owner/name だけで OK）", "en": "Clone a repo (just owner/name works)" } },
+        { "flags": ["create"], "summary": { "ja": "新しいリポジトリを作る", "en": "Create a new repo" } },
+        { "flags": ["view"], "summary": { "ja": "README や情報を表示（-w でブラウザ）", "en": "Show the README and info (-w opens the browser)" } },
+        { "flags": ["fork"], "summary": { "ja": "自分のアカウントに複製（フォーク）", "en": "Fork into your account" } },
+        { "flags": ["delete"], "summary": { "ja": "リポジトリを GitHub 上から削除", "en": "Delete the repo on GitHub" }, "danger": "confirm", "dangerMessage": { "ja": "GitHub 上のリポジトリが Issue や PR ごと消えます。元に戻すのは困難です", "en": "Deletes the GitHub repo with all its issues and PRs. Hard to undo" } }
+      ],
+      "examples": [{ "command": "gh repo clone cli/cli", "summary": { "ja": "cli/cli を複製する", "en": "Clone cli/cli" } }]
+    },
+    {
+      "name": "pr",
+      "summary": { "ja": "プルリクエストを作成・確認・取り込みます", "en": "Creates, reviews and merges pull requests" },
+      "options": [
+        { "flags": ["create"], "summary": { "ja": "今のブランチから PR を作る（--fill でタイトル自動）", "en": "Open a PR from the current branch (--fill auto-fills)" } },
+        { "flags": ["list"], "summary": { "ja": "PR の一覧", "en": "List PRs" } },
+        { "flags": ["view"], "summary": { "ja": "PR の内容を表示", "en": "Show a PR" } },
+        { "flags": ["checkout"], "summary": { "ja": "PR のブランチを手元に持ってくる", "en": "Check out a PR's branch locally" } },
+        { "flags": ["merge"], "summary": { "ja": "PR を取り込む", "en": "Merge a PR" } },
+        { "flags": ["status"], "summary": { "ja": "自分に関係する PR の状況", "en": "Status of PRs relevant to you" } }
+      ],
+      "examples": [{ "command": "gh pr create --fill", "summary": { "ja": "コミットメッセージから PR を作る", "en": "Create a PR using commit messages" } }]
+    },
+    {
+      "name": "issue",
+      "summary": { "ja": "Issue（課題・バグ報告）を作成・確認します", "en": "Creates and views issues" },
+      "options": [
+        { "flags": ["create"], "summary": { "ja": "Issue を作る", "en": "Create an issue" } },
+        { "flags": ["list"], "summary": { "ja": "Issue の一覧", "en": "List issues" } },
+        { "flags": ["view"], "summary": { "ja": "Issue の内容を表示", "en": "Show an issue" } },
+        { "flags": ["close"], "summary": { "ja": "Issue を閉じる", "en": "Close an issue" } }
+      ]
+    },
+    {
+      "name": "release",
+      "summary": { "ja": "リリース（タグ付きの配布版）を作成・管理します", "en": "Creates and manages releases" },
+      "options": [
+        { "flags": ["create"], "summary": { "ja": "リリースを作る（ファイルも添付できる）", "en": "Create a release (assets can be attached)" } },
+        { "flags": ["list"], "summary": { "ja": "リリースの一覧", "en": "List releases" } },
+        { "flags": ["download"], "summary": { "ja": "添付ファイルをダウンロード", "en": "Download release assets" } },
+        { "flags": ["delete"], "summary": { "ja": "リリースを削除", "en": "Delete a release" }, "danger": "confirm", "dangerMessage": { "ja": "公開済みのリリースと添付ファイルが消えます", "en": "Removes a published release and its assets" } }
+      ]
+    },
+    { "name": "run", "summary": { "ja": "GitHub Actions の実行状況を見ます", "en": "Views GitHub Actions runs" }, "options": [{ "flags": ["list"], "summary": { "ja": "最近の実行一覧", "en": "List recent runs" } }, { "flags": ["view"], "summary": { "ja": "実行の詳細（--log でログ）", "en": "Show a run (--log for logs)" } }, { "flags": ["watch"], "summary": { "ja": "実行中のものを見守る", "en": "Watch a run in progress" } }] },
+    { "name": "gist", "summary": { "ja": "Gist（コード片の共有）を作成・表示します", "en": "Creates and views gists" }, "options": [{ "flags": ["create"], "summary": { "ja": "ファイルから Gist を作る", "en": "Create a gist from files" } }, { "flags": ["list"], "summary": { "ja": "自分の Gist 一覧", "en": "List your gists" } }] },
+    { "name": "api", "summary": { "ja": "GitHub API を直接呼びます（上級者向け）", "en": "Calls the GitHub API directly (advanced)" }, "args": [{ "name": "endpoint", "type": "string" }] }
+  ],
+  "errors": [
+    {
+      "pattern": "To get started with GitHub CLI, please run:|You are not logged into any GitHub hosts|HTTP 401|Bad credentials",
+      "hint": { "ja": "GitHub にログインしていないか、ログインが切れています。gh auth login でログインしてください", "en": "You are not logged in, or the login expired. Run gh auth login" },
+      "fix": "gh auth login"
+    },
+    {
+      "pattern": "could not determine base repo|not a git repository",
+      "hint": { "ja": "git リポジトリの外で実行しています。リポジトリのフォルダに移動するか、-R owner/repo で対象を指定してください", "en": "You are outside a git repository. cd into one or pass -R owner/repo" }
+    },
+    {
+      "pattern": "Could not resolve to a Repository with the name '(?<repo>[^']+)'|HTTP 404: Not Found",
+      "hint": { "ja": "リポジトリ {repo} が見つかりません。名前のつづりか、非公開リポジトリへのアクセス権を確認してください", "en": "Repository {repo} was not found. Check the name, or your access to a private repo" }
+    },
+    {
+      "pattern": "unknown command \"(?<cmd>[^\"]+)\" for \"gh",
+      "hint": { "ja": "{cmd} というサブコマンドはありません。gh --help で一覧を確認してください", "en": "{cmd} is not a gh subcommand. See gh --help" },
+      "fix": "gh --help"
+    },
+    {
+      "pattern": "'gh' is not recognized|gh: command not found",
+      "hint": { "ja": "GitHub CLI が見つかりません。インストール後にターミナルを開き直してください", "en": "GitHub CLI was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "go",
+  "summary": { "ja": "Go 言語のビルド・実行・モジュール管理を行うコマンドです", "en": "Builds, runs and manages modules for the Go language" },
+  "description": { "ja": "go.mod にモジュール名と依存を記録します。go get で依存を追加し、go mod tidy で整理します。ビルドやテストはこの go コマンドひとつで行い、別途パッケージマネージャは不要です。", "en": "go.mod records the module name and dependencies. go get adds them and go mod tidy cleans them up. Building and testing all go through this one command; no separate package manager is needed." },
+  "install": { "winget": "winget install GoLang.Go", "scoop": "scoop install go", "choco": "choco install golang", "brew": "brew install go", "apt": "sudo apt install golang-go", "dnf": "sudo dnf install golang", "pacman": "sudo pacman -S go", "url": "https://go.dev/dl/" },
+  "subcommands": [
+    {
+      "name": "mod",
+      "summary": { "ja": "モジュール（go.mod）を操作します", "en": "Works with modules (go.mod)" },
+      "options": [
+        { "flags": ["init"], "summary": { "ja": "go.mod を作る（go mod init モジュール名）", "en": "Create go.mod (go mod init <module>)" } },
+        { "flags": ["tidy"], "summary": { "ja": "使っていない依存を消し、足りない依存を追加", "en": "Remove unused and add missing dependencies" } },
+        { "flags": ["download"], "summary": { "ja": "依存をダウンロードしておく", "en": "Pre-download dependencies" } },
+        { "flags": ["vendor"], "summary": { "ja": "依存を vendor フォルダにコピー", "en": "Copy dependencies into vendor" } }
+      ],
+      "examples": [
+        { "command": "go mod init example.com/myapp", "summary": { "ja": "新しいモジュールを始める", "en": "Start a new module" } },
+        { "command": "go mod tidy", "summary": { "ja": "依存を整理する（import を変えた後に）", "en": "Clean up dependencies (after changing imports)" } }
+      ],
+      "errors": [
+        { "pattern": "go: cannot determine module path", "hint": { "ja": "モジュール名を指定してください。例: go mod init example.com/myapp", "en": "Give the module a name, e.g. go mod init example.com/myapp" }, "fix": "go mod init example.com/myapp" },
+        { "pattern": "go.mod already exists", "hint": { "ja": "このフォルダはすでにモジュールです", "en": "This folder is already a module" } }
+      ]
+    },
+    {
+      "name": "get",
+      "summary": { "ja": "依存パッケージを追加・更新します", "en": "Adds or updates a dependency" },
+      "args": [{ "name": "package", "type": "package", "variadic": true, "summary": { "ja": "github.com/user/repo@バージョン", "en": "github.com/user/repo@version" } }],
+      "options": [{ "flags": ["-u"], "summary": { "ja": "依存も含めて新しい版に", "en": "Update dependencies too" } }],
+      "examples": [{ "command": "go get github.com/gin-gonic/gin@latest", "summary": { "ja": "gin の最新版を追加", "en": "Add the latest gin" } }],
+      "errors": [
+        { "pattern": "go: go\\.mod file not found", "hint": { "ja": "ここはモジュールではありません。go mod init で始めてください", "en": "Not inside a module. Run go mod init first" }, "fix": "go mod init example.com/myapp" },
+        { "pattern": "no matching versions for query \"(?<q>[^\"]+)\"|unknown revision (?<rev>\\S+)", "hint": { "ja": "指定したバージョンがありません。@latest にするか、タグ名を確認してください", "en": "That version does not exist. Try @latest or check the tag name" } },
+        { "pattern": "'go get' is no longer supported outside a module", "hint": { "ja": "コマンドを入れるときは go install パッケージ@latest を使います", "en": "To install a command, use go install <package>@latest" } }
+      ]
+    },
+    {
+      "name": "build",
+      "summary": { "ja": "コンパイルして実行ファイルを作ります", "en": "Compiles and produces an executable" },
+      "args": [{ "name": "package", "type": "path", "optional": true, "summary": { "ja": "通常は . や ./cmd/app", "en": "Usually . or ./cmd/app" } }],
+      "options": [
+        { "flags": ["-o"], "takesValue": true, "valueType": "path", "summary": { "ja": "出力ファイル名", "en": "Output file name" } },
+        { "flags": ["-v"], "summary": { "ja": "コンパイル中のパッケージ名を表示", "en": "Print packages as they compile" } }
+      ],
+      "examples": [{ "command": "go build -o app .", "summary": { "ja": "app という名前でビルド", "en": "Build as app" } }],
+      "errors": [
+        { "pattern": "(?<file>[^\\s:]+\\.go):(?<line>\\d+):\\d+: (?<msg>.+)", "hint": { "ja": "{file} の {line} 行目: {msg}", "en": "{file} line {line}: {msg}" } },
+        { "pattern": "no required module provides package (?<pkg>\\S+)", "hint": { "ja": "{pkg} が go.mod にありません。go get で追加するか go mod tidy を実行してください", "en": "{pkg} is not in go.mod. Add it with go get or run go mod tidy" }, "fix": "go mod tidy" },
+        { "pattern": "declared and not used: (?<name>\\S+)|imported and not used: \"(?<imp>[^\"]+)\"", "hint": { "ja": "使っていない変数や import があります。Go ではエラーになるので削除してください", "en": "An unused variable or import. Go treats these as errors; remove it" } }
+      ]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "コンパイルしてすぐ実行します（ファイルは残さない）", "en": "Compiles and runs immediately (leaves no binary)" },
+      "args": [{ "name": "package", "type": "path", "summary": { "ja": ". や main.go", "en": ". or main.go" } }],
+      "examples": [{ "command": "go run .", "summary": { "ja": "このフォルダの main を実行", "en": "Run main in this folder" } }]
+    },
+    {
+      "name": "test",
+      "summary": { "ja": "テスト（*_test.go）を実行します", "en": "Runs tests (*_test.go)" },
+      "args": [{ "name": "package", "type": "path", "optional": true, "summary": { "ja": "./... で全部", "en": "./... for all" } }],
+      "options": [
+        { "flags": ["-v"], "summary": { "ja": "各テストの結果を表示", "en": "Show each test's result" } },
+        { "flags": ["-run"], "takesValue": true, "valueType": "pattern", "summary": { "ja": "名前が一致するテストだけ", "en": "Only tests matching a pattern" } },
+        { "flags": ["-cover"], "summary": { "ja": "カバレッジを表示", "en": "Show coverage" } }
+      ],
+      "examples": [{ "command": "go test ./...", "summary": { "ja": "すべてのパッケージをテスト", "en": "Test every package" } }],
+      "errors": [
+        { "pattern": "--- FAIL: (?<name>\\S+)", "hint": { "ja": "テスト {name} が失敗しました。その下の出力で原因を確認してください", "en": "Test {name} failed. See the output below it" } },
+        { "pattern": "no test files", "hint": { "ja": "テストファイルがありません。xxx_test.go という名前で作ります", "en": "No test files. Name them xxx_test.go" } }
+      ]
+    },
+    {
+      "name": "install",
+      "summary": { "ja": "Go 製のコマンドをビルドして ~/go/bin に入れます", "en": "Builds a Go command and installs it into ~/go/bin" },
+      "args": [{ "name": "package", "type": "package", "summary": { "ja": "パッケージ@latest", "en": "package@latest" } }],
+      "examples": [{ "command": "go install golang.org/x/tools/gopls@latest", "summary": { "ja": "言語サーバー gopls を入れる", "en": "Install the gopls language server" } }],
+      "errors": [{ "pattern": "must be in the form of (?<form>\\S+)", "hint": { "ja": "@バージョン が必要です。例: パッケージ@latest", "en": "A @version is required, e.g. package@latest" } }]
+    },
+    {
+      "name": "fmt",
+      "summary": { "ja": "コードを整形します", "en": "Formats code" },
+      "args": [{ "name": "package", "type": "path", "optional": true }]
+    },
+    {
+      "name": "vet",
+      "summary": { "ja": "よくある間違いを検査します", "en": "Checks for common mistakes" },
+      "args": [{ "name": "package", "type": "path", "optional": true }]
+    },
+    {
+      "name": "clean",
+      "summary": { "ja": "ビルド成果物やキャッシュを削除します", "en": "Removes build output and caches" },
+      "options": [{ "flags": ["-modcache"], "summary": { "ja": "ダウンロード済みモジュールをすべて削除", "en": "Delete every downloaded module" }, "danger": "warn", "dangerMessage": { "ja": "すべてのプロジェクトの依存を再ダウンロードすることになります", "en": "Every project will re-download its dependencies" } }]
+    },
+    {
+      "name": "env",
+      "summary": { "ja": "Go の環境変数（GOPATH、GOOS など）を表示・設定", "en": "Shows or sets Go env vars (GOPATH, GOOS, ...)" },
+      "args": [{ "name": "name", "type": "string", "optional": true }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'go' is not recognized|go: command not found", "hint": { "ja": "Go が入っていないか PATH にありません。go.dev/dl から入れてターミナルを開き直してください", "en": "Go is missing or not on PATH. Install from go.dev/dl and reopen the terminal" } },
+    { "pattern": "go: go\\.mod file not found in current directory or any parent directory", "hint": { "ja": "ここはモジュールではありません。go mod init で始めてください", "en": "Not inside a module. Run go mod init first" }, "fix": "go mod init example.com/myapp" },
+    { "pattern": "go: updates to go\\.mod needed|missing go\\.sum entry", "hint": { "ja": "go.mod / go.sum の更新が必要です。go mod tidy を実行してください", "en": "go.mod / go.sum need updating. Run go mod tidy" }, "fix": "go mod tidy" },
+    { "pattern": "dial tcp: lookup (?<host>\\S+): no such host|i/o timeout|proxy\\.golang\\.org.*connection refused", "hint": { "ja": "モジュールをダウンロードできません。ネットワークやプロキシを確認してください", "en": "Cannot download modules. Check your network or proxy" } },
+    { "pattern": "go: module requires Go (?<ver>[0-9.]+)|go\\.mod requires go >= (?<ver2>[0-9.]+)", "hint": { "ja": "このプロジェクトは新しい Go が必要です。Go を更新してください", "en": "This project needs a newer Go. Update Go" } }
+  ]
+}

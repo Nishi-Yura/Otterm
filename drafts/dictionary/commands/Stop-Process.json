@@ -1,0 +1,68 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Stop-Process",
+  "aliases": ["spps", "kill"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "動いているプログラム（プロセス）を終了させます（PowerShell）。kill と打っても同じです", "en": "Ends a running program (process) (PowerShell). kill is an alias" },
+  "description": { "ja": "タスクマネージャーの「タスクの終了」に相当します。保存していないデータは失われます。PowerShell では kill は Stop-Process の別名なので、Linux の kill -9 のような書き方は使えません。まず Get-Process で名前や PID を確認し、-WhatIf で対象を確かめてから実行すると安全です。", "en": "Like End Task in Task Manager. Unsaved data in that program is lost. In PowerShell, kill is an alias of Stop-Process, so Linux-style kill -9 does not work. Check the name or PID with Get-Process first, and use -WhatIf to confirm the target." },
+  "options": [
+    {
+      "flags": ["-Name"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "終了するプロセス名（例: notepad）", "en": "Process name to stop (e.g. notepad)" }
+    },
+    {
+      "flags": ["-Id"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "終了するプロセス ID（PID）", "en": "Process ID (PID) to stop" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "「保存しますか」などの確認を無視して強制終了", "en": "Force-stop without any save prompts" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "強制終了します。未保存のデータは失われます", "en": "Force-stops the program. Unsaved data will be lost" }
+    },
+    {
+      "flags": ["-WhatIf"],
+      "summary": { "ja": "実際には終了せず、何が止まるかだけ表示（安全な予行演習）", "en": "Show what would be stopped without doing it (safe dry run)" }
+    },
+    {
+      "flags": ["-Confirm"],
+      "summary": { "ja": "1 件ずつ確認", "en": "Ask before each process" }
+    },
+    {
+      "flags": ["-PassThru"],
+      "summary": { "ja": "終了したプロセスを画面にも表示", "en": "Also print the stopped processes" }
+    }
+  ],
+  "args": [{ "name": "name", "type": "string", "optional": true, "variadic": true }],
+  "examples": [
+    { "command": "Stop-Process -Name notepad", "summary": { "ja": "メモ帳をすべて終了", "en": "Close every Notepad window" } },
+    { "command": "Stop-Process -Id 12345", "summary": { "ja": "PID を指定して終了", "en": "Stop by PID" } },
+    { "command": "Get-Process chrome | Stop-Process -WhatIf", "summary": { "ja": "Chrome を止めたら何が止まるか確認だけする", "en": "Preview what stopping Chrome would end" } },
+    { "command": "Get-Process notepad | Stop-Process -Confirm", "summary": { "ja": "1 つずつ確認しながら終了", "en": "Stop with a prompt for each one" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot find a process with the name \"(?<name>[^\"]+)\"",
+      "hint": { "ja": "{name} という名前のプロセスは動いていません。拡張子 .exe は付けません。Get-Process で名前を確認してください", "en": "No running process named {name}. Drop the .exe. Check the name with Get-Process" },
+      "fix": "Get-Process"
+    },
+    {
+      "pattern": "Cannot find a process with the process identifier (?<pid>\\d+)",
+      "hint": { "ja": "PID {pid} のプロセスはありません。すでに終了したか、番号が違います", "en": "No process with PID {pid}. It may have exited already, or the number differs" },
+      "fix": "Get-Process"
+    },
+    {
+      "pattern": "Cannot stop process \"(?<name>[^\"]+)\" because of the following error: Access is denied",
+      "hint": { "ja": "{name} を終了する権限がありません。システムのプロセスか、別ユーザーのものです。管理者として PowerShell を起動すれば止められますが、システムが不安定になることがあります", "en": "No permission to stop {name}. It belongs to the system or another user. Running PowerShell as administrator can stop it, but the system may become unstable" }
+    },
+    {
+      "pattern": "A positional parameter cannot be found that accepts argument '(?<a>[^']+)'",
+      "hint": { "ja": "PowerShell の kill は Linux の kill とは別物で、-9 のような書き方は使えません。-Name か -Id で指定します", "en": "PowerShell's kill differs from Linux kill; -9 style does not work. Use -Name or -Id" },
+      "fix": "Stop-Process -Name"
+    }
+  ]
+}

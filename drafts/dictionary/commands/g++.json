@@ -1,0 +1,64 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "g++",
+  "aliases": ["c++"],
+  "summary": { "ja": "C++ のソースコードをコンパイルして実行ファイルを作ります", "en": "Compiles C++ source code into an executable" },
+  "description": { "ja": "GNU の C++ コンパイラです。コンパイル（人が読めるコードを機械が実行できる形に変換すること）とリンクをまとめて行い、C++ の標準ライブラリを自動でつなぎます。.cpp ファイルは gcc ではなく g++ でコンパイルしてください。macOS では g++ と打つと clang++ が動きます", "en": "The GNU C++ compiler. It compiles and links in one step and automatically links the C++ standard library. Use g++ rather than gcc for .cpp files. On macOS, g++ is an alias for clang++" },
+  "install": {
+    "winget": "winget install BrechtSanders.WinLibs.POSIX.UCRT",
+    "scoop": "scoop install gcc",
+    "choco": "choco install mingw",
+    "brew": "brew install gcc",
+    "apt": "sudo apt install build-essential",
+    "dnf": "sudo dnf install gcc-c++",
+    "pacman": "sudo pacman -S gcc",
+    "url": "https://gcc.gnu.org/install/binaries.html"
+  },
+  "options": [
+    { "flags": ["-o"], "takesValue": true, "valueType": "path", "summary": { "ja": "出力する実行ファイルの名前", "en": "Name of the output file" } },
+    { "flags": ["-Wall"], "summary": { "ja": "よくあるミスの警告を表示（常に付けるのがおすすめ）", "en": "Enable common warnings (recommended always)" } },
+    { "flags": ["-Wextra"], "summary": { "ja": "さらに多くの警告を表示", "en": "Enable even more warnings" } },
+    { "flags": ["-std"], "takesValue": true, "valueType": "string", "summary": { "ja": "C++ の規格を指定（例: -std=c++20）", "en": "Choose the C++ standard (e.g. -std=c++20)" } },
+    { "flags": ["-g"], "summary": { "ja": "デバッグ情報を埋め込む", "en": "Include debug info" } },
+    { "flags": ["-O2"], "summary": { "ja": "速度を最適化する", "en": "Optimize for speed" } },
+    { "flags": ["-c"], "summary": { "ja": "リンクせずにオブジェクトファイル（.o）だけ作る", "en": "Compile only, producing a .o object file" } },
+    { "flags": ["-I"], "takesValue": true, "valueType": "dir", "summary": { "ja": "ヘッダーを探すフォルダを追加", "en": "Add a folder to the header search path" } }
+  ],
+  "args": [
+    { "name": "sources", "type": "file", "variadic": true, "summary": { "ja": "コンパイルする .cpp ファイル", "en": ".cpp files to compile" } }
+  ],
+  "examples": [
+    { "command": "g++ -Wall -std=c++20 -o app main.cpp", "summary": { "ja": "C++20 で main.cpp から app を作る", "en": "Build app from main.cpp using C++20" } },
+    { "command": "g++ -g -o app main.cpp util.cpp", "summary": { "ja": "複数ファイルをデバッグ用にコンパイル", "en": "Compile several files for debugging" } }
+  ],
+  "errors": [
+    {
+      "pattern": "error: '(?<name>[^']+)' was not declared in this scope",
+      "hint": { "ja": "{name} が宣言されていません。#include の忘れ、つづりの間違い、std:: の付け忘れが多いです", "en": "{name} is not declared. Usually a missing #include, a typo, or a missing std:: prefix" }
+    },
+    {
+      "pattern": "error: '(?<name>\\w+)' is not a member of 'std'",
+      "hint": { "ja": "std::{name} を使うためのヘッダーが足りません（例: cout なら #include <iostream>、string なら <string>）", "en": "The header for std::{name} is missing (e.g. #include <iostream> for cout, <string> for string)" }
+    },
+    {
+      "pattern": "fatal error: (?<hdr>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "ヘッダー {hdr} が見つかりません。自作なら -I でフォルダを指定、外部ライブラリなら開発用パッケージを入れてください", "en": "Header {hdr} was not found. Use -I for your own folders, or install the library's dev package" }
+    },
+    {
+      "pattern": "undefined reference to [`'](?<sym>[^'`]+)'",
+      "hint": { "ja": "{sym} の実体が見つかりません（リンクエラー）。定義している .cpp を一緒に渡すか、-l でライブラリを追加してください", "en": "No definition found for {sym} (link error). Pass the .cpp that defines it, or add the library with -l" }
+    },
+    {
+      "pattern": "error: no matching function for call to '(?<fn>[^']+)'",
+      "hint": { "ja": "{fn} に合う関数がありません。引数の数や型が宣言と違います。下の note: 行に候補が出ています", "en": "No overload matches {fn}. The argument count or types differ; the note: lines below list candidates" }
+    },
+    {
+      "pattern": "(?<file>[^:\\s]+\\.(cpp|cc|hpp|h)):(?<line>\\d+):(?<col>\\d+): error: (?<msg>.+)",
+      "hint": { "ja": "{file} の {line} 行目: {msg}。長いエラーは最初の error: 行だけ読めば十分なことが多いです", "en": "Line {line} of {file}: {msg}. For long output, the first error: line is usually what matters" }
+    },
+    {
+      "pattern": "'g\\+\\+' is not recognized|g\\+\\+: command not found",
+      "hint": { "ja": "g++ が見つかりません。Windows では MinGW / WinLibs、macOS では xcode-select --install で入ります", "en": "g++ was not found. On Windows install MinGW / WinLibs; on macOS run xcode-select --install" }
+    }
+  ]
+}

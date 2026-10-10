@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "tr",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "文字を別の文字に置き換えたり、削除したりします（1 文字単位）", "en": "Replaces or deletes characters, one character at a time" },
+  "description": {
+    "ja": "ファイル名は受け取らず、前のコマンドの出力や < で渡した内容を処理します。単語の置き換えではなく文字ごとの変換なので、文字列の置換には sed を使います。",
+    "en": "It does not take file names; feed it text through a pipe or <. It maps characters, not words, so use sed to replace whole strings."
+  },
+  "options": [
+    { "flags": ["-d", "--delete"], "summary": { "ja": "指定した文字を削除", "en": "Delete the given characters" } },
+    { "flags": ["-s", "--squeeze-repeats"], "summary": { "ja": "連続する同じ文字を 1 つにまとめる", "en": "Collapse repeated characters into one" } },
+    { "flags": ["-c", "-C", "--complement"], "summary": { "ja": "指定した文字「以外」を対象にする", "en": "Act on every character except the given ones" } },
+    { "flags": ["-t", "--truncate-set1"], "summary": { "ja": "1 つ目の文字集合を 2 つ目の長さに切りそろえる", "en": "Shorten the first set to the length of the second" } }
+  ],
+  "args": [
+    { "name": "set1", "type": "string", "summary": { "ja": "変換元の文字の集まり（例: a-z、'[:upper:]'）", "en": "Characters to convert from (e.g. a-z, '[:upper:]')" } },
+    { "name": "set2", "type": "string", "optional": true, "summary": { "ja": "変換先の文字の集まり（-d のときは不要）", "en": "Characters to convert to (not needed with -d)" } }
+  ],
+  "examples": [
+    { "command": "echo hello | tr a-z A-Z", "summary": { "ja": "小文字を大文字にする", "en": "Uppercase the text" } },
+    { "command": "tr -d '\\r' < windows.txt > unix.txt", "summary": { "ja": "Windows 形式の改行コードを取り除く", "en": "Strip Windows carriage returns" } },
+    { "command": "echo \"a  b   c\" | tr -s ' '", "summary": { "ja": "連続する空白を 1 つにする", "en": "Squeeze repeated spaces" } }
+  ],
+  "errors": [
+    {
+      "pattern": "tr: extra operand [‘'](?<path>[^’']+)[’']",
+      "hint": { "ja": "tr はファイル名を受け取りません。{path} の中身は < で渡します（例: tr a-z A-Z < {path}）", "en": "tr does not take file names. Feed {path} with < (e.g. tr a-z A-Z < {path})" }
+    },
+    {
+      "pattern": "tr: missing operand",
+      "hint": { "ja": "変換する文字の指定が必要です（例: tr a-z A-Z、削除なら tr -d x）", "en": "Give the characters to convert (e.g. tr a-z A-Z, or tr -d x to delete)" },
+      "fix": "tr a-z A-Z"
+    },
+    {
+      "pattern": "tr: range-endpoints of [‘'](?<range>[^’']+)[’'] are in reverse collating sequence order",
+      "hint": { "ja": "範囲 {range} の順番が逆です。小さい文字から大きい文字の順に書きます（例: a-z）", "en": "The range {range} is backwards. Write it from low to high (e.g. a-z)" }
+    }
+  ]
+}

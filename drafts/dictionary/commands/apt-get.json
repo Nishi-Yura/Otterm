@@ -1,0 +1,77 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "apt-get",
+  "platforms": ["linux"],
+  "summary": { "ja": "Debian / Ubuntu 系の低レベルなパッケージ管理ツールです（スクリプト向け）", "en": "Lower-level package tool for Debian and Ubuntu (meant for scripts)" },
+  "description": { "ja": "手で打つなら apt のほうが見やすいです。apt-get は出力が安定しているのでシェルスクリプトや Dockerfile で使われます。sudo が必要で、パスワード入力中は何も表示されません。", "en": "For typing by hand, apt is nicer. apt-get has stable output, so scripts and Dockerfiles use it. It needs sudo; nothing shows while you type the password." },
+  "install": { "url": "https://wiki.debian.org/Apt" },
+  "subcommands": [
+    {
+      "name": "update",
+      "summary": { "ja": "パッケージ一覧を最新にします", "en": "Refreshes the package list" },
+      "examples": [{ "command": "sudo apt-get update", "summary": { "ja": "一覧を更新", "en": "Refresh the list" } }],
+      "errors": [
+        { "pattern": "Could not get lock /var/lib/apt/lists/lock|Could not get lock /var/lib/dpkg/lock", "hint": { "ja": "別の apt が動いています。終わるまで待ってください", "en": "Another apt process is running. Wait for it" } },
+        { "pattern": "Failed to fetch|Temporary failure resolving", "hint": { "ja": "リポジトリに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the repository. Check your network or proxy" } }
+      ]
+    },
+    {
+      "name": "install",
+      "summary": { "ja": "パッケージをインストールします", "en": "Installs packages" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-y", "--yes", "--assume-yes"], "summary": { "ja": "確認なしで進める", "en": "Do not ask for confirmation" } },
+        { "flags": ["--no-install-recommends"], "summary": { "ja": "推奨パッケージを入れない（Docker で定番）", "en": "Skip recommended packages (common in Docker)" } },
+        { "flags": ["-f", "--fix-broken"], "summary": { "ja": "壊れた依存関係を修復", "en": "Repair broken dependencies" } }
+      ],
+      "examples": [{ "command": "sudo apt-get install -y --no-install-recommends curl", "summary": { "ja": "curl を最小構成で確認なしに入れる", "en": "Install curl minimally without prompts" } }],
+      "errors": [
+        { "pattern": "Unable to locate package (?<pkg>\\S+)", "hint": { "ja": "{pkg} が見つかりません。先に apt-get update を実行してください", "en": "{pkg} was not found. Run apt-get update first" }, "fix": "sudo apt-get update && sudo apt-get install {pkg}" },
+        { "pattern": "Unmet dependencies|has unmet dependencies", "hint": { "ja": "依存関係が壊れています。apt-get -f install で修復を試してください", "en": "Dependencies are broken. Try apt-get -f install" }, "fix": "sudo apt-get -f install" },
+        { "pattern": "dpkg was interrupted", "hint": { "ja": "前回の処理が途中で止まっています。dpkg --configure -a で続きを実行してください", "en": "A previous run was interrupted. Run dpkg --configure -a" }, "fix": "sudo dpkg --configure -a" }
+      ]
+    },
+    {
+      "name": "remove",
+      "summary": { "ja": "パッケージを削除します（設定ファイルは残す）", "en": "Removes packages (keeps config files)" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "システム全体からパッケージを削除します", "en": "Removes system-wide" }
+    },
+    {
+      "name": "purge",
+      "summary": { "ja": "パッケージを設定ファイルごと削除します", "en": "Removes packages with their config files" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "設定ファイルも消えます。元に戻せません", "en": "Config files are deleted too. Cannot be undone" }
+    },
+    {
+      "name": "upgrade",
+      "summary": { "ja": "インストール済みパッケージを更新します（削除はしない）", "en": "Upgrades installed packages (never removes)" },
+      "options": [{ "flags": ["-y"], "summary": { "ja": "確認なし", "en": "No prompts" } }]
+    },
+    { "name": "dist-upgrade", "summary": { "ja": "必要なら削除も伴って更新します", "en": "Upgrades, removing packages if needed" }, "danger": "warn", "dangerMessage": { "ja": "パッケージが削除されることがあります。一覧を確認してください", "en": "May remove packages. Read the list" } },
+    { "name": "autoremove", "summary": { "ja": "不要になった依存パッケージを削除します", "en": "Removes dependencies no longer needed" }, "danger": "warn", "dangerMessage": { "ja": "削除一覧に必要なものがないか確認してください", "en": "Check the removal list for anything you still need" } },
+    {
+      "name": "clean",
+      "summary": { "ja": "ダウンロード済みの .deb キャッシュを削除します", "en": "Deletes the downloaded .deb cache" },
+      "examples": [{ "command": "sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/*", "summary": { "ja": "Dockerfile でイメージを小さくする定番", "en": "Common Dockerfile line to shrink the image" } }]
+    },
+    {
+      "name": "source",
+      "summary": { "ja": "パッケージのソースコードを取得します", "en": "Downloads a package's source code" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "build-dep",
+      "summary": { "ja": "パッケージをビルドするのに必要なものを入れます", "en": "Installs what is needed to build a package" },
+      "args": [{ "name": "package", "type": "package" }]
+    }
+  ],
+  "errors": [
+    { "pattern": "apt-get: command not found", "hint": { "ja": "この Linux は apt を使いません。Fedora なら dnf、Arch なら pacman です", "en": "This Linux does not use apt. Fedora uses dnf; Arch uses pacman" } },
+    { "pattern": "are you root\\?|Permission denied|E: Could not open lock file", "hint": { "ja": "管理者権限が必要です。先頭に sudo を付けてください。パスワード入力中は何も表示されません", "en": "Root is required. Prefix the command with sudo. Nothing shows while you type the password" }, "fix": "sudo apt-get {args}" },
+    { "pattern": "is not in the sudoers file", "hint": { "ja": "このユーザーは sudo を使えません。管理者に権限をもらってください", "en": "This user cannot use sudo. Ask an administrator" } },
+    { "pattern": "Failed to fetch|Temporary failure resolving|Could not resolve", "hint": { "ja": "リポジトリに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the repository. Check your network or proxy" } }
+  ]
+}

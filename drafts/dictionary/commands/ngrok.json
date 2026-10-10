@@ -1,0 +1,70 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ngrok",
+  "summary": { "ja": "手元の PC で動いているサーバーを、インターネットから見える一時的な URL で公開します", "en": "Exposes a server running on your machine at a temporary public URL" },
+  "description": { "ja": "ローカルのポート（例: 3000）へのトンネル（外から中へ通す通り道）を作り、スマホからの確認や Webhook の受信に使います。注意: 公開中は URL を知っている人なら誰でも、あなたの PC のそのサーバーにインターネット経由でアクセスできます。確認が終わったら Ctrl+C で必ず止めてください。初回は ngrok config add-authtoken で認証トークンの登録が必要です", "en": "Creates a tunnel to a local port (e.g. 3000), handy for testing on a phone or receiving webhooks. Caution: while it runs, anyone with the URL can reach that server on your machine over the internet. Stop it with Ctrl+C when done. The first run needs ngrok config add-authtoken" },
+  "install": {
+    "winget": "winget install ngrok.ngrok",
+    "scoop": "scoop install ngrok",
+    "choco": "choco install ngrok",
+    "brew": "brew install ngrok",
+    "url": "https://ngrok.com/download"
+  },
+  "subcommands": [
+    {
+      "name": "http",
+      "summary": { "ja": "ローカルの Web サーバーを公開します", "en": "Exposes a local web server" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "指定したポートがインターネットに公開されます。URL を知る人は誰でもアクセスできるので、機密データのあるサーバーでは使わず、終わったら Ctrl+C で止めてください", "en": "The port becomes reachable from the internet. Anyone with the URL can access it, so avoid servers with sensitive data and stop with Ctrl+C when done" },
+      "args": [{ "name": "port", "type": "number", "summary": { "ja": "公開するローカルのポート番号", "en": "Local port to expose" } }],
+      "options": [
+        { "flags": ["--url", "--domain"], "takesValue": true, "valueType": "string", "summary": { "ja": "固定の URL を使う（アカウントで予約したもの）", "en": "Use a reserved, fixed URL" } },
+        { "flags": ["--basic-auth"], "takesValue": true, "valueType": "string", "summary": { "ja": "ユーザー名:パスワードで保護する", "en": "Protect with user:password" } },
+        { "flags": ["--oauth"], "takesValue": true, "valueType": "string", "summary": { "ja": "Google などのログインで保護する", "en": "Protect with an OAuth login (e.g. google)" } }
+      ],
+      "examples": [{ "command": "ngrok http 3000", "summary": { "ja": "localhost:3000 を公開", "en": "Expose localhost:3000" } }, { "command": "ngrok http 3000 --basic-auth \"user:pass1234\"", "summary": { "ja": "パスワード付きで公開", "en": "Expose with a password" } }]
+    },
+    {
+      "name": "tcp",
+      "summary": { "ja": "Web 以外のポート（SSH、データベースなど）を公開します", "en": "Exposes a non-web port (SSH, databases etc.)" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "指定したポートがインターネットに公開されます。SSH やデータベースは特に危険なので、強いパスワードや鍵認証を確認してから使ってください", "en": "The port becomes reachable from the internet. SSH and database ports are especially risky; verify strong passwords or key auth first" },
+      "args": [{ "name": "port", "type": "number", "summary": { "ja": "公開するローカルのポート番号", "en": "Local port to expose" } }]
+    },
+    {
+      "name": "config",
+      "summary": { "ja": "設定ファイルと認証トークンを管理します", "en": "Manages the config file and auth token" },
+      "options": [
+        { "flags": ["add-authtoken"], "summary": { "ja": "ダッシュボードで取得したトークンを登録（初回に 1 回）", "en": "Register the token from the dashboard (once)" } },
+        { "flags": ["check"], "summary": { "ja": "設定ファイルの確認", "en": "Validate the config file" } },
+        { "flags": ["edit"], "summary": { "ja": "設定ファイルを編集", "en": "Edit the config file" } }
+      ],
+      "examples": [{ "command": "ngrok config add-authtoken <TOKEN>", "summary": { "ja": "認証トークンを登録", "en": "Register your auth token" } }]
+    },
+    { "name": "start", "summary": { "ja": "設定ファイルに定義したトンネルを名前で起動します", "en": "Starts tunnels defined in the config file by name" }, "args": [{ "name": "name", "type": "string", "variadic": true }], "options": [{ "flags": ["--all"], "summary": { "ja": "定義したすべてを起動", "en": "Start all defined tunnels" } }] },
+    { "name": "version", "summary": { "ja": "バージョンを表示", "en": "Shows the version" } }
+  ],
+  "errors": [
+    {
+      "pattern": "ERR_NGROK_4018|authentication failed|requires a verified account and authtoken",
+      "hint": { "ja": "認証トークンが登録されていません。ngrok のダッシュボードでトークンを取得し、config add-authtoken で登録してください", "en": "No auth token is registered. Get one from the ngrok dashboard and register it with config add-authtoken" },
+      "fix": "ngrok config add-authtoken <TOKEN>"
+    },
+    {
+      "pattern": "ERR_NGROK_108|limited to 1 simultaneous ngrok agent session",
+      "hint": { "ja": "無料プランでは同時に 1 つしか起動できません。別のターミナルで動いている ngrok を Ctrl+C で止めてください", "en": "The free plan allows one agent at a time. Stop the ngrok running in another terminal with Ctrl+C" }
+    },
+    {
+      "pattern": "ERR_NGROK_8012|failed to establish a connection to the upstream",
+      "hint": { "ja": "トンネルはできましたが、ローカルのサーバーが応答しません。指定したポートでサーバーが起動しているか確認してください", "en": "The tunnel works but nothing answers locally. Make sure your server is running on that port" }
+    },
+    {
+      "pattern": "ERR_NGROK_(?<code>\\d+)",
+      "hint": { "ja": "ngrok のエラー {code} です。https://ngrok.com/docs/errors/err_ngrok_{code} に説明があります", "en": "ngrok error {code}. See https://ngrok.com/docs/errors/err_ngrok_{code}" }
+    },
+    {
+      "pattern": "'ngrok' is not recognized|ngrok: command not found",
+      "hint": { "ja": "ngrok が見つかりません。インストール後にターミナルを開き直してください", "en": "ngrok was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

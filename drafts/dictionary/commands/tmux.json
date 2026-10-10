@@ -1,0 +1,86 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "tmux",
+  "summary": { "ja": "1 つのターミナルで複数の画面を持ち、切断してもプログラムを動かし続けられます", "en": "Multiple terminals in one window; programs keep running after you disconnect" },
+  "description": { "ja": "ターミナルマルチプレクサ（1 つの画面を分割したり、セッション＝作業中の画面一式をバックグラウンドに残したりするツール）です。SSH 先で長い処理を走らせたまま切断したいときに便利です。操作はプレフィックスキー Ctrl+b を押してから: d で切り離し（デタッチ）、c で新しいウィンドウ、% で左右分割、\" で上下分割、矢印でペイン移動。Windows では WSL や Git Bash（MSYS2）で使います", "en": "A terminal multiplexer: split the screen and keep sessions running in the background, e.g. long jobs over SSH. Commands start with the prefix Ctrl+b, then: d to detach, c for a new window, % to split left/right, \" to split top/bottom, arrows to move between panes. On Windows use it inside WSL or MSYS2" },
+  "install": {
+    "brew": "brew install tmux",
+    "apt": "sudo apt install tmux",
+    "dnf": "sudo dnf install tmux",
+    "pacman": "sudo pacman -S tmux",
+    "url": "https://github.com/tmux/tmux/wiki/Installing"
+  },
+  "subcommands": [
+    {
+      "name": "new-session",
+      "aliases": ["new"],
+      "summary": { "ja": "新しいセッションを作って入ります", "en": "Creates and enters a new session" },
+      "options": [
+        { "flags": ["-s"], "takesValue": true, "valueType": "string", "summary": { "ja": "セッション名", "en": "Session name" } },
+        { "flags": ["-d"], "summary": { "ja": "入らずにバックグラウンドで作る", "en": "Create without attaching" } }
+      ],
+      "examples": [{ "command": "tmux new -s work", "summary": { "ja": "work という名前のセッションを開始", "en": "Start a session named work" } }]
+    },
+    {
+      "name": "attach-session",
+      "aliases": ["attach", "a"],
+      "summary": { "ja": "切り離したセッションに戻ります", "en": "Reconnects to a detached session" },
+      "options": [{ "flags": ["-t"], "takesValue": true, "valueType": "string", "summary": { "ja": "戻るセッション名", "en": "Session to attach" } }],
+      "examples": [{ "command": "tmux attach -t work", "summary": { "ja": "work セッションに戻る", "en": "Reattach to the work session" } }]
+    },
+    { "name": "list-sessions", "aliases": ["ls"], "summary": { "ja": "セッションの一覧を表示します", "en": "Lists sessions" } },
+    { "name": "detach-client", "aliases": ["detach"], "summary": { "ja": "セッションから抜けます（中のプログラムは動き続ける）。中からは Ctrl+b d", "en": "Leaves the session while it keeps running. From inside, press Ctrl+b d" } },
+    {
+      "name": "kill-session",
+      "summary": { "ja": "セッションを終了します（中のプログラムも止まる）", "en": "Ends a session and the programs in it" },
+      "options": [{ "flags": ["-t"], "takesValue": true, "valueType": "string", "summary": { "ja": "終了するセッション名", "en": "Session to kill" } }]
+    },
+    {
+      "name": "kill-server",
+      "summary": { "ja": "すべてのセッションをまとめて終了します", "en": "Ends every session at once" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "すべてのセッションと、その中で動いているプログラムが終了します。1 つだけ止めるなら kill-session -t 名前 を使ってください", "en": "Every session and every program inside them will stop. Use kill-session -t NAME to stop just one" }
+    },
+    { "name": "new-window", "aliases": ["neww"], "summary": { "ja": "セッション内に新しいウィンドウを作ります（Ctrl+b c と同じ）", "en": "Opens a new window in the session (same as Ctrl+b c)" } },
+    {
+      "name": "split-window",
+      "aliases": ["splitw"],
+      "summary": { "ja": "画面を分割します（Ctrl+b % / \" と同じ）", "en": "Splits the pane (same as Ctrl+b % / \")" },
+      "options": [{ "flags": ["-h"], "summary": { "ja": "左右に分割", "en": "Split left / right" } }, { "flags": ["-v"], "summary": { "ja": "上下に分割", "en": "Split top / bottom" } }]
+    }
+  ],
+  "examples": [
+    { "command": "tmux", "summary": { "ja": "名前なしのセッションを開始", "en": "Start an unnamed session" } },
+    { "command": "tmux ls", "summary": { "ja": "動いているセッションを確認", "en": "See which sessions exist" } }
+  ],
+  "errors": [
+    {
+      "pattern": "no server running on|no sessions",
+      "hint": { "ja": "セッションがまだありません。tmux new -s 名前 で作ってください", "en": "There are no sessions yet. Create one with tmux new -s NAME" },
+      "fix": "tmux new -s main"
+    },
+    {
+      "pattern": "duplicate session: (?<name>\\S+)",
+      "hint": { "ja": "{name} という名前のセッションはすでにあります。戻るなら attach を使ってください", "en": "A session named {name} already exists. Use attach to return to it" },
+      "fix": "tmux attach -t {name}"
+    },
+    {
+      "pattern": "can't find session:? (?<name>\\S+)",
+      "hint": { "ja": "セッション {name} が見つかりません。tmux ls で名前を確認してください", "en": "Session {name} was not found. Check the names with tmux ls" },
+      "fix": "tmux ls"
+    },
+    {
+      "pattern": "sessions should be nested with care",
+      "hint": { "ja": "すでに tmux の中にいます。新しいセッションを作るには Ctrl+b で操作するか、先にデタッチしてください", "en": "You are already inside tmux. Use the Ctrl+b prefix, or detach first" },
+      "allowAi": false
+    },
+    {
+      "pattern": "open terminal failed: (?<msg>.+)",
+      "hint": { "ja": "端末を開けません（{msg}）。環境変数 TERM が正しくないか、対話的でない環境で実行しています", "en": "Could not open the terminal ({msg}). TERM may be wrong, or this is not an interactive terminal" }
+    },
+    {
+      "pattern": "'tmux' is not recognized|tmux: command not found",
+      "hint": { "ja": "tmux が見つかりません。Windows では WSL の中でインストールして使ってください", "en": "tmux was not found. On Windows install and use it inside WSL" }
+    }
+  ]
+}

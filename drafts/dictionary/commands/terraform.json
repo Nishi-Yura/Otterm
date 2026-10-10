@@ -1,0 +1,85 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "terraform",
+  "aliases": ["tofu"],
+  "summary": { "ja": "クラウドのサーバーやネットワークをコードで定義し、作成・変更・削除します", "en": "Defines cloud infrastructure as code and creates, changes or destroys it" },
+  "description": { "ja": "IaC（Infrastructure as Code。インフラをコードで管理する考え方）のツールです。.tf ファイルに「あるべき状態」を書き、terraform plan で差分を確認してから terraform apply で実際に反映します。現在の状態は state ファイルに記録されるので、消したり手で編集したりしないでください。基本の流れは init → plan → apply です", "en": "An Infrastructure-as-Code tool. You describe the desired state in .tf files, preview changes with terraform plan, then apply them with terraform apply. The current state lives in a state file: never delete or hand-edit it. The basic flow is init, plan, apply" },
+  "install": {
+    "winget": "winget install Hashicorp.Terraform",
+    "scoop": "scoop install terraform",
+    "choco": "choco install terraform",
+    "brew": "brew tap hashicorp/tap && brew install hashicorp/tap/terraform",
+    "pacman": "sudo pacman -S terraform",
+    "url": "https://developer.hashicorp.com/terraform/install"
+  },
+  "subcommands": [
+    { "name": "init", "summary": { "ja": "作業フォルダを初期化し、プロバイダー（AWS などへの接続部品）をダウンロードします", "en": "Initializes the folder and downloads providers (plugins for AWS etc.)" }, "options": [{ "flags": ["-upgrade"], "summary": { "ja": "プロバイダーを最新に更新", "en": "Upgrade providers" } }] },
+    {
+      "name": "plan",
+      "summary": { "ja": "何が作成・変更・削除されるかを確認します（実際には変えない）", "en": "Shows what would be created, changed or destroyed without doing it" },
+      "options": [
+        { "flags": ["-out"], "takesValue": true, "valueType": "file", "summary": { "ja": "計画をファイルに保存（apply で使う）", "en": "Save the plan to a file for apply" } },
+        { "flags": ["-var"], "takesValue": true, "valueType": "string", "summary": { "ja": "変数を指定（name=value）", "en": "Set a variable (name=value)" } },
+        { "flags": ["-destroy"], "summary": { "ja": "すべて削除した場合の計画を表示", "en": "Plan a full destroy" } }
+      ],
+      "examples": [{ "command": "terraform plan -out=tfplan", "summary": { "ja": "差分を確認して計画を保存", "en": "Review changes and save the plan" } }]
+    },
+    {
+      "name": "apply",
+      "summary": { "ja": "計画を実際に反映します。確認で yes と入力するまで実行されません", "en": "Applies the changes; nothing happens until you type yes" },
+      "options": [
+        { "flags": ["-auto-approve"], "summary": { "ja": "確認を飛ばして即実行", "en": "Skip the confirmation" }, "danger": "warn", "dangerMessage": { "ja": "確認なしで本物のインフラが変更・削除されます。先に terraform plan で差分を見てください", "en": "Real infrastructure changes without confirmation. Review terraform plan first" } },
+        { "flags": ["-var"], "takesValue": true, "valueType": "string", "summary": { "ja": "変数を指定（name=value）", "en": "Set a variable (name=value)" } }
+      ],
+      "args": [{ "name": "plan", "type": "file", "optional": true, "summary": { "ja": "plan -out で保存した計画ファイル", "en": "A plan file saved with plan -out" } }]
+    },
+    {
+      "name": "destroy",
+      "summary": { "ja": "管理しているインフラをすべて削除します", "en": "Destroys all managed infrastructure" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "このフォルダで管理しているサーバーやデータベースがすべて削除されます。先に terraform plan -destroy で対象を確認してください", "en": "Every server, database and other resource managed here will be deleted. Preview with terraform plan -destroy first" }
+    },
+    { "name": "validate", "summary": { "ja": ".tf ファイルの文法と整合性を確認します", "en": "Checks the .tf files for syntax and consistency" } },
+    { "name": "fmt", "summary": { "ja": ".tf ファイルを標準の書式に整えます", "en": "Formats .tf files to the standard style" }, "options": [{ "flags": ["-recursive"], "summary": { "ja": "サブフォルダも対象", "en": "Include subfolders" } }] },
+    { "name": "output", "summary": { "ja": "output で定義した値（IP アドレスなど）を表示します", "en": "Shows output values such as IP addresses" }, "args": [{ "name": "name", "type": "string", "optional": true }] },
+    { "name": "state", "summary": { "ja": "状態ファイルの内容を確認・操作します（list / show / rm）", "en": "Inspects and manipulates the state file (list / show / rm)" }, "options": [{ "flags": ["list"], "summary": { "ja": "管理中のリソース一覧", "en": "List managed resources" } }, { "flags": ["show"], "summary": { "ja": "1 つのリソースの詳細", "en": "Show one resource" } }] },
+    { "name": "workspace", "summary": { "ja": "環境ごとの状態（dev / prod など）を切り替えます", "en": "Switches between state workspaces (dev / prod etc.)" }, "options": [{ "flags": ["list"], "summary": { "ja": "一覧", "en": "List" } }, { "flags": ["select"], "summary": { "ja": "切り替え", "en": "Select" } }, { "flags": ["new"], "summary": { "ja": "新規作成", "en": "Create" } }] }
+  ],
+  "errors": [
+    {
+      "pattern": "Required plugins are not installed|Module not installed|run \"terraform init\"|Backend initialization required|Inconsistent dependency lock file",
+      "hint": { "ja": "初期化が必要です。terraform init を実行してください", "en": "Initialization is required. Run terraform init" },
+      "fix": "terraform init"
+    },
+    {
+      "pattern": "Error acquiring the state lock[\\s\\S]*?ID:\\s+(?<id>[0-9a-f-]+)",
+      "hint": { "ja": "状態ファイルがロックされています。他の人が実行中かもしれないので確認し、前回の中断が原因なら force-unlock で解除します", "en": "The state is locked. Someone else may be running Terraform; if it is a stale lock from an interrupted run, unlock with force-unlock" },
+      "fix": "terraform force-unlock {id}"
+    },
+    {
+      "pattern": "No value for required variable[\\s\\S]*?variable \"(?<var>[^\"]+)\"",
+      "hint": { "ja": "変数 {var} の値がありません。-var \"{var}=値\" を付けるか、terraform.tfvars に書いてください", "en": "Variable {var} has no value. Pass -var \"{var}=VALUE\" or set it in terraform.tfvars" }
+    },
+    {
+      "pattern": "Unsupported argument[\\s\\S]*?on (?<file>\\S+) line (?<line>\\d+)",
+      "hint": { "ja": "{file} の {line} 行目に、そのブロックで使えない引数があります。つづりかプロバイダーのドキュメントを確認してください", "en": "Line {line} of {file} uses an argument this block does not accept. Check the spelling or the provider docs" }
+    },
+    {
+      "pattern": "Reference to undeclared (?<kind>resource|input variable|local value|module)",
+      "hint": { "ja": "宣言されていない {kind} を参照しています。名前のつづりか、定義ファイルが同じフォルダにあるか確認してください", "en": "A {kind} is referenced but not declared. Check the name or whether its file is in this folder" }
+    },
+    {
+      "pattern": "No configuration files",
+      "hint": { "ja": "このフォルダに .tf ファイルがありません。プロジェクトのフォルダに移動してください", "en": "There are no .tf files here. Move to the project folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "no valid credential sources|Error: error configuring Terraform (?<prov>\\w+) Provider",
+      "hint": { "ja": "クラウドの認証情報が見つかりません。クラウド CLI でログインするか、環境変数で認証情報を設定してください", "en": "No cloud credentials were found. Log in with the cloud CLI or set the credential environment variables" }
+    },
+    {
+      "pattern": "'terraform' is not recognized|terraform: command not found",
+      "hint": { "ja": "Terraform が見つかりません。インストール後にターミナルを開き直してください", "en": "Terraform was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "less",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "長いファイルを 1 画面ずつスクロールしながら読みます。q で終了します", "en": "Reads a long file one screen at a time. Press q to quit" },
+  "description": {
+    "ja": "矢印キーやスペースでスクロールし、/ に続けて文字を入力すると検索できます。画面が切り替わって戸惑ったら q を押せば元のターミナルに戻ります。",
+    "en": "Scroll with the arrow keys or space, type / followed by text to search. If the screen changes and you feel stuck, press q to return to the terminal."
+  },
+  "options": [
+    { "flags": ["-N", "--LINE-NUMBERS"], "summary": { "ja": "行番号を表示", "en": "Show line numbers" } },
+    { "flags": ["-i", "--ignore-case"], "summary": { "ja": "検索で大文字と小文字を区別しない", "en": "Case-insensitive search" } },
+    { "flags": ["-S", "--chop-long-lines"], "summary": { "ja": "長い行を折り返さず、横スクロールで見る", "en": "Do not wrap long lines; scroll sideways instead" } },
+    { "flags": ["-R", "--RAW-CONTROL-CHARS"], "summary": { "ja": "色付き出力をそのまま色で表示", "en": "Show colored output in color" } },
+    { "flags": ["-F", "--quit-if-one-screen"], "summary": { "ja": "1 画面に収まるならすぐ終了", "en": "Exit immediately if it fits on one screen" } },
+    { "flags": ["-X", "--no-init"], "summary": { "ja": "終了後も表示内容を画面に残す", "en": "Leave the text on screen after quitting" } },
+    { "flags": ["+F"], "summary": { "ja": "ファイルの末尾を追いかけ続ける（ログ向け、Ctrl+C で止める）", "en": "Keep following the end of the file (for logs; Ctrl+C to stop)" } }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "読むファイル（省略すると前のコマンドの出力を読みます）", "en": "Files to read (omit to read the previous command's output)" } }
+  ],
+  "examples": [
+    { "command": "less server.log", "summary": { "ja": "ログを 1 画面ずつ読む", "en": "Read a log one screen at a time" } },
+    { "command": "ls -la | less", "summary": { "ja": "長い一覧をスクロールして見る", "en": "Scroll through a long listing" } },
+    { "command": "less -N +F app.log", "summary": { "ja": "行番号付きで、追記されるログを追いかける", "en": "Follow a growing log with line numbers" } }
+  ],
+  "errors": [
+    {
+      "pattern": "(?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "(?<path>\\S+) is a directory",
+      "hint": { "ja": "{path} はフォルダです。中身の一覧を見るには ls を使います", "en": "{path} is a folder. Use ls to list what is inside" },
+      "fix": "ls {path}"
+    },
+    {
+      "pattern": "\"(?<path>[^\"]+)\" may be a binary file\\.  See it anyway\\?",
+      "hint": { "ja": "{path} は文字ではなくバイナリ（画像やプログラムなど）のようです。n を押して中止するのが安全です", "en": "{path} looks like binary data (an image or program), not text. Press n to cancel" }
+    }
+  ]
+}

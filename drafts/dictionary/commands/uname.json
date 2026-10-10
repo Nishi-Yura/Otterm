@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "uname",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "OS の種類やバージョン、CPU の種類など、このコンピューターの基本情報を表示します", "en": "Prints basic facts about this computer: OS, kernel version, CPU type" },
+  "description": {
+    "ja": "何も付けないと OS の名前（Linux や Darwin = macOS）だけ表示します。-a ですべて表示するのが定番です。ソフトをダウンロードするときに「arm64 か x86_64 か」を調べるには -m を使います。",
+    "en": "Alone it prints just the OS name (Linux, or Darwin for macOS). -a shows everything. Use -m to find out whether you are on arm64 or x86_64 before downloading software."
+  },
+  "options": [
+    { "flags": ["-a", "--all"], "summary": { "ja": "すべての情報を 1 行で表示", "en": "Everything on one line" } },
+    { "flags": ["-s", "--kernel-name"], "summary": { "ja": "OS カーネルの名前（Linux, Darwin など）", "en": "Kernel name (Linux, Darwin...)" } },
+    { "flags": ["-r", "--kernel-release"], "summary": { "ja": "カーネルのバージョン番号", "en": "Kernel version number" } },
+    { "flags": ["-m", "--machine"], "summary": { "ja": "CPU の種類（x86_64, arm64 など）", "en": "CPU architecture (x86_64, arm64...)" } },
+    { "flags": ["-n", "--nodename"], "summary": { "ja": "コンピューターの名前（hostname と同じ）", "en": "Computer name (same as hostname)" } },
+    { "flags": ["-o", "--operating-system"], "summary": { "ja": "OS の名前（GNU/Linux など、Linux のみ）", "en": "Operating system name (Linux only)" } },
+    { "flags": ["-v", "--kernel-version"], "summary": { "ja": "カーネルのビルド日時など詳しい版情報", "en": "Detailed kernel build info" } }
+  ],
+  "examples": [
+    { "command": "uname -a", "summary": { "ja": "基本情報をすべて表示", "en": "Show all basic info" } },
+    { "command": "uname -m", "summary": { "ja": "CPU の種類だけ表示（ダウンロード先の選択に）", "en": "CPU architecture only (to pick a download)" } },
+    { "command": "uname -sr", "summary": { "ja": "OS 名とバージョン", "en": "OS name and version" } }
+  ],
+  "errors": [
+    {
+      "pattern": "uname: (invalid|illegal) option -- '?(?<opt>\\S)'?",
+      "hint": { "ja": "-{opt} というオプションはありません。-a ですべて表示できます", "en": "-{opt} is not an option. -a shows everything" },
+      "fix": "uname -a"
+    },
+    {
+      "pattern": "uname: extra operand [‘'](?<arg>[^'’]+)[’']",
+      "hint": { "ja": "uname に引数は付けられません。オプション（-a など）だけ指定してください", "en": "uname takes no arguments, only options like -a" },
+      "fix": "uname -a"
+    },
+    {
+      "pattern": "uname: (The term|command not found|not recognized)",
+      "hint": { "ja": "PowerShell には uname がありません。代わりに systeminfo か [System.Environment]::OSVersion を使います", "en": "PowerShell has no uname. Use systeminfo or [System.Environment]::OSVersion" },
+      "fix": "systeminfo | more"
+    }
+  ]
+}

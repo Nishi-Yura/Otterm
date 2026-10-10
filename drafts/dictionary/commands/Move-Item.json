@@ -1,0 +1,75 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Move-Item",
+  "aliases": ["mv", "move", "mi"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "ファイルやフォルダを移動します（PowerShell）。名前の変更にも使えます。mv や move と打っても同じです", "en": "Moves files or folders (PowerShell), or renames them. mv and move are aliases" },
+  "description": { "ja": "PowerShell では mv は Move-Item の別名なので、Linux の mv のオプション（-i、-v など）は使えません。移動先に同名ファイルがあると既定ではエラーになり、-Force を付けると上書きします。フォルダは中身ごと移動されます。", "en": "In PowerShell, mv is an alias of Move-Item, so Linux-style flags like -i or -v do not work. An existing file at the destination causes an error unless you add -Force, which overwrites it. Folders move with their contents." },
+  "learn": { "ja": "ファイルツリーでドラッグして移動するのは Move-Item（mv）と同じです", "en": "Dragging in the file tree does what Move-Item (mv) does" },
+  "options": [
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "移動するもの", "en": "Item to move" }
+    },
+    {
+      "flags": ["-Destination"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "移動先（フォルダか新しい名前）", "en": "Destination folder or new name" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "移動先に同名ファイルがあっても上書き", "en": "Overwrite an existing file at the destination" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "移動先の同名ファイルを確認なしで上書きします", "en": "Overwrites a same-named file at the destination without asking" }
+    },
+    {
+      "flags": ["-Filter"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "名前のパターンに一致するものだけ（例: *.pdf）", "en": "Only items matching the pattern (e.g. *.pdf)" }
+    },
+    {
+      "flags": ["-Exclude"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "パターンに一致するものを除外", "en": "Skip items matching the pattern" }
+    },
+    {
+      "flags": ["-WhatIf"],
+      "summary": { "ja": "実際には移動せず、何が起きるかだけ表示（安全な予行演習）", "en": "Show what would be moved without doing it (safe dry run)" }
+    },
+    {
+      "flags": ["-PassThru"],
+      "summary": { "ja": "移動したものを画面にも表示", "en": "Also print the moved items" }
+    }
+  ],
+  "args": [{ "name": "source", "type": "path" }, { "name": "destination", "type": "path" }],
+  "examples": [
+    { "command": "Move-Item report.pdf Documents\\", "summary": { "ja": "ファイルを Documents フォルダへ移動", "en": "Move a file into the Documents folder" } },
+    { "command": "mv old.txt new.txt", "summary": { "ja": "名前を変える（同じフォルダ内の移動）", "en": "Rename a file (a move within the same folder)" } },
+    { "command": "Move-Item *.jpg Pictures\\ -WhatIf", "summary": { "ja": "何が移動されるか確認だけする", "en": "Preview which files would move" } }
+  ],
+  "errors": [
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は PowerShell の mv にはありません。Linux の mv とは別物です。確認したいときは -Confirm や -WhatIf を使います", "en": "-{p} is not a parameter here. PowerShell's mv differs from Linux mv. Use -Confirm or -WhatIf to check first" },
+      "fix": "Move-Item -WhatIf"
+    },
+    {
+      "pattern": "Cannot find path '(?<path>[^']+)' because it does not exist",
+      "hint": { "ja": "{path} は存在しません。スペルと今いるフォルダを確認してください", "en": "{path} does not exist. Check the spelling and current folder" },
+      "fix": "Get-ChildItem"
+    },
+    {
+      "pattern": "Cannot create a file when that file already exists",
+      "hint": { "ja": "移動先に同じ名前のファイルがすでにあります。別の名前にするか、上書きしてよければ -Force を付けます", "en": "A file with that name already exists at the destination. Choose another name, or add -Force to overwrite" }
+    },
+    {
+      "pattern": "Access to the path '(?<path>[^']+)' is denied|because it is being used by another process",
+      "hint": { "ja": "移動できません。他のプログラムが開いているか、権限がありません。開いているプログラムを閉じてください", "en": "Cannot move. Another program has it open or you lack permission. Close that program and retry" }
+    }
+  ]
+}

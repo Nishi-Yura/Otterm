@@ -1,0 +1,39 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "export",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "環境変数（プログラムに渡す設定値）を設定し、この後に起動するプログラムからも見えるようにします", "en": "Sets an environment variable so programs you start afterwards can see it" },
+  "description": {
+    "ja": "設定はこのターミナルを閉じるまで有効です。ずっと使いたいときは ~/.bashrc や ~/.zshrc に同じ行を書きます。= の前後にスペースを入れないでください。fish では export の代わりに set -gx NAME value を使います。",
+    "en": "The setting lasts until you close this terminal. To keep it, add the same line to ~/.bashrc or ~/.zshrc. No spaces around =. In fish use set -gx NAME value instead."
+  },
+  "options": [
+    { "flags": ["-p"], "summary": { "ja": "今設定されている環境変数をすべて表示", "en": "List all exported variables" } },
+    { "flags": ["-n"], "takesValue": true, "valueType": "string", "summary": { "ja": "環境変数としての扱いをやめる（シェル変数としては残る）", "en": "Stop exporting a variable (it stays as a shell variable)" } },
+    { "flags": ["-f"], "summary": { "ja": "変数ではなくシェル関数を公開する", "en": "Export shell functions instead of variables" } }
+  ],
+  "args": [
+    { "name": "NAME=value", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "変数名と値。値にスペースがあれば引用符で囲みます", "en": "Variable name and value. Quote values with spaces" } }
+  ],
+  "examples": [
+    { "command": "export EDITOR=nano", "summary": { "ja": "既定のエディタを nano にする", "en": "Make nano the default editor" } },
+    { "command": "export PATH=\"$HOME/bin:$PATH\"", "summary": { "ja": "コマンドを探す場所に ~/bin を追加", "en": "Add ~/bin to the command search path" } },
+    { "command": "export -p", "summary": { "ja": "設定済みの環境変数を一覧", "en": "List exported variables" } }
+  ],
+  "errors": [
+    {
+      "pattern": "export: [`'](?<name>[^'`]+)': not a valid identifier",
+      "hint": { "ja": "「{name}」は変数名として使えません。変数名は英字か _ で始め、= の前後にスペースを入れないでください。例: export NAME=value", "en": "'{name}' is not a valid variable name. Start with a letter or _, and put no spaces around =. Example: export NAME=value" },
+      "fix": "export NAME=value"
+    },
+    {
+      "pattern": "export: Unknown option|export: (?<fishname>\\S+): invalid variable name",
+      "hint": { "ja": "fish シェルでは set -gx NAME value の形で設定します", "en": "In fish, set variables with set -gx NAME value" },
+      "fix": "set -gx NAME value"
+    },
+    {
+      "pattern": "(?<cmd>\\S+): command not found",
+      "hint": { "ja": "{cmd} をコマンドとして実行しようとしました。export NAME=value の = の前後にスペースが入っていないか確認してください", "en": "{cmd} was treated as a command. Check that export NAME=value has no spaces around =" }
+    }
+  ]
+}

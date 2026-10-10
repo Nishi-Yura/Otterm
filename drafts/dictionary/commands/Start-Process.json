@@ -1,0 +1,79 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Start-Process",
+  "aliases": ["saps", "start"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "プログラムやファイルを開きます（PowerShell）。start と打っても同じです", "en": "Launches a program or opens a file (PowerShell). start is an alias" },
+  "description": { "ja": "エクスプローラーでダブルクリックするのと同じ動きです。ファイル名を渡せば関連付けられたアプリで開き、URL を渡せばブラウザで開きます。-Verb RunAs を付けると「管理者として実行」になります。-Wait を付けると終了まで待ちます。", "en": "Works like double-clicking in Explorer. A file opens in its associated app; a URL opens in the browser. -Verb RunAs runs it as administrator. -Wait pauses until the program exits." },
+  "options": [
+    {
+      "flags": ["-FilePath"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "起動するプログラムや開くファイル", "en": "Program to run or file to open" }
+    },
+    {
+      "flags": ["-ArgumentList"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "プログラムに渡す引数", "en": "Arguments to pass to the program" }
+    },
+    {
+      "flags": ["-Verb"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "動作を指定（RunAs = 管理者として実行、Print = 印刷）", "en": "Action (RunAs = run as administrator, Print = print)" }
+    },
+    {
+      "flags": ["-Wait"],
+      "summary": { "ja": "プログラムが終わるまで待つ", "en": "Wait until the program exits" }
+    },
+    {
+      "flags": ["-WorkingDirectory"],
+      "takesValue": true,
+      "valueType": "dir",
+      "summary": { "ja": "起動時の作業フォルダ", "en": "Folder to start in" }
+    },
+    {
+      "flags": ["-NoNewWindow"],
+      "summary": { "ja": "新しいウィンドウを開かず、このターミナル内で実行", "en": "Run inside this terminal instead of a new window" }
+    },
+    {
+      "flags": ["-WindowStyle"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "ウィンドウの状態（Normal, Hidden, Minimized, Maximized）", "en": "Window state (Normal, Hidden, Minimized, Maximized)" }
+    },
+    {
+      "flags": ["-PassThru"],
+      "summary": { "ja": "起動したプロセスの情報を返す（PID の確認に）", "en": "Return the started process (to see its PID)" }
+    }
+  ],
+  "args": [{ "name": "program", "type": "command" }, { "name": "arguments", "type": "string", "optional": true, "variadic": true }],
+  "examples": [
+    { "command": "Start-Process notepad", "summary": { "ja": "メモ帳を起動", "en": "Open Notepad" } },
+    { "command": "start .", "summary": { "ja": "今いるフォルダをエクスプローラーで開く", "en": "Open the current folder in Explorer" } },
+    { "command": "Start-Process https://example.com", "summary": { "ja": "URL を既定のブラウザで開く", "en": "Open a URL in the default browser" } },
+    { "command": "Start-Process pwsh -Verb RunAs", "summary": { "ja": "PowerShell を管理者として起動", "en": "Open PowerShell as administrator" } }
+  ],
+  "errors": [
+    {
+      "pattern": "This command cannot be run due to the error: The system cannot find the file specified",
+      "hint": { "ja": "そのプログラムやファイルが見つかりません。スペルを確認するか、フルパスで指定してください", "en": "The program or file was not found. Check the spelling or give the full path" },
+      "fix": "Get-Command"
+    },
+    {
+      "pattern": "The operation was canceled by the user",
+      "hint": { "ja": "管理者権限の確認（UAC）でキャンセルされました。実行するには「はい」を選んでください", "en": "The admin prompt (UAC) was cancelled. Choose Yes to run" }
+    },
+    {
+      "pattern": "This command cannot be run due to the error: Access is denied",
+      "hint": { "ja": "実行する権限がありません。-Verb RunAs で管理者として起動を試してください", "en": "No permission to run it. Try -Verb RunAs to launch as administrator" },
+      "fix": "Start-Process -Verb RunAs"
+    },
+    {
+      "pattern": "This command cannot be run due to the error: No application is associated with the specified file",
+      "hint": { "ja": "そのファイルを開くアプリが関連付けられていません。アプリを指定して開いてください（例: Start-Process notepad file.xyz）", "en": "No app is associated with that file type. Name the app explicitly (e.g. Start-Process notepad file.xyz)" }
+    }
+  ]
+}

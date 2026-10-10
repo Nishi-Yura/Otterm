@@ -1,0 +1,89 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "composer",
+  "summary": { "ja": "PHP の依存管理ツールです", "en": "Dependency manager for PHP" },
+  "description": { "ja": "composer.json に依存を書き、vendor フォルダにインストールします。composer.lock でバージョンが固定されます。パッケージ名は vendor/name の形（例: laravel/laravel）です。", "en": "Dependencies go in composer.json and install into the vendor folder; composer.lock pins versions. Package names look like vendor/name (e.g. laravel/laravel)." },
+  "install": { "winget": "winget install Composer.Composer", "scoop": "scoop install composer", "choco": "choco install composer", "brew": "brew install composer", "apt": "sudo apt install composer", "url": "https://getcomposer.org/download/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["i"],
+      "summary": { "ja": "composer.lock どおりに依存をインストールします", "en": "Installs dependencies from composer.lock" },
+      "options": [
+        { "flags": ["--no-dev"], "summary": { "ja": "開発用依存を入れない（本番向け）", "en": "Skip dev dependencies (for production)" } },
+        { "flags": ["--prefer-dist"], "summary": { "ja": "zip 配布版を使う（速い）", "en": "Use zip archives (faster)" } }
+      ],
+      "errors": [
+        { "pattern": "Composer could not find a composer\\.json file", "hint": { "ja": "このフォルダに composer.json がありません。プロジェクトのフォルダへ移動するか composer init で作れます", "en": "No composer.json here. Move to the project folder or run composer init" }, "fix": "composer init" },
+        { "pattern": "The lock file is not up to date with the latest changes in composer\\.json", "hint": { "ja": "composer.lock が古いです。composer update で更新してください", "en": "composer.lock is stale. Run composer update to refresh it" }, "fix": "composer update" },
+        { "pattern": "requires ext-(?<ext>\\S+) \\*", "hint": { "ja": "PHP 拡張 {ext} が必要です。php-{ext} などの名前で入れてください", "en": "PHP extension {ext} is required. Install it (often named php-{ext})" } }
+      ]
+    },
+    {
+      "name": "require",
+      "aliases": ["r"],
+      "summary": { "ja": "依存を追加してインストールします", "en": "Adds and installs a dependency" },
+      "args": [{ "name": "package", "type": "package", "variadic": true, "summary": { "ja": "vendor/name 形式", "en": "vendor/name" } }],
+      "options": [
+        { "flags": ["--dev"], "summary": { "ja": "開発用依存として追加", "en": "Add as a dev dependency" } },
+        { "flags": ["-W", "--with-all-dependencies"], "summary": { "ja": "関連する依存も一緒に更新", "en": "Also update related dependencies" } }
+      ],
+      "examples": [
+        { "command": "composer require guzzlehttp/guzzle", "summary": { "ja": "Guzzle を追加", "en": "Add Guzzle" } },
+        { "command": "composer require --dev phpunit/phpunit", "summary": { "ja": "PHPUnit を開発用に追加", "en": "Add PHPUnit for development" } }
+      ],
+      "errors": [
+        { "pattern": "Could not find a matching version of package (?<pkg>\\S+)|Could not find package (?<pkg2>\\S+)", "hint": { "ja": "パッケージが見つかりません。packagist.org で名前を確認してください", "en": "Package not found. Check the name on packagist.org" } },
+        { "pattern": "Your requirements could not be resolved to an installable set of packages", "hint": { "ja": "依存が両立しません。メッセージ中の PHP バージョンや拡張の条件を確認してください。-W で解決することもあります", "en": "Dependencies conflict. Check the PHP version and extension requirements in the message; -W sometimes helps" }, "fix": "composer require -W {args}" }
+      ]
+    },
+    {
+      "name": "remove",
+      "aliases": ["rm"],
+      "summary": { "ja": "依存を削除します", "en": "Removes a dependency" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [{ "flags": ["--dev"], "summary": { "ja": "開発用依存から削除", "en": "Remove from dev dependencies" } }]
+    },
+    {
+      "name": "update",
+      "aliases": ["u", "upgrade"],
+      "summary": { "ja": "依存を範囲内で更新して composer.lock を書き換えます", "en": "Updates dependencies within ranges and rewrites composer.lock" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [
+        { "flags": ["--no-dev"], "summary": { "ja": "開発用依存を除外", "en": "Skip dev dependencies" } },
+        { "flags": ["--lock"], "summary": { "ja": "ロックファイルのハッシュだけ更新", "en": "Only refresh the lock file hash" } }
+      ]
+    },
+    { "name": "init", "summary": { "ja": "composer.json を対話的に作ります", "en": "Creates composer.json interactively" } },
+    {
+      "name": "create-project",
+      "summary": { "ja": "テンプレートから新しいプロジェクトを作ります", "en": "Creates a new project from a template" },
+      "args": [
+        { "name": "package", "type": "package" },
+        { "name": "dir", "type": "dir", "optional": true }
+      ],
+      "examples": [{ "command": "composer create-project laravel/laravel my-app", "summary": { "ja": "Laravel のプロジェクトを作る", "en": "Create a Laravel project" } }]
+    },
+    {
+      "name": "dump-autoload",
+      "aliases": ["dumpautoload"],
+      "summary": { "ja": "オートローダーを作り直します（クラスが見つからないときに）", "en": "Regenerates the autoloader (when classes are not found)" },
+      "options": [{ "flags": ["-o", "--optimize"], "summary": { "ja": "最適化版を生成（本番向け）", "en": "Optimized version (for production)" } }]
+    },
+    {
+      "name": "show",
+      "aliases": ["info"],
+      "summary": { "ja": "インストール済みパッケージの一覧・詳細", "en": "Lists or shows installed packages" },
+      "args": [{ "name": "package", "type": "package", "optional": true }]
+    },
+    { "name": "outdated", "summary": { "ja": "更新があるパッケージを表示します", "en": "Shows packages with updates" } },
+    { "name": "self-update", "aliases": ["selfupdate"], "summary": { "ja": "composer 自体を更新します", "en": "Updates composer itself" } }
+  ],
+  "errors": [
+    { "pattern": "'composer' is not recognized|composer: command not found", "hint": { "ja": "composer が入っていません。getcomposer.org のインストーラで入れられます", "en": "composer is not installed. Use the installer at getcomposer.org" } },
+    { "pattern": "Allowed memory size of \\d+ bytes exhausted", "hint": { "ja": "PHP のメモリ上限に達しました。上限なしで実行してください", "en": "PHP ran out of memory. Run with no memory limit" }, "fix": "COMPOSER_MEMORY_LIMIT=-1 composer {args}" },
+    { "pattern": "Could not resolve host|curl error \\d+|Failed to open stream|The .* file could not be downloaded", "hint": { "ja": "packagist に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach packagist. Check your network or proxy" } },
+    { "pattern": "Do not run Composer as root/super user", "hint": { "ja": "composer に sudo は不要です。通常ユーザーで実行してください", "en": "Do not run composer with sudo. Use your normal user" } },
+    { "pattern": "Permission denied|failed to open stream: Permission denied", "hint": { "ja": "vendor フォルダに書き込めません。フォルダの所有者を確認してください", "en": "Cannot write to the vendor folder. Check its ownership" } }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "dotnet",
+  "summary": { "ja": ".NET（C# など）の実行・ビルド・パッケージ管理を行うコマンドです", "en": "Runs, builds and manages packages for .NET (C# and friends)" },
+  "description": { "ja": "SDK を入れると dotnet コマンドひとつでプロジェクト作成からビルド、テスト、NuGet パッケージの追加、実行までできます。プロジェクトの設定は .csproj ファイルにあります。", "en": "With the SDK installed, one dotnet command creates projects, builds, tests, adds NuGet packages and runs apps. Project settings live in the .csproj file." },
+  "install": { "winget": "winget install Microsoft.DotNet.SDK.8", "scoop": "scoop install dotnet-sdk", "choco": "choco install dotnet-sdk", "brew": "brew install --cask dotnet-sdk", "apt": "sudo apt install dotnet-sdk-8.0", "dnf": "sudo dnf install dotnet-sdk-8.0", "url": "https://dotnet.microsoft.com/download" },
+  "subcommands": [
+    {
+      "name": "new",
+      "summary": { "ja": "テンプレートから新しいプロジェクトを作ります", "en": "Creates a new project from a template" },
+      "args": [{ "name": "template", "type": "string", "summary": { "ja": "console、webapi、classlib、xunit など。list で一覧", "en": "console, webapi, classlib, xunit, ...; list shows all" } }],
+      "options": [
+        { "flags": ["-n", "--name"], "takesValue": true, "valueType": "string", "summary": { "ja": "プロジェクト名", "en": "Project name" } },
+        { "flags": ["-o", "--output"], "takesValue": true, "valueType": "dir", "summary": { "ja": "作成先フォルダ", "en": "Output folder" } },
+        { "flags": ["-f", "--framework"], "takesValue": true, "valueType": "string", "summary": { "ja": "net8.0 など", "en": "e.g. net8.0" } }
+      ],
+      "examples": [
+        { "command": "dotnet new console -n Hello", "summary": { "ja": "コンソールアプリ Hello を作る", "en": "Create a console app named Hello" } },
+        { "command": "dotnet new list", "summary": { "ja": "テンプレート一覧", "en": "List templates" } }
+      ],
+      "errors": [{ "pattern": "No templates found matching: '(?<tpl>[^']+)'", "hint": { "ja": "{tpl} というテンプレートはありません。dotnet new list で確認してください", "en": "No template named {tpl}. See dotnet new list" }, "fix": "dotnet new list" }]
+    },
+    {
+      "name": "build",
+      "summary": { "ja": "プロジェクトをコンパイルします", "en": "Compiles the project" },
+      "options": [{ "flags": ["-c", "--configuration"], "takesValue": true, "valueType": "string", "summary": { "ja": "Debug（既定）または Release", "en": "Debug (default) or Release" } }],
+      "errors": [
+        { "pattern": "error CS(?<code>\\d{4}): (?<msg>[^\\[\\r\\n]+)", "hint": { "ja": "C# のコンパイルエラー CS{code} です: {msg}", "en": "C# compile error CS{code}: {msg}" } },
+        { "pattern": "error NETSDK1045|The current \\.NET SDK does not support targeting", "hint": { "ja": "プロジェクトが求める .NET より古い SDK です。新しい SDK を入れてください", "en": "Your SDK is older than the .NET version the project targets. Install a newer SDK" } },
+        { "pattern": "error NU1101: Unable to find package (?<pkg>\\S+)", "hint": { "ja": "パッケージ {pkg} が見つかりません。名前を確認してください", "en": "Package {pkg} was not found. Check the name" } }
+      ]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "ビルドして実行します", "en": "Builds and runs the project" },
+      "args": [{ "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "-- の後ろにプログラムへの引数", "en": "Program arguments after --" } }],
+      "options": [{ "flags": ["--project"], "takesValue": true, "valueType": "path", "summary": { "ja": "実行するプロジェクト", "en": "Project to run" } }],
+      "errors": [{ "pattern": "Couldn't find a project to run", "hint": { "ja": "このフォルダにプロジェクトがありません。プロジェクトのフォルダへ移動するか --project で指定してください", "en": "No project in this folder. Move into one or pass --project" } }]
+    },
+    {
+      "name": "test",
+      "summary": { "ja": "テストを実行します", "en": "Runs tests" },
+      "options": [
+        { "flags": ["--filter"], "takesValue": true, "valueType": "string", "summary": { "ja": "名前で絞り込む（FullyQualifiedName~Foo）", "en": "Filter by name (FullyQualifiedName~Foo)" } },
+        { "flags": ["--logger"], "takesValue": true, "valueType": "string", "summary": { "ja": "出力形式（\"console;verbosity=detailed\"）", "en": "Output format (\"console;verbosity=detailed\")" } }
+      ]
+    },
+    {
+      "name": "add",
+      "summary": { "ja": "NuGet パッケージや参照をプロジェクトに追加します", "en": "Adds a NuGet package or reference to the project" },
+      "options": [
+        { "flags": ["package"], "summary": { "ja": "NuGet パッケージを追加", "en": "Add a NuGet package" } },
+        { "flags": ["reference"], "summary": { "ja": "別プロジェクトへの参照を追加", "en": "Add a project reference" } },
+        { "flags": ["-v", "--version"], "takesValue": true, "valueType": "string", "summary": { "ja": "パッケージのバージョン", "en": "Package version" } }
+      ],
+      "examples": [{ "command": "dotnet add package Newtonsoft.Json", "summary": { "ja": "Newtonsoft.Json を追加", "en": "Add Newtonsoft.Json" } }],
+      "errors": [{ "pattern": "error: There are no versions available for the package '(?<pkg>[^']+)'|NU1101: Unable to find package (?<pkg2>\\S+)", "hint": { "ja": "パッケージが見つかりません。nuget.org で名前を確認してください", "en": "Package not found. Check the name on nuget.org" } }]
+    },
+    {
+      "name": "remove",
+      "summary": { "ja": "パッケージや参照を削除します", "en": "Removes a package or reference" },
+      "options": [
+        { "flags": ["package"], "summary": { "ja": "NuGet パッケージを削除", "en": "Remove a NuGet package" } },
+        { "flags": ["reference"], "summary": { "ja": "参照を削除", "en": "Remove a reference" } }
+      ]
+    },
+    { "name": "restore", "summary": { "ja": "依存パッケージをダウンロードします（build 時に自動）", "en": "Downloads dependencies (done automatically by build)" } },
+    {
+      "name": "publish",
+      "summary": { "ja": "配布用にビルドして出力します（NuGet への公開ではありません）", "en": "Builds for deployment (this is not publishing to NuGet)" },
+      "options": [
+        { "flags": ["-c", "--configuration"], "takesValue": true, "valueType": "string", "summary": { "ja": "通常 Release", "en": "Usually Release" } },
+        { "flags": ["-r", "--runtime"], "takesValue": true, "valueType": "string", "summary": { "ja": "win-x64、linux-x64 など", "en": "win-x64, linux-x64, ..." } },
+        { "flags": ["--self-contained"], "summary": { "ja": "ランタイム同梱で出力", "en": "Bundle the runtime" } }
+      ],
+      "examples": [{ "command": "dotnet publish -c Release -r win-x64 --self-contained", "summary": { "ja": "Windows 向けに単体で動く形で出力", "en": "Output a standalone Windows build" } }]
+    },
+    {
+      "name": "nuget",
+      "summary": { "ja": "NuGet 関連の操作（push で公開、locals でキャッシュ）", "en": "NuGet operations (push to publish, locals for caches)" },
+      "options": [
+        { "flags": ["push"], "summary": { "ja": "パッケージを NuGet に公開", "en": "Publish a package to NuGet" }, "danger": "confirm", "dangerMessage": { "ja": "公開したバージョンは削除できません（非表示のみ）。バージョンと中身を確認してください", "en": "Published versions cannot be deleted, only unlisted. Check the version and contents" } },
+        { "flags": ["locals"], "summary": { "ja": "キャッシュの表示・削除（--clear）", "en": "Show or clear caches (--clear)" } }
+      ]
+    },
+    {
+      "name": "tool",
+      "summary": { "ja": ".NET 製の CLI ツールを入れます", "en": "Installs .NET CLI tools" },
+      "options": [
+        { "flags": ["install"], "summary": { "ja": "ツールを入れる（-g で全体）", "en": "Install a tool (-g for global)" } },
+        { "flags": ["list"], "summary": { "ja": "一覧", "en": "List tools" } },
+        { "flags": ["update"], "summary": { "ja": "更新", "en": "Update" } }
+      ],
+      "examples": [{ "command": "dotnet tool install -g dotnet-ef", "summary": { "ja": "Entity Framework のツールを入れる", "en": "Install the Entity Framework tool" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'dotnet' is not recognized|dotnet: command not found", "hint": { "ja": ".NET SDK が入っていません。dotnet.microsoft.com から SDK を入れてください", "en": ".NET SDK is not installed. Get it from dotnet.microsoft.com" } },
+    { "pattern": "No \\.NET SDKs were found|Could not execute because the specified command or file was not found", "hint": { "ja": "ランタイムだけで SDK がありません。SDK（Runtime ではなく）を入れてください", "en": "Only the runtime is installed, not the SDK. Install the SDK, not just the runtime" } },
+    { "pattern": "MSB1003|MSB1011", "hint": { "ja": "このフォルダにプロジェクトがないか複数あります。プロジェクトのフォルダへ移動するか、ファイル名を指定してください", "en": "No project here, or more than one. Move into the project folder or name the file" } },
+    { "pattern": "NU1301|Unable to load the service index for source|No such host is known", "hint": { "ja": "nuget.org に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach nuget.org. Check your network or proxy" } },
+    { "pattern": "The process cannot access the file .* because it is being used by another process", "hint": { "ja": "ファイルが使用中です。実行中のアプリやテストを止めてから再実行してください", "en": "A file is in use. Stop the running app or tests and retry" } }
+  ]
+}

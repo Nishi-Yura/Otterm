@@ -1,0 +1,54 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "nano",
+  "summary": { "ja": "シンプルなターミナル用テキストエディタです。終了は Ctrl+X", "en": "A simple terminal text editor. Exit with Ctrl+X" },
+  "description": { "ja": "開いたらそのまま文字を打てる、メモ帳に近い感覚のエディタです。画面の下にショートカットが表示され、^ は Ctrl キーを意味します。Ctrl+O で保存（ファイル名を確認して Enter）、Ctrl+X で終了（未保存なら保存するか Y / N で聞かれます）、Ctrl+W で検索、Ctrl+K で行を切り取り、Ctrl+U で貼り付け、Ctrl+G でヘルプです", "en": "Works like a basic notepad: type as soon as it opens. Shortcuts are listed at the bottom, where ^ means Ctrl. Ctrl+O saves (confirm the name with Enter), Ctrl+X exits (asks Y / N if unsaved), Ctrl+W searches, Ctrl+K cuts a line, Ctrl+U pastes, Ctrl+G shows help" },
+  "install": {
+    "winget": "winget install GNU.Nano",
+    "scoop": "scoop install nano",
+    "choco": "choco install nano",
+    "brew": "brew install nano",
+    "apt": "sudo apt install nano",
+    "dnf": "sudo dnf install nano",
+    "pacman": "sudo pacman -S nano"
+  },
+  "options": [
+    { "flags": ["-l", "--linenumbers"], "summary": { "ja": "行番号を表示", "en": "Show line numbers" } },
+    { "flags": ["-m", "--mouse"], "summary": { "ja": "マウスでカーソル移動できるようにする", "en": "Enable mouse support" } },
+    { "flags": ["-i", "--autoindent"], "summary": { "ja": "改行時に前の行のインデントを引き継ぐ", "en": "Keep the previous line's indentation" } },
+    { "flags": ["-T", "--tabsize"], "takesValue": true, "valueType": "number", "summary": { "ja": "タブの幅（例: -T 4）", "en": "Tab width (e.g. -T 4)" } },
+    { "flags": ["+"], "takesValue": true, "valueType": "number", "summary": { "ja": "指定行で開く（例: +10）", "en": "Open at a line (e.g. +10)" } },
+    { "flags": ["-v", "--view"], "summary": { "ja": "読み取り専用で開く", "en": "Open read-only" } },
+    { "flags": ["-B", "--backup"], "summary": { "ja": "保存時に元のファイルを ~ 付きで残す", "en": "Keep a backup with a ~ suffix when saving" } },
+    { "flags": ["--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "files", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "開くファイル（存在しなければ新規作成）", "en": "Files to open (created if missing)" } }
+  ],
+  "examples": [
+    { "command": "nano notes.txt", "summary": { "ja": "notes.txt を開く。Ctrl+O で保存、Ctrl+X で終了", "en": "Open notes.txt. Ctrl+O saves, Ctrl+X exits" } },
+    { "command": "nano -l +25 main.py", "summary": { "ja": "行番号を表示して 25 行目から開く", "en": "Open at line 25 with line numbers shown" } },
+    { "command": "sudo nano /etc/hosts", "summary": { "ja": "管理者権限が必要な設定ファイルを編集", "en": "Edit a system file that needs admin rights" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Error writing (?<file>.+?): Permission denied",
+      "hint": { "ja": "{file} に書き込む権限がありません。sudo nano で開き直すか、Ctrl+O で別の場所に保存してください", "en": "No permission to write {file}. Reopen with sudo nano, or save elsewhere with Ctrl+O" },
+      "fix": "sudo nano {file}"
+    },
+    {
+      "pattern": "Error reading (?<file>.+?): Is a directory",
+      "hint": { "ja": "{file} はフォルダです。中のファイル名まで指定してください", "en": "{file} is a folder. Give the name of a file inside it" },
+      "fix": "ls {file}"
+    },
+    {
+      "pattern": "Error opening terminal: (?<term>\\S+)",
+      "hint": { "ja": "端末の種類 {term} が認識されません。環境変数 TERM を xterm-256color にして試してください", "en": "Terminal type {term} is not recognized. Try setting TERM to xterm-256color" },
+      "fix": "TERM=xterm-256color nano {args}"
+    },
+    {
+      "pattern": "'nano' is not recognized|nano: command not found",
+      "hint": { "ja": "nano が見つかりません。Windows では Git Bash 付属の nano か、winget でインストールできます", "en": "nano was not found. On Windows use the one bundled with Git Bash or install it with winget" }
+    }
+  ]
+}

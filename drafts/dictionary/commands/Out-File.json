@@ -1,0 +1,74 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Out-File",
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "コマンドの出力をファイルに保存します（PowerShell）。既存のファイルは上書きされます", "en": "Saves a command's output to a file (PowerShell). An existing file is overwritten" },
+  "description": { "ja": "Get-Process | Out-File list.txt のように、| の後ろで使います。> と書くのとほぼ同じで、既存ファイルは中身ごと置き換わります。残したいときは -Append（>> 相当）を付けます。画面に表示される見た目そのままが保存されるので、データとして再利用するなら Export-Csv や ConvertTo-Json の方が向いています。", "en": "Used after a pipe, e.g. Get-Process | Out-File list.txt. Nearly the same as >, and it replaces an existing file. Add -Append (like >>) to keep existing content. It saves the screen formatting as-is; for reusable data prefer Export-Csv or ConvertTo-Json." },
+  "danger": "warn",
+  "options": [
+    {
+      "flags": ["-FilePath", "-Path"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "保存先のファイル", "en": "File to save to" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "既存の内容を上書きします", "en": "Overwrites the existing contents" },
+      "alternative": { "label": { "ja": "末尾に追記する（-Append）", "en": "Append instead (-Append)" }, "command": "Out-File {args} -Append" }
+    },
+    {
+      "flags": ["-Append"],
+      "summary": { "ja": "上書きせず末尾に追記", "en": "Append instead of overwriting" }
+    },
+    {
+      "flags": ["-NoClobber"],
+      "summary": { "ja": "既存ファイルがあれば上書きせずエラーにする（安全）", "en": "Refuse to overwrite an existing file (safe)" }
+    },
+    {
+      "flags": ["-Encoding"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "文字コード（例: utf8）。PowerShell 5.1 の既定は UTF-16 です", "en": "Text encoding (e.g. utf8). PowerShell 5.1 defaults to UTF-16" }
+    },
+    {
+      "flags": ["-Width"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "1 行の最大文字数（長い行が切れるときに増やす）", "en": "Max characters per line (raise it if lines get cut off)" }
+    },
+    {
+      "flags": ["-NoNewline"],
+      "summary": { "ja": "末尾に改行を付けない", "en": "Do not add a trailing newline" }
+    },
+    {
+      "flags": ["-WhatIf"],
+      "summary": { "ja": "実際には書き込まず、何が起きるかだけ表示（安全な予行演習）", "en": "Show what would happen without writing (safe dry run)" }
+    }
+  ],
+  "args": [{ "name": "path", "type": "file" }],
+  "examples": [
+    { "command": "Get-Process | Out-File processes.txt", "summary": { "ja": "プロセス一覧をファイルに保存", "en": "Save the process list to a file" } },
+    { "command": "Get-Date | Out-File log.txt -Append", "summary": { "ja": "既存の内容を残して追記", "en": "Append without losing existing content" } },
+    { "command": "Get-ChildItem | Out-File list.txt -Encoding utf8 -Width 300", "summary": { "ja": "UTF-8 で、長い行が切れないように保存", "en": "Save as UTF-8 without cutting long lines" } },
+    { "command": "Get-Process | Export-Csv processes.csv -NoTypeInformation", "summary": { "ja": "データとして使うなら CSV の方が便利", "en": "For reusable data, CSV is handier" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Could not find a part of the path '(?<path>[^']+)'",
+      "hint": { "ja": "{path} の途中のフォルダが存在しません。先に New-Item -ItemType Directory でフォルダを作ってください", "en": "A folder in {path} does not exist. Create it first with New-Item -ItemType Directory" },
+      "fix": "New-Item -ItemType Directory -Path ."
+    },
+    {
+      "pattern": "Access to the path '(?<path>[^']+)' is denied",
+      "hint": { "ja": "{path} に書き込む権限がありません。読み取り専用か、管理者権限が必要な場所です", "en": "No permission to write {path}. It may be read-only or need admin rights" }
+    },
+    {
+      "pattern": "The process cannot access the file '(?<path>[^']+)' because it is being used by another process",
+      "hint": { "ja": "{path} は他のプログラム（Excel やエディタなど）が開いています。閉じてから再試行してください", "en": "{path} is open in another program (Excel, an editor). Close it and retry" }
+    },
+    {
+      "pattern": "File '(?<path>[^']+)' already exists",
+      "hint": { "ja": "-NoClobber が指定されているため {path} を上書きしませんでした。追記するなら -Append、上書きしてよければ -NoClobber を外します", "en": "-NoClobber prevented overwriting {path}. Use -Append to add, or drop -NoClobber to overwrite" },
+      "fix": "Out-File -Append"
+    }
+  ]
+}

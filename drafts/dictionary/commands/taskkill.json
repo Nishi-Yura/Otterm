@@ -1,0 +1,64 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "taskkill",
+  "platforms": ["windows"],
+  "summary": { "ja": "動いているプログラム（プロセス）を名前や PID で終了させます（Windows）", "en": "Ends a running program (process) by name or PID (Windows)" },
+  "description": { "ja": "タスクマネージャーの「タスクの終了」に相当します。cmd でも PowerShell でも使えます。/im で名前（chrome.exe のように .exe まで）、/pid で番号を指定します。既定ではプログラムに終了を「お願い」するので保存の確認が出ることがあり、/f を付けると確認なしで強制終了します。先に tasklist で対象を確認してください。", "en": "Like End Task in Task Manager. Works in both cmd and PowerShell. Use /im with the name (include .exe, e.g. chrome.exe) or /pid with the number. By default it asks the program to close, so save prompts may appear; /f force-kills without them. Check the target with tasklist first." },
+  "options": [
+    {
+      "flags": ["/im"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "終了するプロセス名（例: notepad.exe）", "en": "Process name to end (e.g. notepad.exe)" }
+    },
+    {
+      "flags": ["/pid"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "終了するプロセス ID", "en": "Process ID to end" }
+    },
+    {
+      "flags": ["/f"],
+      "summary": { "ja": "強制終了（保存の確認なし）", "en": "Force-kill (no save prompts)" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "強制終了します。未保存のデータは失われます", "en": "Force-kills the program. Unsaved data will be lost" }
+    },
+    {
+      "flags": ["/t"],
+      "summary": { "ja": "そのプロセスが起動した子プロセスもまとめて終了", "en": "Also end child processes it started" }
+    },
+    {
+      "flags": ["/fi"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "条件で対象を選ぶ（例: \"status eq not responding\"）", "en": "Select by filter (e.g. \"status eq not responding\")" }
+    }
+  ],
+  "examples": [
+    { "command": "taskkill /im notepad.exe", "summary": { "ja": "メモ帳を閉じる（保存確認が出ることがある）", "en": "Close Notepad (a save prompt may appear)" } },
+    { "command": "taskkill /pid 12345", "summary": { "ja": "PID を指定して終了", "en": "End by PID" } },
+    { "command": "taskkill /im chrome.exe /f /t", "summary": { "ja": "Chrome を子プロセスごと強制終了", "en": "Force-kill Chrome and its child processes" } },
+    { "command": "taskkill /fi \"status eq not responding\"", "summary": { "ja": "応答なしのプログラムをまとめて終了", "en": "End all programs that are not responding" } }
+  ],
+  "errors": [
+    {
+      "pattern": "ERROR: The process \"(?<name>[^\"]+)\" not found",
+      "hint": { "ja": "{name} というプロセスは動いていません。名前は .exe まで必要です。tasklist で確認してください", "en": "No process named {name} is running. Include the .exe. Check with tasklist" },
+      "fix": "tasklist"
+    },
+    {
+      "pattern": "ERROR: The process with PID (?<pid>\\d+) could not be terminated\\.\\s*Reason: Access is denied",
+      "hint": { "ja": "PID {pid} を終了する権限がありません。システムや別ユーザーのプロセスです。管理者として実行すれば終了できますが、システムが不安定になることがあります", "en": "No permission to end PID {pid}. It belongs to the system or another user. Running as administrator can end it, but the system may become unstable" }
+    },
+    {
+      "pattern": "Reason: This process can only be terminated forcefully \\(with /F option\\)",
+      "hint": { "ja": "このプロセスは通常の方法では終了できません。未保存データが消えてよければ /f を付けてください", "en": "This process will not close normally. Add /f if losing unsaved data is acceptable" },
+      "fix": "taskkill /f"
+    },
+    {
+      "pattern": "ERROR: Invalid argument/option - '(?<opt>[^']+)'",
+      "hint": { "ja": "{opt} は taskkill のオプションではありません。オプションは /im や /pid のように / で始まります", "en": "{opt} is not a taskkill option. Options start with /, like /im or /pid" },
+      "fix": "taskkill /?"
+    }
+  ]
+}

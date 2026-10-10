@@ -1,0 +1,49 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "awk",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "テキストを行と列に分けて、計算や抜き出しを行います", "en": "Splits text into rows and columns, then extracts or calculates" },
+  "description": {
+    "ja": "各行を空白で区切り、$1 が 1 列目、$2 が 2 列目です。'{print $2}' のように波かっこに処理を書き、全体を引用符で囲みます。合計や条件付きの抜き出しも 1 行で書けます。",
+    "en": "Each line is split on spaces: $1 is column 1, $2 column 2. Put the action in braces like '{print $2}' and quote the whole program. Sums and filters fit on one line."
+  },
+  "options": [
+    { "flags": ["-F"], "takesValue": true, "valueType": "string", "summary": { "ja": "列の区切り文字（CSV なら -F ,）", "en": "Column separator (for CSV: -F ,)" } },
+    { "flags": ["-v"], "takesValue": true, "valueType": "string", "summary": { "ja": "変数を渡す（例: -v n=3）", "en": "Pass in a variable (e.g. -v n=3)" } },
+    { "flags": ["-f"], "takesValue": true, "valueType": "file", "summary": { "ja": "プログラムをファイルから読む", "en": "Read the program from a file" } }
+  ],
+  "args": [
+    {
+      "name": "program",
+      "type": "string",
+      "summary": { "ja": "処理内容。単一引用符で囲む（例: '{print $1}'）", "en": "The program, in single quotes (e.g. '{print $1}')" }
+    },
+    {
+      "name": "file",
+      "type": "file",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "処理するファイル（省略すると前のコマンドの出力を処理）", "en": "Files to process (omit to process the previous command's output)" }
+    }
+  ],
+  "examples": [
+    { "command": "awk '{print $1}' access.log", "summary": { "ja": "各行の 1 列目だけ表示", "en": "Print the first column of each line" } },
+    { "command": "awk -F , '$3 > 80 {print $1}' scores.csv", "summary": { "ja": "3 列目が 80 より大きい行の名前を表示", "en": "Names where column 3 is greater than 80" } },
+    { "command": "awk '{sum += $2} END {print sum}' sales.txt", "summary": { "ja": "2 列目の合計を計算", "en": "Total of column 2" } }
+  ],
+  "errors": [
+    {
+      "pattern": "awk: .*syntax error",
+      "hint": { "ja": "プログラムの書き方に誤りがあります。全体を単一引用符 ' ' で囲み、処理を { } の中に書いているか確認してください", "en": "The program has a syntax error. Check it is wrapped in single quotes and the action is inside { }" }
+    },
+    {
+      "pattern": "awk: (?:fatal: )?cannot open (?:file )?[`‘'](?<path>[^’'\\n]+)[’'] for reading|awk: can't open file (?<path2>[^\\n]+)",
+      "hint": { "ja": "ファイルが見つかりません。プログラムの後にファイル名を書く順番になっているか確認してください", "en": "The file was not found. Make sure the program comes before the file name" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "awk: (?:cmd\\. line:\\d+: )?(?:fatal: )?division by zero",
+      "hint": { "ja": "0 で割ろうとしました。空の列や数字でない列を割り算に使っていないか確認してください", "en": "Division by zero. Check for an empty or non-numeric column in the division" }
+    }
+  ]
+}

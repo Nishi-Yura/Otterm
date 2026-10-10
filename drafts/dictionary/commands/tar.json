@@ -1,0 +1,50 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "tar",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "複数のファイルを 1 つのアーカイブ（.tar / .tar.gz）にまとめたり、取り出したりします", "en": "Bundles files into one archive (.tar / .tar.gz) or extracts them" },
+  "description": {
+    "ja": "作るときは -c、取り出すときは -x、中身を見るだけなら -t を使い、必ず -f でアーカイブ名を指定します。-z を付けると gzip で圧縮・展開もします。",
+    "en": "Use -c to create, -x to extract, -t to just list, and always -f with the archive name. Add -z to compress or decompress with gzip."
+  },
+  "options": [
+    { "flags": ["-c", "--create"], "summary": { "ja": "新しいアーカイブを作る", "en": "Create a new archive" } },
+    { "flags": ["-x", "--extract"], "summary": { "ja": "アーカイブから取り出す", "en": "Extract from an archive" } },
+    { "flags": ["-t", "--list"], "summary": { "ja": "中身の一覧を表示（取り出さない）", "en": "List the contents without extracting" } },
+    { "flags": ["-f", "--file"], "takesValue": true, "valueType": "file", "summary": { "ja": "アーカイブのファイル名（ほぼ必須）", "en": "The archive file name (almost always needed)" } },
+    { "flags": ["-z", "--gzip"], "summary": { "ja": "gzip で圧縮 / 展開（.tar.gz, .tgz）", "en": "Compress or decompress with gzip (.tar.gz, .tgz)" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "処理したファイル名を表示", "en": "Print each file as it is processed" } },
+    { "flags": ["-C", "--directory"], "takesValue": true, "valueType": "dir", "summary": { "ja": "指定したフォルダに移動してから処理（取り出し先の指定に便利）", "en": "Change to this folder first (handy to choose where to extract)" } },
+    {
+      "flags": ["--overwrite"],
+      "summary": { "ja": "取り出すとき、すでにあるファイルを上書き", "en": "Overwrite existing files when extracting" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "取り出し先の同名ファイルを確認なしで上書きします", "en": "Overwrites existing files without asking" }
+    }
+  ],
+  "args": [
+    { "name": "file", "type": "path", "optional": true, "variadic": true, "summary": { "ja": "アーカイブに入れるファイルやフォルダ、または取り出す対象", "en": "Files or folders to add, or members to extract" } }
+  ],
+  "examples": [
+    { "command": "tar -czvf project.tar.gz project/", "summary": { "ja": "project フォルダを圧縮して 1 つにまとめる", "en": "Compress the project folder into one archive" } },
+    { "command": "tar -tzf project.tar.gz", "summary": { "ja": "取り出す前に中身を確認する", "en": "List the contents before extracting" } },
+    { "command": "tar -xzvf project.tar.gz -C ~/restore", "summary": { "ja": "~/restore フォルダに取り出す", "en": "Extract into the ~/restore folder" } }
+  ],
+  "errors": [
+    {
+      "pattern": "tar: (?<path>[^:\\n]+): Cannot (?:open|stat): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。アーカイブ名は -f の直後に書き、スペルを確認してください", "en": "{path} was not found. Put the archive name right after -f and check the spelling" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "tar: This does not look like a tar archive",
+      "hint": { "ja": "tar 形式ではありません。.gz なら -z、.bz2 なら -j、.xz なら -J を付けてください。.zip なら unzip を使います", "en": "Not a tar archive. Add -z for .gz, -j for .bz2, -J for .xz. For .zip use unzip" },
+      "fix": "tar -tzf"
+    },
+    {
+      "pattern": "tar: Refusing to (?:read|write) archive contents (?:from|to) terminal",
+      "hint": { "ja": "-f でアーカイブのファイル名を指定してください（例: tar -xzf archive.tar.gz）", "en": "Give the archive name with -f (e.g. tar -xzf archive.tar.gz)" },
+      "fix": "tar -xzvf"
+    }
+  ]
+}

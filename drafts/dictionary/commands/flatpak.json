@@ -1,0 +1,95 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "flatpak",
+  "platforms": ["linux"],
+  "summary": { "ja": "Linux 共通のデスクトップアプリ配布形式 Flatpak の管理ツールです", "en": "Manager for Flatpak, the cross-distro Linux desktop app format" },
+  "description": { "ja": "アプリは Flathub などのリモートから入れます。ID は org.mozilla.firefox のような逆ドメイン形式です。既定ではシステム全体に入れるので sudo か認証ダイアログが必要ですが、--user を付けると自分だけに入ります。", "en": "Apps come from remotes such as Flathub. IDs use reverse-domain form like org.mozilla.firefox. By default it installs system-wide (sudo or an auth dialog); --user installs for you only." },
+  "install": { "apt": "sudo apt install flatpak", "dnf": "sudo dnf install flatpak", "pacman": "sudo pacman -S flatpak", "url": "https://flatpak.org/setup/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": { "ja": "アプリをインストールします", "en": "Installs an app" },
+      "args": [
+        { "name": "remote", "type": "string", "optional": true, "summary": { "ja": "flathub など", "en": "e.g. flathub" } },
+        { "name": "package", "type": "package", "summary": { "ja": "アプリ ID（org.mozilla.firefox）", "en": "App ID (org.mozilla.firefox)" } }
+      ],
+      "options": [
+        { "flags": ["--user"], "summary": { "ja": "自分のユーザーだけに入れる（sudo 不要）", "en": "Install for your user only (no sudo)" } },
+        { "flags": ["-y", "--assumeyes"], "summary": { "ja": "確認なし", "en": "No prompts" } }
+      ],
+      "examples": [{ "command": "flatpak install flathub org.mozilla.firefox", "summary": { "ja": "Flathub から Firefox を入れる", "en": "Install Firefox from Flathub" } }],
+      "errors": [
+        { "pattern": "error: No remote refs found similar to '(?<pkg>[^']+)'|Nothing matches (?<pkg2>\\S+) in remote", "hint": { "ja": "そのアプリが見つかりません。flatpak search で ID を確認してください", "en": "App not found. Check the ID with flatpak search" }, "fix": "flatpak search {args}" },
+        { "pattern": "error: No remotes found|No remote refs found", "hint": { "ja": "リモートが登録されていません。Flathub を追加してください", "en": "No remotes configured. Add Flathub" }, "fix": "flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo" },
+        { "pattern": "is already installed", "hint": { "ja": "すでに入っています。更新は flatpak update です", "en": "Already installed. Use flatpak update to update it" }, "fix": "flatpak update {args}" }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "aliases": ["remove"],
+      "summary": { "ja": "アプリを削除します", "en": "Removes an app" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["--delete-data"], "summary": { "ja": "アプリの設定やデータも削除", "en": "Also delete the app's data" }, "danger": "warn", "dangerMessage": { "ja": "アプリのデータが消えます。元に戻せません", "en": "App data is deleted. Cannot be undone" } },
+        { "flags": ["--unused"], "summary": { "ja": "使われていないランタイムを削除", "en": "Remove unused runtimes" } }
+      ]
+    },
+    {
+      "name": "update",
+      "summary": { "ja": "アプリとランタイムを更新します", "en": "Updates apps and runtimes" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["-y"], "summary": { "ja": "確認なし", "en": "No prompts" } }]
+    },
+    {
+      "name": "search",
+      "summary": { "ja": "アプリを検索します", "en": "Searches for apps" },
+      "args": [{ "name": "query", "type": "string" }],
+      "examples": [{ "command": "flatpak search gimp", "summary": { "ja": "GIMP を探す", "en": "Search for GIMP" } }]
+    },
+    {
+      "name": "list",
+      "summary": { "ja": "インストール済み一覧", "en": "Lists installed apps and runtimes" },
+      "options": [{ "flags": ["--app"], "summary": { "ja": "アプリだけ", "en": "Apps only" } }]
+    },
+    {
+      "name": "info",
+      "summary": { "ja": "アプリの詳細を表示", "en": "Shows app details" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "アプリをターミナルから起動します", "en": "Launches an app from the terminal" },
+      "args": [{ "name": "package", "type": "package" }],
+      "examples": [{ "command": "flatpak run org.mozilla.firefox", "summary": { "ja": "Firefox を起動", "en": "Launch Firefox" } }]
+    },
+    {
+      "name": "remote-add",
+      "summary": { "ja": "アプリの取得元（リモート）を追加します", "en": "Adds an app source (remote)" },
+      "args": [
+        { "name": "name", "type": "string" },
+        { "name": "url", "type": "url" }
+      ],
+      "options": [
+        { "flags": ["--if-not-exists"], "summary": { "ja": "すでにあればエラーにしない", "en": "No error if it already exists" } },
+        { "flags": ["--user"], "summary": { "ja": "自分のユーザーだけに", "en": "For your user only" } }
+      ],
+      "examples": [{ "command": "flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo", "summary": { "ja": "Flathub を追加（初回に必要）", "en": "Add Flathub (needed once)" } }]
+    },
+    { "name": "remotes", "summary": { "ja": "登録済みリモートの一覧", "en": "Lists configured remotes" } },
+    {
+      "name": "override",
+      "summary": { "ja": "アプリの権限（ファイルアクセスなど）を変更します", "en": "Changes an app's permissions (file access etc.)" },
+      "args": [{ "name": "package", "type": "package" }],
+      "options": [
+        { "flags": ["--filesystem"], "takesValue": true, "valueType": "path", "summary": { "ja": "アクセスを許可するフォルダ", "en": "Folder to grant access to" } },
+        { "flags": ["--user"], "summary": { "ja": "自分のユーザーだけに", "en": "For your user only" } }
+      ]
+    }
+  ],
+  "errors": [
+    { "pattern": "flatpak: command not found", "hint": { "ja": "flatpak が入っていません。パッケージ管理ツールで flatpak を入れてください", "en": "flatpak is not installed. Install it with your package manager" } },
+    { "pattern": "error: Unable to connect to system bus|Not authorized|error: .* Permission denied", "hint": { "ja": "システム全体への変更に権限が必要です。sudo を付けるか、--user で自分だけに入れてください", "en": "System-wide changes need permission. Use sudo, or --user to install for yourself only" }, "fix": "flatpak --user {args}" },
+    { "pattern": "Unable to load summary from remote|Could not connect|Error resolving|While opening repository", "hint": { "ja": "リモートに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the remote. Check your network or proxy" } },
+    { "pattern": "error: The application (?<pkg>\\S+) requires the runtime (?<rt>\\S+) which is not installed", "hint": { "ja": "{pkg} に必要なランタイム {rt} がありません。flatpak install {rt} で入れてください", "en": "{pkg} needs runtime {rt}, which is missing. Install it with flatpak install" }, "fix": "flatpak install {rt}" }
+  ]
+}

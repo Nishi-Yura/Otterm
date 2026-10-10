@@ -1,0 +1,58 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ipconfig",
+  "platforms": ["windows"],
+  "summary": { "ja": "このパソコンの IP アドレスなどネットワーク設定を表示します（Windows）", "en": "Shows this PC's IP address and other network settings (Windows)" },
+  "description": { "ja": "Wi-Fi や有線 LAN ごとに IPv4 アドレス、デフォルトゲートウェイ（ルーター）などを表示します。/all を付けると MAC アドレスや DNS サーバーも見られます。ネットがつながらないときは /flushdns や /renew が定番の対処です。/release と /renew には管理者権限が必要です。cmd でも PowerShell でも使えます。オプションは - ではなく / で始まります。", "en": "Shows the IPv4 address, default gateway (router) and more for each Wi-Fi or Ethernet adapter. /all adds the MAC address and DNS servers. When the network misbehaves, /flushdns and /renew are the usual fixes; /release and /renew need admin rights. Works in both cmd and PowerShell. Options start with /, not -." },
+  "options": [
+    {
+      "flags": ["/all"],
+      "summary": { "ja": "MAC アドレスや DNS サーバーなど詳細も表示", "en": "Full details including MAC address and DNS servers" }
+    },
+    {
+      "flags": ["/release"],
+      "summary": { "ja": "現在の IP アドレスを手放す（管理者権限が必要）", "en": "Give up the current IP address (needs admin rights)" }
+    },
+    {
+      "flags": ["/renew"],
+      "summary": { "ja": "IP アドレスをルーターから取り直す（管理者権限が必要）", "en": "Get a fresh IP address from the router (needs admin rights)" }
+    },
+    {
+      "flags": ["/flushdns"],
+      "summary": { "ja": "DNS キャッシュを消す（サイトにつながらないときの定番）", "en": "Clear the DNS cache (a common fix when sites will not load)" }
+    },
+    {
+      "flags": ["/displaydns"],
+      "summary": { "ja": "DNS キャッシュの中身を表示", "en": "Show the DNS cache" }
+    },
+    {
+      "flags": ["/registerdns"],
+      "summary": { "ja": "DNS への登録をやり直す（管理者権限が必要）", "en": "Re-register with DNS (needs admin rights)" }
+    }
+  ],
+  "examples": [
+    { "command": "ipconfig", "summary": { "ja": "IP アドレスとゲートウェイを確認", "en": "Check the IP address and gateway" } },
+    { "command": "ipconfig /all", "summary": { "ja": "MAC アドレスや DNS も含めた詳細", "en": "Full details including MAC address and DNS" } },
+    { "command": "ipconfig /flushdns", "summary": { "ja": "DNS キャッシュを消してサイト接続の不調を直す", "en": "Flush DNS to fix sites that will not load" } },
+    { "command": "ipconfig /release; ipconfig /renew", "summary": { "ja": "IP アドレスを取り直す（管理者として実行）", "en": "Get a new IP address (run as administrator)" } }
+  ],
+  "errors": [
+    {
+      "pattern": "The requested operation requires elevation",
+      "hint": { "ja": "この操作には管理者権限が必要です。ターミナルを「管理者として実行」で開き直してください", "en": "This needs admin rights. Reopen the terminal with Run as administrator" }
+    },
+    {
+      "pattern": "Error: unrecognized or incomplete command line",
+      "hint": { "ja": "オプションの書き方が違います。ipconfig のオプションは /all のように / で始まります。ipconfig /? で一覧が見られます", "en": "Unknown option. ipconfig options start with /, like /all. Run ipconfig /? for the list" },
+      "fix": "ipconfig /?"
+    },
+    {
+      "pattern": "No operation can be performed on (?<adapter>.+?) while it has its media disconnected",
+      "hint": { "ja": "{adapter} はケーブルが抜けているか Wi-Fi が切れています。接続してから再試行してください", "en": "{adapter} is unplugged or Wi-Fi is off. Connect it and retry" }
+    },
+    {
+      "pattern": "An error occurred while renewing interface (?<adapter>.+?) : unable to contact your DHCP server",
+      "hint": { "ja": "ルーター（DHCP サーバー）と通信できません。ルーターの電源や Wi-Fi 接続を確認してください", "en": "Cannot reach the router (DHCP server). Check the router's power and your Wi-Fi connection" }
+    }
+  ]
+}

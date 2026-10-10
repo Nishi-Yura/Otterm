@@ -1,0 +1,48 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "killall",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "名前を指定して、その名前で動いているプログラムをまとめて終了します", "en": "Stops every running program with the given name" },
+  "description": {
+    "ja": "同じ名前のプロセスがすべて対象になるので、意図しないものまで終了することがあります。PID を指定する kill の方が確実です。名前はコマンド名と完全一致が基本です。",
+    "en": "Every process with that name is targeted, so it can hit more than you meant. kill with a PID is more precise. Names must match the command exactly."
+  },
+  "danger": "warn",
+  "options": [
+    {
+      "flags": ["-9", "-KILL", "-SIGKILL"],
+      "summary": { "ja": "強制終了。応答しないときの最後の手段", "en": "Force kill. Last resort when frozen" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "同名のプログラムすべてを、保存の機会を与えずに終了します", "en": "Force-ends every program with this name, with no chance to save" },
+      "alternative": { "label": { "ja": "通常の終了（TERM）を送る", "en": "Send a normal TERM first" }, "command": "killall {args}" }
+    },
+    { "flags": ["-i", "--interactive"], "summary": { "ja": "1 つずつ確認してから終了", "en": "Ask before each one" } },
+    { "flags": ["-u", "--user"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定ユーザーのプロセスだけ対象にする", "en": "Only this user's processes" } },
+    { "flags": ["-e", "--exact"], "summary": { "ja": "長い名前も完全一致で比べる", "en": "Require an exact match for long names" } },
+    { "flags": ["-I", "--ignore-case"], "summary": { "ja": "大文字小文字を区別しない", "en": "Case-insensitive name match" } },
+    { "flags": ["-w", "--wait"], "summary": { "ja": "すべて終了するまで待つ", "en": "Wait until they have all exited" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "終了させたものを表示", "en": "Report what was stopped" } }
+  ],
+  "args": [
+    { "name": "name", "type": "string", "variadic": true, "summary": { "ja": "終了させるプログラムの名前（例: node, firefox）", "en": "Program name(s), e.g. node, firefox" } }
+  ],
+  "examples": [
+    { "command": "killall node", "summary": { "ja": "すべての node プロセスに終了をお願いする", "en": "Ask every node process to exit" } },
+    { "command": "killall -i python3", "summary": { "ja": "python3 を 1 つずつ確認しながら終了", "en": "Stop python3 processes one by one with confirmation" } }
+  ],
+  "errors": [
+    {
+      "pattern": "(?<name>\\S+): no process found",
+      "hint": { "ja": "{name} という名前のプロセスは動いていません。ps aux | grep {name} で実際の名前を確認してください", "en": "No process named {name} is running. Check the real name with ps aux | grep {name}" },
+      "fix": "ps aux | grep {name}"
+    },
+    {
+      "pattern": "No matching processes belonging to you were found",
+      "hint": { "ja": "その名前で、あなたのユーザーが動かしているプロセスはありません（macOS）。名前を確認するか、他ユーザーのものなら sudo が必要です", "en": "None of your processes have that name (macOS). Check the name; other users' processes need sudo" }
+    },
+    {
+      "pattern": "Operation not permitted",
+      "hint": { "ja": "他のユーザーやシステムのプロセスは終了できません。自分のプロセスか確認してください", "en": "Processes of other users or the system cannot be stopped. Make sure they are yours" }
+    }
+  ]
+}

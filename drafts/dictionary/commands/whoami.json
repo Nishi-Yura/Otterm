@@ -1,0 +1,29 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "whoami",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "今ログインしているユーザー名を表示します", "en": "Prints the name of the user you are logged in as" },
+  "description": {
+    "ja": "ssh で別のコンピューターにつないだときや sudo -i で管理者になった後に「今は誰として操作しているか」を確かめるのに使います。root と表示されたら管理者権限で動いている状態なので注意してください。所属グループなども知りたいときは id を使います。",
+    "en": "Handy after ssh or sudo -i to confirm who you are acting as. If it prints root, you have admin rights, so be careful. For groups and IDs use id instead."
+  },
+  "options": [
+    { "flags": ["--help"], "summary": { "ja": "使い方を表示", "en": "Show usage" } },
+    { "flags": ["--version"], "summary": { "ja": "バージョンを表示", "en": "Print the version" } }
+  ],
+  "examples": [
+    { "command": "whoami", "summary": { "ja": "自分のユーザー名を表示", "en": "Show your user name" } },
+    { "command": "id", "summary": { "ja": "ユーザー ID と所属グループも表示", "en": "Show user ID and groups too" } }
+  ],
+  "errors": [
+    {
+      "pattern": "whoami: extra operand [‘'](?<arg>[^'’]+)[’']",
+      "hint": { "ja": "whoami に引数は不要です。他のユーザーについて調べるなら id {arg} を使います", "en": "whoami takes no arguments. To look up another user, use id {arg}" },
+      "fix": "id {arg}"
+    },
+    {
+      "pattern": "whoami: cannot find name for user ID (?<uid>\\d+)",
+      "hint": { "ja": "ユーザー番号 {uid} に対応する名前が登録されていません。コンテナの中などで起こることがあり、通常は問題ありません", "en": "No name is registered for user ID {uid}. This happens inside containers and is usually harmless" }
+    }
+  ]
+}

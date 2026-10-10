@@ -1,0 +1,89 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "conda",
+  "aliases": ["mamba", "micromamba"],
+  "summary": { "ja": "Python を含む環境とパッケージを管理するツールです（データサイエンス向け）", "en": "Environment and package manager, including Python itself (popular in data science)" },
+  "description": { "ja": "環境ごとに Python のバージョンや NumPy などのバイナリをまとめて管理できます。プロンプトの先頭に (base) や (環境名) が付いていれば、その環境が有効です。mamba は conda の高速互換版です。", "en": "Each environment has its own Python version and binaries such as NumPy. The (base) or (env-name) prefix in your prompt shows which environment is active. mamba is a faster drop-in replacement." },
+  "install": { "winget": "winget install Anaconda.Miniconda3", "scoop": "scoop install miniconda3", "brew": "brew install --cask miniconda", "url": "https://docs.conda.io/en/latest/miniconda.html" },
+  "subcommands": [
+    {
+      "name": "create",
+      "summary": { "ja": "新しい環境を作ります", "en": "Creates a new environment" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true, "summary": { "ja": "最初から入れるパッケージ（python=3.12 など）", "en": "Packages to include (e.g. python=3.12)" } }],
+      "options": [
+        { "flags": ["-n", "--name"], "takesValue": true, "valueType": "string", "summary": { "ja": "環境の名前", "en": "Environment name" } },
+        { "flags": ["-f", "--file"], "takesValue": true, "valueType": "file", "summary": { "ja": "environment.yml から作る（conda env create）", "en": "Create from environment.yml (conda env create)" } },
+        { "flags": ["-y", "--yes"], "summary": { "ja": "確認せずに進める", "en": "Do not ask for confirmation" } }
+      ],
+      "examples": [{ "command": "conda create -n myenv python=3.12", "summary": { "ja": "Python 3.12 の環境 myenv を作る", "en": "Create myenv with Python 3.12" } }],
+      "errors": [{ "pattern": "CondaValueError: prefix already exists", "hint": { "ja": "同じ名前の環境がすでにあります。別の名前にするか、conda env remove で消してから作ってください", "en": "An environment with that name exists. Choose another name or remove it with conda env remove first" } }]
+    },
+    {
+      "name": "activate",
+      "summary": { "ja": "環境を有効にします", "en": "Activates an environment" },
+      "args": [{ "name": "env", "type": "string" }],
+      "errors": [
+        { "pattern": "Could not find conda environment: (?<env>\\S+)", "hint": { "ja": "{env} という環境はありません。conda env list で一覧を見られます", "en": "No environment named {env}. See conda env list" }, "fix": "conda env list" },
+        { "pattern": "Your shell has not been properly configured to use 'conda activate'", "hint": { "ja": "シェルの初期設定が済んでいません。conda init を実行してターミナルを開き直してください", "en": "Your shell is not set up for conda. Run conda init and reopen the terminal" }, "fix": "conda init" }
+      ]
+    },
+    { "name": "deactivate", "summary": { "ja": "今の環境を抜けます", "en": "Leaves the current environment" } },
+    {
+      "name": "install",
+      "summary": { "ja": "今の環境にパッケージを入れます", "en": "Installs packages into the current environment" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-c", "--channel"], "takesValue": true, "valueType": "string", "summary": { "ja": "取得元チャンネル（conda-forge など）", "en": "Channel to fetch from (e.g. conda-forge)" } },
+        { "flags": ["-n", "--name"], "takesValue": true, "valueType": "string", "summary": { "ja": "別の環境に入れる", "en": "Install into another environment" } },
+        { "flags": ["-y", "--yes"], "summary": { "ja": "確認せずに進める", "en": "Do not ask for confirmation" } }
+      ],
+      "examples": [{ "command": "conda install -c conda-forge numpy pandas", "summary": { "ja": "conda-forge から numpy と pandas を入れる", "en": "Install numpy and pandas from conda-forge" } }],
+      "errors": [
+        { "pattern": "PackagesNotFoundError", "hint": { "ja": "パッケージが見つかりません。-c conda-forge を付けるか、名前のスペルを確認してください", "en": "Package not found. Try -c conda-forge or check the spelling" }, "fix": "conda install -c conda-forge {args}" },
+        { "pattern": "UnsatisfiableError|LibMambaUnsatisfiableError", "hint": { "ja": "依存が両立しません。新しい環境を作って入れ直すのが確実です", "en": "Dependencies conflict. Creating a fresh environment is the reliable fix" } }
+      ]
+    },
+    {
+      "name": "remove",
+      "aliases": ["uninstall"],
+      "summary": { "ja": "パッケージを削除します", "en": "Removes packages" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [{ "flags": ["--all"], "summary": { "ja": "環境ごと削除（-n と一緒に）", "en": "Delete the whole environment (with -n)" }, "danger": "confirm", "dangerMessage": { "ja": "環境が丸ごと消えます。元に戻せません", "en": "Deletes the entire environment. Cannot be undone" } }]
+    },
+    {
+      "name": "update",
+      "aliases": ["upgrade"],
+      "summary": { "ja": "パッケージを更新します", "en": "Updates packages" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["--all"], "summary": { "ja": "環境内のすべてを更新", "en": "Update everything in the environment" }, "danger": "warn", "dangerMessage": { "ja": "多くのバージョンが変わります。動作確認してください", "en": "Many versions change; test afterwards" } }]
+    },
+    { "name": "list", "summary": { "ja": "今の環境のパッケージ一覧", "en": "Lists packages in the current environment" } },
+    {
+      "name": "env",
+      "summary": { "ja": "環境の一覧・作成・削除・書き出し", "en": "Lists, creates, removes or exports environments" },
+      "options": [
+        { "flags": ["list"], "summary": { "ja": "環境の一覧", "en": "List environments" } },
+        { "flags": ["create"], "summary": { "ja": "environment.yml から作る", "en": "Create from environment.yml" } },
+        { "flags": ["export"], "summary": { "ja": "今の環境を environment.yml 形式で出力", "en": "Export the environment as YAML" } },
+        { "flags": ["remove"], "summary": { "ja": "環境を削除（-n 環境名）", "en": "Delete an environment (-n name)" }, "danger": "confirm", "dangerMessage": { "ja": "環境が丸ごと消えます。元に戻せません", "en": "Deletes the entire environment. Cannot be undone" } }
+      ],
+      "examples": [{ "command": "conda env export > environment.yml", "summary": { "ja": "環境をファイルに保存", "en": "Save the environment to a file" } }]
+    },
+    {
+      "name": "clean",
+      "summary": { "ja": "キャッシュを削除してディスクを空けます", "en": "Removes caches to free disk space" },
+      "options": [{ "flags": ["--all", "-a"], "summary": { "ja": "すべてのキャッシュを削除", "en": "Remove all caches" } }]
+    },
+    {
+      "name": "init",
+      "summary": { "ja": "シェルで conda activate を使えるようにします", "en": "Sets up your shell for conda activate" },
+      "args": [{ "name": "shell", "type": "string", "optional": true, "summary": { "ja": "bash / zsh / powershell など", "en": "bash / zsh / powershell etc." } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'conda' is not recognized|conda: command not found", "hint": { "ja": "conda が見つかりません。Miniconda を入れるか、Anaconda Prompt から実行してください", "en": "conda was not found. Install Miniconda or use the Anaconda Prompt" } },
+    { "pattern": "CondaHTTPError|ConnectionError|Connection broken", "hint": { "ja": "チャンネルに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the channel. Check your network or proxy" } },
+    { "pattern": "EnvironmentNotWritableError|PermissionError", "hint": { "ja": "この環境に書き込めません。base ではなく自分の環境を作って使ってください", "en": "This environment is not writable. Create your own environment instead of using base" }, "fix": "conda create -n myenv python" },
+    { "pattern": "running scripts is disabled on this system", "hint": { "ja": "PowerShell の実行ポリシーで止められています。ユーザー単位で RemoteSigned にすると動きます", "en": "PowerShell's execution policy blocks it. Setting RemoteSigned for your user fixes it" }, "fix": "Set-ExecutionPolicy -Scope CurrentUser RemoteSigned" }
+  ]
+}

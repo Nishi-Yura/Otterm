@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "mkdir",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "新しいフォルダを作ります", "en": "Creates a new folder" },
+  "description": {
+    "ja": "指定した名前のフォルダを作ります。途中のフォルダがまだ無いときは -p を付けるとまとめて作れます。",
+    "en": "Creates a folder with the given name. Add -p to create any missing parent folders along the way."
+  },
+  "learn": { "ja": "ファイルツリーの「新しいフォルダ」は、ターミナルでは mkdir です", "en": "\"New folder\" in the file tree is mkdir in the terminal" },
+  "options": [
+    { "flags": ["-p", "--parents"], "summary": { "ja": "途中のフォルダも必要なら作る。すでにあってもエラーにしない", "en": "Create parent folders as needed; no error if it already exists" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "作ったフォルダ名を表示", "en": "Print each folder as it is created" } },
+    { "flags": ["-m", "--mode"], "takesValue": true, "valueType": "string", "summary": { "ja": "作るフォルダの権限を指定（例: 755）", "en": "Set the permissions of the new folder (e.g. 755)" } }
+  ],
+  "args": [
+    { "name": "dir", "type": "dir", "variadic": true, "summary": { "ja": "作るフォルダの名前", "en": "Name of the folder to create" } }
+  ],
+  "examples": [
+    { "command": "mkdir photos", "summary": { "ja": "photos というフォルダを作る", "en": "Create a folder named photos" } },
+    { "command": "mkdir -p src/components/ui", "summary": { "ja": "途中のフォルダごとまとめて作る", "en": "Create the whole nested path at once" } },
+    { "command": "mkdir \"My Photos\"", "summary": { "ja": "空白を含む名前は引用符で囲む", "en": "Quote names that contain spaces" } }
+  ],
+  "errors": [
+    {
+      "pattern": "mkdir: cannot create directory [‘'](?<path>[^’']+)[’']: File exists",
+      "hint": { "ja": "{path} はすでに存在します。別の名前にするか、そのまま使ってください", "en": "{path} already exists. Pick another name or just use it" },
+      "fix": "ls {path}"
+    },
+    {
+      "pattern": "mkdir: cannot create directory [‘'](?<path>[^’']+)[’']: No such file or directory",
+      "hint": { "ja": "途中のフォルダがありません。-p を付けると途中のフォルダもまとめて作れます", "en": "A parent folder is missing. Add -p to create the whole path" },
+      "fix": "mkdir -p {path}"
+    },
+    {
+      "pattern": "mkdir: cannot create directory [‘'](?<path>[^’']+)[’']: Permission denied",
+      "hint": { "ja": "ここにフォルダを作る権限がありません。自分のホームフォルダなど書き込める場所で試してください", "en": "No permission to create a folder here. Try somewhere you can write, like your home folder" }
+    }
+  ]
+}

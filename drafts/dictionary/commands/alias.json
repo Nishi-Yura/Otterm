@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "alias",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "長いコマンドに短い別名を付けます", "en": "Gives a long command a short nickname" },
+  "description": {
+    "ja": "例えば alias ll='ls -la' とすると、以後 ll と打つだけで ls -la が動きます。何も付けずに実行すると今ある別名の一覧が出ます。別名はこのターミナルを閉じると消えるので、ずっと使うなら ~/.bashrc や ~/.zshrc に書きます。",
+    "en": "For example alias ll='ls -la' lets you type ll to run ls -la. Run it alone to list current aliases. Aliases vanish when the terminal closes; put them in ~/.bashrc or ~/.zshrc to keep them."
+  },
+  "options": [
+    { "flags": ["-p"], "summary": { "ja": "別名の一覧を、そのまま設定ファイルに貼れる形で表示（bash）", "en": "List aliases in a form you can paste into a config file (bash)" } },
+    { "flags": ["-g"], "summary": { "ja": "行のどこに書いても置き換わる別名にする（zsh）", "en": "Global alias, expanded anywhere on the line (zsh)" } },
+    { "flags": ["-s", "--save"], "summary": { "ja": "別名をファイルに保存して次回以降も使えるようにする（fish）", "en": "Save the alias so it persists (fish)" } }
+  ],
+  "args": [
+    { "name": "name=command", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "別名と、それが表すコマンド。コマンド側は引用符で囲みます", "en": "The nickname and the command it stands for. Quote the command" } }
+  ],
+  "examples": [
+    { "command": "alias", "summary": { "ja": "今ある別名を一覧", "en": "List current aliases" } },
+    { "command": "alias ll='ls -la'", "summary": { "ja": "ll で詳細一覧を表示できるようにする", "en": "Make ll show a long listing" } },
+    { "command": "alias gs='git status'", "summary": { "ja": "gs で git status を実行できるようにする", "en": "Make gs run git status" } }
+  ],
+  "errors": [
+    {
+      "pattern": "alias: (?<name>\\S+): not found",
+      "hint": { "ja": "{name} という別名はまだありません。alias {name}='コマンド' で作れます。既存の一覧は alias だけで表示できます", "en": "There is no alias named {name}. Create it with alias {name}='command', or list existing ones with alias" },
+      "fix": "alias"
+    },
+    {
+      "pattern": "alias: (?<cmd>\\S+): command not found|alias: (?<name>\\S+): invalid alias name",
+      "hint": { "ja": "書き方が違うようです。= の前後にスペースを入れず、コマンド側を引用符で囲んでください。例: alias ll='ls -la'", "en": "Check the syntax: no spaces around =, and quote the command. Example: alias ll='ls -la'" },
+      "fix": "alias ll='ls -la'"
+    },
+    {
+      "pattern": "alias: Unknown option",
+      "hint": { "ja": "fish シェルでは alias name 'command' のようにスペースで区切ります。保存するなら alias -s を使います", "en": "In fish write alias name 'command' with a space. Use alias -s to save it" },
+      "fix": "alias -s ll 'ls -la'"
+    }
+  ]
+}

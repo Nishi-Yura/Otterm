@@ -1,0 +1,48 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "echo",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "書いた文字をそのまま画面に表示します", "en": "Prints the text you give it" },
+  "description": {
+    "ja": "文字の表示のほか、変数の中身の確認（echo $HOME）や、> と組み合わせてファイルに書き込むのによく使います。> は中身を置き換え、>> は末尾に追加します。",
+    "en": "Used to show text, check a variable (echo $HOME), or write into a file with >. Note that > replaces the file while >> appends to it."
+  },
+  "options": [
+    {
+      "flags": ["-n"],
+      "summary": { "ja": "最後に改行を付けない", "en": "Do not add a newline at the end" }
+    },
+    {
+      "flags": ["-e"],
+      "summary": { "ja": "\\n（改行）や \\t（タブ）を解釈する（bash）", "en": "Interpret \\n (newline) and \\t (tab) (bash)" }
+    },
+    {
+      "flags": ["-E"],
+      "summary": { "ja": "\\n などを解釈せずそのまま表示", "en": "Print backslash sequences literally" }
+    }
+  ],
+  "args": [
+    {
+      "name": "text",
+      "type": "string",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "表示する文字。空白を含むときは引用符で囲む", "en": "Text to print; quote it if it contains spaces" }
+    }
+  ],
+  "examples": [
+    { "command": "echo \"Hello, world\"", "summary": { "ja": "文字を表示", "en": "Print some text" } },
+    { "command": "echo $PATH", "summary": { "ja": "PATH 変数の中身を表示", "en": "Show the PATH variable" } },
+    { "command": "echo \"node_modules/\" >> .gitignore", "summary": { "ja": ".gitignore の末尾に 1 行追加", "en": "Append a line to .gitignore" } }
+  ],
+  "errors": [
+    {
+      "pattern": "(?<path>[^:\\s]+): Permission denied",
+      "hint": { "ja": "書き込み先 {path} に書く権限がありません。自分のフォルダ内のファイルを指定してください", "en": "No permission to write to {path}. Use a file inside your own folders" }
+    },
+    {
+      "pattern": "(?<path>[^:\\s]+): No such file or directory",
+      "hint": { "ja": "書き込み先 {path} のフォルダがありません。先に mkdir で作ってください", "en": "The folder for {path} does not exist. Create it with mkdir first" }
+    }
+  ]
+}

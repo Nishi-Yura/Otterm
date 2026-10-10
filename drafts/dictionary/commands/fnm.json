@@ -1,0 +1,87 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "fnm",
+  "summary": { "ja": "高速でクロスプラットフォームな Node.js バージョン管理ツールです", "en": "Fast, cross-platform Node.js version manager" },
+  "description": { "ja": "nvm とほぼ同じ使い方で、Rust 製なので速く、Windows でもそのまま動きます。シェルの設定に fnm env の読み込みが必要で、.nvmrc や .node-version を見て自動で切り替えられます。", "en": "Works much like nvm but is written in Rust, so it is fast and runs natively on Windows. Your shell config must load fnm env; it can switch automatically based on .nvmrc or .node-version." },
+  "install": { "winget": "winget install Schniz.fnm", "scoop": "scoop install fnm", "choco": "choco install fnm", "brew": "brew install fnm", "cargo": "cargo install fnm", "url": "https://github.com/Schniz/fnm#installation" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["i"],
+      "summary": { "ja": "指定バージョンの Node.js を入れます", "en": "Installs a Node.js version" },
+      "args": [{ "name": "version", "type": "string", "optional": true, "summary": { "ja": "22、20.11.0、--lts など。省略時は .nvmrc / .node-version", "en": "22, 20.11.0, --lts; defaults to .nvmrc / .node-version" } }],
+      "options": [
+        { "flags": ["--lts"], "summary": { "ja": "最新の LTS を入れる", "en": "Install the latest LTS" } },
+        { "flags": ["--latest"], "summary": { "ja": "最新版を入れる", "en": "Install the newest release" } }
+      ],
+      "examples": [{ "command": "fnm install --lts", "summary": { "ja": "最新 LTS を入れる", "en": "Install the latest LTS" } }],
+      "errors": [
+        { "pattern": "error: Can't find version in dotfiles", "hint": { "ja": ".nvmrc や .node-version がありません。バージョンを指定してください", "en": "No .nvmrc or .node-version found. Pass a version" }, "fix": "fnm install --lts" },
+        { "pattern": "Can't find a Node version that matches", "hint": { "ja": "そのバージョンは存在しません。fnm list-remote で確認してください", "en": "No such version. Check fnm list-remote" }, "fix": "fnm list-remote" },
+        { "pattern": "error: Can't download|error sending request|Could not resolve", "hint": { "ja": "ダウンロードできません。ネットワークやプロキシを確認してください", "en": "Download failed. Check your network or proxy" } }
+      ]
+    },
+    {
+      "name": "use",
+      "summary": { "ja": "このターミナルで使う Node.js を切り替えます", "en": "Switches the Node.js used in this terminal" },
+      "args": [{ "name": "version", "type": "string", "optional": true }],
+      "options": [{ "flags": ["--install-if-missing"], "summary": { "ja": "入っていなければインストールしてから切り替え", "en": "Install first if missing" } }],
+      "errors": [{ "pattern": "error: Requested version (?<ver>\\S+) is not currently installed", "hint": { "ja": "{ver} は未インストールです。fnm install {ver} で入れてください", "en": "{ver} is not installed. Run fnm install {ver}" }, "fix": "fnm install {ver}" }]
+    },
+    {
+      "name": "default",
+      "summary": { "ja": "新しいターミナルで使う既定バージョンを設定します", "en": "Sets the default version for new terminals" },
+      "args": [{ "name": "version", "type": "string" }],
+      "examples": [{ "command": "fnm default 22", "summary": { "ja": "既定を 22 にする", "en": "Make 22 the default" } }]
+    },
+    { "name": "list", "aliases": ["ls"], "summary": { "ja": "インストール済みバージョンの一覧", "en": "Lists installed versions" } },
+    {
+      "name": "list-remote",
+      "aliases": ["ls-remote"],
+      "summary": { "ja": "インストールできるバージョンの一覧", "en": "Lists installable versions" },
+      "options": [{ "flags": ["--lts"], "summary": { "ja": "LTS だけ", "en": "LTS only" } }]
+    },
+    { "name": "current", "summary": { "ja": "今使っているバージョンを表示", "en": "Shows the active version" } },
+    {
+      "name": "uninstall",
+      "aliases": ["uni"],
+      "summary": { "ja": "指定バージョンを削除します", "en": "Removes a version" },
+      "args": [{ "name": "version", "type": "string" }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "そのバージョンのグローバルパッケージも消えます", "en": "Global packages of that version are removed too" }
+    },
+    {
+      "name": "alias",
+      "summary": { "ja": "バージョンに別名を付けます", "en": "Names a version" },
+      "args": [
+        { "name": "version", "type": "string" },
+        { "name": "name", "type": "string" }
+      ]
+    },
+    {
+      "name": "exec",
+      "summary": { "ja": "指定バージョンでコマンドを一度だけ実行します", "en": "Runs a command once with a given version" },
+      "args": [{ "name": "command", "type": "command" }],
+      "options": [{ "flags": ["--using"], "takesValue": true, "valueType": "string", "summary": { "ja": "使うバージョン", "en": "Version to use" } }],
+      "examples": [{ "command": "fnm exec --using 18 node -v", "summary": { "ja": "Node 18 でバージョン確認", "en": "Check the version under Node 18" } }]
+    },
+    {
+      "name": "env",
+      "summary": { "ja": "シェルに読み込ませる設定を出力します（初期設定用）", "en": "Prints the shell setup to be evaluated (for your shell config)" },
+      "options": [
+        { "flags": ["--use-on-cd"], "summary": { "ja": "フォルダ移動時に .nvmrc で自動切り替え", "en": "Auto-switch on cd using .nvmrc" } },
+        { "flags": ["--shell"], "takesValue": true, "valueType": "string", "summary": { "ja": "bash / zsh / fish / power-shell", "en": "bash / zsh / fish / power-shell" } }
+      ],
+      "examples": [
+        { "command": "eval \"$(fnm env --use-on-cd)\"", "summary": { "ja": "bash / zsh の設定ファイルに書く行", "en": "The line for your bash / zsh config" } },
+        { "command": "fnm env --use-on-cd --shell power-shell | Out-String | Invoke-Expression", "summary": { "ja": "PowerShell の $PROFILE に書く行", "en": "The line for your PowerShell $PROFILE" } }
+      ]
+    }
+  ],
+  "errors": [
+    { "pattern": "'fnm' is not recognized|fnm: command not found", "hint": { "ja": "fnm が入っていないか PATH にありません。インストール後にターミナルを開き直してください", "en": "fnm is missing or not on PATH. Reopen the terminal after installing" } },
+    { "pattern": "node: command not found|'node' is not recognized", "hint": { "ja": "fnm の初期設定が読まれていません。シェルの設定ファイルに fnm env の行を追加してください", "en": "fnm's shell setup is not loaded. Add the fnm env line to your shell config" }, "fix": "fnm env --use-on-cd" },
+    { "pattern": "error sending request|Could not resolve host|Connection refused", "hint": { "ja": "nodejs.org に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach nodejs.org. Check your network or proxy" } },
+    { "pattern": "running scripts is disabled on this system", "hint": { "ja": "PowerShell の実行ポリシーで止められています。ユーザー単位で RemoteSigned にすると動きます", "en": "PowerShell's execution policy blocks it. Setting RemoteSigned for your user fixes it" }, "fix": "Set-ExecutionPolicy -Scope CurrentUser RemoteSigned" }
+  ]
+}

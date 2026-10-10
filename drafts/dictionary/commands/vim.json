@@ -1,0 +1,55 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "vim",
+  "aliases": ["vi"],
+  "summary": { "ja": "ターミナル内で動くテキストエディタです。終了は Esc を押してから :q! と入力して Enter", "en": "A text editor that runs inside the terminal. To quit: press Esc, then type :q! and Enter" },
+  "description": { "ja": "モード（キーの意味が切り替わる状態）があるのが特徴です。起動直後は「ノーマルモード」で、文字を打っても入力されません。i を押すと入力モードになり、Esc でノーマルモードに戻ります。保存して終了は :wq、保存せずに終了は :q!。迷ったら Esc を何度か押してから :q! と Enter で必ず抜けられます。初心者は vimtutor コマンドで 30 分ほどの練習ができます", "en": "Vim is modal: the meaning of keys changes with the mode. It starts in Normal mode where typing does not insert text. Press i to insert, Esc to return to Normal mode. :wq saves and quits, :q! quits without saving. If stuck, press Esc a few times, then :q! and Enter. Beginners can practice with the vimtutor command" },
+  "install": {
+    "winget": "winget install vim.vim",
+    "scoop": "scoop install vim",
+    "choco": "choco install vim",
+    "brew": "brew install vim",
+    "apt": "sudo apt install vim",
+    "dnf": "sudo dnf install vim-enhanced",
+    "pacman": "sudo pacman -S vim"
+  },
+  "options": [
+    { "flags": ["-R"], "summary": { "ja": "読み取り専用で開く（うっかり書き換えない）", "en": "Open read-only (no accidental edits)" } },
+    { "flags": ["+"], "takesValue": true, "valueType": "number", "summary": { "ja": "指定行で開く（例: +10）", "en": "Open at a line (e.g. +10)" } },
+    { "flags": ["-o"], "summary": { "ja": "複数ファイルを上下に分割して開く", "en": "Open files in stacked windows" } },
+    { "flags": ["-O"], "summary": { "ja": "複数ファイルを左右に分割して開く", "en": "Open files side by side" } },
+    { "flags": ["-p"], "summary": { "ja": "複数ファイルをタブで開く", "en": "Open files in tabs" } },
+    { "flags": ["-d"], "summary": { "ja": "2 つのファイルの差分を表示", "en": "Show a diff of two files" } },
+    { "flags": ["-u"], "takesValue": true, "valueType": "file", "summary": { "ja": "設定ファイルを指定（-u NONE で設定なし）", "en": "Use a specific vimrc (-u NONE for none)" } },
+    { "flags": ["--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "files", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "開くファイル（存在しなければ新規作成）", "en": "Files to open (created if missing)" } }
+  ],
+  "examples": [
+    { "command": "vim notes.txt", "summary": { "ja": "notes.txt を開く。i で入力、Esc → :wq で保存して終了、:q! で保存せず終了", "en": "Open notes.txt. i to type, Esc then :wq to save and quit, :q! to quit without saving" } },
+    { "command": "vim -R config.yaml", "summary": { "ja": "読み取り専用で確認だけする（終了は Esc → :q）", "en": "Just look at a file read-only (quit with Esc then :q)" } },
+    { "command": "vim +42 main.py", "summary": { "ja": "main.py の 42 行目を開く", "en": "Open main.py at line 42" } },
+    { "command": "vimtutor", "summary": { "ja": "Vim の基本操作を練習する公式チュートリアル", "en": "The official hands-on tutorial for Vim basics" } }
+  ],
+  "errors": [
+    {
+      "pattern": "E325: ATTENTION|Found a swap file by the name",
+      "hint": { "ja": "同じファイルを別の vim で開いているか、前回が異常終了しました。別で開いていなければ D（Delete it）か R（Recover）を押してください", "en": "The file is open in another vim, or a previous session crashed. If no other vim has it, press D (Delete it) or R (Recover)" },
+      "allowAi": false
+    },
+    {
+      "pattern": "E212: Can't open file for writing",
+      "hint": { "ja": "保存先に書き込めません。フォルダが存在しないか権限がありません。:w !sudo tee % で管理者として保存できます", "en": "Cannot write the file: the folder is missing or you lack permission. :w !sudo tee % saves as admin" }
+    },
+    {
+      "pattern": "E37: No write since last change",
+      "hint": { "ja": "未保存の変更があります。保存するなら :wq、捨てるなら :q! です", "en": "There are unsaved changes. Use :wq to save, or :q! to discard" },
+      "allowAi": false
+    },
+    {
+      "pattern": "'vim' is not recognized|vim: command not found",
+      "hint": { "ja": "vim が見つかりません。Windows では Git for Windows に同梱の vim が Git Bash から使えます", "en": "vim was not found. On Windows, Git for Windows bundles vim for use in Git Bash" }
+    }
+  ]
+}

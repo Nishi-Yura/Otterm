@@ -1,0 +1,51 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "cp",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルやフォルダをコピーします", "en": "Copies files and folders" },
+  "description": {
+    "ja": "最後に書いた場所が「コピー先」、その前がすべて「コピー元」です。コピー先に同名のファイルがあると、確認なしで上書きされます。",
+    "en": "The last path is the destination; everything before it is a source. An existing file at the destination is overwritten without asking."
+  },
+  "learn": { "ja": "ファイルツリーでの「コピー＆ペースト」は、ターミナルでは cp です", "en": "Copy & paste in the file tree is cp in the terminal" },
+  "options": [
+    { "flags": ["-r", "-R", "--recursive"], "summary": { "ja": "フォルダを中身ごとコピー（フォルダには必須）", "en": "Copy a folder with everything inside (required for folders)" } },
+    { "flags": ["-i", "--interactive"], "summary": { "ja": "上書きする前に 1 件ずつ確認", "en": "Ask before overwriting each file" } },
+    { "flags": ["-n", "--no-clobber"], "summary": { "ja": "すでにあるファイルは上書きしない", "en": "Never overwrite an existing file" } },
+    {
+      "flags": ["-f", "--force"],
+      "summary": { "ja": "上書きできないときは削除してからコピー", "en": "If the destination cannot be opened, remove it and retry" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "コピー先の同名ファイルを確認なしで上書きします", "en": "Overwrites files at the destination without asking" }
+    },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "コピーしたファイル名を表示", "en": "Print each file as it is copied" } },
+    { "flags": ["-p", "--preserve"], "summary": { "ja": "更新日時や権限もそのままコピー", "en": "Keep timestamps and permissions" } },
+    { "flags": ["-a", "--archive"], "summary": { "ja": "フォルダ・権限・リンクをすべて保ったまま丸ごとコピー（バックアップ向け）", "en": "Copy everything exactly, including permissions and links (good for backups)" } },
+    { "flags": ["-u", "--update"], "summary": { "ja": "コピー元の方が新しいときだけコピー", "en": "Copy only when the source is newer" } }
+  ],
+  "args": [
+    { "name": "source", "type": "path", "variadic": true, "summary": { "ja": "コピー元のファイルやフォルダ", "en": "Files or folders to copy" } },
+    { "name": "dest", "type": "path", "summary": { "ja": "コピー先（ファイル名またはフォルダ）", "en": "Destination file name or folder" } }
+  ],
+  "examples": [
+    { "command": "cp report.txt report-backup.txt", "summary": { "ja": "ファイルを別名でコピー", "en": "Copy a file under a new name" } },
+    { "command": "cp -r src backup/", "summary": { "ja": "src フォルダを中身ごと backup の中へコピー", "en": "Copy the src folder and its contents into backup" } },
+    { "command": "cp -i *.jpg ~/Pictures/", "summary": { "ja": "上書き前に確認しながら画像をコピー", "en": "Copy images, asking before any overwrite" } }
+  ],
+  "errors": [
+    {
+      "pattern": "cp: cannot stat [‘'](?<path>[^’']+)[’']: No such file or directory",
+      "hint": { "ja": "コピー元 {path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "Source {path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "cp: -r not specified; omitting directory [‘'](?<path>[^’']+)[’']|cp: (?<dir>\\S+) is a directory \\(not copied\\)",
+      "hint": { "ja": "フォルダをコピーするには -r が必要です", "en": "Copying a folder needs -r" },
+      "fix": "cp -r {path}"
+    },
+    {
+      "pattern": "cp: [‘'](?<a>[^’']+)[’'] and [‘'](?<b>[^’']+)[’'] are the same file",
+      "hint": { "ja": "コピー元とコピー先が同じファイルです。別の名前か別のフォルダを指定してください", "en": "Source and destination are the same file. Choose a different name or folder" }
+    }
+  ]
+}

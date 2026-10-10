@@ -1,0 +1,43 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "cat",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルの中身をそのまま画面に表示します", "en": "Prints a file's contents to the screen" },
+  "description": {
+    "ja": "名前は「つなげる（concatenate）」の略で、複数のファイルを指定すると続けて表示します。長いファイルは画面を流れてしまうので、less を使うと 1 画面ずつ読めます。",
+    "en": "Short for \"concatenate\": several files are printed one after another. Long files scroll past; use less to read them page by page."
+  },
+  "learn": { "ja": "ファイルツリーでファイルを開いて中身を見るのは、ターミナルでは cat です", "en": "Opening a file in the file tree to see its contents is cat in the terminal" },
+  "options": [
+    { "flags": ["-n", "--number"], "summary": { "ja": "行番号を付けて表示", "en": "Number every line" } },
+    { "flags": ["-b", "--number-nonblank"], "summary": { "ja": "空行以外に行番号を付ける", "en": "Number only non-empty lines" } },
+    { "flags": ["-s", "--squeeze-blank"], "summary": { "ja": "連続する空行を 1 行にまとめる", "en": "Collapse repeated blank lines into one" } },
+    { "flags": ["-A", "--show-all"], "summary": { "ja": "タブや行末などの見えない文字も記号で表示", "en": "Show tabs, line ends and other invisible characters" } },
+    { "flags": ["-E", "--show-ends"], "summary": { "ja": "行末に $ を表示", "en": "Show $ at the end of each line" } },
+    { "flags": ["-T", "--show-tabs"], "summary": { "ja": "タブを ^I で表示", "en": "Show tabs as ^I" } }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "表示するファイル（省略すると入力を待ちます）", "en": "Files to print (omit to read from input)" } }
+  ],
+  "examples": [
+    { "command": "cat README.md", "summary": { "ja": "README.md の中身を表示", "en": "Print README.md" } },
+    { "command": "cat -n app.js", "summary": { "ja": "行番号付きで表示", "en": "Print with line numbers" } },
+    { "command": "cat part1.txt part2.txt > all.txt", "summary": { "ja": "2 つのファイルをつなげて all.txt に保存", "en": "Join two files into all.txt" } }
+  ],
+  "errors": [
+    {
+      "pattern": "cat: (?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "cat: (?<path>[^:\\n]+): Is a directory",
+      "hint": { "ja": "{path} はフォルダです。中身の一覧を見るには ls を使います", "en": "{path} is a folder. Use ls to list what is inside" },
+      "fix": "ls {path}"
+    },
+    {
+      "pattern": "cat: (?<path>[^:\\n]+): Permission denied",
+      "hint": { "ja": "{path} を読む権限がありません。他のユーザーのファイルかもしれません", "en": "No permission to read {path}. It may belong to another user" }
+    }
+  ]
+}

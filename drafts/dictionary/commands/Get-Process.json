@@ -1,0 +1,68 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Get-Process",
+  "aliases": ["gps", "ps"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "動いているプログラム（プロセス）の一覧を表示します（PowerShell）。ps と打っても同じです", "en": "Lists running programs (processes) (PowerShell). ps is an alias" },
+  "description": { "ja": "タスクマネージャーの「プロセス」タブに相当します。PowerShell では ps は Get-Process の別名なので、Linux の ps のオプション（aux など）は使えません。名前で絞り込むには Get-Process chrome のように名前（拡張子なし）を渡します。終了させるには Stop-Process を使います。", "en": "Like the Processes tab in Task Manager. In PowerShell, ps is an alias of Get-Process, so Linux-style ps aux does not work. Filter by name with Get-Process chrome (no extension). Use Stop-Process to end one." },
+  "options": [
+    {
+      "flags": ["-Name"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "プロセス名で絞り込み（例: chrome, note*）", "en": "Filter by process name (e.g. chrome, note*)" }
+    },
+    {
+      "flags": ["-Id"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "プロセス ID（PID）で指定", "en": "Select by process ID (PID)" }
+    },
+    {
+      "flags": ["-IncludeUserName"],
+      "summary": { "ja": "実行しているユーザー名も表示（管理者権限が必要）", "en": "Also show the owning user (needs admin rights)" }
+    },
+    {
+      "flags": ["-FileVersionInfo"],
+      "summary": { "ja": "実行ファイルのバージョン情報を表示", "en": "Show the executable's version info" }
+    },
+    {
+      "flags": ["-Module"],
+      "summary": { "ja": "読み込んでいる DLL などを表示", "en": "Show loaded modules (DLLs)" }
+    },
+    {
+      "flags": ["-ComputerName"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "別のコンピューターのプロセスを表示（Windows PowerShell 5.1 のみ）", "en": "Processes on another computer (Windows PowerShell 5.1 only)" }
+    }
+  ],
+  "args": [{ "name": "name", "type": "string", "optional": true, "variadic": true }],
+  "examples": [
+    { "command": "Get-Process", "summary": { "ja": "すべてのプロセスを表示", "en": "List all processes" } },
+    { "command": "Get-Process chrome", "summary": { "ja": "Chrome のプロセスだけ表示", "en": "Only Chrome processes" } },
+    { "command": "Get-Process | Sort-Object CPU -Descending | Select-Object -First 5", "summary": { "ja": "CPU を多く使っている上位 5 件", "en": "Top 5 processes by CPU time" } },
+    { "command": "Get-Process | Sort-Object WorkingSet -Descending | Select-Object -First 5 Name, WorkingSet", "summary": { "ja": "メモリを多く使っている上位 5 件", "en": "Top 5 processes by memory" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot find a process with the name \"(?<name>[^\"]+)\"",
+      "hint": { "ja": "{name} という名前のプロセスは動いていません。拡張子 .exe は付けず、名前の一部なら {name}* のようにワイルドカードを使えます", "en": "No running process named {name}. Drop the .exe, or use a wildcard like {name}* for a partial name" },
+      "fix": "Get-Process"
+    },
+    {
+      "pattern": "Cannot find a process with the process identifier (?<pid>\\d+)",
+      "hint": { "ja": "PID {pid} のプロセスはありません。すでに終了したか、番号が違います", "en": "No process with PID {pid}. It may have exited, or the number differs" },
+      "fix": "Get-Process"
+    },
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'|A positional parameter cannot be found that accepts argument 'aux'",
+      "hint": { "ja": "PowerShell の ps は Linux の ps とは別物で、aux や -ef は使えません。Get-Process だけで一覧が出ます", "en": "PowerShell's ps differs from Linux ps; aux and -ef do not work. Plain Get-Process lists everything" },
+      "fix": "Get-Process"
+    },
+    {
+      "pattern": "The 'IncludeUserName' parameter requires elevated user rights",
+      "hint": { "ja": "-IncludeUserName には管理者権限が必要です。PowerShell を「管理者として実行」してください", "en": "-IncludeUserName needs admin rights. Run PowerShell as administrator" }
+    }
+  ]
+}

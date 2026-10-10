@@ -1,0 +1,82 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "apt",
+  "platforms": ["linux"],
+  "summary": { "ja": "Debian / Ubuntu 系のパッケージ管理ツールです", "en": "Package manager for Debian and Ubuntu" },
+  "description": { "ja": "インストールや削除には sudo が必要です。sudo はあなたのパスワードを聞きますが、入力中は何も表示されません。そのまま打って Enter を押してください。apt-get の使いやすい版で、対話的な利用に向いています。", "en": "Installing or removing needs sudo. sudo asks for your password, and nothing appears while you type; just type it and press Enter. apt is the friendlier front end to apt-get, meant for interactive use." },
+  "install": { "url": "https://wiki.debian.org/Apt" },
+  "subcommands": [
+    {
+      "name": "update",
+      "summary": { "ja": "パッケージ一覧を最新にします（インストールはしません）", "en": "Refreshes the package list (installs nothing)" },
+      "examples": [{ "command": "sudo apt update", "summary": { "ja": "一覧を更新", "en": "Refresh the list" } }],
+      "errors": [
+        { "pattern": "Could not get lock /var/lib/apt/lists/lock|Could not get lock /var/lib/dpkg/lock", "hint": { "ja": "別の apt（自動更新など）が動いています。終わるまで数分待ってください", "en": "Another apt process (e.g. automatic updates) is running. Wait a few minutes" } },
+        { "pattern": "Failed to fetch|Temporary failure resolving|Could not resolve", "hint": { "ja": "リポジトリに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the repository. Check your network or proxy" } },
+        { "pattern": "NO_PUBKEY (?<key>[0-9A-F]+)", "hint": { "ja": "リポジトリの署名鍵 {key} がありません。そのリポジトリの手順にある鍵の登録をやり直してください", "en": "Missing signing key {key} for a repository. Re-add the key as that repository's instructions describe" } }
+      ]
+    },
+    {
+      "name": "install",
+      "summary": { "ja": "パッケージをインストールします", "en": "Installs packages" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-y", "--yes"], "summary": { "ja": "確認なしで進める", "en": "Do not ask for confirmation" } },
+        { "flags": ["--no-install-recommends"], "summary": { "ja": "推奨パッケージを入れない（最小構成）", "en": "Skip recommended packages (minimal install)" } },
+        { "flags": ["--reinstall"], "summary": { "ja": "入れ直す", "en": "Reinstall" } }
+      ],
+      "examples": [{ "command": "sudo apt install build-essential", "summary": { "ja": "C コンパイラ一式を入れる", "en": "Install the C toolchain" } }],
+      "errors": [
+        { "pattern": "Unable to locate package (?<pkg>\\S+)", "hint": { "ja": "{pkg} が見つかりません。sudo apt update を実行してから再試行するか、apt search で名前を確認してください", "en": "{pkg} was not found. Run sudo apt update and retry, or check the name with apt search" }, "fix": "sudo apt update && sudo apt install {pkg}" },
+        { "pattern": "Unmet dependencies|has unmet dependencies|broken packages", "hint": { "ja": "依存関係が壊れています。apt --fix-broken install で修復を試してください", "en": "Dependencies are broken. Try apt --fix-broken install" }, "fix": "sudo apt --fix-broken install" },
+        { "pattern": "dpkg was interrupted", "hint": { "ja": "前回のインストールが途中で止まっています。dpkg --configure -a で続きを実行してください", "en": "A previous install was interrupted. Run dpkg --configure -a to finish it" }, "fix": "sudo dpkg --configure -a" }
+      ]
+    },
+    {
+      "name": "remove",
+      "summary": { "ja": "パッケージを削除します（設定ファイルは残す）", "en": "Removes packages (keeps config files)" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "システム全体からパッケージを削除します。依存して消えるものを確認してください", "en": "Removes system-wide. Check which dependents are also removed" }
+    },
+    {
+      "name": "purge",
+      "summary": { "ja": "パッケージを設定ファイルごと削除します", "en": "Removes packages together with their config files" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "/etc などの設定も消えます。元に戻せません", "en": "Config files under /etc are deleted too. Cannot be undone" }
+    },
+    {
+      "name": "upgrade",
+      "summary": { "ja": "インストール済みパッケージを新しいバージョンにします", "en": "Upgrades installed packages" },
+      "options": [{ "flags": ["-y", "--yes"], "summary": { "ja": "確認なし", "en": "No prompts" } }],
+      "examples": [{ "command": "sudo apt update && sudo apt upgrade", "summary": { "ja": "一覧を更新してから全部更新（定番）", "en": "Refresh the list, then upgrade everything (the usual pair)" } }]
+    },
+    { "name": "full-upgrade", "aliases": ["dist-upgrade"], "summary": { "ja": "必要ならパッケージを削除してでも更新します", "en": "Upgrades, removing packages if needed" }, "danger": "warn", "dangerMessage": { "ja": "パッケージが削除されることがあります。表示される一覧を確認してください", "en": "May remove packages. Read the list it shows" } },
+    { "name": "autoremove", "summary": { "ja": "もう必要ない依存パッケージを削除します", "en": "Removes dependencies no longer needed" }, "danger": "warn", "dangerMessage": { "ja": "表示される削除一覧に必要なものがないか確認してください", "en": "Check the removal list for anything you still need" } },
+    {
+      "name": "search",
+      "summary": { "ja": "パッケージを検索します", "en": "Searches for packages" },
+      "args": [{ "name": "query", "type": "string" }]
+    },
+    {
+      "name": "show",
+      "summary": { "ja": "パッケージの詳細を表示", "en": "Shows package details" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "list",
+      "summary": { "ja": "パッケージの一覧", "en": "Lists packages" },
+      "options": [
+        { "flags": ["--installed"], "summary": { "ja": "インストール済みだけ", "en": "Installed only" } },
+        { "flags": ["--upgradable"], "summary": { "ja": "更新があるものだけ", "en": "Upgradable only" } }
+      ]
+    }
+  ],
+  "errors": [
+    { "pattern": "apt: command not found", "hint": { "ja": "この Linux は apt を使いません。Fedora なら dnf、Arch なら pacman です", "en": "This Linux does not use apt. Fedora uses dnf; Arch uses pacman" } },
+    { "pattern": "are you root\\?|Permission denied|E: Could not open lock file", "hint": { "ja": "管理者権限が必要です。先頭に sudo を付けてください。パスワード入力中は何も表示されません", "en": "Root is required. Prefix the command with sudo. Nothing shows while you type the password" }, "fix": "sudo apt {args}" },
+    { "pattern": "is not in the sudoers file", "hint": { "ja": "このユーザーは sudo を使えません。管理者に権限をもらってください", "en": "This user cannot use sudo. Ask an administrator" } },
+    { "pattern": "Failed to fetch|Temporary failure resolving|Could not resolve", "hint": { "ja": "リポジトリに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the repository. Check your network or proxy" } }
+  ]
+}

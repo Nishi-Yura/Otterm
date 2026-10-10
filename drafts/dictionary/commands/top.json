@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "top",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "動いているプログラムの CPU・メモリ使用量をリアルタイムで表示します", "en": "Live view of running programs and their CPU and memory use" },
+  "description": {
+    "ja": "画面が切り替わって自動更新されます。q キーで終了します。Linux では P で CPU 順、M でメモリ順に並べ替えられます。macOS の top はオプションが少し違います。",
+    "en": "Takes over the screen and refreshes automatically. Press q to quit. On Linux, P sorts by CPU and M by memory. macOS top has slightly different options."
+  },
+  "options": [
+    { "flags": ["-d"], "takesValue": true, "valueType": "number", "summary": { "ja": "更新間隔（秒）", "en": "Refresh interval in seconds" } },
+    { "flags": ["-n"], "takesValue": true, "valueType": "number", "summary": { "ja": "指定回数更新したら終了する", "en": "Exit after this many refreshes" } },
+    { "flags": ["-p"], "takesValue": true, "valueType": "number", "summary": { "ja": "指定した PID だけを表示", "en": "Only show the given PID" } },
+    { "flags": ["-u"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定ユーザーのプロセスだけを表示", "en": "Only this user's processes" } },
+    { "flags": ["-o"], "takesValue": true, "valueType": "string", "summary": { "ja": "並べ替えに使う列（Linux: %MEM、macOS: mem など）", "en": "Column to sort by (Linux: %MEM, macOS: mem)" } },
+    { "flags": ["-b"], "summary": { "ja": "画面を切り替えず、文字として出力（ファイル保存向け、Linux）", "en": "Plain text output for logging, no screen takeover (Linux)" } },
+    { "flags": ["-c"], "summary": { "ja": "コマンド名の代わりに完全なコマンドラインを表示（Linux）", "en": "Show the full command line (Linux)" } }
+  ],
+  "examples": [
+    { "command": "top", "summary": { "ja": "リアルタイム表示を開く（q で終了）", "en": "Open the live view (q to quit)" } },
+    { "command": "top -b -n 1 | head -20", "summary": { "ja": "今の状態を 1 回だけ文字で出力（Linux）", "en": "One text snapshot of the top entries (Linux)" } },
+    { "command": "top -p 1234", "summary": { "ja": "PID 1234 だけを監視", "en": "Watch only PID 1234" } }
+  ],
+  "errors": [
+    {
+      "pattern": "top: unknown option '(?<opt>[^']+)'|top: (invalid|illegal) option",
+      "hint": { "ja": "そのオプションはこの OS の top にはありません。Linux と macOS でオプションが異なります。top --help か man top で確認してください", "en": "That option does not exist in this OS's top. Linux and macOS differ. See top --help or man top" },
+      "fix": "man top"
+    },
+    {
+      "pattern": "top: (bad pid|invalid process id)[: ]+'?(?<pid>[^']+)'?",
+      "hint": { "ja": "{pid} は正しい PID ではありません。-p には数字を指定します。ps aux で番号を確認してください", "en": "{pid} is not a valid PID. -p takes a number. Look it up with ps aux" },
+      "fix": "ps aux | grep "
+    },
+    {
+      "pattern": "top: failed tty get",
+      "hint": { "ja": "画面を切り替えられない環境です（パイプやスクリプトの中など）。-b -n 1 を付けて文字出力にしてください", "en": "No interactive screen is available (inside a pipe or script). Use -b -n 1 for text output" },
+      "fix": "top -b -n 1"
+    }
+  ]
+}

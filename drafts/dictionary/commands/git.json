@@ -41,7 +41,7 @@
           "dangerMessage": { "ja": "リモートの履歴を強制的に上書きします。他の人のコミットが消えることがあります", "en": "Force-overwrites remote history. Other people's commits may be lost" },
           "alternative": { "label": { "ja": "--force-with-lease で実行", "en": "Use --force-with-lease" }, "command": "git push --force-with-lease {args}" }
         },
-        { "flags": ["--force-with-lease"], "summary": { "ja": "リモートが自分の知っている状態のときだけ上書き（安全な force）", "en": "Overwrite only if the remote is as you last saw it (safer force)" }, "danger": "warn" },
+        { "flags": ["--force-with-lease"], "summary": { "ja": "リモートが自分の知っている状態のときだけ上書き（安全な force）", "en": "Overwrite only if the remote is as you last saw it (safer force)" }, "danger": "warn", "dangerMessage": { "ja": "リモートの履歴を書き換えます。他の人が同じブランチで作業していないか確認してください", "en": "Rewrites remote history. Make sure nobody else is working on this branch" } },
         { "flags": ["-u", "--set-upstream"], "summary": { "ja": "このブランチの追跡先を記憶する", "en": "Remember the upstream for this branch" } },
         { "flags": ["--tags"], "summary": { "ja": "タグも送る", "en": "Push tags too" } }
       ],

@@ -1,0 +1,52 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "printf",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "書式（ひな形）に値をはめ込んで文字を表示します。echo より細かく整えられます", "en": "Prints text using a format template. More precise than echo" },
+  "description": {
+    "ja": "最初の引数がひな形で、%s（文字）や %d（整数）の場所に後ろの値が入ります。echo と違って最後に改行が自動では付かないので、必要なら \\n を書きます。",
+    "en": "The first argument is the template; %s (text) and %d (integer) are replaced by the following values. Unlike echo, no newline is added unless you write \\n."
+  },
+  "options": [
+    {
+      "flags": ["-v"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "表示せず、結果を指定した変数に入れる（bash）", "en": "Store the result in a variable instead of printing (bash)" }
+    }
+  ],
+  "args": [
+    {
+      "name": "format",
+      "type": "string",
+      "summary": { "ja": "ひな形。%s や %d、\\n を含められる", "en": "Template with %s, %d and \\n" }
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "ひな形にはめ込む値", "en": "Values to fill into the template" }
+    }
+  ],
+  "examples": [
+    { "command": "printf \"Hello, %s!\\n\" \"Alice\"", "summary": { "ja": "名前をはめ込んで表示", "en": "Insert a name into the text" } },
+    { "command": "printf \"%-10s %5d\\n\" apples 12", "summary": { "ja": "列をそろえて表示（左寄せ 10 文字、右寄せ 5 桁）", "en": "Aligned columns (10 chars left, 5 digits right)" } },
+    { "command": "printf \"%s\\n\" *.txt", "summary": { "ja": "ファイル名を 1 行ずつ表示", "en": "Print each file name on its own line" } }
+  ],
+  "errors": [
+    {
+      "pattern": "printf: [‘']?(?<value>[^’':\\n]+)[’']?: (?:invalid number|expected a numeric value)",
+      "hint": { "ja": "%d には数字しか入れられません。文字を入れたい場所は %s にしてください", "en": "%d only accepts numbers. Use %s where you want text" }
+    },
+    {
+      "pattern": "printf: .*invalid (?:format|conversion) (?:character|specification)",
+      "hint": { "ja": "ひな形の % の後ろの文字が正しくありません。文字は %s、整数は %d、% そのものは %% と書きます", "en": "The letter after % is not valid. Use %s for text, %d for integers, and %% for a literal %" }
+    },
+    {
+      "pattern": "printf: (?:usage|not enough arguments|missing format)",
+      "hint": { "ja": "最初にひな形（例: \"%s\\n\"）が必要です", "en": "The first argument must be the template (e.g. \"%s\\n\")" },
+      "fix": "printf \"%s\\n\""
+    }
+  ]
+}

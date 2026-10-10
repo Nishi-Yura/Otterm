@@ -1,0 +1,62 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "tsc",
+  "summary": { "ja": "TypeScript を JavaScript に変換し、型のエラーを調べます", "en": "Compiles TypeScript to JavaScript and reports type errors" },
+  "description": { "ja": "TypeScript のコンパイラ（型付きのコードを、ブラウザや Node.js が実行できる JavaScript に変換するツール）です。引数なしで実行すると tsconfig.json の設定に従ってプロジェクト全体を処理します。プロジェクトに入れた場合は npx tsc で実行します", "en": "The TypeScript compiler. With no arguments it uses tsconfig.json and processes the whole project. When installed locally in a project, run it as npx tsc" },
+  "install": {
+    "npm": "npm install -g typescript",
+    "brew": "brew install typescript",
+    "url": "https://www.typescriptlang.org/download/"
+  },
+  "options": [
+    { "flags": ["--init"], "summary": { "ja": "tsconfig.json のひな形を作る", "en": "Create a starter tsconfig.json" } },
+    { "flags": ["-p", "--project"], "takesValue": true, "valueType": "path", "summary": { "ja": "使う tsconfig.json またはそのフォルダ", "en": "The tsconfig.json (or its folder) to use" } },
+    { "flags": ["-w", "--watch"], "summary": { "ja": "ファイルが変わるたびに再コンパイル", "en": "Recompile on file changes" } },
+    { "flags": ["--noEmit"], "summary": { "ja": "JavaScript を出力せず型チェックだけ", "en": "Type-check only, write no output" } },
+    { "flags": ["--outDir"], "takesValue": true, "valueType": "dir", "summary": { "ja": "出力先フォルダ", "en": "Output folder" } },
+    { "flags": ["--target"], "takesValue": true, "valueType": "string", "summary": { "ja": "出力する JavaScript の世代（例: es2022）", "en": "JavaScript version to emit (e.g. es2022)" } },
+    { "flags": ["--strict"], "summary": { "ja": "厳しい型チェックをすべて有効にする", "en": "Enable all strict type checks" } },
+    { "flags": ["-v", "--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "files", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "コンパイルする .ts ファイル（指定すると tsconfig.json は無視）", "en": ".ts files to compile (tsconfig.json is ignored when given)" } }
+  ],
+  "examples": [
+    { "command": "tsc --init", "summary": { "ja": "tsconfig.json を作る", "en": "Create tsconfig.json" } },
+    { "command": "tsc", "summary": { "ja": "プロジェクト全体をコンパイル", "en": "Compile the whole project" } },
+    { "command": "tsc --noEmit --watch", "summary": { "ja": "保存するたびに型チェックだけ行う", "en": "Type-check on every save without emitting" } }
+  ],
+  "errors": [
+    {
+      "pattern": "error TS2307: Cannot find module '(?<mod>[^']+)'",
+      "hint": { "ja": "{mod} が見つかりません。npm install で入れるか、型定義だけ足りないなら npm install -D @types/{mod} を試してください", "en": "{mod} was not found. Install it with npm, or if only types are missing try npm install -D @types/{mod}" },
+      "fix": "npm install {mod}"
+    },
+    {
+      "pattern": "error TS2304: Cannot find name '(?<name>[^']+)'",
+      "hint": { "ja": "{name} が定義されていません。つづりか import を確認してください。process や require なら npm install -D @types/node が必要です", "en": "{name} is not defined. Check spelling or imports. For process / require you need npm install -D @types/node" }
+    },
+    {
+      "pattern": "error TS2322: Type '(?<from>[^']+)' is not assignable to type '(?<to>[^']+)'",
+      "hint": { "ja": "{from} 型の値を {to} 型の場所に入れようとしています。値の変換か、型の宣言を見直してください", "en": "A {from} value is being assigned where {to} is expected. Convert the value or adjust the type" }
+    },
+    {
+      "pattern": "error TS5058: The specified path does not exist: '(?<path>[^']+)'",
+      "hint": { "ja": "{path} がありません。-p のパスか今いるフォルダを確認してください", "en": "{path} does not exist. Check the -p path or your current folder" },
+      "fix": "tsc --init"
+    },
+    {
+      "pattern": "error TS18003: No inputs were found in config file",
+      "hint": { "ja": "tsconfig.json の include に一致する .ts ファイルがありません。include や rootDir を確認してください", "en": "No .ts files match the include setting in tsconfig.json. Check include / rootDir" }
+    },
+    {
+      "pattern": "(?<file>[^(\\s]+)\\((?<line>\\d+),(?<col>\\d+)\\): error TS(?<code>\\d+): (?<msg>.+)",
+      "hint": { "ja": "{file} の {line} 行目（TS{code}）: {msg}", "en": "Line {line} of {file} (TS{code}): {msg}" }
+    },
+    {
+      "pattern": "'tsc' is not recognized|tsc: command not found",
+      "hint": { "ja": "tsc が見つかりません。プロジェクトに入れてあるなら npx tsc、なければ npm install -g typescript です", "en": "tsc was not found. Use npx tsc if TypeScript is a project dependency, or install it globally" },
+      "fix": "npx tsc {args}"
+    }
+  ]
+}

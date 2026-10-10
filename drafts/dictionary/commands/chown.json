@@ -1,0 +1,48 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "chown",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルの所有者（持ち主のユーザーやグループ）を変更します", "en": "Changes who owns a file (user and group)" },
+  "description": {
+    "ja": "「ユーザー:グループ」の形で新しい持ち主を指定します。他人のファイルを自分のものにするなど、ほとんどの場合は管理者権限（sudo）が必要です。",
+    "en": "Give the new owner as \"user:group\". Taking over someone else's file almost always needs administrator rights (sudo)."
+  },
+  "options": [
+    {
+      "flags": ["-R", "--recursive"],
+      "summary": { "ja": "フォルダの中身すべてに適用", "en": "Apply to everything inside a folder" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "フォルダ内のすべての持ち主が変わります。システムのフォルダに使うとログインできなくなることがあります", "en": "Changes the owner of everything inside. On system folders this can break logins" }
+    },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "処理したファイルをすべて表示", "en": "Print every file processed" } },
+    { "flags": ["-c", "--changes"], "summary": { "ja": "実際に変わったファイルだけ表示", "en": "Print only files that actually changed" } },
+    { "flags": ["-h", "--no-dereference"], "summary": { "ja": "シンボリックリンク自体の持ち主を変える（リンク先は変えない）", "en": "Change the link itself, not what it points to" } },
+    { "flags": ["--reference"], "takesValue": true, "valueType": "file", "summary": { "ja": "別のファイルと同じ持ち主にする", "en": "Copy the owner of another file" } },
+    { "flags": ["--from"], "takesValue": true, "valueType": "string", "summary": { "ja": "今の持ち主が指定したユーザーのときだけ変える", "en": "Change only files currently owned by this user" } }
+  ],
+  "args": [
+    { "name": "owner", "type": "string", "summary": { "ja": "新しい持ち主（例: alice、alice:staff、:staff）", "en": "New owner (e.g. alice, alice:staff, :staff)" } },
+    { "name": "file", "type": "path", "variadic": true, "summary": { "ja": "対象のファイルやフォルダ", "en": "Files or folders to change" } }
+  ],
+  "examples": [
+    { "command": "sudo chown alice report.txt", "summary": { "ja": "report.txt の持ち主を alice にする", "en": "Make alice the owner of report.txt" } },
+    { "command": "sudo chown -R $USER:$USER ~/projects", "summary": { "ja": "projects フォルダをまるごと自分のものにする", "en": "Take ownership of the whole projects folder" } }
+  ],
+  "errors": [
+    {
+      "pattern": "chown: changing ownership of [‘'](?<path>[^’']+)[’']: Operation not permitted",
+      "hint": { "ja": "持ち主の変更には管理者権限が必要です。対象のファイルが正しいか確認してから sudo を付けてください", "en": "Changing the owner needs administrator rights. Check the target is right, then add sudo" },
+      "fix": "sudo chown"
+    },
+    {
+      "pattern": "chown: invalid (?:user|group|spec): [‘'](?<name>[^’']+)[’']",
+      "hint": { "ja": "{name} というユーザーまたはグループは存在しません。スペルを確認してください。自分の名前は whoami で分かります", "en": "There is no user or group named {name}. Check the spelling; whoami shows your own name" },
+      "fix": "whoami"
+    },
+    {
+      "pattern": "chown: cannot access [‘'](?<path>[^’']+)[’']: No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。持ち主を先、ファイル名を後に書く順番か確認してください", "en": "{path} was not found. Make sure the owner comes first, then the file" },
+      "fix": "ls"
+    }
+  ]
+}

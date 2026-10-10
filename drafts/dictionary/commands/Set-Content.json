@@ -1,0 +1,76 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Set-Content",
+  "aliases": ["sc"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "ファイルの中身を指定した文字列で書き換えます（PowerShell）。既存の内容は消えます", "en": "Replaces a file's contents with the given text (PowerShell). Existing content is lost" },
+  "description": { "ja": "ファイルがなければ新しく作り、あれば中身をまるごと置き換えます。元の内容を残して追加したいときは Add-Content を使います。別名 sc は Windows PowerShell 5.1 だけで使え、PowerShell 7 では sc.exe（サービス管理コマンド）になるので注意してください。", "en": "Creates the file if missing, otherwise replaces everything in it. To keep existing content and add to it, use Add-Content. The alias sc only works in Windows PowerShell 5.1; in PowerShell 7 it runs sc.exe (service control) instead." },
+  "danger": "warn",
+  "options": [
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "書き込むファイル", "en": "File to write" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "既存の内容を上書きします", "en": "Overwrites the existing contents" },
+      "alternative": { "label": { "ja": "末尾に追記する（Add-Content）", "en": "Append instead (Add-Content)" }, "command": "Add-Content {args}" }
+    },
+    {
+      "flags": ["-Value"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "書き込む内容", "en": "Text to write" }
+    },
+    {
+      "flags": ["-Encoding"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "文字コードを指定（例: utf8）。PowerShell 5.1 の既定は UTF-8 ではありません", "en": "Text encoding (e.g. utf8). PowerShell 5.1 does not default to UTF-8" }
+    },
+    {
+      "flags": ["-NoNewline"],
+      "summary": { "ja": "末尾に改行を付けない", "en": "Do not add a trailing newline" }
+    },
+    {
+      "flags": ["-Force"],
+      "summary": { "ja": "読み取り専用や隠しファイルも上書き", "en": "Overwrite read-only or hidden files too" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "読み取り専用の保護を無視して上書きします", "en": "Ignores read-only protection and overwrites" }
+    },
+    {
+      "flags": ["-WhatIf"],
+      "summary": { "ja": "実際には書き込まず、何が起きるかだけ表示（安全な予行演習）", "en": "Show what would happen without writing (safe dry run)" }
+    },
+    {
+      "flags": ["-Confirm"],
+      "summary": { "ja": "書き込む前に確認", "en": "Ask before writing" }
+    }
+  ],
+  "args": [{ "name": "path", "type": "file" }, { "name": "value", "type": "string", "optional": true }],
+  "examples": [
+    { "command": "Set-Content memo.txt \"hello\"", "summary": { "ja": "memo.txt の中身を hello だけにする（なければ作る）", "en": "Make memo.txt contain only hello (creates it if missing)" } },
+    { "command": "\"line1\", \"line2\" | Set-Content list.txt", "summary": { "ja": "パイプで受け取った文字列を書き込む", "en": "Write lines received from the pipeline" } },
+    { "command": "Set-Content memo.txt \"hello\" -WhatIf", "summary": { "ja": "何が起きるか確認だけする", "en": "Preview without writing" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Could not find a part of the path '(?<path>[^']+)'",
+      "hint": { "ja": "{path} の途中のフォルダが存在しません。先に New-Item -ItemType Directory でフォルダを作ってください", "en": "A folder in {path} does not exist. Create it first with New-Item -ItemType Directory" },
+      "fix": "New-Item -ItemType Directory -Path ."
+    },
+    {
+      "pattern": "Access to the path '(?<path>[^']+)' is denied",
+      "hint": { "ja": "{path} に書き込む権限がありません。読み取り専用か、管理者権限が必要な場所です", "en": "No permission to write {path}. It may be read-only or need admin rights" }
+    },
+    {
+      "pattern": "The process cannot access the file '(?<path>[^']+)' because it is being used by another process",
+      "hint": { "ja": "{path} は他のプログラム（エディタなど）が開いています。閉じてから再試行してください", "en": "{path} is open in another program (an editor, perhaps). Close it and retry" }
+    },
+    {
+      "pattern": "The term 'sc' is not recognized|sc\\.exe|DESCRIPTION:\\s+SC is a command line program",
+      "hint": { "ja": "PowerShell 7 では sc は Set-Content の別名ではなく sc.exe です。Set-Content とフルネームで打ってください", "en": "In PowerShell 7, sc is sc.exe, not Set-Content. Type the full name Set-Content" },
+      "fix": "Set-Content"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ping",
+  "summary": { "ja": "相手のコンピューターやサーバーに届くか、応答までに何ミリ秒かかるかを確かめます", "en": "Checks whether a computer or server is reachable and how many milliseconds it takes to answer" },
+  "description": {
+    "ja": "インターネットがつながっているか、サーバーが生きているかを調べる基本の道具です。Linux / macOS では Ctrl+C を押すまで続くので、-c 4 のように回数を指定すると便利です。Windows は 4 回で自動的に止まります（回数指定は -n）。相手が ping に応答しない設定のこともあります。",
+    "en": "The basic tool to see if the internet or a server is up. On Linux / macOS it keeps going until Ctrl+C, so -c 4 to set a count is handy. Windows stops after 4 automatically (count is -n there). Some hosts are configured not to answer pings."
+  },
+  "options": [
+    { "flags": ["-c"], "takesValue": true, "valueType": "number", "summary": { "ja": "送る回数（Linux / macOS）", "en": "Number of pings to send (Linux / macOS)" } },
+    { "flags": ["-n"], "takesValue": true, "valueType": "number", "summary": { "ja": "送る回数（Windows）。Linux では名前解決をしない意味になります", "en": "Number of pings (Windows). On Linux it means no name lookup" } },
+    { "flags": ["-i"], "takesValue": true, "valueType": "number", "summary": { "ja": "送る間隔（秒、Linux / macOS）", "en": "Seconds between pings (Linux / macOS)" } },
+    { "flags": ["-W"], "takesValue": true, "valueType": "number", "summary": { "ja": "1 回の応答を待つ上限（秒。Linux / macOS。Windows は -w ミリ秒）", "en": "Seconds to wait for each reply (Linux / macOS; Windows uses -w in ms)" } },
+    { "flags": ["-t"], "summary": { "ja": "Windows: 止めるまで続ける。Linux / macOS では TTL の指定になります", "en": "Windows: ping until stopped. On Linux / macOS it sets the TTL instead" } },
+    { "flags": ["-4"], "summary": { "ja": "IPv4 を使う", "en": "Use IPv4" } },
+    { "flags": ["-6"], "summary": { "ja": "IPv6 を使う", "en": "Use IPv6" } }
+  ],
+  "args": [
+    { "name": "host", "type": "string", "summary": { "ja": "確かめる相手の名前や IP アドレス", "en": "Host name or IP address to check" } }
+  ],
+  "examples": [
+    { "command": "ping -c 4 example.com", "summary": { "ja": "example.com に 4 回送って応答を見る（Linux / macOS）", "en": "Four pings to example.com (Linux / macOS)" } },
+    { "command": "ping 8.8.8.8", "summary": { "ja": "名前解決を使わずにインターネット接続を確かめる（Ctrl+C で停止）", "en": "Check internet connectivity without DNS (Ctrl+C to stop)" } },
+    { "command": "ping -n 4 example.com", "summary": { "ja": "Windows で 4 回送る", "en": "Four pings on Windows" } }
+  ],
+  "errors": [
+    {
+      "pattern": "(?:ping: |Ping request could not find host )(?<host>\\S+?)(?:: Name or service not known|: Temporary failure in name resolution|\\. Please check the name)",
+      "hint": { "ja": "{host} という名前をアドレスに変換できませんでした。スペルを確認してください。ping 8.8.8.8 が通るなら、名前解決（DNS）側の問題です", "en": "The name {host} could not be resolved. Check the spelling. If ping 8.8.8.8 works, the problem is DNS" },
+      "fix": "ping 8.8.8.8"
+    },
+    {
+      "pattern": "ping: cannot resolve (?<host>\\S+): Unknown host",
+      "hint": { "ja": "{host} という名前をアドレスに変換できませんでした（macOS）。スペルを確認し、ping 8.8.8.8 で接続自体を確かめてください", "en": "The name {host} could not be resolved (macOS). Check the spelling and try ping 8.8.8.8 to test connectivity" },
+      "fix": "ping -c 4 8.8.8.8"
+    },
+    {
+      "pattern": "100% packet loss|Request timed out|Destination Host Unreachable|Lost = (?<n>\\d+) \\(100% loss\\)",
+      "hint": { "ja": "応答がありません。相手が止まっているか、ネットワークが切れているか、相手が ping に答えない設定の可能性があります。Wi-Fi や LAN の接続を確認してください", "en": "No reply. The host may be down, the network may be disconnected, or the host may ignore pings. Check your Wi-Fi or LAN connection" }
+    }
+  ]
+}

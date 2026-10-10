@@ -1,0 +1,82 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "gem",
+  "summary": { "ja": "Ruby のパッケージ（gem）管理ツールです", "en": "Package manager for Ruby (gems)" },
+  "description": { "ja": "Ruby に同梱されています。プロジェクトの依存は Gemfile と bundle で管理し、gem install は単体のツールを入れるときに使うのが一般的です。システムの Ruby に sudo で入れるのは避け、rbenv などで自分用の Ruby を使うと安全です。", "en": "Ships with Ruby. Project dependencies are managed with a Gemfile and bundle; gem install is mostly for standalone tools. Avoid sudo with the system Ruby; a user-level Ruby via rbenv is safer." },
+  "install": { "winget": "winget install RubyInstallerTeam.Ruby.3.3", "brew": "brew install ruby", "apt": "sudo apt install ruby-full", "dnf": "sudo dnf install ruby", "pacman": "sudo pacman -S ruby", "url": "https://www.ruby-lang.org/en/downloads/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["i"],
+      "summary": { "ja": "gem をインストールします", "en": "Installs a gem" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-v", "--version"], "takesValue": true, "valueType": "string", "summary": { "ja": "特定のバージョン", "en": "A specific version" } },
+        { "flags": ["--user-install"], "summary": { "ja": "ユーザーフォルダに入れる（sudo 不要）", "en": "Install into your home folder (no sudo)" } },
+        { "flags": ["-N", "--no-document"], "summary": { "ja": "ドキュメントを生成しない（速い）", "en": "Skip documentation (faster)" } }
+      ],
+      "examples": [{ "command": "gem install bundler", "summary": { "ja": "bundler を入れる", "en": "Install bundler" } }],
+      "errors": [
+        { "pattern": "Could not find a valid gem '(?<pkg>[^']+)'", "hint": { "ja": "{pkg} が見つかりません。名前のスペルを確認してください", "en": "{pkg} was not found. Check the spelling" }, "fix": "gem search {pkg}" },
+        { "pattern": "You don't have write permissions for the (?<dir>\\S+) directory", "hint": { "ja": "{dir} に書き込めません。sudo ではなく --user-install を使うか、rbenv で自分用の Ruby を使ってください", "en": "No write access to {dir}. Use --user-install or a user-level Ruby (rbenv) instead of sudo" }, "fix": "gem install --user-install {args}" },
+        { "pattern": "Failed to build gem native extension|mkmf\\.rb can't find header files", "hint": { "ja": "C 拡張のビルドに失敗しました。Ruby の開発ヘッダとコンパイラ（ruby-dev、build-essential など）を入れてください", "en": "A native extension failed to build. Install Ruby headers and a compiler (ruby-dev, build-essential, ...)" } }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "summary": { "ja": "gem を削除します", "en": "Removes a gem" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-a", "--all"], "summary": { "ja": "すべてのバージョンを削除", "en": "Remove every version" } },
+        { "flags": ["-x", "--executables"], "summary": { "ja": "コマンドも確認なしで削除", "en": "Remove executables without asking" } }
+      ]
+    },
+    {
+      "name": "update",
+      "summary": { "ja": "gem を最新版に更新します（引数なしで全部）", "en": "Updates gems (all of them with no argument)" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["--system"], "summary": { "ja": "RubyGems 自体を更新", "en": "Update RubyGems itself" } }]
+    },
+    {
+      "name": "list",
+      "aliases": ["query"],
+      "summary": { "ja": "インストール済み gem の一覧", "en": "Lists installed gems" },
+      "args": [{ "name": "pattern", "type": "pattern", "optional": true }]
+    },
+    {
+      "name": "search",
+      "summary": { "ja": "rubygems.org から検索します", "en": "Searches rubygems.org" },
+      "args": [{ "name": "query", "type": "string" }]
+    },
+    {
+      "name": "info",
+      "aliases": ["specification"],
+      "summary": { "ja": "gem の詳細を表示", "en": "Shows gem details" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    { "name": "outdated", "summary": { "ja": "更新がある gem を表示します", "en": "Shows gems with updates" } },
+    {
+      "name": "cleanup",
+      "summary": { "ja": "古いバージョンの gem を削除します", "en": "Removes old gem versions" },
+      "options": [{ "flags": ["-n", "--dry-run"], "summary": { "ja": "何を消すか表示だけ", "en": "Only show what would be removed" } }]
+    },
+    {
+      "name": "build",
+      "summary": { "ja": ".gemspec から gem ファイルを作ります", "en": "Builds a .gem file from a gemspec" },
+      "args": [{ "name": "gemspec", "type": "file" }]
+    },
+    {
+      "name": "push",
+      "summary": { "ja": "rubygems.org に公開します", "en": "Publishes to rubygems.org" },
+      "args": [{ "name": "file", "type": "file" }],
+      "danger": "confirm",
+      "dangerMessage": { "ja": "公開したバージョンは取り消しが難しいです。バージョンと中身を確認してください", "en": "Published versions are hard to retract. Check the version and contents" }
+    }
+  ],
+  "errors": [
+    { "pattern": "'gem' is not recognized|gem: command not found", "hint": { "ja": "Ruby が入っていません。Ruby を入れると gem も付いてきます", "en": "Ruby is not installed. Installing Ruby brings gem with it" } },
+    { "pattern": "Gem::RemoteFetcher::FetchError|Errno::ECONNREFUSED|getaddrinfo|SocketError", "hint": { "ja": "rubygems.org に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach rubygems.org. Check your network or proxy" } },
+    { "pattern": "certificate verify failed|SSL_connect", "hint": { "ja": "SSL 証明書の検証に失敗しました。RubyGems を更新するか、証明書バンドルを更新してください", "en": "SSL verification failed. Update RubyGems or your certificate bundle" }, "fix": "gem update --system" },
+    { "pattern": "Gem::FilePermissionError|Permission denied", "hint": { "ja": "書き込み権限がありません。sudo ではなく --user-install か rbenv を使ってください", "en": "No write permission. Use --user-install or rbenv rather than sudo" } }
+  ]
+}

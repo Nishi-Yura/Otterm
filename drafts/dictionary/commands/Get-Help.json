@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Get-Help",
+  "aliases": ["help", "man"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "コマンドの使い方（説明・パラメーター・例）を表示します（PowerShell）。help と打っても同じです", "en": "Shows how to use a command: description, parameters and examples (PowerShell). help is an alias" },
+  "description": { "ja": "Get-Help Copy-Item のようにコマンド名を渡します。-Examples で使用例だけ、-Online でブラウザの公式ドキュメントを開けます。初回は簡易版しか表示されないことがあり、Update-Help（管理者権限が必要なことがあります）で詳しいヘルプをダウンロードできます。help と打つと 1 画面ずつ止まりながら表示します。", "en": "Pass a command name, e.g. Get-Help Copy-Item. -Examples shows only examples; -Online opens the official docs in your browser. The first time you may see only a short version; Update-Help (may need admin rights) downloads the full help. The help alias pages the output." },
+  "options": [
+    {
+      "flags": ["-Name"],
+      "takesValue": true,
+      "valueType": "command",
+      "summary": { "ja": "調べるコマンド名", "en": "Command to look up" }
+    },
+    {
+      "flags": ["-Examples"],
+      "summary": { "ja": "使用例だけを表示", "en": "Show only the examples" }
+    },
+    {
+      "flags": ["-Detailed"],
+      "summary": { "ja": "パラメーターの説明と例を含めて表示", "en": "Include parameter descriptions and examples" }
+    },
+    {
+      "flags": ["-Full"],
+      "summary": { "ja": "すべての情報を表示", "en": "Show everything" }
+    },
+    {
+      "flags": ["-Online"],
+      "summary": { "ja": "ブラウザで公式ドキュメントを開く", "en": "Open the official docs in the browser" }
+    },
+    {
+      "flags": ["-Parameter"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "特定のパラメーターの説明だけ表示（例: -Parameter Recurse）", "en": "Describe one parameter only (e.g. -Parameter Recurse)" }
+    },
+    {
+      "flags": ["-ShowWindow"],
+      "summary": { "ja": "別ウィンドウで検索しながら読む（Windows PowerShell 5.1）", "en": "Open help in a searchable window (Windows PowerShell 5.1)" }
+    }
+  ],
+  "args": [{ "name": "name", "type": "command", "optional": true }],
+  "examples": [
+    { "command": "Get-Help Copy-Item", "summary": { "ja": "Copy-Item の使い方を表示", "en": "Show how to use Copy-Item" } },
+    { "command": "help Get-ChildItem -Examples", "summary": { "ja": "使用例だけを 1 画面ずつ表示", "en": "Examples only, one screen at a time" } },
+    { "command": "Get-Help Stop-Process -Online", "summary": { "ja": "ブラウザで公式ドキュメントを開く", "en": "Open the official docs in the browser" } },
+    { "command": "Update-Help", "summary": { "ja": "詳しいヘルプをダウンロード（初回におすすめ）", "en": "Download the full help files (recommended once)" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Get-Help could not find (?<term>\\S+) in a help file in this session",
+      "hint": { "ja": "{term} のヘルプが見つかりません。コマンド名のスペルを確認するか、Update-Help でヘルプをダウンロードしてください", "en": "No help found for {term}. Check the spelling, or run Update-Help to download help files" },
+      "fix": "Update-Help"
+    },
+    {
+      "pattern": "To download and install Help files for the module",
+      "hint": { "ja": "詳しいヘルプがまだダウンロードされていません。Update-Help を実行すると見られるようになります（-Online ならすぐ読めます）", "en": "Full help is not downloaded yet. Run Update-Help, or use -Online to read it in the browser now" },
+      "fix": "Update-Help"
+    },
+    {
+      "pattern": "Failed to update Help for the module\\(s\\) '(?<m>[^']+)'",
+      "hint": { "ja": "モジュール {m} のヘルプ更新に失敗しました。多くは無視して構いません。管理者権限が必要な場合は PowerShell を管理者として実行してください", "en": "Help update failed for module {m}. This is usually safe to ignore. If admin rights are needed, run PowerShell as administrator" },
+      "fix": "Update-Help -Scope CurrentUser"
+    }
+  ]
+}

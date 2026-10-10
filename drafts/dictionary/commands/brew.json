@@ -1,0 +1,85 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "brew",
+  "platforms": ["macos", "linux"],
+  "summary": { "ja": "macOS（と Linux）の定番パッケージ管理ツール Homebrew です", "en": "Homebrew, the standard package manager for macOS (and Linux)" },
+  "description": { "ja": "コマンドラインツールは formula、GUI アプリは cask として入れます。sudo は不要で、使うと逆にエラーになります。", "en": "Command-line tools are formulae; GUI apps are casks. Never use sudo with brew; it refuses to run as root." },
+  "install": { "url": "https://brew.sh/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": { "ja": "パッケージをインストールします", "en": "Installs a package" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [{ "flags": ["--cask"], "summary": { "ja": "GUI アプリ（cask）として入れる", "en": "Install as a GUI app (cask)" } }],
+      "examples": [
+        { "command": "brew install wget", "summary": { "ja": "wget を入れる", "en": "Install wget" } },
+        { "command": "brew install --cask visual-studio-code", "summary": { "ja": "VS Code を入れる", "en": "Install VS Code" } }
+      ],
+      "errors": [
+        { "pattern": "No available formula with the name \"(?<pkg>[^\"]+)\"", "hint": { "ja": "{pkg} という formula はありません。brew search で探してください。GUI アプリなら --cask かもしれません", "en": "No formula named {pkg}. Try brew search; GUI apps may need --cask" }, "fix": "brew search {pkg}" },
+        { "pattern": "Error: (?<pkg>\\S+) .* is already installed", "hint": { "ja": "{pkg} はすでに入っています。更新は brew upgrade です", "en": "{pkg} is already installed. Use brew upgrade to update it" }, "fix": "brew upgrade {pkg}" },
+        { "pattern": "Error: Cannot install .* because conflicting formulae are installed", "hint": { "ja": "競合するパッケージが入っています。brew unlink で片方を外してください", "en": "A conflicting formula is installed. brew unlink one of them" } }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "aliases": ["remove", "rm"],
+      "summary": { "ja": "パッケージを削除します", "en": "Removes a package" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["--force"], "summary": { "ja": "すべてのバージョンを削除", "en": "Remove every installed version" }, "danger": "warn", "dangerMessage": { "ja": "依存されていても強制的に消します", "en": "Removes even if other packages depend on it" } },
+        { "flags": ["--zap"], "summary": { "ja": "cask の設定ファイルも消す", "en": "Also delete the cask's config files" }, "danger": "warn", "dangerMessage": { "ja": "アプリの設定やデータも消えます", "en": "App settings and data are deleted too" } }
+      ],
+      "errors": [{ "pattern": "because it is required by (?<dep>[^,]+)", "hint": { "ja": "{dep} が依存しているので削除できません。本当に消すなら --ignore-dependencies です", "en": "{dep} depends on it. Use --ignore-dependencies only if you are sure" } }]
+    },
+    { "name": "update", "summary": { "ja": "パッケージ一覧（formula の定義）を最新にします", "en": "Refreshes the package catalog (formula definitions)" } },
+    {
+      "name": "upgrade",
+      "summary": { "ja": "インストール済みパッケージを新しいバージョンにします", "en": "Upgrades installed packages" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [
+        { "flags": ["--cask"], "summary": { "ja": "cask を更新", "en": "Upgrade casks" } },
+        { "flags": ["--greedy"], "summary": { "ja": "自動更新するアプリも含めて更新", "en": "Include auto-updating casks" } }
+      ]
+    },
+    {
+      "name": "search",
+      "summary": { "ja": "パッケージを検索します", "en": "Searches for packages" },
+      "args": [{ "name": "query", "type": "string" }]
+    },
+    {
+      "name": "list",
+      "aliases": ["ls"],
+      "summary": { "ja": "インストール済み一覧", "en": "Lists installed packages" },
+      "options": [{ "flags": ["--cask"], "summary": { "ja": "cask だけ", "en": "Casks only" } }]
+    },
+    {
+      "name": "info",
+      "summary": { "ja": "パッケージの説明やバージョンを表示", "en": "Shows package details" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    { "name": "doctor", "summary": { "ja": "Homebrew の環境に問題がないか診断します", "en": "Diagnoses problems with your Homebrew setup" } },
+    {
+      "name": "cleanup",
+      "summary": { "ja": "古いバージョンとキャッシュを削除します", "en": "Deletes old versions and caches" },
+      "options": [{ "flags": ["-n", "--dry-run"], "summary": { "ja": "何を消すか表示だけ", "en": "Only show what would be removed" } }]
+    },
+    {
+      "name": "services",
+      "summary": { "ja": "常駐サービス（DB など）の起動・停止", "en": "Starts or stops background services (e.g. databases)" },
+      "options": [
+        { "flags": ["start"], "summary": { "ja": "起動してログイン時も自動起動", "en": "Start and run at login" } },
+        { "flags": ["stop"], "summary": { "ja": "停止", "en": "Stop" } },
+        { "flags": ["list"], "summary": { "ja": "一覧", "en": "List services" } }
+      ],
+      "examples": [{ "command": "brew services start postgresql@16", "summary": { "ja": "PostgreSQL を起動", "en": "Start PostgreSQL" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "brew: command not found", "hint": { "ja": "Homebrew が入っていないか PATH にありません。brew.sh のコマンドでインストールし、表示される PATH 設定を行ってください", "en": "Homebrew is missing or not on PATH. Install from brew.sh and follow its PATH instructions" } },
+    { "pattern": "Running Homebrew as root is extremely dangerous", "hint": { "ja": "brew に sudo は不要です。sudo なしで実行してください", "en": "brew must not run with sudo. Run it as your normal user" } },
+    { "pattern": "Permission denied @ .* - (?<path>\\S+)", "hint": { "ja": "{path} に書き込めません。所有者を自分に戻してください", "en": "Cannot write to {path}. Fix its ownership" }, "fix": "sudo chown -R $(whoami) {path}" },
+    { "pattern": "Failed to download resource|Could not resolve host|curl: \\(\\d+\\)", "hint": { "ja": "ダウンロードできません。ネットワークやプロキシを確認してください", "en": "Download failed. Check your network or proxy" } },
+    { "pattern": "Xcode Command Line Tools|xcrun: error: invalid active developer path", "hint": { "ja": "Xcode のコマンドラインツールが必要です", "en": "Xcode Command Line Tools are required" }, "fix": "xcode-select --install" }
+  ]
+}

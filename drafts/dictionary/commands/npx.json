@@ -1,0 +1,80 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "npx",
+  "summary": { "ja": "npm パッケージをインストールせずに一時的に実行します", "en": "Runs an npm package without installing it permanently" },
+  "description": { "ja": "node_modules にコマンドがあればそれを、なければ一時的にダウンロードして実行します。プロジェクト作成（create-*）や一回きりのツールに便利です。npm に同梱されています。", "en": "Uses the command from node_modules if present, otherwise downloads it temporarily and runs it. Handy for scaffolding (create-*) and one-off tools. Ships with npm." },
+  "install": { "winget": "winget install OpenJS.NodeJS.LTS", "brew": "brew install node", "apt": "sudo apt install nodejs npm", "url": "https://nodejs.org/" },
+  "args": [
+    { "name": "package", "type": "package", "summary": { "ja": "実行するパッケージ名（例: create-vite、prettier）", "en": "Package to run (e.g. create-vite, prettier)" } },
+    { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "そのコマンドに渡す引数", "en": "Arguments passed to that command" } }
+  ],
+  "options": [
+    { "flags": ["-y", "--yes"], "summary": { "ja": "ダウンロードの確認を省略", "en": "Skip the download prompt" } },
+    { "flags": ["--no", "--no-install"], "summary": { "ja": "インストール済みのものだけ使い、ダウンロードしない", "en": "Only use what is installed; never download" } },
+    { "flags": ["-p", "--package"], "takesValue": true, "valueType": "package", "summary": { "ja": "実行するコマンド名と違うパッケージを指定", "en": "Specify a package whose name differs from the command" } },
+    { "flags": ["-c", "--call"], "takesValue": true, "valueType": "string", "summary": { "ja": "シェルの文字列として実行", "en": "Run a shell command string" } }
+  ],
+  "subcommands": [
+    {
+      "name": "create-vite",
+      "summary": { "ja": "Vite（高速なフロントエンド開発ツール）のプロジェクトを作ります", "en": "Scaffolds a Vite front-end project" },
+      "args": [{ "name": "dir", "type": "dir", "optional": true }],
+      "options": [{ "flags": ["--template"], "takesValue": true, "valueType": "string", "summary": { "ja": "react / vue / vanilla-ts など", "en": "react / vue / vanilla-ts etc." } }],
+      "examples": [{ "command": "npx create-vite my-app --template react-ts", "summary": { "ja": "React + TypeScript のプロジェクトを作る", "en": "Create a React + TypeScript project" } }]
+    },
+    {
+      "name": "create-next-app",
+      "summary": { "ja": "Next.js のプロジェクトを作ります", "en": "Scaffolds a Next.js project" },
+      "args": [{ "name": "dir", "type": "dir", "optional": true }],
+      "examples": [{ "command": "npx create-next-app@latest my-app", "summary": { "ja": "最新の Next.js でプロジェクトを作る", "en": "Create a project with the latest Next.js" } }]
+    },
+    {
+      "name": "create-react-app",
+      "summary": { "ja": "React のプロジェクトを作ります（現在は非推奨。Vite や Next.js を推奨）", "en": "Scaffolds a React project (now deprecated; prefer Vite or Next.js)" },
+      "args": [{ "name": "dir", "type": "dir" }]
+    },
+    {
+      "name": "prettier",
+      "summary": { "ja": "コードを自動整形します", "en": "Formats code automatically" },
+      "args": [{ "name": "path", "type": "path", "variadic": true }],
+      "options": [
+        { "flags": ["--write", "-w"], "summary": { "ja": "ファイルを書き換える", "en": "Overwrite files in place" } },
+        { "flags": ["--check"], "summary": { "ja": "整形済みか確認だけ", "en": "Only check formatting" } }
+      ],
+      "examples": [{ "command": "npx prettier --write .", "summary": { "ja": "フォルダ全体を整形", "en": "Format the whole folder" } }]
+    },
+    {
+      "name": "eslint",
+      "summary": { "ja": "コードの問題点を検査します", "en": "Lints code for problems" },
+      "args": [{ "name": "path", "type": "path", "variadic": true, "optional": true }],
+      "options": [{ "flags": ["--fix"], "summary": { "ja": "自動で直せるものは直す", "en": "Auto-fix what it can" } }]
+    },
+    {
+      "name": "tsc",
+      "summary": { "ja": "TypeScript をコンパイル・型チェックします", "en": "Compiles and type-checks TypeScript" },
+      "options": [
+        { "flags": ["--noEmit"], "summary": { "ja": "型チェックだけで出力しない", "en": "Type-check only, write nothing" } },
+        { "flags": ["--init"], "summary": { "ja": "tsconfig.json を作る", "en": "Create tsconfig.json" } }
+      ]
+    },
+    {
+      "name": "serve",
+      "summary": { "ja": "フォルダを簡易 Web サーバーで公開します", "en": "Serves a folder over a simple web server" },
+      "args": [{ "name": "dir", "type": "dir", "optional": true }],
+      "options": [{ "flags": ["-l", "--listen"], "takesValue": true, "valueType": "number", "summary": { "ja": "ポート番号", "en": "Port number" } }]
+    },
+    {
+      "name": "cowsay",
+      "summary": { "ja": "牛がしゃべります（npx を試すのに最適）", "en": "A talking cow (a classic way to try npx)" },
+      "args": [{ "name": "text", "type": "string" }],
+      "examples": [{ "command": "npx cowsay hello", "summary": { "ja": "牛に hello と言わせる", "en": "Make the cow say hello" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'npx' is not recognized|npx: command not found", "hint": { "ja": "npx が見つかりません。Node.js を入れると npm と一緒に付いてきます", "en": "npx was not found. Installing Node.js brings npm and npx with it" } },
+    { "pattern": "npm ERR! 404.*'(?<pkg>[^'@\\s]+)", "hint": { "ja": "{pkg} というパッケージはありません。名前のスペルを確認してください", "en": "No package named {pkg}. Check the spelling" } },
+    { "pattern": "could not determine executable to run", "hint": { "ja": "このパッケージには実行できるコマンドがありません。-p でパッケージ名を指定し、続けてコマンド名を書いてください", "en": "This package has no runnable command. Use -p <package> followed by the actual command name" } },
+    { "pattern": "ENOTFOUND|getaddrinfo|ETIMEDOUT", "hint": { "ja": "ネットワークに接続できません。プロキシやオフラインを確認してください", "en": "Cannot reach the network. Check your connection or proxy" } },
+    { "pattern": "EACCES.*permission denied", "hint": { "ja": "書き込み権限がありません。sudo は使わず、npm のキャッシュやグローバル先の権限を確認してください", "en": "No write permission. Avoid sudo; check the npm cache and global folder permissions" } }
+  ]
+}

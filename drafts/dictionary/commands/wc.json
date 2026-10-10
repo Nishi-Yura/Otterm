@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "wc",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルの行数・単語数・文字数を数えます", "en": "Counts lines, words and characters in a file" },
+  "description": {
+    "ja": "何も付けないと「行数 単語数 バイト数 ファイル名」の順で表示します。行数だけ知りたいときは -l が便利です。",
+    "en": "By default it prints lines, words, bytes and the file name. Use -l when you only want the line count."
+  },
+  "options": [
+    { "flags": ["-l", "--lines"], "summary": { "ja": "行数だけ", "en": "Lines only" } },
+    { "flags": ["-w", "--words"], "summary": { "ja": "単語数だけ", "en": "Words only" } },
+    { "flags": ["-c", "--bytes"], "summary": { "ja": "バイト数だけ", "en": "Bytes only" } },
+    { "flags": ["-m", "--chars"], "summary": { "ja": "文字数だけ（日本語など 1 文字が複数バイトでも正しく数える）", "en": "Characters only (correct for multi-byte text like Japanese)" } },
+    { "flags": ["-L", "--max-line-length"], "summary": { "ja": "いちばん長い行の長さ", "en": "Length of the longest line" } }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "数えるファイル（省略すると前のコマンドの出力を数える）", "en": "Files to count (omit to count the previous command's output)" } }
+  ],
+  "examples": [
+    { "command": "wc -l data.csv", "summary": { "ja": "CSV の行数を数える", "en": "Count the lines in a CSV" } },
+    { "command": "ls | wc -l", "summary": { "ja": "フォルダ内のファイル数を数える", "en": "Count the entries in a folder" } },
+    { "command": "wc -m essay.txt", "summary": { "ja": "文章の文字数を数える", "en": "Count the characters in an essay" } }
+  ],
+  "errors": [
+    {
+      "pattern": "wc: (?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "wc: (?<path>[^:\\n]+): (?:Is a directory|read error: Is a directory)",
+      "hint": { "ja": "{path} はフォルダです。中のファイルを指定するか、ls | wc -l でファイル数を数えます", "en": "{path} is a folder. Give it a file, or use ls | wc -l to count entries" },
+      "fix": "ls {path} | wc -l"
+    },
+    {
+      "pattern": "wc: (?<path>[^:\\n]+): Permission denied",
+      "hint": { "ja": "{path} を読む権限がありません。他のユーザーのファイルかもしれません", "en": "No permission to read {path}. It may belong to another user" }
+    }
+  ]
+}

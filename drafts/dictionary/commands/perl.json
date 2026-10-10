@@ -1,0 +1,63 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "perl",
+  "summary": { "ja": "Perl のプログラムを実行します。テキスト処理の 1 行コマンドにもよく使われます", "en": "Runs a Perl program; also popular for one-line text processing" },
+  "description": { "ja": "Perl は文字列処理と正規表現（文字のパターンを表す書き方）が得意なスクリプト言語です。多くの Linux / macOS に最初から入っています。ライブラリ（モジュール）は cpan や cpanm で追加します", "en": "Perl is a scripting language strong at text processing and regular expressions. It is preinstalled on most Linux and macOS systems. Modules are added with cpan or cpanm" },
+  "install": {
+    "winget": "winget install StrawberryPerl.StrawberryPerl",
+    "scoop": "scoop install perl",
+    "choco": "choco install strawberryperl",
+    "brew": "brew install perl",
+    "apt": "sudo apt install perl",
+    "dnf": "sudo dnf install perl",
+    "pacman": "sudo pacman -S perl",
+    "url": "https://www.perl.org/get.html"
+  },
+  "learn": { "ja": "ファイルツリーで .pl を右クリックして「実行」を選ぶと、このコマンドが入力されます", "en": "Right-click a .pl file in the tree and choose Run to get this command" },
+  "options": [
+    { "flags": ["-e"], "takesValue": true, "valueType": "string", "summary": { "ja": "文字列をプログラムとして実行", "en": "Run the given string as code" } },
+    { "flags": ["-n"], "summary": { "ja": "入力を 1 行ずつ読んでコードを実行（表示はしない）", "en": "Loop over input lines without printing" } },
+    { "flags": ["-p"], "summary": { "ja": "-n と同じで、各行を処理後に表示", "en": "Like -n but prints each line afterwards" } },
+    { "flags": ["-i"], "summary": { "ja": "ファイルを直接書き換える（-i.bak でバックアップ付き）", "en": "Edit files in place (-i.bak keeps a backup)" } },
+    { "flags": ["-l"], "summary": { "ja": "行末の改行を自動で処理", "en": "Handle line endings automatically" } },
+    { "flags": ["-w"], "summary": { "ja": "警告を表示する", "en": "Turn on warnings" } },
+    { "flags": ["-c"], "summary": { "ja": "実行せずに文法だけ確認", "en": "Check syntax without running" } },
+    { "flags": ["-v"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "script", "type": "file", "optional": true, "summary": { "ja": "実行する .pl ファイル", "en": "The .pl file to run" } },
+    { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "スクリプトに渡す引数", "en": "Arguments for the script" } }
+  ],
+  "examples": [
+    { "command": "perl script.pl", "summary": { "ja": "script.pl を実行", "en": "Run script.pl" } },
+    { "command": "perl -pi.bak -e 's/foo/bar/g' config.txt", "summary": { "ja": "config.txt の foo を bar に置換（元は config.txt.bak に保存）", "en": "Replace foo with bar in config.txt, keeping a .bak copy" } },
+    { "command": "perl -ne 'print if /ERROR/' app.log", "summary": { "ja": "ERROR を含む行だけ表示", "en": "Print only lines containing ERROR" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Can't locate (?<mod>\\S+)\\.pm in @INC",
+      "hint": { "ja": "モジュール {mod}.pm が入っていません。/ を :: に置き換えた名前（例: Foo/Bar → Foo::Bar）で cpan install してください", "en": "Module {mod}.pm is not installed. Install it with cpan using :: instead of / (e.g. Foo/Bar → Foo::Bar)" }
+    },
+    {
+      "pattern": "syntax error at (?<file>\\S+) line (?<line>\\d+)",
+      "hint": { "ja": "{file} の {line} 行目付近に文法エラーがあります。直前の行のセミコロンや括弧の閉じ忘れを確認してください", "en": "Syntax error near line {line} of {file}. Check the previous line for a missing semicolon or bracket" }
+    },
+    {
+      "pattern": "Global symbol \"(?<var>[^\"]+)\" requires explicit package name",
+      "hint": { "ja": "変数 {var} が宣言されていません。use strict の下では my {var} のように宣言が必要です", "en": "Variable {var} is not declared. Under use strict you must declare it with my {var}" }
+    },
+    {
+      "pattern": "Can't open perl script \"(?<path>[^\"]+)\": No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{path} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "Use of uninitialized value",
+      "hint": { "ja": "値が入っていない変数を使いました。警告であり処理は続いていますが、代入し忘れがないか確認してください", "en": "An undefined value was used. It is a warning, but check for a missing assignment" }
+    },
+    {
+      "pattern": "'perl' is not recognized|perl: command not found",
+      "hint": { "ja": "Perl が見つかりません。Windows では Strawberry Perl か Git Bash に同梱のものが使えます", "en": "Perl was not found. On Windows use Strawberry Perl or the one bundled with Git Bash" }
+    }
+  ]
+}

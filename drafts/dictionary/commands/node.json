@@ -1,0 +1,67 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "node",
+  "aliases": ["nodejs"],
+  "summary": { "ja": "JavaScript のプログラムをブラウザなしで実行します。引数なしなら対話モードです", "en": "Runs JavaScript outside the browser; with no arguments, starts the interactive prompt" },
+  "description": { "ja": "Node.js は JavaScript の実行環境（ランタイム。プログラムを動かすための土台）です。Web サーバーやビルドツールなど、ブラウザの外で JavaScript を動かすときに使います。パッケージ管理の npm も一緒にインストールされます", "en": "Node.js is a JavaScript runtime (the base that executes programs) used for servers, build tools and scripts outside the browser. npm is installed alongside it" },
+  "install": {
+    "winget": "winget install OpenJS.NodeJS.LTS",
+    "scoop": "scoop install nodejs-lts",
+    "choco": "choco install nodejs-lts",
+    "brew": "brew install node",
+    "apt": "sudo apt install nodejs npm",
+    "dnf": "sudo dnf install nodejs",
+    "pacman": "sudo pacman -S nodejs npm",
+    "url": "https://nodejs.org/"
+  },
+  "learn": { "ja": "ファイルツリーで .js を右クリックして「実行」を選ぶと、このコマンドが入力されます", "en": "Right-click a .js file in the tree and choose Run to get this command" },
+  "options": [
+    { "flags": ["-v", "--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } },
+    { "flags": ["-e", "--eval"], "takesValue": true, "valueType": "string", "summary": { "ja": "文字列をプログラムとして実行", "en": "Run the given string as code" } },
+    { "flags": ["-p", "--print"], "takesValue": true, "valueType": "string", "summary": { "ja": "式を評価して結果を表示", "en": "Evaluate an expression and print the result" } },
+    { "flags": ["--watch"], "summary": { "ja": "ファイルが変わるたびに自動で再実行", "en": "Restart automatically when files change" } },
+    { "flags": ["--inspect"], "summary": { "ja": "デバッガー（Chrome DevTools）を接続できるようにする", "en": "Allow a debugger (Chrome DevTools) to attach" } },
+    { "flags": ["--env-file"], "takesValue": true, "valueType": "file", "summary": { "ja": ".env ファイルから環境変数を読み込む", "en": "Load environment variables from a .env file" } },
+    { "flags": ["-c", "--check"], "summary": { "ja": "実行せずに文法だけ確認", "en": "Check syntax without running" } }
+  ],
+  "args": [
+    { "name": "script", "type": "file", "optional": true, "summary": { "ja": "実行する .js / .mjs ファイル", "en": "The .js / .mjs file to run" } },
+    { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "スクリプトに渡す引数", "en": "Arguments for the script" } }
+  ],
+  "examples": [
+    { "command": "node index.js", "summary": { "ja": "index.js を実行", "en": "Run index.js" } },
+    { "command": "node --watch server.js", "summary": { "ja": "保存するたびにサーバーを再起動しながら開発", "en": "Develop with automatic restarts on save" } },
+    { "command": "node -e \"console.log(1 + 1)\"", "summary": { "ja": "1 行だけ試す", "en": "Try a one-liner" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot find module '(?<mod>[^']+)'",
+      "hint": { "ja": "{mod} が見つかりません。パッケージ名なら npm install で入ります。./ や ../ で始まるならファイルのパスと拡張子を確認してください", "en": "{mod} was not found. If it is a package, install it with npm; if it starts with ./ or ../ check the path and extension" },
+      "fix": "npm install {mod}"
+    },
+    {
+      "pattern": "SyntaxError: Cannot use import statement outside a module",
+      "hint": { "ja": "import 文は ES モジュールでしか使えません。package.json に \"type\": \"module\" を追加するか、拡張子を .mjs にしてください", "en": "import statements only work in ES modules. Add \"type\": \"module\" to package.json or rename the file to .mjs" }
+    },
+    {
+      "pattern": "ReferenceError: (?<name>\\w+) is not defined",
+      "hint": { "ja": "{name} という名前が定義されていません。つづりの間違いか、import / require の忘れが多いです", "en": "{name} is not defined. Usually a typo or a missing import / require" }
+    },
+    {
+      "pattern": "EADDRINUSE.*:(?<port>\\d+)",
+      "hint": { "ja": "ポート {port} はすでに使われています。前に起動したサーバーが残っているか、別の番号に変えてください", "en": "Port {port} is already in use. A previous server may still be running, or pick another port" }
+    },
+    {
+      "pattern": "TypeError: (?<msg>.+)",
+      "hint": { "ja": "型のエラーです: {msg}。undefined や null に対して呼び出していないか、直前の行を確認してください", "en": "Type error: {msg}. Check whether you are calling something on undefined or null" }
+    },
+    {
+      "pattern": "'node' is not recognized|node: command not found",
+      "hint": { "ja": "Node.js が見つかりません。インストール後にターミナルを開き直してください", "en": "Node.js was not found. Install it and reopen the terminal" }
+    },
+    {
+      "pattern": "ERR_REQUIRE_ESM",
+      "hint": { "ja": "require で読み込めない ES モジュールです。import を使うか、Node.js を最新に更新してください", "en": "This package is an ES module that cannot be required. Use import instead or update Node.js" }
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "gzip",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルを 1 つずつ圧縮して .gz にします。元のファイルは圧縮後に置き換わります", "en": "Compresses a file into .gz. The original is replaced by the compressed one" },
+  "description": {
+    "ja": "file.txt を gzip すると file.txt.gz になり、元の file.txt は消えます（中身は .gz の中に残っています）。元のまま残すには -k を付けます。戻すには -d か gunzip を使います。",
+    "en": "gzip file.txt produces file.txt.gz and removes file.txt (its contents live in the .gz). Keep the original with -k. Decompress with -d or gunzip."
+  },
+  "options": [
+    { "flags": ["-d", "--decompress"], "summary": { "ja": "圧縮を戻す（gunzip と同じ）", "en": "Decompress (same as gunzip)" } },
+    { "flags": ["-k", "--keep"], "summary": { "ja": "元のファイルを消さずに残す", "en": "Keep the original file" } },
+    { "flags": ["-c", "--stdout"], "summary": { "ja": "ファイルを書き換えず、結果を画面（または > の先）に出す", "en": "Write to the screen (or >) instead of replacing the file" } },
+    { "flags": ["-r", "--recursive"], "summary": { "ja": "フォルダの中のファイルを 1 つずつ圧縮", "en": "Compress each file inside a folder" } },
+    { "flags": ["-l", "--list"], "summary": { "ja": "圧縮前後のサイズを表示", "en": "Show compressed and original sizes" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "ファイル名と圧縮率を表示", "en": "Print file names and compression ratio" } },
+    { "flags": ["-9", "--best"], "summary": { "ja": "最大限に圧縮（時間はかかる）", "en": "Best compression (slower)" } },
+    {
+      "flags": ["-f", "--force"],
+      "summary": { "ja": "すでに .gz があっても確認せず上書き", "en": "Overwrite an existing .gz without asking" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "同名の .gz ファイルを確認なしで上書きします", "en": "Overwrites the existing .gz file without asking" }
+    }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "圧縮または展開するファイル", "en": "Files to compress or decompress" } }
+  ],
+  "examples": [
+    { "command": "gzip -k big.log", "summary": { "ja": "big.log.gz を作り、元の big.log も残す", "en": "Create big.log.gz and keep big.log" } },
+    { "command": "gzip -d big.log.gz", "summary": { "ja": "圧縮を戻して big.log にする", "en": "Decompress back to big.log" } },
+    { "command": "gzip -l archive.tar.gz", "summary": { "ja": "どれくらい小さくなったか見る", "en": "See how much it was compressed" } }
+  ],
+  "errors": [
+    {
+      "pattern": "gzip: (?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "gzip: (?<path>[^:\\n]+): not in gzip format",
+      "hint": { "ja": "{path} は gzip 形式ではありません。.zip なら unzip、.tar なら tar -xf を使います", "en": "{path} is not gzip data. Use unzip for .zip or tar -xf for .tar" }
+    },
+    {
+      "pattern": "gzip: (?<path>[^\\s]+) already (?:exists|has \\.gz suffix)",
+      "hint": { "ja": "{path} はすでに存在するか、すでに圧縮済みです。別名で保存するなら -c と > を使います", "en": "{path} already exists or is already compressed. To save under another name use -c with >" }
+    }
+  ]
+}

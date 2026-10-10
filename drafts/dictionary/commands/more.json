@@ -1,0 +1,42 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "more",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "長いファイルを 1 画面ずつ表示します。スペースで次へ、q で終了します", "en": "Shows a long file one screen at a time. Space for next page, q to quit" },
+  "description": {
+    "ja": "less の古くて簡単な版です。基本は前へ進むだけで、戻るのは苦手です。たいていのパソコンでは less の方が便利なので、迷ったら less を使ってください。",
+    "en": "An older, simpler less. It mostly moves forward and cannot scroll back well. On most systems less is nicer; use that when in doubt."
+  },
+  "options": [
+    { "flags": ["-d"], "summary": { "ja": "操作のヒント（スペースで次へ、q で終了）を画面下に表示", "en": "Show key hints (space to continue, q to quit) at the bottom" } },
+    { "flags": ["-s"], "summary": { "ja": "連続する空行を 1 行にまとめる", "en": "Collapse repeated blank lines into one" } },
+    { "flags": ["-n", "--lines"], "takesValue": true, "valueType": "number", "summary": { "ja": "1 画面の行数を指定", "en": "Lines per screen" } },
+    { "flags": ["-p", "--print-over"], "summary": { "ja": "スクロールせず画面を消してから表示", "en": "Clear the screen before each page instead of scrolling" } },
+    {
+      "flags": ["+"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "+数字 でその行から表示を始める（例: +100）", "en": "+N starts at line N (e.g. +100)" }
+    }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "表示するファイル（省略すると前のコマンドの出力を読みます）", "en": "Files to show (omit to read the previous command's output)" } }
+  ],
+  "examples": [
+    { "command": "more README.md", "summary": { "ja": "README.md を 1 画面ずつ表示", "en": "Page through README.md" } },
+    { "command": "ls -la | more", "summary": { "ja": "長い一覧を 1 画面ずつ見る", "en": "Page through a long listing" } },
+    { "command": "more +100 app.log", "summary": { "ja": "100 行目から表示を始める", "en": "Start showing from line 100" } }
+  ],
+  "errors": [
+    {
+      "pattern": "more: (?:cannot open |stat of )?[‘']?(?<path>[^’':\\n]+)[’']?: No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "(?<path>\\S+)[’']?:? (?:Is a directory|is a directory)",
+      "hint": { "ja": "{path} はフォルダです。中身の一覧を見るには ls を使います", "en": "{path} is a folder. Use ls to list what is inside" },
+      "fix": "ls {path}"
+    }
+  ]
+}

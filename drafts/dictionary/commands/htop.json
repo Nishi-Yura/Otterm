@@ -1,0 +1,46 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "htop",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "動いているプログラムと CPU・メモリの使用量を、色付きで見やすく表示します", "en": "Colorful, easier-to-read live view of running programs and resource use" },
+  "description": {
+    "ja": "top の使いやすい版です。矢印キーで選び、F9 で終了の合図を送り、F6 で並べ替え、/ で検索、q で閉じます。最初から入っていないことが多いので、インストールが必要です。",
+    "en": "A friendlier top. Use arrow keys to select, F9 to send a signal, F6 to sort, / to search and q to quit. Usually needs to be installed first."
+  },
+  "install": {
+    "brew": "brew install htop",
+    "apt": "sudo apt install htop",
+    "dnf": "sudo dnf install htop",
+    "pacman": "sudo pacman -S htop"
+  },
+  "options": [
+    { "flags": ["-d", "--delay"], "takesValue": true, "valueType": "number", "summary": { "ja": "更新間隔（0.1 秒単位。10 なら 1 秒）", "en": "Refresh delay in tenths of a second (10 = 1s)" } },
+    { "flags": ["-u", "--user"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定ユーザーのプロセスだけ表示", "en": "Only this user's processes" } },
+    { "flags": ["-p", "--pid"], "takesValue": true, "valueType": "number", "summary": { "ja": "指定した PID だけ表示（カンマ区切りで複数可）", "en": "Only the given PIDs (comma-separated)" } },
+    { "flags": ["-s", "--sort-key"], "takesValue": true, "valueType": "string", "summary": { "ja": "並べ替えに使う列（例: PERCENT_MEM）。--sort-key help で一覧", "en": "Column to sort by (e.g. PERCENT_MEM). --sort-key help lists them" } },
+    { "flags": ["-t", "--tree"], "summary": { "ja": "親子関係をツリーで表示", "en": "Show processes as a tree" } },
+    { "flags": ["-C", "--no-color"], "summary": { "ja": "白黒で表示", "en": "Monochrome output" } }
+  ],
+  "examples": [
+    { "command": "htop", "summary": { "ja": "見やすいリアルタイム表示を開く（q で終了）", "en": "Open the live view (q to quit)" } },
+    { "command": "htop -u $USER", "summary": { "ja": "自分のプロセスだけを表示", "en": "Only your own processes" } },
+    { "command": "htop -s PERCENT_MEM", "summary": { "ja": "メモリ使用量が多い順に並べる", "en": "Sort by memory usage" } }
+  ],
+  "errors": [
+    {
+      "pattern": "htop: (command )?not found",
+      "hint": { "ja": "htop はまだインストールされていません。パッケージマネージャーで入れられます。代わりに top も使えます", "en": "htop is not installed yet. Install it with your package manager, or use top instead" },
+      "fix": "top"
+    },
+    {
+      "pattern": "Error opening terminal: (?<term>\\S+)",
+      "hint": { "ja": "この端末の種類（{term}）が認識されませんでした。TERM=xterm-256color を付けて試してください", "en": "The terminal type {term} was not recognized. Try with TERM=xterm-256color" },
+      "fix": "TERM=xterm-256color htop"
+    },
+    {
+      "pattern": "htop: invalid option -- '(?<opt>\\S)'|htop: unrecognized option '(?<long>[^']+)'",
+      "hint": { "ja": "そのオプションはありません。htop --help で一覧を確認してください", "en": "That option does not exist. See htop --help" },
+      "fix": "htop --help"
+    }
+  ]
+}

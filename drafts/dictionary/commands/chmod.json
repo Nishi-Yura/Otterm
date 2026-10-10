@@ -1,0 +1,47 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "chmod",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルの権限（読む・書く・実行する の許可）を変更します", "en": "Changes a file's permissions (who may read, write or run it)" },
+  "description": {
+    "ja": "いちばん多い使い方は、スクリプトを実行できるようにする chmod +x です。数字（644, 755 など）で一度に指定することもできます。777 のように全員に書き込みを許すのは避けてください。",
+    "en": "The most common use is chmod +x to make a script runnable. Numbers like 644 or 755 set everything at once. Avoid 777, which lets everyone write."
+  },
+  "options": [
+    {
+      "flags": ["-R", "--recursive"],
+      "summary": { "ja": "フォルダの中身すべてに適用", "en": "Apply to everything inside a folder" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "フォルダ内のすべてのファイルとフォルダの権限が変わります。元の権限には戻せません", "en": "Changes permissions on every file and folder inside. The old permissions cannot be restored" }
+    },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "処理したファイルをすべて表示", "en": "Print every file processed" } },
+    { "flags": ["-c", "--changes"], "summary": { "ja": "実際に変わったファイルだけ表示", "en": "Print only files that actually changed" } },
+    { "flags": ["-f", "--silent", "--quiet"], "summary": { "ja": "エラーを表示しない", "en": "Suppress error messages" } },
+    { "flags": ["--reference"], "takesValue": true, "valueType": "file", "summary": { "ja": "別のファイルと同じ権限にする", "en": "Copy the permissions of another file" } }
+  ],
+  "args": [
+    { "name": "mode", "type": "string", "summary": { "ja": "権限の指定（例: +x、u+w、644、755）", "en": "Permission to set (e.g. +x, u+w, 644, 755)" } },
+    { "name": "file", "type": "path", "variadic": true, "summary": { "ja": "対象のファイルやフォルダ", "en": "Files or folders to change" } }
+  ],
+  "examples": [
+    { "command": "chmod +x deploy.sh", "summary": { "ja": "スクリプトを実行できるようにする", "en": "Make a script runnable" } },
+    { "command": "chmod 644 index.html", "summary": { "ja": "自分だけ書き込み可、他は読むだけ（Web ファイルの定番）", "en": "Owner writes, everyone reads (typical for web files)" } },
+    { "command": "chmod 600 ~/.ssh/id_ed25519", "summary": { "ja": "秘密鍵を自分だけが読める状態にする", "en": "Make a private key readable only by you" } }
+  ],
+  "errors": [
+    {
+      "pattern": "chmod: cannot access [‘'](?<path>[^’']+)[’']: No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。権限の指定を先、ファイル名を後に書く順番か確認してください", "en": "{path} was not found. Make sure the mode comes first, then the file" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "chmod: invalid mode: [‘'](?<mode>[^’']+)[’']",
+      "hint": { "ja": "{mode} は権限の書き方として正しくありません。+x や 644 のように書きます", "en": "{mode} is not a valid mode. Write it like +x or 644" },
+      "fix": "chmod +x"
+    },
+    {
+      "pattern": "chmod: changing permissions of [‘'](?<path>[^’']+)[’']: Operation not permitted",
+      "hint": { "ja": "{path} は自分のファイルではないため変更できません。システムのファイルなら、変更が本当に必要か確認してから sudo を検討してください", "en": "{path} is not yours, so you cannot change it. If it is a system file, make sure the change is really needed before considering sudo" }
+    }
+  ]
+}

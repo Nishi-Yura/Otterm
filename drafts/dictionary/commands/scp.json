@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "scp",
+  "summary": { "ja": "ssh のしくみを使って、別のコンピューターとファイルをコピーします", "en": "Copies files to or from another computer over ssh" },
+  "description": {
+    "ja": "cp と同じ「コピー元 → コピー先」の順で、相手側は ユーザー名@サーバー名:パス と書きます。フォルダをコピーするには -r が必要です。コピー先に同じ名前のファイルがあると確認なしで上書きされます。ポート指定は ssh と違って大文字の -P です。",
+    "en": "Same source-then-destination order as cp; the remote side is written user@host:path. Folders need -r. Existing files at the destination are overwritten without asking. Note the port flag is a capital -P, unlike ssh."
+  },
+  "options": [
+    { "flags": ["-r"], "summary": { "ja": "フォルダを中身ごとコピー", "en": "Copy folders and their contents" } },
+    { "flags": ["-P"], "takesValue": true, "valueType": "number", "summary": { "ja": "ポート番号（大文字に注意。小文字 -p は別の意味）", "en": "Port number (capital P; lowercase -p means something else)" } },
+    { "flags": ["-i"], "takesValue": true, "valueType": "file", "summary": { "ja": "使う秘密鍵のファイル", "en": "Private key file to use" } },
+    { "flags": ["-p"], "summary": { "ja": "更新日時や権限をそのまま保つ", "en": "Preserve modification times and permissions" } },
+    { "flags": ["-C"], "summary": { "ja": "転送中に圧縮して速くする", "en": "Compress during transfer" } },
+    { "flags": ["-q"], "summary": { "ja": "進み具合を表示しない", "en": "Quiet, no progress meter" } },
+    { "flags": ["-l"], "takesValue": true, "valueType": "number", "summary": { "ja": "速度の上限（Kbit/s）", "en": "Bandwidth limit in Kbit/s" } }
+  ],
+  "args": [
+    { "name": "source", "type": "path", "variadic": true, "summary": { "ja": "コピー元（手元のパス、または user@host:パス）", "en": "Source (local path or user@host:path)" } },
+    { "name": "destination", "type": "path", "summary": { "ja": "コピー先（手元のパス、または user@host:パス）", "en": "Destination (local path or user@host:path)" } }
+  ],
+  "examples": [
+    { "command": "scp report.pdf user@example.com:~/", "summary": { "ja": "手元のファイルを相手のホームフォルダへ送る", "en": "Send a local file to the remote home folder" } },
+    { "command": "scp user@example.com:/var/log/app.log ./", "summary": { "ja": "相手のファイルを今のフォルダに取ってくる", "en": "Fetch a remote file into the current folder" } },
+    { "command": "scp -r -P 2222 ./site user@example.com:/var/www/", "summary": { "ja": "ポート 2222 でフォルダごと送る", "en": "Send a whole folder over port 2222" } }
+  ],
+  "errors": [
+    {
+      "pattern": "scp: (?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "相手側に {path} がありません。パスのスペルと、相手側のフォルダが存在するかを確認してください。相対パスは相手のホームフォルダ基準です", "en": "{path} does not exist on the remote side. Check the spelling and that the folder exists. Relative paths start at the remote home folder" }
+    },
+    {
+      "pattern": "ssh: connect to host (?<host>\\S+) port (?<port>\\d+): (?<reason>Connection refused|Connection timed out|No route to host)",
+      "hint": { "ja": "{host} のポート {port} につながりませんでした（{reason}）。ポート指定は scp では大文字の -P です。サーバー名とポートを確認してください", "en": "Could not reach {host} on port {port} ({reason}). In scp the port flag is capital -P. Check the host and port" }
+    },
+    {
+      "pattern": "scp: (?<path>[^:\\n]+): Permission denied|Permission denied \\((?<methods>[^)]+)\\)",
+      "hint": { "ja": "書き込みや認証の権限がありません。コピー先フォルダに書けるユーザーか、鍵やユーザー名が正しいかを確認してください。システムのフォルダへ送るなら、いったんホームに置いてから相手側で sudo mv します", "en": "Permission was denied for writing or for login. Check that the user can write to the destination and that the key or user name is right. For system folders, copy to home first, then sudo mv on the remote side" }
+    }
+  ]
+}

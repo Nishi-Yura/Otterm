@@ -1,0 +1,47 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "curl",
+  "summary": { "ja": "Web の URL からデータを取ってきたり、データを送ったりします", "en": "Fetches data from a URL, or sends data to it" },
+  "description": {
+    "ja": "取ってきた中身はそのまま画面に表示されるので、ファイルに保存するには -o か -O を付けます。API の動作確認やインストールスクリプトの取得によく使われます。Windows PowerShell 5.1 では curl が Invoke-WebRequest の別名になっていてオプションが違うため、curl.exe と入力すると本物の curl が動きます。",
+    "en": "Output goes to the screen; use -o or -O to save to a file. Common for testing APIs and fetching install scripts. In Windows PowerShell 5.1, curl is an alias of Invoke-WebRequest with different options; type curl.exe to get the real curl."
+  },
+  "options": [
+    { "flags": ["-o", "--output"], "takesValue": true, "valueType": "file", "summary": { "ja": "指定した名前のファイルに保存", "en": "Save to this file name" } },
+    { "flags": ["-O", "--remote-name"], "summary": { "ja": "URL の末尾と同じ名前のファイルに保存", "en": "Save using the file name from the URL" } },
+    { "flags": ["-L", "--location"], "summary": { "ja": "転送（リダイレクト）先まで追いかける。ダウンロードでは付けるのが安全", "en": "Follow redirects. Usually wanted for downloads" } },
+    { "flags": ["-s", "--silent"], "summary": { "ja": "進み具合の表示を出さない", "en": "Hide the progress meter" } },
+    { "flags": ["-H", "--header"], "takesValue": true, "valueType": "string", "summary": { "ja": "リクエストに付けるヘッダー（例: \"Authorization: Bearer ...\"）", "en": "Add a request header (e.g. \"Authorization: Bearer ...\")" } },
+    { "flags": ["-X", "--request"], "takesValue": true, "valueType": "string", "summary": { "ja": "送る方式（GET / POST / PUT / DELETE）", "en": "Request method (GET / POST / PUT / DELETE)" } },
+    { "flags": ["-d", "--data"], "takesValue": true, "valueType": "string", "summary": { "ja": "送るデータ（付けると自動的に POST になる）", "en": "Data to send (implies POST)" } },
+    {
+      "flags": ["-k", "--insecure"],
+      "summary": { "ja": "サーバー証明書の確認を省略する", "en": "Skip the server certificate check" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "証明書の確認を飛ばすため、偽のサーバーにつながっても気づけません。自分で用意した開発用サーバー以外では使わないでください", "en": "Skips certificate verification, so a fake server would go unnoticed. Only use against your own development server" }
+    }
+  ],
+  "args": [
+    { "name": "url", "type": "url", "variadic": true, "summary": { "ja": "取りに行く URL", "en": "URL to fetch" } }
+  ],
+  "examples": [
+    { "command": "curl -L -O https://example.com/file.zip", "summary": { "ja": "ファイルを同じ名前でダウンロード", "en": "Download a file keeping its name" } },
+    { "command": "curl -s https://api.example.com/users | jq .", "summary": { "ja": "API の応答を取って整形して表示", "en": "Fetch an API response and pretty-print it" } },
+    { "command": "curl -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"a\"}' https://api.example.com/items", "summary": { "ja": "JSON を POST で送る", "en": "POST a JSON body" } }
+  ],
+  "errors": [
+    {
+      "pattern": "curl: \\(6\\) Could not resolve host: (?<host>\\S+)",
+      "hint": { "ja": "{host} というサーバー名をアドレスに変換できませんでした。URL のスペルとインターネット接続を確認してください", "en": "The server name {host} could not be resolved. Check the URL spelling and your internet connection" },
+      "fix": "ping -c 2 {host}"
+    },
+    {
+      "pattern": "curl: \\(7\\) Failed to connect to (?<host>\\S+) port (?<port>\\d+)",
+      "hint": { "ja": "{host} のポート {port} に接続できませんでした。サーバーが起動していないか、ポート番号が違う可能性があります。localhost なら先にサーバーを起動してください", "en": "Could not connect to {host} on port {port}. The server may be down or the port wrong. For localhost, start the server first" }
+    },
+    {
+      "pattern": "curl: \\(60\\) SSL certificate problem",
+      "hint": { "ja": "サーバーの証明書を確認できませんでした。パソコンの時計がずれていないか、社内プロキシを通していないか確認してください。-k で無視するのは最後の手段です", "en": "The server certificate could not be verified. Check your clock and whether a company proxy is in the way. Using -k to ignore it is a last resort" }
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "rustc",
+  "summary": { "ja": "Rust のソースコードをコンパイルして実行ファイルを作ります。普段は cargo 経由で使います", "en": "Compiles Rust source into an executable; usually invoked through cargo" },
+  "description": { "ja": "Rust のコンパイラ（コードを実行できる形に変換するツール）です。1 ファイルの試しには直接使えますが、依存ライブラリ（crate）を使うプロジェクトでは cargo build / cargo run が rustc を呼び出します。エラー番号（E0382 など）は rustc --explain で詳しい説明が読めます", "en": "The Rust compiler. Fine for single-file experiments; projects with dependencies (crates) use cargo build / cargo run, which calls rustc for you. Error codes such as E0382 are explained by rustc --explain" },
+  "install": {
+    "winget": "winget install Rustlang.Rustup",
+    "scoop": "scoop install rustup",
+    "choco": "choco install rustup.install",
+    "brew": "brew install rustup",
+    "pacman": "sudo pacman -S rust",
+    "url": "https://rustup.rs/"
+  },
+  "options": [
+    { "flags": ["-o"], "takesValue": true, "valueType": "path", "summary": { "ja": "出力する実行ファイルの名前", "en": "Name of the output file" } },
+    { "flags": ["--edition"], "takesValue": true, "valueType": "string", "summary": { "ja": "言語のエディション（例: --edition 2021）", "en": "Language edition (e.g. --edition 2021)" } },
+    { "flags": ["-O"], "summary": { "ja": "最適化してビルド（速くなる）", "en": "Optimized build" } },
+    { "flags": ["-g"], "summary": { "ja": "デバッグ情報を埋め込む", "en": "Include debug info" } },
+    { "flags": ["--crate-type"], "takesValue": true, "valueType": "string", "summary": { "ja": "出力の種類（bin / lib）", "en": "Output kind (bin / lib)" } },
+    { "flags": ["--explain"], "takesValue": true, "valueType": "string", "summary": { "ja": "エラー番号の詳しい説明を表示", "en": "Explain an error code" } },
+    { "flags": ["-V", "--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "source", "type": "file", "summary": { "ja": "コンパイルする .rs ファイル", "en": "The .rs file to compile" } }
+  ],
+  "examples": [
+    { "command": "rustc main.rs", "summary": { "ja": "main.rs から main という実行ファイルを作る", "en": "Build an executable named main from main.rs" } },
+    { "command": "rustc -O -o app main.rs", "summary": { "ja": "最適化して app という名前で出力", "en": "Optimized build named app" } },
+    { "command": "rustc --explain E0382", "summary": { "ja": "エラー E0382 の説明を読む", "en": "Read the explanation for error E0382" } }
+  ],
+  "errors": [
+    {
+      "pattern": "cannot find (?<kind>\\w+) `(?<name>[^`]+)` in this scope",
+      "hint": { "ja": "{kind} の {name} が見つかりません。つづりの間違いか、use 文の忘れです", "en": "{kind} {name} was not found. Check the spelling or add a use statement" }
+    },
+    {
+      "pattern": "borrow of moved value: `(?<var>[^`]+)`",
+      "hint": { "ja": "{var} はすでに別の場所へ移動（move）されていて使えません。.clone() で複製するか、参照（&）で渡してください", "en": "{var} was moved and can no longer be used. Clone it with .clone() or pass a reference (&)" },
+      "fix": "rustc --explain E0382"
+    },
+    {
+      "pattern": "use of unresolved module or unlinked crate `(?<crate>[^`]+)`|unresolved import `(?<crate2>[^`:]+)",
+      "hint": { "ja": "crate {crate}{crate2} が見つかりません。外部ライブラリは rustc 単体では使えないので、cargo プロジェクトにして cargo add で追加してください", "en": "Crate {crate}{crate2} was not found. External libraries need a cargo project; add them with cargo add" },
+      "fix": "cargo add {crate}{crate2}"
+    },
+    {
+      "pattern": "error: expected (?<exp>.+?), found (?<found>.+)",
+      "hint": { "ja": "文法エラー: {exp} が来るはずの所に {found} があります。セミコロンや括弧の閉じ忘れを確認してください", "en": "Syntax error: expected {exp} but found {found}. Check for a missing semicolon or bracket" }
+    },
+    {
+      "pattern": "error\\[E(?<code>\\d{4})\\]: (?<msg>.+)",
+      "hint": { "ja": "エラー E{code}: {msg}。rustc --explain E{code} で詳しい説明と直し方が読めます", "en": "Error E{code}: {msg}. Run rustc --explain E{code} for a detailed explanation" },
+      "fix": "rustc --explain E{code}"
+    },
+    {
+      "pattern": "error: couldn't read (?<file>\\S+): No such file or directory",
+      "hint": { "ja": "{file} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{file} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "'rustc' is not recognized|rustc: command not found",
+      "hint": { "ja": "Rust が見つかりません。rustup でインストールしてターミナルを開き直してください", "en": "Rust was not found. Install it with rustup and reopen the terminal" }
+    }
+  ]
+}

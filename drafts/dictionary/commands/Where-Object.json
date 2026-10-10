@@ -1,0 +1,78 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Where-Object",
+  "aliases": ["where", "?"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "パイプで流れてきたものを条件で絞り込みます（PowerShell）。where や ? と打っても同じです", "en": "Filters items coming through the pipeline by a condition (PowerShell). where and ? are aliases" },
+  "description": { "ja": "Get-Process | Where-Object { $_.CPU -gt 100 } のように、| の後ろで使います。$_ は「今見ている 1 件」を表します。簡単な条件なら Where-Object CPU -gt 100 とも書けます。PowerShell では where は Where-Object の別名なので、Windows の where コマンド（実行ファイルの場所を探す）を使いたいときは where.exe と打ってください。", "en": "Used after a pipe, e.g. Get-Process | Where-Object { $_.CPU -gt 100 }. $_ means the current item. Simple conditions can be written as Where-Object CPU -gt 100. In PowerShell, where is an alias of Where-Object; to run the Windows where command (find an executable), type where.exe." },
+  "options": [
+    {
+      "flags": ["-FilterScript"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "条件のスクリプトブロック { $_.プロパティ -比較 値 }", "en": "Condition script block { $_.Property -op value }" }
+    },
+    {
+      "flags": ["-Property"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "比較するプロパティ名（簡易構文）", "en": "Property to compare (simplified syntax)" }
+    },
+    {
+      "flags": ["-eq", "-ne"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "等しい / 等しくない", "en": "Equal / not equal" }
+    },
+    {
+      "flags": ["-gt", "-ge", "-lt", "-le"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "より大きい / 以上 / より小さい / 以下", "en": "Greater / greater-or-equal / less / less-or-equal" }
+    },
+    {
+      "flags": ["-like", "-notlike"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "ワイルドカードで一致 / 不一致（例: \"*.txt\"）", "en": "Wildcard match / no match (e.g. \"*.txt\")" }
+    },
+    {
+      "flags": ["-match", "-notmatch"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "正規表現で一致 / 不一致", "en": "Regular-expression match / no match" }
+    },
+    {
+      "flags": ["-contains", "-in"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "リストに含む / リストに含まれる", "en": "List contains value / value is in list" }
+    }
+  ],
+  "examples": [
+    { "command": "Get-Process | Where-Object { $_.CPU -gt 100 }", "summary": { "ja": "CPU 時間が 100 秒を超えるプロセスだけ", "en": "Only processes with more than 100 s of CPU time" } },
+    { "command": "Get-ChildItem | Where-Object Length -gt 1MB", "summary": { "ja": "1 MB より大きいファイルだけ（簡易構文）", "en": "Only files larger than 1 MB (simplified syntax)" } },
+    { "command": "Get-Service | ? Status -eq Running", "summary": { "ja": "動作中のサービスだけ（? は別名）", "en": "Only running services (? is an alias)" } },
+    { "command": "Get-ChildItem | Where-Object { $_.Name -like \"*.log\" -and $_.LastWriteTime -gt (Get-Date).AddDays(-7) }", "summary": { "ja": "1 週間以内に更新された .log ファイル", "en": ".log files modified within the last week" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot bind parameter 'FilterScript'\\. Cannot convert the \"(?<v>[^\"]+)\" value of type \"System\\.String\" to type \"System\\.Management\\.Automation\\.ScriptBlock\"",
+      "hint": { "ja": "条件は { } で囲む必要があります。例: Where-Object { $_.Name -eq \"{v}\" }", "en": "The condition must be wrapped in { }. Example: Where-Object { $_.Name -eq \"{v}\" }" },
+      "fix": "Where-Object { $_.Name -eq \"{v}\" }"
+    },
+    {
+      "pattern": "You must provide a value expression following the '(?<op>-\\w+)' operator",
+      "hint": { "ja": "{op} の後ろに比較する値がありません。例: $_.Status {op} \"Running\"", "en": "A value is missing after {op}. Example: $_.Status {op} \"Running\"" }
+    },
+    {
+      "pattern": "Unexpected token '(?<t>[^']+)' in expression or statement",
+      "hint": { "ja": "{t} の書き方が解釈できません。比較は == ではなく -eq、> ではなく -gt を使います", "en": "Could not parse {t}. Comparisons use -eq instead of ==, and -gt instead of >" }
+    },
+    {
+      "pattern": "INFO: Could not find files for the given pattern",
+      "hint": { "ja": "Windows の where.exe が動いたようです。PowerShell で実行ファイルの場所を探すなら Get-Command、絞り込みなら Where-Object を使います", "en": "That was Windows where.exe. To locate an executable in PowerShell use Get-Command; to filter use Where-Object" },
+      "fix": "Get-Command"
+    }
+  ]
+}

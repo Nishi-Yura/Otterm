@@ -1,0 +1,44 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "diff",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "2 つのファイルのどこが違うかを行単位で表示します", "en": "Shows line-by-line differences between two files" },
+  "description": {
+    "ja": "何も表示されなければ 2 つは同じです。違いがあると終了コードが 1 になりますが、これはエラーではありません。-u を付けると読みやすい形式になります。",
+    "en": "No output means the files are identical. Differences give exit code 1, which is not an error. -u gives the easier-to-read format."
+  },
+  "options": [
+    { "flags": ["-u", "--unified"], "summary": { "ja": "前後の行も含めて読みやすく表示（+ が追加、- が削除）", "en": "Readable format with context (+ added, - removed)" } },
+    { "flags": ["-r", "--recursive"], "summary": { "ja": "フォルダ同士を中身ごと比べる", "en": "Compare two folders including their contents" } },
+    { "flags": ["-q", "--brief"], "summary": { "ja": "違いの中身は出さず、違うかどうかだけ表示", "en": "Report only whether files differ" } },
+    { "flags": ["-i", "--ignore-case"], "summary": { "ja": "大文字と小文字の違いを無視", "en": "Ignore case differences" } },
+    { "flags": ["-w", "--ignore-all-space"], "summary": { "ja": "空白の違いを無視", "en": "Ignore whitespace differences" } },
+    { "flags": ["-y", "--side-by-side"], "summary": { "ja": "左右に並べて表示", "en": "Show the files side by side" } },
+    { "flags": ["-N", "--new-file"], "summary": { "ja": "片方にしかないファイルを空ファイルとして比べる（-r と併用）", "en": "Treat missing files as empty (with -r)" } },
+    { "flags": ["--color"], "summary": { "ja": "追加と削除を色分け", "en": "Color additions and removals" } }
+  ],
+  "args": [
+    { "name": "file1", "type": "path", "summary": { "ja": "比べる元のファイルやフォルダ", "en": "Original file or folder" } },
+    { "name": "file2", "type": "path", "summary": { "ja": "比べる相手のファイルやフォルダ", "en": "File or folder to compare against" } }
+  ],
+  "examples": [
+    { "command": "diff -u old.txt new.txt", "summary": { "ja": "2 つのファイルの違いを読みやすく表示", "en": "Readable diff between two files" } },
+    { "command": "diff -rq src backup/src", "summary": { "ja": "フォルダ同士でどのファイルが違うかだけ表示", "en": "Which files differ between two folders" } }
+  ],
+  "errors": [
+    {
+      "pattern": "diff: (?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "diff: missing operand after [‘'](?<path>[^’']+)[’']",
+      "hint": { "ja": "比べるファイルは 2 つ必要です", "en": "diff needs two files to compare" },
+      "fix": "diff -u {path}"
+    },
+    {
+      "pattern": "Binary files (?<a>.+?) and (?<b>.+?) differ",
+      "hint": { "ja": "{a} と {b} は文字のファイルではない（画像や圧縮ファイルなど）ため、中身の違いは表示できません。違いがあることだけ分かります", "en": "{a} and {b} are not text (images, archives, etc.), so the differences cannot be shown. They do differ" }
+    }
+  ]
+}

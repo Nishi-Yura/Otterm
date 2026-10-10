@@ -1,0 +1,96 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "rustup",
+  "summary": { "ja": "Rust 本体（コンパイラやツール）のバージョンを管理します", "en": "Manages versions of the Rust toolchain itself" },
+  "description": { "ja": "stable / beta / nightly といったツールチェーンを切り替えたり、rustfmt や clippy などの部品を追加したりします。cargo や rustc は rustup が入れたものを使います。", "en": "Switches between toolchains such as stable, beta and nightly, and adds components like rustfmt and clippy. cargo and rustc come from whatever rustup installed." },
+  "install": { "winget": "winget install Rustlang.Rustup", "scoop": "scoop install rustup", "brew": "brew install rustup", "url": "https://rustup.rs/" },
+  "subcommands": [
+    {
+      "name": "update",
+      "aliases": ["upgrade", "up"],
+      "summary": { "ja": "インストール済みツールチェーンと rustup 自体を更新します", "en": "Updates installed toolchains and rustup itself" },
+      "args": [{ "name": "toolchain", "type": "string", "optional": true, "summary": { "ja": "stable / nightly など", "en": "stable / nightly etc." } }],
+      "examples": [{ "command": "rustup update", "summary": { "ja": "すべてを最新に", "en": "Update everything" } }],
+      "errors": [{ "pattern": "could not download file|error sending request|Could not resolve host", "hint": { "ja": "ダウンロードできません。ネットワークやプロキシを確認してください", "en": "Download failed. Check your network or proxy" } }]
+    },
+    { "name": "show", "summary": { "ja": "今使っているツールチェーンと有効な設定を表示します", "en": "Shows the active toolchain and settings" } },
+    {
+      "name": "default",
+      "summary": { "ja": "既定のツールチェーンを設定します", "en": "Sets the default toolchain" },
+      "args": [{ "name": "toolchain", "type": "string" }],
+      "examples": [{ "command": "rustup default stable", "summary": { "ja": "stable を既定にする", "en": "Make stable the default" } }]
+    },
+    {
+      "name": "toolchain",
+      "summary": { "ja": "ツールチェーンの追加・削除・一覧", "en": "Installs, removes or lists toolchains" },
+      "options": [
+        { "flags": ["install"], "summary": { "ja": "ツールチェーンを追加（例: nightly）", "en": "Install a toolchain (e.g. nightly)" } },
+        { "flags": ["uninstall"], "summary": { "ja": "ツールチェーンを削除", "en": "Remove a toolchain" }, "danger": "warn", "dangerMessage": { "ja": "そのツールチェーンが消えます。再インストールは可能です", "en": "Removes that toolchain; it can be reinstalled" } },
+        { "flags": ["list"], "summary": { "ja": "一覧", "en": "List toolchains" } }
+      ],
+      "examples": [{ "command": "rustup toolchain install nightly", "summary": { "ja": "nightly を追加", "en": "Install nightly" } }]
+    },
+    {
+      "name": "component",
+      "summary": { "ja": "rustfmt や clippy などの部品を追加・削除します", "en": "Adds or removes components like rustfmt and clippy" },
+      "options": [
+        { "flags": ["add"], "summary": { "ja": "部品を追加", "en": "Add a component" } },
+        { "flags": ["remove"], "summary": { "ja": "部品を削除", "en": "Remove a component" } },
+        { "flags": ["list"], "summary": { "ja": "一覧（--installed で入っているものだけ）", "en": "List components (--installed for installed only)" } }
+      ],
+      "examples": [{ "command": "rustup component add rustfmt clippy rust-analyzer", "summary": { "ja": "整形・lint・エディタ補完の部品を追加", "en": "Add formatter, linter and editor support" } }],
+      "errors": [{ "pattern": "component '(?<comp>[^']+)' .* is unavailable", "hint": { "ja": "{comp} はこのツールチェーンの今日のビルドにありません。別の日付の nightly か stable を使ってください", "en": "{comp} is not available in this toolchain build. Try another nightly date or stable" } }]
+    },
+    {
+      "name": "target",
+      "summary": { "ja": "クロスコンパイル先（ターゲット）を追加・削除します", "en": "Adds or removes compilation targets for cross-compiling" },
+      "options": [
+        { "flags": ["add"], "summary": { "ja": "ターゲットを追加", "en": "Add a target" } },
+        { "flags": ["remove"], "summary": { "ja": "ターゲットを削除", "en": "Remove a target" } },
+        { "flags": ["list"], "summary": { "ja": "一覧", "en": "List targets" } }
+      ],
+      "examples": [{ "command": "rustup target add wasm32-unknown-unknown", "summary": { "ja": "WebAssembly 向けを追加", "en": "Add the WebAssembly target" } }]
+    },
+    {
+      "name": "override",
+      "summary": { "ja": "このフォルダだけ別のツールチェーンを使うよう設定します", "en": "Uses a different toolchain only in this folder" },
+      "options": [
+        { "flags": ["set"], "summary": { "ja": "設定する", "en": "Set the override" } },
+        { "flags": ["unset"], "summary": { "ja": "解除する", "en": "Remove the override" } }
+      ],
+      "examples": [{ "command": "rustup override set nightly", "summary": { "ja": "このフォルダでは nightly を使う", "en": "Use nightly in this folder" } }]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "指定ツールチェーンでコマンドを実行します", "en": "Runs a command with a given toolchain" },
+      "args": [
+        { "name": "toolchain", "type": "string" },
+        { "name": "command", "type": "command" }
+      ],
+      "examples": [{ "command": "rustup run nightly cargo build", "summary": { "ja": "nightly でビルド", "en": "Build with nightly" } }]
+    },
+    {
+      "name": "doc",
+      "summary": { "ja": "オフラインの Rust ドキュメントをブラウザで開きます", "en": "Opens the offline Rust docs in a browser" },
+      "options": [
+        { "flags": ["--book"], "summary": { "ja": "The Rust Programming Language を開く", "en": "Open The Rust Programming Language book" } },
+        { "flags": ["--std"], "summary": { "ja": "標準ライブラリのリファレンス", "en": "Standard library reference" } }
+      ]
+    },
+    {
+      "name": "self",
+      "summary": { "ja": "rustup 自体を更新・削除します", "en": "Updates or removes rustup itself" },
+      "options": [
+        { "flags": ["update"], "summary": { "ja": "rustup を更新", "en": "Update rustup" } },
+        { "flags": ["uninstall"], "summary": { "ja": "rustup と Rust をすべて削除", "en": "Remove rustup and all of Rust" }, "danger": "confirm", "dangerMessage": { "ja": "Rust のコンパイラ、cargo、入れたツールがすべて消えます", "en": "Removes the Rust compiler, cargo and every installed toolchain" } }
+      ]
+    }
+  ],
+  "errors": [
+    { "pattern": "'rustup' is not recognized|rustup: command not found", "hint": { "ja": "rustup が入っていません。rustup.rs のインストーラで Rust 一式を入れられます", "en": "rustup is not installed. The installer at rustup.rs sets up Rust" } },
+    { "pattern": "toolchain '(?<tc>[^']+)' is not installed", "hint": { "ja": "ツールチェーン {tc} が入っていません。rustup toolchain install で追加できます", "en": "Toolchain {tc} is not installed. Add it with rustup toolchain install" }, "fix": "rustup toolchain install {tc}" },
+    { "pattern": "error: no default toolchain configured", "hint": { "ja": "既定のツールチェーンが未設定です。rustup default stable を実行してください", "en": "No default toolchain is set. Run rustup default stable" }, "fix": "rustup default stable" },
+    { "pattern": "Could not resolve host|error sending request|download failed", "hint": { "ja": "ダウンロードできません。ネットワークやプロキシを確認してください", "en": "Download failed. Check your network or proxy" } },
+    { "pattern": "Permission denied|Access is denied", "hint": { "ja": "書き込めません。別の cargo や rust-analyzer が動いていないか確認してください", "en": "Cannot write. Check that no other cargo or rust-analyzer process is running" } }
+  ]
+}

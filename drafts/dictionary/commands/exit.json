@@ -1,0 +1,33 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "exit",
+  "summary": { "ja": "今のシェル（ターミナルとのやり取り）を終了します", "en": "Ends the current shell session" },
+  "description": {
+    "ja": "ssh で別のコンピューターにつないでいるときは、その接続が切れて元のコンピューターに戻ります。su で別ユーザーになっているときは元のユーザーに戻ります。数字を付けるとそれが終了コードになります（0 = 成功、それ以外 = 失敗）。Ctrl+D でも同じです。",
+    "en": "Inside an ssh connection it disconnects and returns you to your own machine. After su it returns to your original user. A number becomes the exit code (0 = success, anything else = failure). Ctrl+D does the same."
+  },
+  "args": [
+    { "name": "code", "type": "number", "optional": true, "summary": { "ja": "終了コード（省略時は直前のコマンドの結果）", "en": "Exit code (defaults to the last command's result)" } }
+  ],
+  "examples": [
+    { "command": "exit", "summary": { "ja": "シェルを終了する（ssh 中なら切断）", "en": "Leave the shell (disconnects if inside ssh)" } },
+    { "command": "exit 1", "summary": { "ja": "スクリプトの中で「失敗」として終了する", "en": "Exit a script signalling failure" } }
+  ],
+  "errors": [
+    {
+      "pattern": "There are stopped jobs",
+      "hint": { "ja": "一時停止中のプログラムがあるので終了しませんでした。jobs で確認し、fg で戻すか kill で終了してから exit してください。もう一度 exit すると強制的に終わります", "en": "A paused program is still running, so the shell stayed open. Check with jobs, bring it back with fg or kill it, then exit. Typing exit again forces it" },
+      "fix": "jobs"
+    },
+    {
+      "pattern": "exit: (?<arg>\\S+): numeric argument required",
+      "hint": { "ja": "exit に付けられるのは数字だけです。{arg} ではなく 0 や 1 を指定してください", "en": "exit only accepts a number. Use 0 or 1 instead of {arg}" },
+      "fix": "exit 0"
+    },
+    {
+      "pattern": "exit: too many arguments",
+      "hint": { "ja": "exit に付けられる値は 1 つだけです", "en": "exit takes at most one value" },
+      "fix": "exit"
+    }
+  ]
+}

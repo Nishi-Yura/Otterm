@@ -1,0 +1,42 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "man",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "コマンドの説明書（マニュアル）を表示します", "en": "Shows the manual page for a command" },
+  "description": {
+    "ja": "表示中は矢印キーやスペースでスクロール、/ に続けて文字を打つと検索、n で次の一致、q で閉じます。説明書は英語で書かれていることがほとんどです。",
+    "en": "Scroll with arrows or space, type / then a word to search, n for the next match, q to quit. Pages are usually in English."
+  },
+  "options": [
+    { "flags": ["-k", "--apropos"], "takesValue": true, "valueType": "string", "summary": { "ja": "キーワードで説明書を検索する（コマンド名がわからないとき）", "en": "Search manuals by keyword when you do not know the command name" } },
+    { "flags": ["-f", "--whatis"], "takesValue": true, "valueType": "command", "summary": { "ja": "コマンドの 1 行説明だけ表示", "en": "One-line description only" } },
+    { "flags": ["-a", "--all"], "summary": { "ja": "同じ名前の説明書をすべて順に表示", "en": "Show every page with that name in turn" } },
+    { "flags": ["-w", "--where"], "summary": { "ja": "説明書ファイルの場所だけ表示", "en": "Print the file location instead of the page" } },
+    { "flags": ["-P", "--pager"], "takesValue": true, "valueType": "command", "summary": { "ja": "表示に使うプログラムを変える（例: cat で全文出力）", "en": "Program used to display (e.g. cat to dump everything)" } }
+  ],
+  "args": [
+    { "name": "section", "type": "number", "optional": true, "summary": { "ja": "章番号（1 = コマンド、5 = 設定ファイルなど）", "en": "Section number (1 = commands, 5 = config files...)" } },
+    { "name": "command", "type": "command", "summary": { "ja": "説明書を見たいコマンド", "en": "Command to read about" } }
+  ],
+  "examples": [
+    { "command": "man ls", "summary": { "ja": "ls の説明書を開く", "en": "Open the manual for ls" } },
+    { "command": "man -k compress", "summary": { "ja": "「compress」に関係するコマンドを探す", "en": "Find commands related to compress" } },
+    { "command": "man 5 crontab", "summary": { "ja": "crontab の「設定ファイル」の章を開く", "en": "Open the config-file section for crontab" } }
+  ],
+  "errors": [
+    {
+      "pattern": "No manual entry for (?<name>\\S+)",
+      "hint": { "ja": "{name} の説明書はありません。シェルの内蔵コマンドなら help {name}、他は {name} --help を試してください", "en": "No manual for {name}. For shell builtins try help {name}; otherwise {name} --help" },
+      "fix": "{name} --help"
+    },
+    {
+      "pattern": "What manual page do you want\\?",
+      "hint": { "ja": "コマンド名を指定してください。例: man ls", "en": "Give a command name, e.g. man ls" },
+      "fix": "man ls"
+    },
+    {
+      "pattern": "man: (command )?not found",
+      "hint": { "ja": "man 自体が入っていません。軽量な環境や Docker ではよくあります。コマンド --help で代用できます", "en": "man itself is not installed (common in minimal systems and containers). Use command --help instead" }
+    }
+  ]
+}

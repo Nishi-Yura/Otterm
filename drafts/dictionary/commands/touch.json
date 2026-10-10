@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "touch",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "空のファイルを作ります。すでにあるファイルは更新日時だけを今にします", "en": "Creates an empty file, or updates the modified time of an existing one" },
+  "description": {
+    "ja": "もともとは「更新日時を今に変える」コマンドですが、ファイルが無ければ空のファイルを作るので、新規ファイル作成によく使われます。中身は変わりません。",
+    "en": "Originally for setting a file's timestamp to now, but since it creates missing files, it is the usual way to make a new empty file. Existing contents are untouched."
+  },
+  "learn": { "ja": "ファイルツリーの「新しいファイル」は、ターミナルでは touch です", "en": "\"New file\" in the file tree is touch in the terminal" },
+  "options": [
+    { "flags": ["-c", "--no-create"], "summary": { "ja": "ファイルが無くても新しく作らない", "en": "Do not create the file if it is missing" } },
+    { "flags": ["-a"], "summary": { "ja": "最終アクセス日時だけを変更", "en": "Change only the access time" } },
+    { "flags": ["-m"], "summary": { "ja": "更新日時だけを変更", "en": "Change only the modification time" } },
+    { "flags": ["-d", "--date"], "takesValue": true, "valueType": "string", "summary": { "ja": "今ではなく指定した日時にする（例: \"2024-01-01 09:00\"）", "en": "Use the given date instead of now (e.g. \"2024-01-01 09:00\")" } },
+    { "flags": ["-r", "--reference"], "takesValue": true, "valueType": "file", "summary": { "ja": "別のファイルと同じ日時にする", "en": "Copy the timestamp from another file" } }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "variadic": true, "summary": { "ja": "作る、または日時を更新するファイル", "en": "Files to create or touch" } }
+  ],
+  "examples": [
+    { "command": "touch notes.txt", "summary": { "ja": "空の notes.txt を作る", "en": "Create an empty notes.txt" } },
+    { "command": "touch index.html style.css app.js", "summary": { "ja": "複数の空ファイルを一度に作る", "en": "Create several empty files at once" } },
+    { "command": "touch -d \"2024-01-01\" report.txt", "summary": { "ja": "更新日時を指定した日付にする", "en": "Set the modified date to a specific day" } }
+  ],
+  "errors": [
+    {
+      "pattern": "touch: cannot touch [‘'](?<path>[^’']+)[’']: No such file or directory",
+      "hint": { "ja": "{path} の途中のフォルダがありません。先に mkdir -p でフォルダを作ってください", "en": "A folder in the path {path} does not exist. Create it with mkdir -p first" },
+      "fix": "mkdir -p \"$(dirname {path})\" && touch {path}"
+    },
+    {
+      "pattern": "touch: cannot touch [‘'](?<path>[^’']+)[’']: Permission denied",
+      "hint": { "ja": "ここにファイルを作る権限がありません。自分のホームフォルダなど書き込める場所で試してください", "en": "No permission to create a file here. Try a folder you can write to, like your home folder" }
+    },
+    {
+      "pattern": "touch: invalid date format [‘'](?<date>[^’']+)[’']",
+      "hint": { "ja": "日付 {date} の書き方が正しくありません。\"2024-01-01\" や \"2024-01-01 09:00\" のように書きます", "en": "The date {date} is not in a valid format. Write it like \"2024-01-01\" or \"2024-01-01 09:00\"" }
+    }
+  ]
+}

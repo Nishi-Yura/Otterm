@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "jq",
+  "summary": { "ja": "JSON を整形・抽出・変換するコマンドラインツールです", "en": "Pretty-prints, filters and transforms JSON on the command line" },
+  "description": { "ja": "パイプ（| で前のコマンドの出力を渡す仕組み）で JSON を受け取り、フィルター（例: .name、.items[0]、.[] | .id）で欲しい部分を取り出します。フィルター「.」はそのまま整形して表示します。フィルターはシェルに解釈されないようクォートで囲みます。PowerShell ではシングルクォートの中で $ などがそのまま使えます", "en": "Takes JSON from a pipe and extracts parts with a filter such as .name, .items[0] or .[] | .id. The filter . just pretty-prints. Quote the filter so the shell leaves it alone" },
+  "install": {
+    "winget": "winget install jqlang.jq",
+    "scoop": "scoop install jq",
+    "choco": "choco install jq",
+    "brew": "brew install jq",
+    "apt": "sudo apt install jq",
+    "dnf": "sudo dnf install jq",
+    "pacman": "sudo pacman -S jq",
+    "url": "https://jqlang.org/download/"
+  },
+  "options": [
+    { "flags": ["-r", "--raw-output"], "summary": { "ja": "文字列をクォートなしで出力", "en": "Output strings without quotes" } },
+    { "flags": ["-c", "--compact-output"], "summary": { "ja": "1 行にまとめて出力", "en": "Compact one-line output" } },
+    { "flags": ["-s", "--slurp"], "summary": { "ja": "入力全体を 1 つの配列として読む", "en": "Read all input into one array" } },
+    { "flags": ["-n", "--null-input"], "summary": { "ja": "入力なしで実行（値を作るとき）", "en": "Run without input (to build values)" } },
+    { "flags": ["-e", "--exit-status"], "summary": { "ja": "結果が null / false なら終了コード 1", "en": "Exit 1 when the result is null / false" } },
+    { "flags": ["--arg"], "takesValue": true, "valueType": "string", "summary": { "ja": "変数を渡す（--arg name value → $name）", "en": "Pass a variable (--arg name value → $name)" } },
+    { "flags": ["-S", "--sort-keys"], "summary": { "ja": "キーを並べ替えて出力", "en": "Sort object keys" } },
+    { "flags": ["--tab"], "summary": { "ja": "インデントにタブを使う", "en": "Indent with tabs" } }
+  ],
+  "args": [
+    { "name": "filter", "type": "string", "summary": { "ja": "抽出・変換の指示（例: .name、.[0]、.[] | .id）", "en": "The filter (e.g. .name, .[0], .[] | .id)" } },
+    { "name": "files", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "読み込む JSON ファイル（省略時は標準入力）", "en": "JSON files to read (default: standard input)" } }
+  ],
+  "examples": [
+    { "command": "cat package.json | jq .dependencies", "summary": { "ja": "package.json の dependencies だけ表示", "en": "Show just the dependencies of package.json" } },
+    { "command": "jq -r '.[] | .name' users.json", "summary": { "ja": "配列の各要素から name を取り出して 1 行ずつ表示", "en": "Print the name of every array element, one per line" } },
+    { "command": "curl -s https://api.github.com/repos/jqlang/jq | jq .stargazers_count", "summary": { "ja": "API の結果から 1 つの値を取り出す", "en": "Pull one value out of an API response" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot index (?<type>\\w+) with \"(?<key>[^\"]+)\"",
+      "hint": { "ja": "{type} に対して .{key} は使えません。配列なら .[] で要素を取り出してから、または .[0] のように番号で指定してください", "en": ".{key} cannot be applied to {type}. For an array, iterate with .[] first or pick an index like .[0]" }
+    },
+    {
+      "pattern": "Cannot iterate over (?<type>\\w+)",
+      "hint": { "ja": "{type} は .[] で繰り返せません。配列やオブジェクトでない値（null など）に .[] を使っています", "en": ".[] cannot iterate over {type}. You applied it to something that is not an array or object (e.g. null)" }
+    },
+    {
+      "pattern": "jq: error: (?<name>\\w+)/0 is not defined at <top-level>",
+      "hint": { "ja": "{name} がフィルターとして解釈されました。フィルターをクォートで囲んでいるか、キー名に .（ドット）が付いているか確認してください", "en": "{name} was parsed as a jq function. Make sure the filter is quoted and keys start with a dot" }
+    },
+    {
+      "pattern": "jq: parse error: (?<msg>.+?) at line (?<line>\\d+), column (?<col>\\d+)",
+      "hint": { "ja": "入力が正しい JSON ではありません（{line} 行 {col} 列: {msg}）。末尾のカンマや、JSON 以外の行が混ざっていないか確認してください", "en": "The input is not valid JSON (line {line}, column {col}: {msg}). Check for trailing commas or non-JSON lines" }
+    },
+    {
+      "pattern": "jq: error: syntax error, unexpected (?<tok>\\S+)",
+      "hint": { "ja": "フィルターの書き方が間違っています（{tok} の付近）。括弧やクォートの対応を確認してください", "en": "The filter has a syntax error near {tok}. Check brackets and quotes" }
+    },
+    {
+      "pattern": "jq: error: Could not open (?<file>\\S+): No such file or directory",
+      "hint": { "ja": "{file} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{file} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "'jq' is not recognized|jq: command not found",
+      "hint": { "ja": "jq が見つかりません。インストール後にターミナルを開き直してください", "en": "jq was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

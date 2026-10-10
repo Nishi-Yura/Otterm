@@ -1,0 +1,47 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Clear-Host",
+  "aliases": ["cls", "clear"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "画面の表示を消してきれいにします（PowerShell）。cls や clear と打っても同じです", "en": "Clears the screen (PowerShell). cls and clear are aliases" },
+  "description": { "ja": "画面に表示された文字を消すだけで、ファイルや履歴には何も影響しません。消した内容は上にスクロールしても見られなくなります。キーボードの Ctrl+L でも同じことができます。これまで打ったコマンドの履歴は Get-History や上矢印キーで引き続き使えます。", "en": "Only wipes what is shown on screen; files and history are untouched. The cleared text is gone from scrollback. Ctrl+L does the same. Your command history is still available via Get-History and the Up arrow." },
+  "examples": [
+    {
+      "command": "Clear-Host",
+      "summary": { "ja": "画面を消す", "en": "Clear the screen" }
+    },
+    {
+      "command": "cls",
+      "summary": { "ja": "短い別名で同じことをする（cmd でも使える）", "en": "Same thing with the short alias (works in cmd too)" }
+    },
+    {
+      "command": "clear",
+      "summary": { "ja": "Linux / macOS と同じ名前でも使える", "en": "The Linux / macOS name works as well" }
+    },
+    {
+      "command": "Clear-Host; Get-ChildItem",
+      "summary": { "ja": "画面を消してからフォルダ一覧を表示する（; で続けて実行）", "en": "Clear, then list the folder (; runs commands in sequence)" }
+    },
+    {
+      "command": "Get-History",
+      "summary": { "ja": "画面を消しても過去のコマンドは残っている", "en": "Past commands remain even after clearing" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "Clear-Host にオプションはありません。-{p} を外して Clear-Host だけで実行してください", "en": "Clear-Host takes no options. Drop -{p} and run plain Clear-Host" },
+      "fix": "Clear-Host"
+    },
+    {
+      "pattern": "A positional parameter cannot be found that accepts argument '(?<a>[^']+)'",
+      "hint": { "ja": "Clear-Host は引数を取りません。{a} を外してください", "en": "Clear-Host takes no arguments. Remove {a}" },
+      "fix": "Clear-Host"
+    },
+    {
+      "pattern": "The term '(?<term>c(ls|lear|lear-host)[^']*)' is not recognized",
+      "hint": { "ja": "{term} はコマンドとして見つかりません。Clear-Host、cls、clear のいずれかで打ってください", "en": "{term} was not found. Type Clear-Host, cls or clear" },
+      "fix": "Clear-Host"
+    }
+  ]
+}

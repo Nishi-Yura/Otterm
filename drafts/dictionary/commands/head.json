@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "head",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルの先頭だけ（既定では 10 行）を表示します", "en": "Shows the beginning of a file (10 lines by default)" },
+  "description": {
+    "ja": "大きなファイルの中身をちょっとだけ確かめたいときに使います。行数は -n で変えられます。",
+    "en": "Handy for peeking at a large file without printing all of it. Change the line count with -n."
+  },
+  "options": [
+    { "flags": ["-n", "--lines"], "takesValue": true, "valueType": "number", "summary": { "ja": "表示する行数（例: -n 20）。-20 のように数字だけでも可", "en": "Number of lines (e.g. -n 20); a bare -20 also works" } },
+    { "flags": ["-c", "--bytes"], "takesValue": true, "valueType": "number", "summary": { "ja": "行ではなく先頭からのバイト数で指定", "en": "Show this many bytes instead of lines" } },
+    { "flags": ["-q", "--quiet", "--silent"], "summary": { "ja": "複数ファイルのとき、ファイル名の見出しを出さない", "en": "No file-name headers when showing several files" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "ファイルが 1 つでも見出しを出す", "en": "Always print file-name headers" } }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "表示するファイル（省略すると前のコマンドの出力を読みます）", "en": "Files to show (omit to read the previous command's output)" } }
+  ],
+  "examples": [
+    { "command": "head data.csv", "summary": { "ja": "CSV の先頭 10 行を見る", "en": "See the first 10 lines of a CSV" } },
+    { "command": "head -n 3 *.txt", "summary": { "ja": "各テキストファイルの先頭 3 行を見る", "en": "First 3 lines of every text file" } },
+    { "command": "ls -t | head -5", "summary": { "ja": "最近更新された 5 件だけ表示", "en": "Only the 5 most recently modified entries" } }
+  ],
+  "errors": [
+    {
+      "pattern": "head: (?:cannot open )?[‘']?(?<path>[^’':\\n]+)[’']?(?: for reading)?: No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "head: (?:error reading )?[‘']?(?<path>[^’':\\n]+)[’']?: Is a directory",
+      "hint": { "ja": "{path} はフォルダです。中身の一覧を見るには ls を使います", "en": "{path} is a folder. Use ls to list what is inside" },
+      "fix": "ls {path}"
+    },
+    {
+      "pattern": "head: (?:invalid|illegal) (?:number of lines|line count|trailing option)[: ]*[‘']?(?<value>[^’'\\n]*)",
+      "hint": { "ja": "行数の指定が正しくありません。-n のあとに数字を書きます（例: head -n 20 file）", "en": "The line count is not valid. Put a number after -n (e.g. head -n 20 file)" },
+      "fix": "head -n 20"
+    }
+  ]
+}

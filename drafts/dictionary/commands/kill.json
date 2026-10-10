@@ -1,0 +1,50 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "kill",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "動いているプログラム（プロセス）に終了の合図（シグナル）を送ります", "en": "Sends a stop signal to a running program (process)" },
+  "description": {
+    "ja": "番号（PID）は ps で調べます。何も付けないと TERM という合図で、プログラムは後片付けをしてから終了します。-9 は強制終了で、保存や後片付けの機会がありません。まずは -9 なしで試してください。",
+    "en": "Find the PID with ps. The default signal (TERM) lets the program clean up before exiting. -9 forces it off with no chance to save. Try without -9 first."
+  },
+  "options": [
+    {
+      "flags": ["-9", "-KILL", "-SIGKILL"],
+      "summary": { "ja": "強制終了。応答しないプログラムへの最後の手段", "en": "Force kill. Last resort for a frozen program" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "プログラムに保存の機会を与えずに終了します。まず -9 なしの kill を試してください", "en": "Ends the program with no chance to save. Try plain kill first" },
+      "alternative": { "label": { "ja": "通常の終了（TERM）を送る", "en": "Send a normal TERM first" }, "command": "kill {args}" }
+    },
+    { "flags": ["-15", "-TERM", "-SIGTERM"], "summary": { "ja": "通常の終了をお願いする（既定）", "en": "Ask to exit normally (default)" } },
+    { "flags": ["-2", "-INT", "-SIGINT"], "summary": { "ja": "Ctrl+C を押したのと同じ合図", "en": "Same as pressing Ctrl+C" } },
+    { "flags": ["-1", "-HUP", "-SIGHUP"], "summary": { "ja": "設定の再読み込みを促す（サーバー系でよく使う）", "en": "Ask to reload config (common for servers)" } },
+    { "flags": ["-STOP", "-SIGSTOP"], "summary": { "ja": "一時停止する（-CONT で再開）", "en": "Pause the process (resume with -CONT)" } },
+    { "flags": ["-CONT", "-SIGCONT"], "summary": { "ja": "一時停止したプロセスを再開する", "en": "Resume a paused process" } },
+    { "flags": ["-s", "--signal"], "takesValue": true, "valueType": "string", "summary": { "ja": "送る合図を名前で指定", "en": "Signal to send, by name" } },
+    { "flags": ["-l", "--list"], "summary": { "ja": "使える合図の一覧を表示", "en": "List available signals" } }
+  ],
+  "args": [
+    { "name": "pid", "type": "number", "variadic": true, "summary": { "ja": "終了させるプロセスの番号（PID）。%1 のようなジョブ番号も可", "en": "Process number (PID), or a job like %1" } }
+  ],
+  "examples": [
+    { "command": "kill 1234", "summary": { "ja": "PID 1234 に通常の終了をお願いする", "en": "Ask PID 1234 to exit" } },
+    { "command": "kill -9 1234", "summary": { "ja": "応答しない PID 1234 を強制終了", "en": "Force-kill unresponsive PID 1234" } },
+    { "command": "kill -l", "summary": { "ja": "合図の一覧を見る", "en": "List signal names" } }
+  ],
+  "errors": [
+    {
+      "pattern": "kill: .*?\\(?(?<pid>\\d+)\\)?(?: failed)?[: -]+No such process",
+      "hint": { "ja": "PID {pid} のプロセスはありません。すでに終了しているか、番号が違います。ps で確認してください", "en": "No process with PID {pid}. It already exited or the number is wrong. Check with ps" },
+      "fix": "ps aux | grep "
+    },
+    {
+      "pattern": "kill: .*?\\(?(?<pid>\\d+)\\)?(?: failed)?[: -]+Operation not permitted",
+      "hint": { "ja": "PID {pid} は他のユーザーやシステムのプロセスなので終了できません。本当に必要なら sudo が要ります", "en": "PID {pid} belongs to another user or the system. sudo is needed if you really must" }
+    },
+    {
+      "pattern": "kill: (?<arg>\\S+): arguments must be process or job IDs",
+      "hint": { "ja": "{arg} は PID ではありません。名前で終了するなら killall か pkill を使います", "en": "{arg} is not a PID. To kill by name use killall or pkill" },
+      "fix": "pkill {arg}"
+    }
+  ]
+}

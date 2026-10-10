@@ -1,0 +1,43 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "sort",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "テキストの行を並べ替えます（既定では文字順）", "en": "Sorts the lines of text (alphabetically by default)" },
+  "description": {
+    "ja": "元のファイルは変わらず、並べ替えた結果を表示します。数字を正しく並べるには -n、同じ行をまとめるには -u を付けます。",
+    "en": "The original file is unchanged; the sorted result is printed. Use -n for numbers and -u to drop duplicate lines."
+  },
+  "options": [
+    { "flags": ["-r", "--reverse"], "summary": { "ja": "逆順（降順）に並べる", "en": "Reverse (descending) order" } },
+    { "flags": ["-n", "--numeric-sort"], "summary": { "ja": "数字の大きさで並べる（2 が 10 より前になる）", "en": "Sort by numeric value (2 comes before 10)" } },
+    { "flags": ["-h", "--human-numeric-sort"], "summary": { "ja": "2K や 1G のような単位付きの数字で並べる", "en": "Sort sizes with units like 2K, 1G" } },
+    { "flags": ["-u", "--unique"], "summary": { "ja": "同じ行は 1 つだけ残す", "en": "Keep only one of each identical line" } },
+    { "flags": ["-f", "--ignore-case"], "summary": { "ja": "大文字と小文字を区別しない", "en": "Ignore upper/lower case" } },
+    { "flags": ["-k", "--key"], "takesValue": true, "valueType": "string", "summary": { "ja": "何列目で並べるか（例: -k 2 で 2 列目）", "en": "Which column to sort by (e.g. -k 2)" } },
+    { "flags": ["-t", "--field-separator"], "takesValue": true, "valueType": "string", "summary": { "ja": "列の区切り文字（CSV なら -t ,）", "en": "Column separator (for CSV: -t ,)" } },
+    { "flags": ["-o", "--output"], "takesValue": true, "valueType": "file", "summary": { "ja": "結果をファイルに保存（同じファイルに上書きしても安全）", "en": "Write the result to a file (safe even if it is the input file)" } }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "並べ替えるファイル（省略すると前のコマンドの出力を並べ替える）", "en": "Files to sort (omit to sort the previous command's output)" } }
+  ],
+  "examples": [
+    { "command": "sort names.txt", "summary": { "ja": "名前を文字順に並べる", "en": "Sort names alphabetically" } },
+    { "command": "sort -t , -k 3 -n scores.csv", "summary": { "ja": "CSV を 3 列目の数字で並べる", "en": "Sort a CSV by the number in column 3" } },
+    { "command": "du -sh * | sort -h", "summary": { "ja": "サイズの小さい順にフォルダを並べる", "en": "Order folders from smallest to largest" } }
+  ],
+  "errors": [
+    {
+      "pattern": "sort: (?:cannot read: |open failed: )?(?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "sort: (?:read failed: )?(?<path>[^:\\n]+): Is a directory",
+      "hint": { "ja": "{path} はフォルダです。中のファイルを指定してください", "en": "{path} is a folder. Give sort a file inside it" }
+    },
+    {
+      "pattern": "sort: multi-character tab [‘'](?<sep>[^’']+)[’']",
+      "hint": { "ja": "-t の区切り文字は 1 文字だけです。タブは -t $'\\t' と書きます", "en": "-t takes exactly one character. For a tab, write -t $'\\t'" }
+    }
+  ]
+}

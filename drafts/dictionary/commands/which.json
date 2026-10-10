@@ -1,0 +1,45 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "which",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "コマンドの本体がどこにあるか（実行ファイルの場所）を表示します", "en": "Shows where a command's program file lives" },
+  "description": {
+    "ja": "「このコマンドは入っている？」「どのバージョンが動いている？」を確かめるときに使います。見つからないときは何も表示せず終了コード 1 になります。",
+    "en": "Use it to check whether a command is installed and which copy will run. If not found, it prints nothing and exits with code 1."
+  },
+  "options": [
+    {
+      "flags": ["-a", "--all"],
+      "summary": { "ja": "同じ名前のものをすべて表示（複数入っているときに便利）", "en": "Show every match, not just the first (useful when several are installed)" }
+    },
+    {
+      "flags": ["-s"],
+      "summary": { "ja": "何も表示せず、あるかどうかを終了コードだけで返す（macOS）", "en": "Print nothing; report only via the exit code (macOS)" }
+    }
+  ],
+  "args": [
+    {
+      "name": "command",
+      "type": "command",
+      "variadic": true,
+      "summary": { "ja": "調べるコマンド名", "en": "Command names to look up" }
+    }
+  ],
+  "examples": [
+    { "command": "which python3", "summary": { "ja": "python3 がどこにあるか調べる", "en": "Find where python3 is" } },
+    { "command": "which -a node", "summary": { "ja": "node が複数入っていないか調べる", "en": "Check whether several copies of node are installed" } },
+    { "command": "which git || echo \"git is not installed\"", "summary": { "ja": "入っていなければメッセージを出す", "en": "Print a message if it is not installed" } }
+  ],
+  "errors": [
+    {
+      "pattern": "which: no (?<cmd>\\S+) in \\(",
+      "exitCode": 1,
+      "hint": { "ja": "{cmd} は見つかりません。インストールされていないか、PATH（コマンドを探す場所の一覧）に入っていません", "en": "{cmd} was not found. It may not be installed, or its folder is not in PATH (the list of places commands are looked up)" }
+    },
+    {
+      "pattern": "(?<cmd>\\S+) not found",
+      "exitCode": 1,
+      "hint": { "ja": "{cmd} は見つかりません。インストールされていないか、PATH に入っていません", "en": "{cmd} was not found. It may not be installed or not in PATH" }
+    }
+  ]
+}

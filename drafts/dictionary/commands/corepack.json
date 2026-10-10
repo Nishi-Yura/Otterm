@@ -1,0 +1,61 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "corepack",
+  "summary": { "ja": "Node.js 同梱の、yarn / pnpm のバージョンを自動管理するツールです", "en": "Node.js' bundled manager for yarn and pnpm versions" },
+  "description": { "ja": "package.json の packageManager 欄（例: \"pnpm@9.1.0\"）を読み、そのバージョンの yarn / pnpm を自動で取ってきて実行します。corepack enable を一度実行すると yarn や pnpm コマンドが使えるようになります。Node.js 25 以降は同梱されず、npm で別途入れます。", "en": "Reads the packageManager field in package.json (e.g. \"pnpm@9.1.0\") and fetches and runs exactly that yarn/pnpm. Run corepack enable once to make the yarn and pnpm commands available. From Node.js 25 it is no longer bundled; install it with npm." },
+  "install": { "npm": "npm install -g corepack", "url": "https://nodejs.org/api/corepack.html" },
+  "subcommands": [
+    {
+      "name": "enable",
+      "summary": { "ja": "yarn と pnpm のコマンドを使えるようにします", "en": "Makes the yarn and pnpm commands available" },
+      "args": [{ "name": "manager", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "yarn / pnpm（省略時は両方）", "en": "yarn / pnpm (both if omitted)" } }],
+      "examples": [
+        { "command": "corepack enable", "summary": { "ja": "初回に一度だけ実行", "en": "Run once after installing Node.js" } },
+        { "command": "corepack enable pnpm", "summary": { "ja": "pnpm だけ有効にする", "en": "Enable pnpm only" } }
+      ],
+      "errors": [
+        { "pattern": "EACCES.*permission denied|EPERM", "hint": { "ja": "Node.js の置き場に書き込めません。nvm や fnm で入れた Node なら権限があります。システムの Node なら管理者権限が必要です", "en": "Cannot write to the Node.js folder. Node from nvm/fnm has the right permissions; a system Node needs admin rights" } },
+        { "pattern": "EEXIST", "hint": { "ja": "すでに同名のコマンド（npm で入れた yarn など）があります。先にそれを削除してください", "en": "A command with that name exists already (e.g. yarn from npm). Remove it first" }, "fix": "npm uninstall -g yarn pnpm" }
+      ]
+    },
+    {
+      "name": "disable",
+      "summary": { "ja": "corepack が置いた yarn / pnpm のコマンドを外します", "en": "Removes the yarn/pnpm commands corepack installed" },
+      "args": [{ "name": "manager", "type": "string", "optional": true, "variadic": true }]
+    },
+    {
+      "name": "use",
+      "summary": { "ja": "このプロジェクトのパッケージマネージャとバージョンを package.json に記録します", "en": "Records the package manager and version for this project in package.json" },
+      "args": [{ "name": "manager", "type": "string", "summary": { "ja": "pnpm@latest、yarn@4.x など", "en": "pnpm@latest, yarn@4.x, ..." } }],
+      "examples": [{ "command": "corepack use pnpm@latest", "summary": { "ja": "最新 pnpm をこのプロジェクトに固定", "en": "Pin the latest pnpm for this project" } }],
+      "errors": [{ "pattern": "no package\\.json|ENOENT.*package\\.json", "hint": { "ja": "このフォルダに package.json がありません。npm init で作れます", "en": "No package.json here. Create one with npm init" }, "fix": "npm init -y" }]
+    },
+    {
+      "name": "install",
+      "aliases": ["prepare"],
+      "summary": { "ja": "package.json に書かれたバージョンをダウンロードしておきます", "en": "Downloads the version named in package.json" },
+      "args": [{ "name": "manager", "type": "string", "optional": true, "summary": { "ja": "指定すればそのバージョンを", "en": "A specific version if given" } }],
+      "options": [{ "flags": ["-g", "--global"], "summary": { "ja": "全体で使う版として入れる", "en": "Install for global use" } }],
+      "examples": [{ "command": "corepack install -g pnpm@9", "summary": { "ja": "pnpm 9 を全体用に入れる", "en": "Install pnpm 9 globally" } }]
+    },
+    {
+      "name": "pack",
+      "summary": { "ja": "オフライン用にパッケージマネージャをアーカイブにまとめます", "en": "Bundles package managers into an archive for offline use" },
+      "args": [{ "name": "manager", "type": "string", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["-o", "--output"], "takesValue": true, "valueType": "file", "summary": { "ja": "出力ファイル", "en": "Output file" } }]
+    },
+    { "name": "up", "summary": { "ja": "package.json のパッケージマネージャを同じメジャーの最新に上げます", "en": "Bumps the project's package manager to the latest in the same major" } },
+    {
+      "name": "cache",
+      "summary": { "ja": "ダウンロード済みのキャッシュを管理します", "en": "Manages the download cache" },
+      "options": [{ "flags": ["clean", "clear"], "summary": { "ja": "キャッシュを削除", "en": "Delete the cache" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'corepack' is not recognized|corepack: command not found", "hint": { "ja": "corepack がありません。Node.js 16.9 以降に同梱ですが、Node 25 以降は npm で入れます", "en": "corepack is missing. It ships with Node.js 16.9+; from Node 25 install it with npm" }, "fix": "npm install -g corepack" },
+    { "pattern": "This project is configured to use (?<want>\\S+) because .* packageManager", "hint": { "ja": "このプロジェクトは {want} を使う設定です。別のマネージャは実行できません。指定されたものを使ってください", "en": "This project is set to use {want}, so another manager will not run. Use the one specified" } },
+    { "pattern": "Cannot find matching keyid|signature verification failed", "hint": { "ja": "署名検証に失敗しました。corepack が古いので npm で更新してください", "en": "Signature verification failed because corepack is outdated. Update it with npm" }, "fix": "npm install -g corepack@latest" },
+    { "pattern": "ENOTFOUND|getaddrinfo|ETIMEDOUT|Error when performing the request", "hint": { "ja": "レジストリに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the registry. Check your network or proxy" } },
+    { "pattern": "UsageError: The .* field is not a valid package manager specification", "hint": { "ja": "package.json の packageManager の書き方が違います。例: \"pnpm@9.1.0\"（バージョンは完全指定）", "en": "The packageManager field is malformed. Example: \"pnpm@9.1.0\" (full version required)" } }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Get-Content",
+  "aliases": ["gc", "cat", "type"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "ファイルの中身を表示します（PowerShell）。cat や type と打っても同じです", "en": "Shows a file's contents (PowerShell). cat and type are aliases" },
+  "description": { "ja": "PowerShell では cat は Get-Content の別名なので、Linux の cat のオプション（-n など）は使えません。行番号が欲しいときは Select-String などと組み合わせます。大きなファイルは -TotalCount や -Tail で一部だけ表示できます。", "en": "In PowerShell, cat is an alias of Get-Content, so Linux-style flags like -n do not work. Use -TotalCount or -Tail to show only part of a large file." },
+  "learn": { "ja": "ファイルツリーでファイルをプレビューするのは Get-Content（cat）と同じ内容です", "en": "Previewing a file in the file tree shows what Get-Content (cat) would print" },
+  "options": [
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "表示するファイル", "en": "File to show" }
+    },
+    {
+      "flags": ["-TotalCount", "-Head"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "先頭から指定した行数だけ表示", "en": "Show only the first N lines" }
+    },
+    {
+      "flags": ["-Tail"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "末尾から指定した行数だけ表示", "en": "Show only the last N lines" }
+    },
+    {
+      "flags": ["-Wait"],
+      "summary": { "ja": "ファイルに追記されるたびに表示し続ける（ログ監視向き。Ctrl+C で終了）", "en": "Keep printing as the file grows (good for logs; Ctrl+C to stop)" }
+    },
+    {
+      "flags": ["-Raw"],
+      "summary": { "ja": "行ごとに分けず、1 つの文字列として読む", "en": "Read the whole file as one string instead of lines" }
+    },
+    {
+      "flags": ["-Encoding"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "文字コードを指定（例: utf8, oem）。文字化けするときに", "en": "Text encoding (e.g. utf8, oem). Use when text looks garbled" }
+    },
+    {
+      "flags": ["-Filter"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "名前のパターンで対象を絞り込み（例: *.log）", "en": "Filter target files by name pattern (e.g. *.log)" }
+    }
+  ],
+  "args": [{ "name": "path", "type": "file", "variadic": true }],
+  "examples": [
+    { "command": "Get-Content notes.txt", "summary": { "ja": "ファイルの中身をすべて表示", "en": "Show the whole file" } },
+    { "command": "cat app.log -Tail 20", "summary": { "ja": "ログの最後の 20 行だけ表示", "en": "Show the last 20 lines of a log" } },
+    { "command": "Get-Content app.log -Wait", "summary": { "ja": "ログが増えるたびに表示し続ける", "en": "Follow a log as it grows" } },
+    { "command": "Get-Content data.csv -TotalCount 5", "summary": { "ja": "先頭 5 行だけ見て形式を確認", "en": "Peek at the first 5 lines to check the format" } }
+  ],
+  "errors": [
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は PowerShell の cat にはありません。Linux の cat とは別物です。行数制限は -TotalCount や -Tail を使います", "en": "-{p} is not a parameter here. PowerShell's cat differs from Linux cat. Use -TotalCount or -Tail to limit lines" },
+      "fix": "Get-Content -Tail 20"
+    },
+    {
+      "pattern": "Cannot find path '(?<path>[^']+)' because it does not exist",
+      "hint": { "ja": "{path} は存在しません。スペルと今いるフォルダを確認してください", "en": "{path} does not exist. Check the spelling and current folder" },
+      "fix": "Get-ChildItem"
+    },
+    {
+      "pattern": "Access to the path '(?<path>[^']+)' is denied",
+      "hint": { "ja": "{path} を読む権限がありません。管理者権限が必要か、他のプログラムがロックしています", "en": "No permission to read {path}. Admin rights may be needed, or another program has it locked" }
+    },
+    {
+      "pattern": "The process cannot access the file '(?<path>[^']+)' because it is being used by another process",
+      "hint": { "ja": "{path} は他のプログラムが使用中です。そのプログラムを閉じてから再試行してください", "en": "{path} is in use by another program. Close it and retry" }
+    }
+  ]
+}

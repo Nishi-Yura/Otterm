@@ -1,0 +1,76 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Select-String",
+  "aliases": ["sls"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "ファイルや出力の中から文字列を検索します（PowerShell 版の grep / findstr）", "en": "Searches files or output for text (PowerShell's grep / findstr)" },
+  "description": { "ja": "Linux の grep に相当します。既定で大文字小文字を区別せず、パターンは正規表現として解釈されます。記号を含む文字列をそのまま探すときは -SimpleMatch を付けます。Get-ChildItem -Recurse とつなげるとサブフォルダも検索できます。", "en": "Equivalent to grep on Linux. Case-insensitive by default, and the pattern is a regular expression. Add -SimpleMatch to search for literal text containing symbols. Pipe from Get-ChildItem -Recurse to search subfolders." },
+  "options": [
+    {
+      "flags": ["-Pattern"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "探す文字列（正規表現）", "en": "Text to find (regular expression)" }
+    },
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "検索するファイル（例: *.txt）", "en": "Files to search (e.g. *.txt)" }
+    },
+    {
+      "flags": ["-SimpleMatch"],
+      "summary": { "ja": "正規表現ではなく、そのままの文字列として探す", "en": "Match literal text instead of a regular expression" }
+    },
+    {
+      "flags": ["-CaseSensitive"],
+      "summary": { "ja": "大文字小文字を区別する", "en": "Case-sensitive match" }
+    },
+    {
+      "flags": ["-NotMatch"],
+      "summary": { "ja": "一致しない行を表示", "en": "Show lines that do not match" }
+    },
+    {
+      "flags": ["-Context"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "一致した行の前後も表示（例: -Context 2）", "en": "Also show lines around each match (e.g. -Context 2)" }
+    },
+    {
+      "flags": ["-List"],
+      "summary": { "ja": "ファイルごとに最初の 1 件だけ表示", "en": "Only the first match per file" }
+    },
+    {
+      "flags": ["-Quiet"],
+      "summary": { "ja": "行を表示せず、見つかったかを True / False で返す", "en": "Return True / False instead of the lines" }
+    }
+  ],
+  "args": [{ "name": "pattern", "type": "pattern" }, { "name": "path", "type": "path", "optional": true, "variadic": true }],
+  "examples": [
+    { "command": "Select-String \"error\" app.log", "summary": { "ja": "app.log から error を含む行を探す", "en": "Find lines containing error in app.log" } },
+    { "command": "Get-ChildItem -Recurse *.cs | Select-String \"TODO\"", "summary": { "ja": "サブフォルダも含めて .cs ファイルの TODO を探す", "en": "Search all .cs files in subfolders for TODO" } },
+    { "command": "Get-Process | Out-String -Stream | sls chrome", "summary": { "ja": "コマンドの出力から chrome を含む行だけ", "en": "Keep only lines with chrome from a command's output" } },
+    { "command": "Select-String \"C:\\\\Users\" paths.txt -SimpleMatch", "summary": { "ja": "記号を含む文字列をそのまま探す", "en": "Search for literal text containing symbols" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot find path '(?<path>[^']+)' because it does not exist",
+      "hint": { "ja": "{path} は存在しません。検索するファイル名と今いるフォルダを確認してください", "en": "{path} does not exist. Check the file name and current folder" },
+      "fix": "Get-ChildItem"
+    },
+    {
+      "pattern": "The string (?<s>.+) is not a valid regular expression|Invalid pattern '(?<s>[^']+)'",
+      "hint": { "ja": "パターンが正規表現として正しくありません。記号をそのまま探すなら -SimpleMatch を付けてください", "en": "The pattern is not a valid regular expression. Add -SimpleMatch to search for literal symbols" },
+      "fix": "Select-String -SimpleMatch"
+    },
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は Select-String にはありません。grep の -i は既定で有効、-v は -NotMatch、-r は Get-ChildItem -Recurse との組み合わせで代用します", "en": "-{p} is not a parameter here. grep's -i is the default, -v is -NotMatch, -r is done via Get-ChildItem -Recurse" }
+    },
+    {
+      "pattern": "Cannot bind argument to parameter 'Pattern' because it is (null|an empty string)",
+      "hint": { "ja": "探す文字列が空です。引用符で囲んで渡してください", "en": "The search text is empty. Pass it in quotes" },
+      "fix": "Select-String \"text\""
+    }
+  ]
+}

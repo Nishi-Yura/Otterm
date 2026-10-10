@@ -1,0 +1,74 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "gradle",
+  "aliases": ["gradlew"],
+  "summary": { "ja": "Java / Kotlin / Android のビルド・依存管理ツール Gradle です", "en": "Gradle, the build and dependency tool for Java, Kotlin and Android" },
+  "description": { "ja": "build.gradle（または build.gradle.kts）にタスクと依存を書きます。プロジェクトにある gradlew（Windows は gradlew.bat）を使うのが基本で、Gradle 自体を入れる必要はありません。初回はダウンロードに時間がかかります。", "en": "Tasks and dependencies live in build.gradle (or build.gradle.kts). Normally you run the project's gradlew (gradlew.bat on Windows), so no Gradle install is needed. The first run downloads a lot." },
+  "install": { "winget": "winget install Gradle.Gradle", "scoop": "scoop install gradle", "choco": "choco install gradle", "brew": "brew install gradle", "url": "https://gradle.org/install/" },
+  "subcommands": [
+    {
+      "name": "build",
+      "summary": { "ja": "コンパイル、テスト、成果物の作成までを行います", "en": "Compiles, tests and assembles the project" },
+      "options": [{ "flags": ["-x", "--exclude-task"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定タスクを飛ばす（-x test）", "en": "Skip a task (-x test)" } }],
+      "examples": [{ "command": "./gradlew build -x test", "summary": { "ja": "テストなしでビルド", "en": "Build without tests" } }],
+      "errors": [
+        { "pattern": "Compilation failed|error: .*\\.java:(?<line>\\d+)|e: file://", "hint": { "ja": "コンパイルエラーです。ファイルと行番号を確認してください", "en": "A compile error. Check the file and line number" } },
+        { "pattern": "Could not resolve (?<dep>[^.\\s]+:[^:\\s]+:[^.\\s]+)", "hint": { "ja": "依存 {dep} が見つかりません。名前とバージョン、repositories の設定を確認してください", "en": "Dependency {dep} was not found. Check its name, version and the repositories block" } }
+      ]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "アプリを実行します（application プラグイン）", "en": "Runs the app (application plugin)" },
+      "options": [{ "flags": ["--args"], "takesValue": true, "valueType": "string", "summary": { "ja": "プログラムへの引数", "en": "Program arguments" } }]
+    },
+    {
+      "name": "test",
+      "summary": { "ja": "テストを実行します", "en": "Runs tests" },
+      "options": [
+        { "flags": ["--tests"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定テストだけ（--tests \"*.FooTest\"）", "en": "Only matching tests (--tests \"*.FooTest\")" } },
+        { "flags": ["--rerun-tasks"], "summary": { "ja": "キャッシュを無視して再実行", "en": "Ignore the cache and rerun" } }
+      ],
+      "errors": [{ "pattern": "(?<n>\\d+) tests completed, (?<fail>\\d+) failed", "hint": { "ja": "{fail} 件のテストが失敗しました。build/reports/tests のレポートで詳細を確認できます", "en": "{fail} test(s) failed. See the report in build/reports/tests" } }]
+    },
+    { "name": "clean", "summary": { "ja": "build フォルダを削除します", "en": "Deletes the build folder" } },
+    { "name": "assemble", "summary": { "ja": "テストせずに成果物（jar / apk）を作ります", "en": "Builds artifacts (jar/apk) without testing" } },
+    {
+      "name": "tasks",
+      "summary": { "ja": "実行できるタスクの一覧", "en": "Lists available tasks" },
+      "options": [{ "flags": ["--all"], "summary": { "ja": "すべてのタスク", "en": "Every task" } }]
+    },
+    {
+      "name": "dependencies",
+      "summary": { "ja": "依存関係をツリー表示します", "en": "Shows the dependency tree" },
+      "options": [{ "flags": ["--configuration"], "takesValue": true, "valueType": "string", "summary": { "ja": "runtimeClasspath など", "en": "e.g. runtimeClasspath" } }]
+    },
+    {
+      "name": "init",
+      "summary": { "ja": "新しいプロジェクトを対話的に作ります", "en": "Creates a new project interactively" },
+      "options": [{ "flags": ["--type"], "takesValue": true, "valueType": "string", "summary": { "ja": "java-application、kotlin-library など", "en": "java-application, kotlin-library, ..." } }]
+    },
+    {
+      "name": "wrapper",
+      "summary": { "ja": "gradlew を生成・更新します", "en": "Generates or updates gradlew" },
+      "options": [{ "flags": ["--gradle-version"], "takesValue": true, "valueType": "string", "summary": { "ja": "使う Gradle のバージョン", "en": "Gradle version to use" } }],
+      "examples": [{ "command": "./gradlew wrapper --gradle-version 8.10", "summary": { "ja": "ラッパーを 8.10 に更新", "en": "Update the wrapper to 8.10" } }]
+    },
+    { "name": "bootRun", "summary": { "ja": "Spring Boot アプリを起動します", "en": "Starts a Spring Boot app" } }
+  ],
+  "options": [
+    { "flags": ["--offline"], "summary": { "ja": "ダウンロードせずキャッシュだけで", "en": "Use only cached dependencies" } },
+    { "flags": ["--refresh-dependencies"], "summary": { "ja": "依存を取り直す", "en": "Re-download dependencies" } },
+    { "flags": ["--stacktrace"], "summary": { "ja": "エラー時にスタックトレースを表示", "en": "Show stack traces on error" } },
+    { "flags": ["--info"], "summary": { "ja": "詳細ログ", "en": "Verbose output" } },
+    { "flags": ["--stop"], "summary": { "ja": "常駐デーモンを止める", "en": "Stop the background daemon" } }
+  ],
+  "errors": [
+    { "pattern": "'gradle' is not recognized|gradle: command not found", "hint": { "ja": "Gradle が入っていません。プロジェクトの gradlew を使ってください（./gradlew、Windows は .\\gradlew.bat）", "en": "Gradle is not installed. Use the project's gradlew (./gradlew, or .\\gradlew.bat on Windows)" } },
+    { "pattern": "gradlew: Permission denied", "hint": { "ja": "gradlew に実行権限がありません", "en": "gradlew is not executable" }, "fix": "chmod +x gradlew" },
+    { "pattern": "JAVA_HOME is not set|JAVA_HOME is set to an invalid directory|No Java installation found", "hint": { "ja": "JDK が見つかりません。JDK を入れて JAVA_HOME をその場所に設定してください", "en": "No JDK found. Install a JDK and point JAVA_HOME at it" } },
+    { "pattern": "Unsupported class file major version|Your build is currently configured to use Java (?<ver>\\d+)", "hint": { "ja": "Gradle のバージョンがこの JDK に対応していません。gradle/wrapper/gradle-wrapper.properties のバージョンを上げるか、古い JDK を使ってください", "en": "This Gradle version does not support your JDK. Bump the version in gradle/wrapper/gradle-wrapper.properties or use an older JDK" } },
+    { "pattern": "Could not resolve all (dependencies|files|artifacts)|Could not GET|Connection refused|UnknownHostException", "hint": { "ja": "依存をダウンロードできません。ネットワークやプロキシ（~/.gradle/gradle.properties）を確認してください", "en": "Could not download dependencies. Check your network or proxy settings in ~/.gradle/gradle.properties" } },
+    { "pattern": "Timeout waiting to lock|Gradle build daemon disappeared|Daemon .* is busy", "hint": { "ja": "デーモンのロックが残っています。--stop で止めてから再実行してください", "en": "A stale daemon lock. Stop daemons with --stop and retry" }, "fix": "./gradlew --stop" },
+    { "pattern": "Task '(?<task>[^']+)' not found", "hint": { "ja": "タスク {task} がありません。gradlew tasks で一覧を見られます", "en": "No task named {task}. See gradlew tasks" }, "fix": "./gradlew tasks" }
+  ]
+}

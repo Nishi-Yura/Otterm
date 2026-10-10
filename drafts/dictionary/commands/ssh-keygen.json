@@ -1,0 +1,58 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ssh-keygen",
+  "summary": { "ja": "SSH の鍵ペア（秘密鍵と公開鍵）を作ります。GitHub やサーバーへのパスワードなし接続に使います", "en": "Creates an SSH key pair (private + public) for password-less access to GitHub and servers" },
+  "description": { "ja": "鍵ペアとは、手元に置く秘密鍵（絶対に他人に渡さない）と、相手に登録する公開鍵（.pub、渡してよい）の組です。公開鍵の中身を GitHub の設定やサーバーの ~/.ssh/authorized_keys に貼り付けると接続できます。注意: 既存の鍵と同じファイル名を指定すると「already exists. Overwrite (y/n)?」と聞かれます。y を押すと古い鍵は復元できず、その鍵で接続していたサーバーに入れなくなります。別の名前を -f で付けるか、n で中止してください", "en": "A key pair is a private key you keep (never share it) and a public key (.pub) you register on GitHub or in ~/.ssh/authorized_keys on a server. Caution: if a key with the same file name exists you are asked \"already exists. Overwrite (y/n)?\". Answering y destroys the old key and locks you out of servers that used it. Choose another name with -f, or answer n" },
+  "install": {
+    "winget": "winget install Microsoft.OpenSSH.Preview",
+    "brew": "brew install openssh",
+    "apt": "sudo apt install openssh-client",
+    "dnf": "sudo dnf install openssh-clients",
+    "pacman": "sudo pacman -S openssh"
+  },
+  "options": [
+    { "flags": ["-t"], "takesValue": true, "valueType": "string", "summary": { "ja": "鍵の種類（今は ed25519 がおすすめ）", "en": "Key type (ed25519 is the current recommendation)" } },
+    { "flags": ["-C"], "takesValue": true, "valueType": "string", "summary": { "ja": "鍵に付けるコメント（メールアドレスなど、見分け用）", "en": "A comment such as your email, to tell keys apart" } },
+    { "flags": ["-f"], "takesValue": true, "valueType": "file", "summary": { "ja": "保存するファイル名（既定は ~/.ssh/id_ed25519 など）", "en": "File to save to (default ~/.ssh/id_ed25519 etc.)" } },
+    { "flags": ["-b"], "takesValue": true, "valueType": "number", "summary": { "ja": "鍵の長さ（rsa のとき 4096 を推奨）", "en": "Key length (use 4096 for rsa)" } },
+    { "flags": ["-N"], "takesValue": true, "valueType": "string", "summary": { "ja": "パスフレーズを指定（\"\" で無し）。対話で聞かれる方が安全です", "en": "Passphrase (\"\" for none). Being prompted is safer than typing it here" } },
+    { "flags": ["-p"], "summary": { "ja": "既存の鍵のパスフレーズを変更", "en": "Change the passphrase of an existing key" } },
+    { "flags": ["-l"], "summary": { "ja": "鍵の指紋（フィンガープリント）を表示", "en": "Show a key's fingerprint" } },
+    { "flags": ["-y"], "summary": { "ja": "秘密鍵から公開鍵を表示し直す", "en": "Print the public key from a private key" } }
+  ],
+  "examples": [
+    { "command": "ssh-keygen -t ed25519 -C \"you@example.com\"", "summary": { "ja": "おすすめの形式で鍵を作る（保存先は Enter で既定のまま）", "en": "Create a key in the recommended format (press Enter to accept the default path)" } },
+    { "command": "ssh-keygen -t ed25519 -f ~/.ssh/id_github", "summary": { "ja": "用途別に別名で鍵を作る（既存の鍵を上書きしない）", "en": "Create a separately named key without overwriting the default one" } },
+    { "command": "ssh-keygen -lf ~/.ssh/id_ed25519.pub", "summary": { "ja": "公開鍵の指紋を確認する", "en": "Show the fingerprint of a public key" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Saving key \"(?<path>[^\"]+)\" failed: No such file or directory",
+      "hint": { "ja": "{path} の保存先フォルダ（通常 ~/.ssh）がありません。先にフォルダを作ってください", "en": "The folder for {path} (usually ~/.ssh) does not exist. Create it first" },
+      "fix": "mkdir -p ~/.ssh"
+    },
+    {
+      "pattern": "Permissions (?<perm>\\d+) for '(?<path>[^']+)' are too open",
+      "hint": { "ja": "秘密鍵 {path} の権限が {perm} で、他人も読める状態です。自分だけ読めるように 600 にしてください", "en": "The private key {path} has permissions {perm}, readable by others. Restrict it to 600" },
+      "fix": "chmod 600 {path}"
+    },
+    {
+      "pattern": "Load key \"(?<path>[^\"]+)\": (?<reason>.+)",
+      "hint": { "ja": "{path} を読み込めません（{reason}）。パスフレーズの間違いか、秘密鍵ではなく .pub を指定しているか、ファイルが壊れています", "en": "Could not load {path} ({reason}). Wrong passphrase, a .pub given instead of the private key, or a corrupted file" }
+    },
+    {
+      "pattern": "unknown key type (?<type>\\S+)",
+      "hint": { "ja": "鍵の種類 {type} は存在しません。-t ed25519 か -t rsa を使ってください", "en": "Key type {type} does not exist. Use -t ed25519 or -t rsa" }
+    },
+    {
+      "pattern": "(?<path>[^\\s:]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。-f や -l に渡したパスを確認してください", "en": "{path} was not found. Check the path given to -f or -l" },
+      "fix": "ls ~/.ssh"
+    },
+    {
+      "pattern": "'ssh-keygen' is not recognized|ssh-keygen: command not found",
+      "hint": { "ja": "ssh-keygen が見つかりません。Windows では「設定 > オプション機能」から OpenSSH クライアントを追加できます", "en": "ssh-keygen was not found. On Windows add the OpenSSH Client under Settings > Optional features" },
+      "fix": "Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0"
+    }
+  ]
+}

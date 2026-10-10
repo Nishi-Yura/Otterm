@@ -1,0 +1,40 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "hostname",
+  "summary": { "ja": "このコンピューターの名前（ホスト名）を表示します", "en": "Prints this computer's name (host name)" },
+  "description": {
+    "ja": "ssh でつないだ先がどのサーバーか確かめるときによく使います。Windows でも使えます。名前を変えるには管理者権限が必要で、Linux では hostnamectl、Windows では設定アプリを使うのがふつうです。",
+    "en": "Often used to check which server you are on after ssh. Works on Windows too. Changing the name needs admin rights; use hostnamectl on Linux or the Settings app on Windows."
+  },
+  "options": [
+    { "flags": ["-I", "--all-ip-addresses"], "summary": { "ja": "このコンピューターの IP アドレスをすべて表示（Linux）", "en": "Print all IP addresses of this machine (Linux)" } },
+    { "flags": ["-i", "--ip-address"], "summary": { "ja": "ホスト名に対応する IP アドレスを表示（Linux）", "en": "IP address the host name resolves to (Linux)" } },
+    { "flags": ["-f", "--fqdn", "--long"], "summary": { "ja": "ドメインを含む完全な名前を表示", "en": "Full name including the domain" } },
+    { "flags": ["-s", "--short"], "summary": { "ja": "最初のドットより前の短い名前だけ表示", "en": "Short name, before the first dot" } },
+    { "flags": ["-d", "--domain"], "summary": { "ja": "ドメイン名だけ表示", "en": "Domain name only" } }
+  ],
+  "args": [
+    { "name": "name", "type": "string", "optional": true, "summary": { "ja": "新しいホスト名（設定には管理者権限が必要、再起動で戻ることあり）", "en": "New host name (needs admin rights; may not survive a reboot)" } }
+  ],
+  "examples": [
+    { "command": "hostname", "summary": { "ja": "コンピューターの名前を表示", "en": "Show the computer name" } },
+    { "command": "hostname -I", "summary": { "ja": "IP アドレスを表示（Linux）", "en": "Show IP addresses (Linux)" } }
+  ],
+  "errors": [
+    {
+      "pattern": "hostname: you must be root to change the host name",
+      "hint": { "ja": "名前の変更には管理者権限が必要です。Linux では sudo hostnamectl set-hostname 新しい名前 が確実です", "en": "Changing the name needs admin rights. On Linux use sudo hostnamectl set-hostname NEWNAME" },
+      "fix": "sudo hostnamectl set-hostname "
+    },
+    {
+      "pattern": "hostname: (Name or service not known|Temporary failure in name resolution)",
+      "hint": { "ja": "ホスト名から IP アドレスを引けませんでした。-i の代わりに -I を使うと、名前解決なしで IP を表示できます", "en": "The host name could not be resolved to an IP. Use -I instead of -i to list IPs without resolving" },
+      "fix": "hostname -I"
+    },
+    {
+      "pattern": "hostname: illegal option -- (?<opt>\\S)",
+      "hint": { "ja": "-{opt} は macOS の hostname にはありません。IP アドレスは ipconfig getifaddr en0 や ifconfig で確認できます", "en": "-{opt} does not exist in macOS hostname. For IPs use ipconfig getifaddr en0 or ifconfig" },
+      "fix": "ipconfig getifaddr en0"
+    }
+  ]
+}

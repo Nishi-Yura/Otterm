@@ -1,0 +1,68 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "pipx",
+  "summary": { "ja": "Python 製の CLI ツールを隔離してインストールします", "en": "Installs Python CLI tools in isolated environments" },
+  "description": { "ja": "ツールごとに専用の仮想環境を作り、コマンドだけを PATH に出します。black や poetry のような「ライブラリではなく道具」を入れるのに向いています。プロジェクトの依存には pip や uv を使ってください。", "en": "Gives each tool its own virtual environment and exposes only the command on PATH. Ideal for tools like black or poetry rather than project libraries; use pip or uv for those." },
+  "install": { "pip": "python -m pip install --user pipx", "scoop": "scoop install pipx", "brew": "brew install pipx", "apt": "sudo apt install pipx", "dnf": "sudo dnf install pipx", "pacman": "sudo pacman -S python-pipx", "url": "https://pipx.pypa.io/stable/installation/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": { "ja": "ツールを専用環境にインストールします", "en": "Installs a tool into its own environment" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["--python"], "takesValue": true, "valueType": "string", "summary": { "ja": "使う Python を指定", "en": "Python interpreter to use" } },
+        { "flags": ["--force"], "summary": { "ja": "すでに入っていても入れ直す", "en": "Reinstall even if present" } },
+        { "flags": ["--include-deps"], "summary": { "ja": "依存パッケージのコマンドも PATH に出す", "en": "Also expose commands from dependencies" } }
+      ],
+      "examples": [{ "command": "pipx install black", "summary": { "ja": "コード整形ツール black を入れる", "en": "Install the black formatter" } }],
+      "errors": [
+        { "pattern": "No apps associated with package (?<pkg>\\S+)", "hint": { "ja": "{pkg} はコマンドを持たないライブラリです。pipx ではなく pip や uv add でプロジェクトに入れてください", "en": "{pkg} is a library with no command. Install it with pip or uv add instead of pipx" } },
+        { "pattern": "'(?<pkg>\\S+)' already seems to be installed", "hint": { "ja": "{pkg} はすでに入っています。更新は pipx upgrade、入れ直しは --force です", "en": "{pkg} is already installed. Use pipx upgrade to update or --force to reinstall" }, "fix": "pipx upgrade {pkg}" },
+        { "pattern": "No matching distribution found for (?<pkg>\\S+)", "hint": { "ja": "{pkg} が見つかりません。名前のスペルを確認してください", "en": "{pkg} was not found. Check the spelling" } }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "summary": { "ja": "ツールを環境ごと削除します", "en": "Removes a tool and its environment" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    { "name": "uninstall-all", "summary": { "ja": "pipx で入れたツールをすべて削除します", "en": "Removes every tool installed with pipx" }, "danger": "warn", "dangerMessage": { "ja": "pipx で入れたコマンドがすべて消えます", "en": "All pipx-installed commands will be removed" } },
+    {
+      "name": "run",
+      "summary": { "ja": "インストールせず一時的にツールを実行します", "en": "Runs a tool temporarily without installing it" },
+      "args": [
+        { "name": "package", "type": "package" },
+        { "name": "args", "type": "string", "optional": true, "variadic": true }
+      ],
+      "examples": [{ "command": "pipx run cowsay -t moo", "summary": { "ja": "cowsay を一時的に実行", "en": "Run cowsay temporarily" } }]
+    },
+    {
+      "name": "list",
+      "summary": { "ja": "インストール済みツールの一覧", "en": "Lists installed tools" },
+      "options": [{ "flags": ["--short"], "summary": { "ja": "名前とバージョンだけ", "en": "Names and versions only" } }]
+    },
+    {
+      "name": "upgrade",
+      "summary": { "ja": "ツールを最新版に更新します", "en": "Upgrades a tool to its latest version" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    { "name": "upgrade-all", "summary": { "ja": "すべてのツールを更新します", "en": "Upgrades every installed tool" } },
+    {
+      "name": "inject",
+      "summary": { "ja": "ツールの環境に追加パッケージ（プラグインなど）を入れます", "en": "Adds extra packages (e.g. plugins) into a tool's environment" },
+      "args": [
+        { "name": "tool", "type": "package" },
+        { "name": "package", "type": "package", "variadic": true }
+      ],
+      "examples": [{ "command": "pipx inject mkdocs mkdocs-material", "summary": { "ja": "mkdocs にテーマを追加", "en": "Add a theme to mkdocs" } }]
+    },
+    { "name": "reinstall-all", "summary": { "ja": "すべてのツールを入れ直します（Python を更新した後に）", "en": "Reinstalls every tool (after upgrading Python)" } },
+    { "name": "ensurepath", "summary": { "ja": "pipx のコマンド置き場を PATH に追加します", "en": "Adds pipx's command folder to PATH" }, "description": { "ja": "初回に一度だけ実行し、ターミナルを開き直してください。", "en": "Run once after installing pipx, then reopen the terminal." } }
+  ],
+  "errors": [
+    { "pattern": "'pipx' is not recognized|pipx: command not found", "hint": { "ja": "pipx が入っていません。python -m pip install --user pipx で入れ、python -m pipx ensurepath を実行してください", "en": "pipx is not installed. Install it with python -m pip install --user pipx, then run python -m pipx ensurepath" }, "fix": "python -m pip install --user pipx && python -m pipx ensurepath" },
+    { "pattern": "is not on your PATH environment variable", "hint": { "ja": "コマンド置き場が PATH にありません。pipx ensurepath を実行してターミナルを開き直してください", "en": "The command folder is not on PATH. Run pipx ensurepath and reopen the terminal" }, "fix": "pipx ensurepath" },
+    { "pattern": "Could not find a version that satisfies|ConnectionError|Max retries exceeded", "hint": { "ja": "PyPI に接続できないか、パッケージが見つかりません。ネットワークと名前を確認してください", "en": "Cannot reach PyPI or the package was not found. Check your network and the name" } },
+    { "pattern": "Permission denied", "hint": { "ja": "書き込み権限がありません。sudo は使わず、ユーザー権限で pipx を入れ直してください", "en": "No write permission. Avoid sudo; reinstall pipx as your user" } }
+  ]
+}

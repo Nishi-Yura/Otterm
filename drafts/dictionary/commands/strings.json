@@ -1,0 +1,51 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "strings",
+  "summary": { "ja": "バイナリファイルの中から、人が読める文字列だけを取り出して表示します", "en": "Extracts the human-readable text from a binary file" },
+  "description": { "ja": "実行ファイルや画像などのバイナリ（文字として読めないデータ）に埋め込まれたメッセージ、URL、パスなどを探すときに使います。4 文字以上続く表示可能な文字を 1 行ずつ出力します（-n で長さを変更）。grep と組み合わせるのが定番です。Windows では Git Bash や WSL の strings、または Sysinternals の strings.exe が使えます", "en": "Finds embedded messages, URLs and paths inside binaries such as executables or images. It prints runs of 4 or more printable characters (change with -n). Commonly piped into grep. On Windows use the one in Git Bash / WSL or Sysinternals strings.exe" },
+  "install": {
+    "winget": "winget install Microsoft.Sysinternals.Strings",
+    "scoop": "scoop bucket add extras && scoop install sysinternals",
+    "choco": "choco install sysinternals",
+    "brew": "brew install binutils",
+    "apt": "sudo apt install binutils",
+    "dnf": "sudo dnf install binutils",
+    "pacman": "sudo pacman -S binutils"
+  },
+  "options": [
+    { "flags": ["-n", "--bytes"], "takesValue": true, "valueType": "number", "summary": { "ja": "表示する文字列の最短の長さ（既定 4）", "en": "Minimum string length (default 4)" } },
+    { "flags": ["-a", "--all"], "summary": { "ja": "ファイル全体を対象にする（既定で有効な環境が多い）", "en": "Scan the whole file (often the default)" } },
+    { "flags": ["-t", "--radix"], "takesValue": true, "valueType": "string", "summary": { "ja": "見つかった位置も表示（x で 16 進、d で 10 進）", "en": "Also print the offset (x hex, d decimal)" } },
+    { "flags": ["-e", "--encoding"], "takesValue": true, "valueType": "string", "summary": { "ja": "文字コード（l で UTF-16LE、Windows の実行ファイル向け）", "en": "Encoding (l for UTF-16LE, used by Windows binaries)" } },
+    { "flags": ["-f", "--print-file-name"], "summary": { "ja": "各行の前にファイル名を付ける", "en": "Prefix each line with the file name" } },
+    { "flags": ["--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "files", "type": "file", "variadic": true, "summary": { "ja": "調べるファイル", "en": "Files to scan" } }
+  ],
+  "examples": [
+    { "command": "strings app.exe | grep -i http", "summary": { "ja": "実行ファイルに埋め込まれた URL を探す", "en": "Find URLs embedded in an executable" } },
+    { "command": "strings -n 8 firmware.bin", "summary": { "ja": "8 文字以上の文字列だけ表示してノイズを減らす", "en": "Show only strings of 8+ characters to cut noise" } },
+    { "command": "strings -el app.exe", "summary": { "ja": "Windows の実行ファイルの UTF-16 文字列も表示", "en": "Include UTF-16 strings from a Windows executable" } }
+  ],
+  "errors": [
+    {
+      "pattern": "strings: '?(?<file>[^':\\n]+)'?: No such file",
+      "hint": { "ja": "{file} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{file} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "Warning: '(?<path>[^']+)' is not an ordinary file",
+      "hint": { "ja": "{path} はフォルダなどで、中身を読めません。ファイル名を指定してください", "en": "{path} is a folder or special file. Give a regular file name" },
+      "fix": "ls {path}"
+    },
+    {
+      "pattern": "invalid (integer|minimum string length) argument (?<val>\\S+)",
+      "hint": { "ja": "-n には数字を渡してください（{val} は無効です）", "en": "-n needs a number ({val} is not valid)" }
+    },
+    {
+      "pattern": "'strings' is not recognized|strings: command not found",
+      "hint": { "ja": "strings がありません。Git Bash か WSL で実行するか、Sysinternals の strings.exe をインストールしてください", "en": "strings is missing. Run it from Git Bash or WSL, or install Sysinternals strings.exe" }
+    }
+  ]
+}

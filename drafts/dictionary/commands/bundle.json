@@ -1,0 +1,80 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "bundle",
+  "aliases": ["bundler"],
+  "summary": { "ja": "Ruby プロジェクトの依存（Gemfile）を管理する Bundler です", "en": "Bundler, which manages a Ruby project's dependencies (Gemfile)" },
+  "description": { "ja": "Gemfile に依存を書き、bundle install で入れると Gemfile.lock にバージョンが固定されます。Rails などのプロジェクトではコマンドの前に bundle exec を付けて、プロジェクトの gem で実行します。", "en": "List dependencies in the Gemfile; bundle install installs them and pins versions in Gemfile.lock. In Rails and similar projects, prefix commands with bundle exec to run with the project's gems." },
+  "install": { "url": "https://bundler.io/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["i"],
+      "summary": { "ja": "Gemfile の依存をすべてインストールします", "en": "Installs every dependency in the Gemfile" },
+      "options": [
+        { "flags": ["--without"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定グループを除外（非推奨。bundle config を使う）", "en": "Skip groups (deprecated; use bundle config)" } },
+        { "flags": ["-j", "--jobs"], "takesValue": true, "valueType": "number", "summary": { "ja": "並列数", "en": "Parallel jobs" } }
+      ],
+      "examples": [{ "command": "bundle install", "summary": { "ja": "依存を入れる", "en": "Install dependencies" } }],
+      "errors": [
+        { "pattern": "Could not locate Gemfile", "hint": { "ja": "このフォルダに Gemfile がありません。プロジェクトのフォルダへ移動するか bundle init で作れます", "en": "No Gemfile here. Move to the project folder or create one with bundle init" }, "fix": "bundle init" },
+        { "pattern": "Could not find gem '(?<pkg>[^']+)'", "hint": { "ja": "{pkg} が見つかりません。Gemfile の名前やバージョン指定を確認してください", "en": "{pkg} was not found. Check its name and version constraint in the Gemfile" } },
+        { "pattern": "An error occurred while installing (?<pkg>\\S+) \\((?<ver>[^)]+)\\)", "hint": { "ja": "{pkg} {ver} のインストールに失敗しました。上のログにある原因（ヘッダ不足など）を直してから再実行してください", "en": "Installing {pkg} {ver} failed. Fix the cause shown above (often missing headers) and retry" } }
+      ]
+    },
+    {
+      "name": "exec",
+      "summary": { "ja": "プロジェクトの gem でコマンドを実行します", "en": "Runs a command with the project's gems" },
+      "args": [{ "name": "command", "type": "command" }],
+      "examples": [
+        { "command": "bundle exec rspec", "summary": { "ja": "テストを実行", "en": "Run the tests" } },
+        { "command": "bundle exec rails server", "summary": { "ja": "Rails サーバーを起動", "en": "Start the Rails server" } }
+      ],
+      "errors": [{ "pattern": "bundler: command not found: (?<cmd>\\S+)", "hint": { "ja": "{cmd} は Gemfile にありません。Gemfile に追加して bundle install してください", "en": "{cmd} is not in the Gemfile. Add it and run bundle install" } }]
+    },
+    {
+      "name": "add",
+      "summary": { "ja": "Gemfile に gem を追加してインストールします", "en": "Adds a gem to the Gemfile and installs it" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["--group", "-g"], "takesValue": true, "valueType": "string", "summary": { "ja": "グループ（development, test など）", "en": "Group (development, test, ...)" } },
+        { "flags": ["--version", "-v"], "takesValue": true, "valueType": "string", "summary": { "ja": "バージョン指定", "en": "Version constraint" } }
+      ],
+      "examples": [{ "command": "bundle add rspec --group test", "summary": { "ja": "rspec を test グループに追加", "en": "Add rspec to the test group" } }]
+    },
+    {
+      "name": "remove",
+      "summary": { "ja": "Gemfile から gem を削除します", "en": "Removes a gem from the Gemfile" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }]
+    },
+    {
+      "name": "update",
+      "summary": { "ja": "Gemfile.lock の gem を新しいバージョンにします", "en": "Updates gems in Gemfile.lock" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["--conservative"], "summary": { "ja": "指定した gem 以外は変えない", "en": "Leave other gems untouched" } }],
+      "errors": [{ "pattern": "Bundler could not find compatible versions for gem \"(?<pkg>[^\"]+)\"", "hint": { "ja": "{pkg} のバージョンが他の gem と両立しません。Gemfile の制約を緩めてください", "en": "No version of {pkg} satisfies all constraints. Loosen the Gemfile constraints" } }]
+    },
+    { "name": "outdated", "summary": { "ja": "更新がある gem を表示します", "en": "Shows gems with newer versions" } },
+    { "name": "init", "summary": { "ja": "新しい Gemfile を作ります", "en": "Creates a new Gemfile" } },
+    {
+      "name": "config",
+      "summary": { "ja": "Bundler の設定を表示・変更します", "en": "Shows or changes Bundler settings" },
+      "examples": [
+        { "command": "bundle config set --local path vendor/bundle", "summary": { "ja": "gem をプロジェクト内に入れる", "en": "Install gems inside the project" } },
+        { "command": "bundle config set --local without production", "summary": { "ja": "production グループを除外", "en": "Skip the production group" } }
+      ]
+    },
+    { "name": "list", "summary": { "ja": "インストール済み gem の一覧", "en": "Lists installed gems" } },
+    {
+      "name": "clean",
+      "summary": { "ja": "Gemfile にない gem を削除します", "en": "Removes gems not in the Gemfile" },
+      "options": [{ "flags": ["--force"], "summary": { "ja": "システムの gem 置き場でも実行", "en": "Run even in the system gem path" }, "danger": "warn", "dangerMessage": { "ja": "他のプロジェクトが使う gem も消えることがあります", "en": "May remove gems other projects use" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'bundle' is not recognized|bundle: command not found", "hint": { "ja": "Bundler が入っていません。gem install bundler で入れられます", "en": "Bundler is not installed. Install it with gem install bundler" }, "fix": "gem install bundler" },
+    { "pattern": "Your Ruby version is (?<cur>[0-9.]+), but your Gemfile specified (?<req>[0-9.]+)", "hint": { "ja": "Ruby {cur} ですが、プロジェクトは {req} を求めています。rbenv などで切り替えてください", "en": "You have Ruby {cur}, but the project needs {req}. Switch with rbenv or similar" } },
+    { "pattern": "Could not find '?bundler'? \\((?<ver>[^)]+)\\) required by your Gemfile\\.lock", "hint": { "ja": "Gemfile.lock が Bundler {ver} を求めています。そのバージョンを入れてください", "en": "Gemfile.lock wants Bundler {ver}. Install that version" }, "fix": "gem install bundler -v \"{ver}\"" },
+    { "pattern": "Could not fetch specs from|Network error while fetching|Errno::ECONNREFUSED", "hint": { "ja": "rubygems.org に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach rubygems.org. Check your network or proxy" } },
+    { "pattern": "Gem::FilePermissionError|don't have write permissions", "hint": { "ja": "書き込み権限がありません。sudo ではなく bundle config set --local path vendor/bundle でプロジェクト内に入れてください", "en": "No write permission. Instead of sudo, install inside the project with bundle config set --local path vendor/bundle" }, "fix": "bundle config set --local path vendor/bundle && bundle install" }
+  ]
+}

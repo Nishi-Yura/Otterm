@@ -1,0 +1,36 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "source",
+  "aliases": ["."],
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルに書かれたコマンドを、今のシェルの中でそのまま実行します（設定の読み直しによく使います）", "en": "Runs the commands in a file inside the current shell (often to reload settings)" },
+  "description": {
+    "ja": "./script.sh が別のシェルで動かすのに対し、source は今のシェルで動かすので、ファイル内の変数や alias がそのまま反映されます。~/.bashrc を書き換えた後や、Python の仮想環境を有効にするときに使います。「. ファイル」と書いても同じです。",
+    "en": "Unlike ./script.sh, which runs in a separate shell, source runs in this one, so variables and aliases from the file take effect here. Used after editing ~/.bashrc or to activate a Python virtual environment. '. file' means the same."
+  },
+  "args": [
+    { "name": "file", "type": "file", "summary": { "ja": "読み込むファイル", "en": "File to read and run" } },
+    { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "ファイル内から $1, $2 として参照できる値", "en": "Values the file can read as $1, $2..." } }
+  ],
+  "examples": [
+    { "command": "source ~/.bashrc", "summary": { "ja": "bash の設定を読み直す", "en": "Reload your bash settings" } },
+    { "command": "source ~/.zshrc", "summary": { "ja": "zsh の設定を読み直す", "en": "Reload your zsh settings" } },
+    { "command": "source .venv/bin/activate", "summary": { "ja": "Python の仮想環境を有効にする", "en": "Activate a Python virtual environment" } }
+  ],
+  "errors": [
+    {
+      "pattern": "(?:source: )?(?<file>[^:\\s]+): No such file or directory|no such file or directory: (?<zfile>\\S+)",
+      "hint": { "ja": "指定したファイルが見つかりません。パスとスペルを確認してください。仮想環境なら先に python -m venv .venv で作る必要があります", "en": "The file was not found. Check the path and spelling. For a virtual environment, create it first with python -m venv .venv" },
+      "fix": "ls -a"
+    },
+    {
+      "pattern": "source: filename argument required|source: usage",
+      "hint": { "ja": "読み込むファイル名が必要です。例: source ~/.bashrc", "en": "A file name is required. Example: source ~/.bashrc" },
+      "fix": "source ~/.bashrc"
+    },
+    {
+      "pattern": "source: Error encountered while sourcing file '(?<file>[^']+)'",
+      "hint": { "ja": "{file} は fish 用に書かれていない可能性があります。bash 用の activate ではなく activate.fish のように fish 用のファイルを指定してください", "en": "{file} may not be written for fish. Use the fish version, e.g. activate.fish instead of activate" }
+    }
+  ]
+}

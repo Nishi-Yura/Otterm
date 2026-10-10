@@ -1,0 +1,62 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "kotlinc",
+  "summary": { "ja": "Kotlin のソースコードをコンパイルします。-include-runtime -d で単体で動く jar を作れます", "en": "Compiles Kotlin source; -include-runtime -d produces a self-contained jar" },
+  "description": { "ja": "Kotlin のコンパイラ（コードを JVM が実行できる形に変換するツール）です。できた jar（Java の実行ファイル形式）は java -jar で実行します。動かすには JDK が必要です。引数なしで起動すると対話モードになります。プロジェクト開発では通常 Gradle から使います", "en": "The Kotlin compiler for the JVM. The resulting jar is run with java -jar, so a JDK is required. With no arguments it starts an interactive prompt. Real projects usually build through Gradle" },
+  "install": {
+    "winget": "winget install JetBrains.Kotlin.Compiler",
+    "scoop": "scoop install kotlin",
+    "choco": "choco install kotlinc",
+    "brew": "brew install kotlin",
+    "pacman": "sudo pacman -S kotlin",
+    "url": "https://github.com/JetBrains/kotlin/releases"
+  },
+  "options": [
+    { "flags": ["-d"], "takesValue": true, "valueType": "path", "summary": { "ja": "出力先（jar ファイル名またはフォルダ）", "en": "Output destination (jar file or folder)" } },
+    { "flags": ["-include-runtime"], "summary": { "ja": "Kotlin の実行ライブラリを jar に同梱する（java -jar で動かすのに必要）", "en": "Bundle the Kotlin runtime into the jar (needed for java -jar)" } },
+    { "flags": ["-cp", "-classpath"], "takesValue": true, "valueType": "path", "summary": { "ja": "参照するクラスや jar の場所", "en": "Where to find referenced classes and jars" } },
+    { "flags": ["-script"], "takesValue": true, "valueType": "file", "summary": { "ja": ".kts スクリプトをその場で実行", "en": "Run a .kts script" } },
+    { "flags": ["-jvm-target"], "takesValue": true, "valueType": "string", "summary": { "ja": "対象の JVM バージョン（例: 17）", "en": "Target JVM version (e.g. 17)" } },
+    { "flags": ["-Werror"], "summary": { "ja": "警告をエラーとして扱う", "en": "Treat warnings as errors" } },
+    { "flags": ["-version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "sources", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "コンパイルする .kt ファイル", "en": ".kt files to compile" } }
+  ],
+  "examples": [
+    { "command": "kotlinc Hello.kt -include-runtime -d hello.jar", "summary": { "ja": "Hello.kt から単体で動く hello.jar を作る", "en": "Build a self-contained hello.jar from Hello.kt" } },
+    { "command": "java -jar hello.jar", "summary": { "ja": "作った jar を実行する", "en": "Run the jar you built" } },
+    { "command": "kotlinc -script build.main.kts", "summary": { "ja": "Kotlin スクリプトを直接実行", "en": "Run a Kotlin script directly" } }
+  ],
+  "errors": [
+    {
+      "pattern": "error: unresolved reference:? '?(?<name>[\\w.]+)'?",
+      "hint": { "ja": "{name} が見つかりません。つづりの間違い、import の忘れ、または -cp でライブラリを渡していないことが原因です", "en": "{name} could not be resolved. Check spelling, imports, or pass the library with -cp" }
+    },
+    {
+      "pattern": "error: source file or directory not found: (?<path>\\S+)",
+      "hint": { "ja": "{path} がありません。ファイル名と今いるフォルダを確認してください", "en": "{path} does not exist. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "error: type mismatch: inferred type is (?<got>.+?) but (?<exp>.+?) was expected",
+      "hint": { "ja": "{exp} 型が必要な所に {got} 型の値を渡しています。変換（toInt() など）か宣言を見直してください", "en": "A {got} value was given where {exp} is expected. Convert it (e.g. toInt()) or adjust the declaration" }
+    },
+    {
+      "pattern": "only safe \\(\\?\\.\\) or non-null asserted \\(!!\\.\\) calls are allowed",
+      "hint": { "ja": "null かもしれない値に直接アクセスしています。?. を使うか、null でないことを確認してから使ってください", "en": "You are accessing a nullable value directly. Use ?. or check for null first" }
+    },
+    {
+      "pattern": "(?<file>\\S+\\.kt):(?<line>\\d+):(?<col>\\d+): error: (?<msg>.+)",
+      "hint": { "ja": "{file} の {line} 行目: {msg}", "en": "Line {line} of {file}: {msg}" }
+    },
+    {
+      "pattern": "JAVA_HOME is not set|Unable to locate a Java Runtime|java: command not found",
+      "hint": { "ja": "kotlinc には JDK が必要です。JDK をインストールして JAVA_HOME を設定してください", "en": "kotlinc needs a JDK. Install one and set JAVA_HOME" }
+    },
+    {
+      "pattern": "'kotlinc' is not recognized|kotlinc: command not found",
+      "hint": { "ja": "kotlinc が見つかりません。インストール後にターミナルを開き直してください", "en": "kotlinc was not found. Install it and reopen the terminal" }
+    }
+  ]
+}

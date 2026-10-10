@@ -1,0 +1,94 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "winget",
+  "platforms": ["windows"],
+  "shells": ["pwsh", "powershell", "cmd"],
+  "summary": { "ja": "Windows 標準のパッケージ管理ツールです", "en": "Windows' built-in package manager" },
+  "description": { "ja": "Windows 10/11 に標準で入っています。ID は Publisher.Name の形（例: Git.Git）です。管理者権限が必要なアプリでは UAC の確認ダイアログが出ます。", "en": "Bundled with Windows 10/11. Package IDs look like Publisher.Name (e.g. Git.Git). Apps that need admin rights show a UAC prompt." },
+  "install": { "url": "https://aka.ms/getwinget" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["add"],
+      "summary": { "ja": "アプリをインストールします", "en": "Installs an app" },
+      "args": [{ "name": "package", "type": "package", "summary": { "ja": "ID（Git.Git）または名前", "en": "ID (Git.Git) or name" } }],
+      "options": [
+        { "flags": ["--id"], "takesValue": true, "valueType": "package", "summary": { "ja": "ID で正確に指定", "en": "Match by exact ID" } },
+        { "flags": ["-e", "--exact"], "summary": { "ja": "完全一致で検索", "en": "Exact-match search" } },
+        { "flags": ["-s", "--source"], "takesValue": true, "valueType": "string", "summary": { "ja": "winget または msstore", "en": "winget or msstore" } },
+        { "flags": ["-h", "--silent"], "summary": { "ja": "インストーラの画面を出さない", "en": "Suppress installer UI" } },
+        { "flags": ["--accept-package-agreements", "--accept-source-agreements"], "summary": { "ja": "ライセンスの確認を省略", "en": "Skip license prompts" } }
+      ],
+      "examples": [{ "command": "winget install --id Git.Git -e", "summary": { "ja": "Git を入れる", "en": "Install Git" } }],
+      "errors": [
+        { "pattern": "No package found matching input criteria", "hint": { "ja": "該当するパッケージがありません。winget search で ID を調べてください", "en": "No package matched. Use winget search to find the ID" }, "fix": "winget search {args}" },
+        { "pattern": "Multiple packages found matching input criteria", "hint": { "ja": "候補が複数あります。--id と -e で ID を正確に指定してください", "en": "Several packages matched. Specify the exact ID with --id and -e" } },
+        { "pattern": "Installer failed with exit code|Installer hash does not match", "hint": { "ja": "インストーラが失敗しました。管理者権限で開いた PowerShell で試すか、しばらく待って再実行してください", "en": "The installer failed. Try from an elevated PowerShell, or retry later" } }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "aliases": ["remove", "rm"],
+      "summary": { "ja": "アプリをアンインストールします", "en": "Uninstalls an app" },
+      "args": [{ "name": "package", "type": "package" }],
+      "options": [{ "flags": ["--id"], "takesValue": true, "valueType": "package", "summary": { "ja": "ID で指定", "en": "Match by ID" } }]
+    },
+    {
+      "name": "upgrade",
+      "aliases": ["update"],
+      "summary": { "ja": "アプリを新しいバージョンにします", "en": "Upgrades apps" },
+      "args": [{ "name": "package", "type": "package", "optional": true }],
+      "options": [
+        { "flags": ["--all", "-r", "--recurse"], "summary": { "ja": "更新できるものをすべて更新", "en": "Upgrade everything available" }, "danger": "warn", "dangerMessage": { "ja": "多数のアプリが一度に更新され、再起動を求められることがあります", "en": "Updates many apps at once; some may ask to reboot" } },
+        { "flags": ["--include-unknown"], "summary": { "ja": "バージョン不明のものも含める", "en": "Include apps with unknown versions" } }
+      ],
+      "examples": [
+        { "command": "winget upgrade", "summary": { "ja": "更新できるアプリを一覧", "en": "List upgradable apps" } },
+        { "command": "winget upgrade --all", "summary": { "ja": "すべて更新", "en": "Upgrade all" } }
+      ]
+    },
+    {
+      "name": "search",
+      "aliases": ["find"],
+      "summary": { "ja": "アプリを検索します", "en": "Searches for apps" },
+      "args": [{ "name": "query", "type": "string" }],
+      "examples": [{ "command": "winget search \"visual studio code\"", "summary": { "ja": "VS Code を探す", "en": "Find VS Code" } }]
+    },
+    {
+      "name": "list",
+      "aliases": ["ls"],
+      "summary": { "ja": "インストール済みアプリの一覧", "en": "Lists installed apps" },
+      "args": [{ "name": "query", "type": "string", "optional": true }]
+    },
+    {
+      "name": "show",
+      "aliases": ["view"],
+      "summary": { "ja": "アプリの詳細を表示", "en": "Shows app details" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "source",
+      "summary": { "ja": "パッケージの取得元を管理します", "en": "Manages package sources" },
+      "options": [
+        { "flags": ["update"], "summary": { "ja": "取得元の一覧を最新に", "en": "Refresh sources" } },
+        { "flags": ["reset"], "summary": { "ja": "取得元を既定に戻す（--force）", "en": "Reset sources to default (--force)" }, "danger": "warn", "dangerMessage": { "ja": "追加した取得元が消えます", "en": "Custom sources are removed" } }
+      ]
+    },
+    {
+      "name": "export",
+      "summary": { "ja": "インストール済み一覧を JSON に書き出します（別 PC での再現用）", "en": "Exports installed apps to JSON (to replicate on another PC)" },
+      "options": [{ "flags": ["-o", "--output"], "takesValue": true, "valueType": "file", "summary": { "ja": "出力ファイル", "en": "Output file" } }]
+    },
+    {
+      "name": "import",
+      "summary": { "ja": "JSON の一覧からまとめてインストールします", "en": "Installs everything listed in an exported JSON" },
+      "options": [{ "flags": ["-i", "--import-file"], "takesValue": true, "valueType": "file", "summary": { "ja": "読み込むファイル", "en": "File to import" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'winget' is not recognized|winget : The term 'winget'", "hint": { "ja": "winget が見つかりません。Microsoft Store から「アプリ インストーラー」を更新してください", "en": "winget was not found. Update 'App Installer' from the Microsoft Store" } },
+    { "pattern": "Failed in attempting to update the source|0x80072ee7|0x80072efd", "hint": { "ja": "取得元に接続できません。ネットワークやプロキシを確認し、winget source update を試してください", "en": "Cannot reach the source. Check your network or proxy, then try winget source update" }, "fix": "winget source update" },
+    { "pattern": "The source agreements were not agreed to", "hint": { "ja": "利用規約への同意が必要です。--accept-source-agreements を付けてください", "en": "You must accept the source agreements. Add --accept-source-agreements" }, "fix": "winget {args} --accept-source-agreements" },
+    { "pattern": "requires administrator privileges|0x80070005", "hint": { "ja": "管理者権限が必要です。PowerShell を「管理者として実行」で開き直してください", "en": "Admin rights are required. Reopen PowerShell with 'Run as administrator'" } }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ruby",
+  "summary": { "ja": "Ruby のプログラムを実行します。引数なしなら標準入力からコードを読みます", "en": "Runs a Ruby program; with no arguments, reads code from standard input" },
+  "description": { "ja": "Ruby は読みやすさを重視したスクリプト言語で、Rails などの Web フレームワークで使われます。ライブラリ（gem）は gem install や bundle install で追加します。対話的に試すには irb コマンドが便利です", "en": "Ruby is a readable scripting language known for Rails. Libraries (gems) are added with gem install or bundle install. For an interactive prompt use irb" },
+  "install": {
+    "winget": "winget install RubyInstallerTeam.RubyWithDevKit.3.3",
+    "scoop": "scoop install ruby",
+    "choco": "choco install ruby",
+    "brew": "brew install ruby",
+    "apt": "sudo apt install ruby-full",
+    "dnf": "sudo dnf install ruby",
+    "pacman": "sudo pacman -S ruby",
+    "url": "https://www.ruby-lang.org/ja/downloads/"
+  },
+  "learn": { "ja": "ファイルツリーで .rb を右クリックして「実行」を選ぶと、このコマンドが入力されます", "en": "Right-click a .rb file in the tree and choose Run to get this command" },
+  "options": [
+    { "flags": ["-e"], "takesValue": true, "valueType": "string", "summary": { "ja": "文字列をプログラムとして実行", "en": "Run the given string as code" } },
+    { "flags": ["-v", "--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } },
+    { "flags": ["-w"], "summary": { "ja": "警告を表示する", "en": "Turn on warnings" } },
+    { "flags": ["-c"], "summary": { "ja": "実行せずに文法だけ確認", "en": "Check syntax without running" } },
+    { "flags": ["-I"], "takesValue": true, "valueType": "dir", "summary": { "ja": "require で探すフォルダを追加", "en": "Add a folder to the require search path" } },
+    { "flags": ["-r"], "takesValue": true, "valueType": "string", "summary": { "ja": "実行前にライブラリを読み込む", "en": "Require a library before running" } }
+  ],
+  "args": [
+    { "name": "script", "type": "file", "optional": true, "summary": { "ja": "実行する .rb ファイル", "en": "The .rb file to run" } },
+    { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "スクリプトに渡す引数", "en": "Arguments for the script" } }
+  ],
+  "examples": [
+    { "command": "ruby main.rb", "summary": { "ja": "main.rb を実行", "en": "Run main.rb" } },
+    { "command": "ruby -e 'puts 1 + 1'", "summary": { "ja": "1 行だけ試す", "en": "Try a one-liner" } },
+    { "command": "ruby -c main.rb", "summary": { "ja": "文法だけ確認する", "en": "Only check the syntax" } }
+  ],
+  "errors": [
+    {
+      "pattern": "cannot load such file -- (?<lib>\\S+) \\(LoadError\\)",
+      "hint": { "ja": "{lib} が見つかりません。gem なら gem install で入ります。自分のファイルなら require_relative を使うか、パスを確認してください", "en": "{lib} could not be loaded. Install the gem, or for your own file use require_relative / check the path" },
+      "fix": "gem install {lib}"
+    },
+    {
+      "pattern": "undefined method ['`](?<m>[^'`]+)'.*\\(NoMethodError\\)",
+      "hint": { "ja": "メソッド {m} は存在しません。つづりの間違いか、nil（値がない状態）に対して呼んでいる可能性があります", "en": "Method {m} does not exist. Check the spelling, or you may be calling it on nil" }
+    },
+    {
+      "pattern": "undefined local variable or method ['`](?<name>[^'`]+)'",
+      "hint": { "ja": "{name} という変数もメソッドもありません。代入する前に使っていないか、つづりを確認してください", "en": "No variable or method named {name}. Check that it is assigned before use and spelled correctly" }
+    },
+    {
+      "pattern": "syntax error|unexpected end-of-input|expected an? .+ to close",
+      "hint": { "ja": "文法エラーです。end の数が足りない、または括弧やクォートの閉じ忘れが多いです。ruby -c で場所を特定できます", "en": "Syntax error. Usually a missing end or an unclosed bracket / quote. ruby -c helps locate it" },
+      "fix": "ruby -c {args}"
+    },
+    {
+      "pattern": "ruby: No such file or directory -- (?<path>\\S+) \\(LoadError\\)",
+      "hint": { "ja": "{path} がありません。ファイル名と今いるフォルダを確認してください", "en": "{path} does not exist. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "'ruby' is not recognized|ruby: command not found",
+      "hint": { "ja": "Ruby が見つかりません。インストール後にターミナルを開き直してください", "en": "Ruby was not found. Install it and reopen the terminal" }
+    },
+    {
+      "pattern": "\\(Interrupt\\)",
+      "hint": { "ja": "Ctrl+C で中断しました。エラーではありません", "en": "Interrupted with Ctrl+C. This is not an error" },
+      "allowAi": false
+    }
+  ]
+}

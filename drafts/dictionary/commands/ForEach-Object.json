@@ -1,0 +1,71 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ForEach-Object",
+  "aliases": ["foreach", "%"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "パイプで流れてきたものに 1 件ずつ同じ処理をします（PowerShell）。foreach や % と打っても同じです", "en": "Runs the same action on each item coming through the pipeline (PowerShell). foreach and % are aliases" },
+  "description": { "ja": "Get-ChildItem | ForEach-Object { $_.Name } のように、| の後ろで使います。$_ は「今処理している 1 件」を表します。プロパティを取り出すだけなら ForEach-Object Name とも書けます。-Parallel を付けると複数件を同時に処理します（PowerShell 7）。", "en": "Used after a pipe, e.g. Get-ChildItem | ForEach-Object { $_.Name }. $_ means the current item. To read one property you can write ForEach-Object Name. -Parallel processes several items at once (PowerShell 7)." },
+  "options": [
+    {
+      "flags": ["-Process"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "各件に対して実行するスクリプトブロック { ... }", "en": "Script block { ... } to run for each item" }
+    },
+    {
+      "flags": ["-MemberName"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "各件から取り出すプロパティ名やメソッド名（簡易構文）", "en": "Property or method to read from each item (simplified syntax)" }
+    },
+    {
+      "flags": ["-Begin"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "最初に 1 回だけ実行する { ... }", "en": "Script block run once before the first item" }
+    },
+    {
+      "flags": ["-End"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "最後に 1 回だけ実行する { ... }", "en": "Script block run once after the last item" }
+    },
+    {
+      "flags": ["-Parallel"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "複数件を同時に処理する { ... }（PowerShell 7）", "en": "Process items concurrently with { ... } (PowerShell 7)" }
+    },
+    {
+      "flags": ["-ThrottleLimit"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "-Parallel で同時に動かす最大数（既定 5）", "en": "Max concurrent items for -Parallel (default 5)" }
+    }
+  ],
+  "examples": [
+    { "command": "Get-ChildItem *.txt | ForEach-Object { $_.Name }", "summary": { "ja": "ファイル名だけを 1 行ずつ表示", "en": "Print each file's name" } },
+    { "command": "1..5 | ForEach-Object { $_ * 2 }", "summary": { "ja": "1 から 5 を 2 倍して表示", "en": "Double the numbers 1 to 5" } },
+    { "command": "Get-ChildItem *.log | % { Rename-Item $_ ($_.BaseName + \".old\") }", "summary": { "ja": "すべての .log を .old に改名（% は別名）", "en": "Rename every .log to .old (% is an alias)" } },
+    { "command": "Get-Process | ForEach-Object Name", "summary": { "ja": "プロパティを取り出すだけの簡易構文", "en": "Simplified syntax to read one property" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot bind parameter 'Process'\\. Cannot convert the \"(?<v>[^\"]+)\" value of type \"System\\.String\" to type \"System\\.Management\\.Automation\\.ScriptBlock\"",
+      "hint": { "ja": "処理は { } で囲む必要があります。例: ForEach-Object { {v} }", "en": "The action must be wrapped in { }. Example: ForEach-Object { {v} }" },
+      "fix": "ForEach-Object { $_ }"
+    },
+    {
+      "pattern": "Missing closing '}' in statement block",
+      "hint": { "ja": "閉じる } が足りません。{ と } の数を合わせてください", "en": "A closing } is missing. Make the braces balance" }
+    },
+    {
+      "pattern": "The term '(?<term>[^']+)' is not recognized as (a|the) name of a cmdlet",
+      "hint": { "ja": "{term} というコマンドはありません。{ } の中のスペルを確認してください。Linux の xargs とは別物です", "en": "{term} is not a command. Check the spelling inside { }. This is not Linux xargs" }
+    },
+    {
+      "pattern": "Missing expression after unary operator '-'",
+      "hint": { "ja": "- の後ろが解釈できません。$_ に対するプロパティは $_.Name のようにドットでつなぎます", "en": "Could not parse after -. Access properties on $_ with a dot, like $_.Name" }
+    }
+  ]
+}

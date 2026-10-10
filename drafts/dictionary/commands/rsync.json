@@ -1,0 +1,55 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "rsync",
+  "summary": { "ja": "フォルダの中身を別の場所（手元や別のコンピューター）と同期し、変わった分だけコピーします", "en": "Syncs a folder to another place, local or remote, copying only what changed" },
+  "description": {
+    "ja": "2 回目以降は差分だけ送るので、バックアップや大量のファイルの転送に向いています。コピー元の末尾に / を付けると「中身」を、付けないと「フォルダごと」コピーするという違いに注意してください。コピー先の同名ファイルは上書きされます。迷ったら --dry-run で何が起きるか先に確認できます。",
+    "en": "After the first run it only sends differences, which makes it ideal for backups and large transfers. A trailing / on the source copies its contents; without it the folder itself is copied. Existing files at the destination are overwritten. When unsure, --dry-run shows what would happen."
+  },
+  "install": {
+    "brew": "brew install rsync",
+    "apt": "sudo apt install rsync",
+    "dnf": "sudo dnf install rsync",
+    "pacman": "sudo pacman -S rsync"
+  },
+  "options": [
+    { "flags": ["-a", "--archive"], "summary": { "ja": "フォルダを再帰的に、更新日時や権限も保ったままコピー。ほぼ常に付けます", "en": "Recursive copy preserving times and permissions. Almost always wanted" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "コピーしたファイル名を表示", "en": "Print each file transferred" } },
+    { "flags": ["-z", "--compress"], "summary": { "ja": "転送中に圧縮して速くする（ネットワーク越しに有効）", "en": "Compress during transfer (useful over the network)" } },
+    { "flags": ["-n", "--dry-run"], "summary": { "ja": "実際にはコピーせず、何が起きるかだけ表示", "en": "Show what would be done without doing it" } },
+    { "flags": ["-P"], "summary": { "ja": "進み具合を表示し、途中で切れても再開できるようにする", "en": "Show progress and keep partial files for resuming" } },
+    {
+      "flags": ["--delete"],
+      "summary": { "ja": "コピー元にないファイルをコピー先から削除する（完全な複製にする）", "en": "Delete files at the destination that are missing from the source (exact mirror)" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "コピー先にだけあるファイルが削除されます。コピー元とコピー先を取り違えていると大切なデータが消えます", "en": "Files that exist only at the destination will be deleted. Swapping source and destination would wipe important data" },
+      "alternative": { "label": { "ja": "まず --dry-run で確認する", "en": "Preview with --dry-run first" }, "command": "rsync --dry-run {args}" }
+    },
+    { "flags": ["-e", "--rsh"], "takesValue": true, "valueType": "string", "summary": { "ja": "接続に使うコマンド（例: \"ssh -p 2222\"）", "en": "Remote shell command (e.g. \"ssh -p 2222\")" } },
+    { "flags": ["--exclude"], "takesValue": true, "valueType": "pattern", "summary": { "ja": "コピーしないファイルのパターン（例: node_modules）", "en": "Pattern of files to skip (e.g. node_modules)" } }
+  ],
+  "args": [
+    { "name": "source", "type": "path", "variadic": true, "summary": { "ja": "コピー元（手元のパス、または user@host:パス）", "en": "Source (local path or user@host:path)" } },
+    { "name": "destination", "type": "path", "summary": { "ja": "コピー先（手元のパス、または user@host:パス）", "en": "Destination (local path or user@host:path)" } }
+  ],
+  "examples": [
+    { "command": "rsync -avz ./site/ user@example.com:/var/www/site/", "summary": { "ja": "site フォルダの中身をサーバーへ同期", "en": "Sync the contents of site to the server" } },
+    { "command": "rsync -av --dry-run --delete ~/Documents/ /Volumes/Backup/Documents/", "summary": { "ja": "バックアップで何が消えるか、実行せずに確認", "en": "Preview what a mirror backup would delete" } },
+    { "command": "rsync -avP --exclude node_modules ./app/ user@example.com:~/app/", "summary": { "ja": "node_modules を除いて進み具合を見ながら送る", "en": "Send with progress, skipping node_modules" } }
+  ],
+  "errors": [
+    {
+      "pattern": "rsync: (?:\\[sender\\] )?(?:change_dir|link_stat) \"(?<path>[^\"]+)\" failed: No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。コピー元のパスのスペルと、相手側なら user@host: の後のパスを確認してください", "en": "{path} was not found. Check the source path spelling, and for remote paths the part after user@host:" },
+      "fix": "ls -la"
+    },
+    {
+      "pattern": "rsync: command not found|rsync: connection unexpectedly closed",
+      "hint": { "ja": "相手のコンピューターに rsync が入っていないか、接続が途中で切れました。相手側でも rsync のインストールが必要です。まず ssh で接続できるか確かめてください", "en": "rsync is missing on the remote machine, or the connection dropped. rsync must be installed on both sides. First check that ssh alone connects" }
+    },
+    {
+      "pattern": "rsync error: .* \\(code 255\\)",
+      "hint": { "ja": "ssh での接続に失敗しました。ssh user@host だけで接続できるか、ポートが違うなら -e \"ssh -p ポート\" を付けているか確認してください", "en": "The ssh connection failed. Check that plain ssh user@host works, and add -e \"ssh -p PORT\" if the port differs" }
+    }
+  ]
+}

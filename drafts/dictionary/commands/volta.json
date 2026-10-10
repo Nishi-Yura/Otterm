@@ -1,0 +1,72 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "volta",
+  "summary": { "ja": "プロジェクトごとに Node.js と npm/yarn を自動で切り替えるツールです", "en": "Automatically switches Node.js and npm/yarn per project" },
+  "description": { "ja": "package.json の volta 欄にバージョンを記録しておくと、そのフォルダに入るだけで自動的に正しい Node.js が使われます。nvm use のような手動切り替えは不要です。", "en": "Records versions in the volta field of package.json, and the right Node.js is used automatically whenever you are in that folder. No manual switching like nvm use." },
+  "install": { "winget": "winget install Volta.Volta", "scoop": "scoop install volta", "choco": "choco install volta", "brew": "brew install volta", "url": "https://volta.sh/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["i"],
+      "summary": { "ja": "ツールを入れて既定にします（node、npm、yarn、または npm パッケージ）", "en": "Installs a tool and makes it the default (node, npm, yarn, or an npm package)" },
+      "args": [{ "name": "package", "type": "package", "variadic": true, "summary": { "ja": "node@22、yarn、typescript など", "en": "node@22, yarn, typescript, ..." } }],
+      "examples": [
+        { "command": "volta install node@22", "summary": { "ja": "Node.js 22 を既定にする", "en": "Make Node.js 22 the default" } },
+        { "command": "volta install node@lts", "summary": { "ja": "最新 LTS を既定にする", "en": "Make the latest LTS the default" } }
+      ],
+      "errors": [
+        { "pattern": "error: Could not download (?<tool>\\S+)@(?<ver>\\S+)", "hint": { "ja": "{tool} {ver} をダウンロードできません。バージョンが存在するか、ネットワークを確認してください", "en": "Could not download {tool} {ver}. Check that the version exists and your network works" } },
+        { "pattern": "Could not find Node version matching \"(?<ver>[^\"]+)\"", "hint": { "ja": "{ver} に合う Node.js がありません。バージョン指定を確認してください", "en": "No Node.js matches {ver}. Check the version spec" } },
+        { "pattern": "error: Package '(?<pkg>[^']+)' not found", "hint": { "ja": "{pkg} が見つかりません。名前のスペルを確認してください", "en": "{pkg} was not found. Check the spelling" } }
+      ]
+    },
+    {
+      "name": "pin",
+      "summary": { "ja": "このプロジェクトで使うバージョンを package.json に記録します", "en": "Records the version for this project in package.json" },
+      "args": [{ "name": "package", "type": "package", "variadic": true, "summary": { "ja": "node@22、npm@10、yarn@4 など", "en": "node@22, npm@10, yarn@4, ..." } }],
+      "examples": [{ "command": "volta pin node@22 npm@10", "summary": { "ja": "このプロジェクトは Node 22 と npm 10", "en": "This project uses Node 22 and npm 10" } }],
+      "errors": [{ "pattern": "Not in a node package", "hint": { "ja": "このフォルダに package.json がありません。プロジェクトのフォルダへ移動するか npm init で作れます", "en": "No package.json here. Move to the project folder or create one with npm init" }, "fix": "npm init -y" }]
+    },
+    {
+      "name": "list",
+      "aliases": ["ls"],
+      "summary": { "ja": "インストール済みツールの一覧", "en": "Lists installed tools" },
+      "args": [{ "name": "tool", "type": "string", "optional": true, "summary": { "ja": "node / npm / yarn / all", "en": "node / npm / yarn / all" } }],
+      "options": [{ "flags": ["--current"], "summary": { "ja": "今有効なものだけ", "en": "Only what is active now" } }]
+    },
+    {
+      "name": "uninstall",
+      "summary": { "ja": "npm パッケージのツールを削除します", "en": "Removes an npm package tool" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "fetch",
+      "summary": { "ja": "オフライン用に先にダウンロードだけしておきます", "en": "Downloads a tool ahead of time for offline use" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "指定の Node.js でコマンドを一度だけ実行します", "en": "Runs a command once with a given Node.js" },
+      "args": [{ "name": "command", "type": "command" }],
+      "options": [{ "flags": ["--node"], "takesValue": true, "valueType": "string", "summary": { "ja": "使う Node.js のバージョン", "en": "Node.js version to use" } }],
+      "examples": [{ "command": "volta run --node 18 node -v", "summary": { "ja": "Node 18 でバージョン確認", "en": "Check the version under Node 18" } }]
+    },
+    {
+      "name": "which",
+      "summary": { "ja": "そのコマンドの実体がどこにあるか表示", "en": "Shows where a command actually lives" },
+      "args": [{ "name": "command", "type": "command" }]
+    },
+    { "name": "setup", "summary": { "ja": "シェルの PATH 設定を行います（インストール直後に一度）", "en": "Sets up your shell PATH (once after installing)" } },
+    {
+      "name": "completions",
+      "summary": { "ja": "シェル補完の定義を出力します", "en": "Prints shell completion definitions" },
+      "args": [{ "name": "shell", "type": "string" }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'volta' is not recognized|volta: command not found", "hint": { "ja": "volta が入っていないか PATH にありません。インストール後にターミナルを開き直してください", "en": "volta is missing or not on PATH. Reopen the terminal after installing" } },
+    { "pattern": "Node is not available", "hint": { "ja": "既定の Node.js が未設定です。volta install node で入れてください", "en": "No default Node.js yet. Run volta install node" }, "fix": "volta install node" },
+    { "pattern": "error: Could not fetch public registry|error sending request|Could not resolve host", "hint": { "ja": "レジストリに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the registry. Check your network or proxy" } },
+    { "pattern": "Developer Mode|symlink.*privilege|A required privilege is not held", "hint": { "ja": "Windows でシンボリックリンクを作る権限がありません。設定で「開発者モード」を有効にしてください", "en": "Windows needs permission to create symlinks. Turn on Developer Mode in Settings" } }
+  ]
+}

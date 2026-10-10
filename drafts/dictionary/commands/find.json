@@ -1,0 +1,50 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "find",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "名前や種類・日付などの条件で、フォルダの中からファイルを探します", "en": "Searches a folder tree for files by name, type, date and more" },
+  "description": {
+    "ja": "最初に探し始めるフォルダ、その後に条件を書きます。条件を何も付けないと、そのフォルダ以下のすべてのファイルとフォルダを一覧します。",
+    "en": "Write the starting folder first, then the conditions. With no conditions it lists everything under that folder."
+  },
+  "options": [
+    { "flags": ["-name"], "takesValue": true, "valueType": "pattern", "summary": { "ja": "名前で探す（例: \"*.txt\"。* を使うときは引用符で囲む）", "en": "Match by name (e.g. \"*.txt\"; quote patterns with *)" } },
+    { "flags": ["-iname"], "takesValue": true, "valueType": "pattern", "summary": { "ja": "名前で探す（大文字小文字を区別しない）", "en": "Match by name, ignoring case" } },
+    { "flags": ["-type"], "takesValue": true, "valueType": "string", "summary": { "ja": "種類で絞る: f = ファイル、d = フォルダ", "en": "Filter by kind: f = file, d = folder" } },
+    { "flags": ["-mtime"], "takesValue": true, "valueType": "number", "summary": { "ja": "更新日で絞る: -7 なら 7 日以内、+30 なら 30 日より前", "en": "Filter by modified date: -7 = within 7 days, +30 = older than 30 days" } },
+    { "flags": ["-size"], "takesValue": true, "valueType": "string", "summary": { "ja": "サイズで絞る（例: +10M = 10 MB より大きい）", "en": "Filter by size (e.g. +10M = larger than 10 MB)" } },
+    { "flags": ["-maxdepth"], "takesValue": true, "valueType": "number", "summary": { "ja": "何階層下まで探すか（1 なら直下だけ）", "en": "How many levels deep to search (1 = this folder only)" } },
+    { "flags": ["-exec"], "takesValue": true, "valueType": "command", "summary": { "ja": "見つけた各ファイルにコマンドを実行（{} がファイル名、末尾に \\; が必要）", "en": "Run a command on each result ({} is the file name; end with \\;)" } },
+    {
+      "flags": ["-delete"],
+      "summary": { "ja": "見つけたファイルをすべて削除", "en": "Delete every file found" },
+      "danger": "confirm",
+      "dangerMessage": { "ja": "条件に一致したファイルをすべて確認なしで削除します。ゴミ箱には入りません。-delete は条件の最後に書かないと、全ファイルが消えます", "en": "Deletes every match without asking, bypassing the trash. If -delete is not last, everything under the folder is deleted" },
+      "alternative": { "label": { "ja": "まず一覧を表示して確認する", "en": "Preview the list first" }, "command": "find {args} -print" }
+    }
+  ],
+  "args": [
+    { "name": "path", "type": "dir", "optional": true, "variadic": true, "summary": { "ja": "探し始めるフォルダ（省略すると今いるフォルダ）", "en": "Folder to start from (defaults to the current folder)" } }
+  ],
+  "examples": [
+    { "command": "find . -name \"*.jpg\"", "summary": { "ja": "今いるフォルダ以下の JPEG を探す", "en": "Find JPEGs under the current folder" } },
+    { "command": "find ~/Documents -type f -mtime -7", "summary": { "ja": "書類フォルダで 7 日以内に更新されたファイルを探す", "en": "Files in Documents modified within the last 7 days" } },
+    { "command": "find . -name \"*.log\" -size +10M", "summary": { "ja": "10 MB より大きいログファイルを探す", "en": "Log files larger than 10 MB" } }
+  ],
+  "errors": [
+    {
+      "pattern": "find: [‘'](?<path>[^’']+)[’']: No such file or directory",
+      "hint": { "ja": "探し始めるフォルダ {path} が見つかりません。スペルを確認してください", "en": "The starting folder {path} was not found. Check the spelling" },
+      "fix": "find . -name"
+    },
+    {
+      "pattern": "find: paths must precede expression: [`‘'](?<expr>[^’'\\n]+)[’']?",
+      "hint": { "ja": "フォルダは条件より前に書きます。また * を含む名前は引用符で囲んでください（例: find . -name \"*.txt\"）", "en": "The folder must come before the conditions, and names with * need quotes (e.g. find . -name \"*.txt\")" },
+      "fix": "find . -name \"{expr}\""
+    },
+    {
+      "pattern": "find: missing argument to [`‘']-exec[’']",
+      "hint": { "ja": "-exec のコマンドの終わりに \\; が必要です（例: -exec ls -l {} \\;）", "en": "-exec needs \\; at the end of the command (e.g. -exec ls -l {} \\;)" }
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "sed",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "テキストの置換や行の抜き出しを自動で行います（ストリームエディタ）", "en": "Replaces text or picks lines automatically (a stream editor)" },
+  "description": {
+    "ja": "いちばん多い使い方は置換の 's/置換前/置換後/g' です。通常は結果を表示するだけでファイルは変わりません。-i を付けるとファイルを直接書き換えます。",
+    "en": "The most common use is substitution: 's/old/new/g'. Normally it only prints the result; -i edits the file in place."
+  },
+  "options": [
+    {
+      "flags": ["-i", "--in-place"],
+      "summary": { "ja": "表示せずファイルを直接書き換える（macOS では -i '' と書く）", "en": "Edit the file in place instead of printing (on macOS write -i '')" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "ファイルを直接書き換えます。元に戻せないので、先に -i なしで結果を確認してください", "en": "Rewrites the file. There is no undo; try it without -i first" },
+      "alternative": { "label": { "ja": "バックアップ（.bak）を残して書き換える", "en": "Keep a .bak backup" }, "command": "sed -i.bak {args}" }
+    },
+    { "flags": ["-n", "--quiet", "--silent"], "summary": { "ja": "指示した行だけ表示（p と組み合わせる）", "en": "Print only the lines you ask for (with p)" } },
+    { "flags": ["-e", "--expression"], "takesValue": true, "valueType": "string", "summary": { "ja": "実行する指示（複数回書くと順に実行）", "en": "A script to run (repeat for several)" } },
+    { "flags": ["-E", "-r", "--regexp-extended"], "summary": { "ja": "拡張正規表現（+ や | や () が使える）", "en": "Extended regular expressions (+, |, () and more)" } },
+    { "flags": ["-f", "--file"], "takesValue": true, "valueType": "file", "summary": { "ja": "指示をファイルから読む", "en": "Read the script from a file" } }
+  ],
+  "args": [
+    { "name": "script", "type": "string", "summary": { "ja": "指示。引用符で囲む（例: 's/foo/bar/g'）", "en": "The script, in quotes (e.g. 's/foo/bar/g')" } },
+    { "name": "file", "type": "file", "optional": true, "variadic": true, "summary": { "ja": "処理するファイル（省略すると前のコマンドの出力を処理）", "en": "Files to process (omit to process the previous command's output)" } }
+  ],
+  "examples": [
+    { "command": "sed 's/colour/color/g' draft.txt", "summary": { "ja": "colour を color に置き換えて表示（ファイルは変えない）", "en": "Print with colour replaced by color (file unchanged)" } },
+    { "command": "sed -n '10,20p' app.log", "summary": { "ja": "10 行目から 20 行目だけ表示", "en": "Show lines 10 to 20" } },
+    { "command": "sed -i.bak 's/localhost/127.0.0.1/' config.ini", "summary": { "ja": "バックアップを残してファイルを書き換える", "en": "Edit the file, keeping a backup" } }
+  ],
+  "errors": [
+    {
+      "pattern": "sed: -e expression #(?<n>\\d+), char (?<col>\\d+): (?<msg>[^\\n]+)",
+      "hint": { "ja": "指示の {col} 文字目付近に誤りがあります（{msg}）。s/前/後/ の / が 3 つあるか、全体が引用符で囲まれているか確認してください", "en": "Problem near character {col} of the script ({msg}). Check that s/old/new/ has three slashes and the whole script is quoted" }
+    },
+    {
+      "pattern": "sed: (?:can't read|cannot read) (?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。指示の後にファイル名を書く順番になっているか確認してください", "en": "{path} was not found. Make sure the script comes before the file name" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "sed: 1: \"(?<arg>[^\"]+)\": (?:invalid command code|command (?<c>\\S) expects|unterminated substitute)",
+      "hint": { "ja": "macOS の sed では -i の直後にバックアップの拡張子が必要です。不要なら -i '' と書きます", "en": "On macOS, sed -i needs a backup suffix right after it. Write -i '' if you want none" },
+      "fix": "sed -i ''"
+    }
+  ]
+}

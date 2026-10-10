@@ -1,0 +1,72 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "java",
+  "summary": { "ja": "Java のプログラムを実行します。1 つの .java ファイルならそのまま渡せます", "en": "Runs a Java program; a single .java file can be run directly" },
+  "description": { "ja": "Java 仮想マシン（JVM。コンパイル済みの Java を動かす仕組み）を起動します。Java 11 以降は java Main.java のように .java ファイルを直接渡すと、コンパイル（人が読めるコードを機械が実行できる形に変換すること）と実行をまとめて行います。複数ファイルのときは javac でコンパイルしてからクラス名を渡します", "en": "Starts the Java Virtual Machine. Since Java 11, passing a .java file (java Main.java) compiles and runs it in one step. For multiple files, compile with javac first and pass the class name" },
+  "install": {
+    "winget": "winget install EclipseAdoptium.Temurin.21.JDK",
+    "scoop": "scoop bucket add java && scoop install temurin21-jdk",
+    "choco": "choco install temurin21",
+    "brew": "brew install openjdk@21",
+    "apt": "sudo apt install default-jdk",
+    "dnf": "sudo dnf install java-21-openjdk-devel",
+    "pacman": "sudo pacman -S jdk-openjdk",
+    "url": "https://adoptium.net/"
+  },
+  "learn": { "ja": "ファイルツリーで .java を右クリックして「実行」を選ぶと java File.java が入力されます。Java 11 以降は 1 ファイルのプログラムならコンパイルなしで実行できます", "en": "Right-click a .java file in the tree and choose Run to get java File.java. Since Java 11 a single-file program runs without a separate compile step" },
+  "options": [
+    { "flags": ["-jar"], "takesValue": true, "valueType": "file", "summary": { "ja": "jar ファイル（まとめられたプログラム）を実行", "en": "Run a packaged .jar file" } },
+    { "flags": ["-cp", "-classpath", "--class-path"], "takesValue": true, "valueType": "path", "summary": { "ja": "クラスファイルや jar を探す場所", "en": "Where to look for classes and jars" } },
+    { "flags": ["-version", "--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } },
+    { "flags": ["-Xmx"], "takesValue": true, "valueType": "string", "summary": { "ja": "使えるメモリの上限（例: -Xmx2g）", "en": "Maximum heap size (e.g. -Xmx2g)" } },
+    { "flags": ["-D"], "takesValue": true, "valueType": "string", "summary": { "ja": "システムプロパティを設定（例: -Dfile.encoding=UTF-8）", "en": "Set a system property (e.g. -Dfile.encoding=UTF-8)" } },
+    { "flags": ["-ea", "-enableassertions"], "summary": { "ja": "assert 文を有効にする", "en": "Enable assert statements" } }
+  ],
+  "args": [
+    { "name": "class-or-file", "type": "file", "summary": { "ja": "実行するクラス名、または .java ファイル", "en": "Class name to run, or a .java file" } },
+    { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "プログラムに渡す引数", "en": "Arguments for the program" } }
+  ],
+  "examples": [
+    { "command": "java Main.java", "summary": { "ja": "Main.java をそのまま実行（Java 11 以降）", "en": "Run Main.java directly (Java 11+)" } },
+    { "command": "java -cp out Main", "summary": { "ja": "out フォルダにコンパイル済みの Main クラスを実行", "en": "Run the compiled Main class from the out folder" } },
+    { "command": "java -jar app.jar", "summary": { "ja": "jar ファイルを実行", "en": "Run a jar file" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Could not find or load main class (?<cls>\\S+)",
+      "hint": { "ja": "クラス {cls} が見つかりません。.class や .java の拡張子は付けず、-cp でクラスファイルのあるフォルダを指定してください", "en": "Class {cls} was not found. Drop the .class / .java extension and point -cp at the folder with the class files" },
+      "fix": "java -cp . {cls}"
+    },
+    {
+      "pattern": "class (?<cls>\\w+) is public, should be declared in a file named (?<file>\\S+)",
+      "hint": { "ja": "public クラス {cls} はファイル名 {file} と一致している必要があります。ファイル名かクラス名を揃えてください", "en": "Public class {cls} must live in a file named {file}. Rename the file or the class" }
+    },
+    {
+      "pattern": "Unable to access jarfile (?<jar>\\S+)",
+      "hint": { "ja": "{jar} が見つかりません。パスと今いるフォルダを確認してください", "en": "{jar} was not found. Check the path and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "UnsupportedClassVersionError.*class file version (?<ver>[\\d.]+)",
+      "hint": { "ja": "このプログラムは今の Java より新しいバージョンでコンパイルされています（class file version {ver}）。Java を新しくしてください", "en": "This program was compiled for a newer Java than you have (class file version {ver}). Update your JDK" },
+      "fix": "java -version"
+    },
+    {
+      "pattern": "Exception in thread \"main\" java\\.lang\\.NullPointerException",
+      "hint": { "ja": "null（値がない状態）に対してメソッドを呼びました。スタックトレースの一番上の行番号を見てください", "en": "A method was called on null. Look at the top line of the stack trace for the line number" }
+    },
+    {
+      "pattern": "Exception in thread \"main\" (?<exc>[\\w.]+)(: (?<msg>.*))?",
+      "hint": { "ja": "実行中に {exc} が発生しました: {msg}。\"at\" で始まる行のうち自分のファイルのものを探してください", "en": "{exc} was thrown: {msg}. Look for the \"at\" lines that mention your own files" }
+    },
+    {
+      "pattern": "OutOfMemoryError",
+      "hint": { "ja": "メモリが足りません。-Xmx で上限を増やすか、データ量を減らしてください", "en": "Out of memory. Raise the limit with -Xmx or reduce the data size" },
+      "fix": "java -Xmx2g {args}"
+    },
+    {
+      "pattern": "'java' is not recognized|java: command not found",
+      "hint": { "ja": "Java が見つかりません。JDK をインストールしてターミナルを開き直してください", "en": "Java was not found. Install a JDK and reopen the terminal" }
+    }
+  ]
+}

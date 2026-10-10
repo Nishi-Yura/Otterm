@@ -1,0 +1,46 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "grep",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルの中から、指定した文字列を含む行を探して表示します", "en": "Finds lines containing a given text in files" },
+  "description": {
+    "ja": "探す文字列（パターン）を先に、ファイル名を後に書きます。見つかった行を表示し、何も見つからないときは何も表示せず終了コード 1 になります（これはエラーではありません）。",
+    "en": "Pattern first, then file names. It prints matching lines; when nothing matches it prints nothing and exits with code 1, which is not an error."
+  },
+  "options": [
+    { "flags": ["-i", "--ignore-case"], "summary": { "ja": "大文字と小文字を区別しない", "en": "Ignore upper/lower case" } },
+    { "flags": ["-r", "-R", "--recursive"], "summary": { "ja": "フォルダの中のファイルをすべて（サブフォルダも）探す", "en": "Search every file in a folder, including subfolders" } },
+    { "flags": ["-n", "--line-number"], "summary": { "ja": "行番号も表示", "en": "Show line numbers" } },
+    { "flags": ["-v", "--invert-match"], "summary": { "ja": "含まない行を表示（逆の条件）", "en": "Show lines that do NOT match" } },
+    { "flags": ["-l", "--files-with-matches"], "summary": { "ja": "行ではなく、見つかったファイル名だけを表示", "en": "List only the names of matching files" } },
+    { "flags": ["-w", "--word-regexp"], "summary": { "ja": "単語として一致する行だけ（cat で category を拾わない）", "en": "Match whole words only (cat will not match category)" } },
+    { "flags": ["-E", "--extended-regexp"], "summary": { "ja": "拡張正規表現（| や + などが使える）", "en": "Extended regular expressions (|, + and more)" } },
+    { "flags": ["-C", "--context"], "takesValue": true, "valueType": "number", "summary": { "ja": "見つかった行の前後 N 行も表示", "en": "Show N lines before and after each match" } }
+  ],
+  "args": [
+    { "name": "pattern", "type": "pattern", "summary": { "ja": "探す文字列（正規表現も可）。空白や記号を含むときは引用符で囲む", "en": "Text or regular expression to find; quote it if it has spaces or symbols" } },
+    { "name": "file", "type": "path", "optional": true, "variadic": true, "summary": { "ja": "探す対象のファイルやフォルダ（省略すると前のコマンドの出力を探す）", "en": "Files or folders to search (omit to search the previous command's output)" } }
+  ],
+  "examples": [
+    { "command": "grep -n \"TODO\" app.js", "summary": { "ja": "app.js の TODO を行番号付きで探す", "en": "Find TODO in app.js with line numbers" } },
+    { "command": "grep -ri \"error\" logs/", "summary": { "ja": "logs フォルダ全体から error を大文字小文字を問わず探す", "en": "Search the logs folder for error, any case" } },
+    { "command": "ps aux | grep node", "summary": { "ja": "動いているプログラムから node を含む行を探す", "en": "Find running processes containing node" } }
+  ],
+  "errors": [
+    {
+      "pattern": "grep: (?<path>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。ファイル名の前に探す文字列を書く順番になっているか確認してください", "en": "{path} was not found. Make sure the pattern comes before the file name" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "grep: (?<path>[^:\\n]+): Is a directory",
+      "hint": { "ja": "{path} はフォルダです。フォルダの中を探すには -r を付けます", "en": "{path} is a folder. Add -r to search inside folders" },
+      "fix": "grep -r"
+    },
+    {
+      "pattern": "grep: (?:Unmatched|Invalid|Trailing backslash|brackets \\(\\[ \\]\\) not balanced)(?<detail>[^\\n]*)",
+      "hint": { "ja": "探す文字列の記号（括弧や \\ など）が正規表現として不完全です。文字そのものを探したいときは -F を付けます", "en": "A symbol in the pattern (bracket, backslash, etc.) is incomplete as a regular expression. To search for literal text, add -F" },
+      "fix": "grep -F"
+    }
+  ]
+}

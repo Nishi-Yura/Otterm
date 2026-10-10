@@ -1,0 +1,43 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ssh",
+  "summary": { "ja": "別のコンピューター（サーバー）に安全に接続し、そのコンピューター上でコマンドを実行できるようにします", "en": "Securely connects to another computer so you can run commands on it" },
+  "description": {
+    "ja": "ユーザー名@サーバー名 の形で指定します。つながると、以後打つコマンドはすべて相手のコンピューターで実行されます。初回接続時に出る「fingerprint ... (yes/no)?」の確認は正常なもので、yes と答えます。戻るには exit と打ちます。",
+    "en": "Written as user@host. Once connected, every command you type runs on the remote machine. The first-time 'fingerprint ... (yes/no)?' prompt is normal; answer yes. Type exit to come back."
+  },
+  "options": [
+    { "flags": ["-p"], "takesValue": true, "valueType": "number", "summary": { "ja": "ポート番号（既定は 22）", "en": "Port number (default 22)" } },
+    { "flags": ["-i"], "takesValue": true, "valueType": "file", "summary": { "ja": "使う秘密鍵のファイル", "en": "Private key file to use" } },
+    { "flags": ["-L"], "takesValue": true, "valueType": "string", "summary": { "ja": "手元のポートを相手側に転送する（例: 8080:localhost:80）", "en": "Forward a local port to the remote side (e.g. 8080:localhost:80)" } },
+    { "flags": ["-N"], "summary": { "ja": "コマンドを実行せず、ポート転送だけ行う", "en": "No remote command, port forwarding only" } },
+    { "flags": ["-J"], "takesValue": true, "valueType": "string", "summary": { "ja": "踏み台サーバーを経由して接続", "en": "Connect via a jump host" } },
+    { "flags": ["-o"], "takesValue": true, "valueType": "string", "summary": { "ja": "設定項目を指定（例: StrictHostKeyChecking=no）", "en": "Set a config option (e.g. StrictHostKeyChecking=no)" } },
+    { "flags": ["-v"], "summary": { "ja": "接続の詳しい経過を表示（つながらないときの調査用）", "en": "Verbose output for troubleshooting" } }
+  ],
+  "args": [
+    { "name": "destination", "type": "string", "summary": { "ja": "接続先（ユーザー名@サーバー名、または ~/.ssh/config の名前）", "en": "Target as user@host, or a name from ~/.ssh/config" } },
+    { "name": "command", "type": "command", "optional": true, "summary": { "ja": "接続して 1 回だけ実行するコマンド（省略時は対話シェル）", "en": "Command to run once and return (omit for an interactive shell)" } }
+  ],
+  "examples": [
+    { "command": "ssh user@example.com", "summary": { "ja": "サーバーに接続して操作を始める", "en": "Connect and start working on the server" } },
+    { "command": "ssh -i ~/.ssh/mykey.pem ubuntu@203.0.113.10", "summary": { "ja": "鍵ファイルを指定して接続", "en": "Connect with a specific key file" } },
+    { "command": "ssh -L 5432:localhost:5432 user@db.example.com -N", "summary": { "ja": "相手のデータベースのポートを手元に転送する", "en": "Forward the remote database port to your machine" } }
+  ],
+  "errors": [
+    {
+      "pattern": "ssh: connect to host (?<host>\\S+) port (?<port>\\d+): (?<reason>Connection refused|Connection timed out|No route to host|Operation timed out)",
+      "hint": { "ja": "{host} のポート {port} につながりませんでした（{reason}）。サーバーが起動しているか、ポート番号（-p）が合っているか、ファイアウォールや VPN の設定を確認してください", "en": "Could not reach {host} on port {port} ({reason}). Check that the server is up, the port (-p) is right, and firewall or VPN settings" },
+      "fix": "ping -c 2 {host}"
+    },
+    {
+      "pattern": "ssh: Could not resolve hostname (?<host>\\S+):",
+      "hint": { "ja": "{host} という名前をアドレスに変換できませんでした。スペルや ~/.ssh/config の設定、インターネット接続を確認してください", "en": "The name {host} could not be resolved. Check the spelling, ~/.ssh/config and your connection" }
+    },
+    {
+      "pattern": "Permission denied \\((?<methods>[^)]+)\\)",
+      "hint": { "ja": "認証に失敗しました。ユーザー名、鍵ファイル（-i）、鍵が相手に登録されているかを確認してください。パスワード方式なら入力ミスの可能性もあります", "en": "Authentication failed. Check the user name, the key file (-i) and that the key is registered on the server. With passwords, it may be a typo" },
+      "fix": "ssh -v"
+    }
+  ]
+}

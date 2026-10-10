@@ -545,17 +545,26 @@ export interface DictionaryEntry {
   summary: LocalizedString;
   description?: LocalizedString;
   danger?: DangerLevel;
+  dangerMessage?: LocalizedString;
+  alternative?: { label: LocalizedString; command: string };
   subcommands?: DictionarySubcommand[];
   options?: DictionaryOption[];
   args?: DictionaryArg[];
   examples?: DictionaryExample[];
   errors?: DictionaryError[];
+  /** Shown when a GUI action performed the equivalent of this command. */
+  learn?: LocalizedString;
+  /** Package manager → install command, for "command not found" hints. */
+  install?: Partial<Record<"winget" | "scoop" | "choco" | "brew" | "apt" | "dnf" | "pacman" | "nix" | "npm" | "pip" | "cargo" | "url", string>>;
 }
 export interface DictionarySubcommand {
   name: string;
   aliases?: string[];
   summary: LocalizedString;
+  description?: LocalizedString;
   danger?: DangerLevel;
+  dangerMessage?: LocalizedString;
+  alternative?: { label: LocalizedString; command: string };
   options?: DictionaryOption[];
   args?: DictionaryArg[];
   examples?: DictionaryExample[];

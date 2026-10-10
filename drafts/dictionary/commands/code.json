@@ -1,0 +1,64 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "code",
+  "aliases": ["code-insiders", "codium"],
+  "summary": { "ja": "Visual Studio Code でファイルやフォルダを開きます", "en": "Opens files or folders in Visual Studio Code" },
+  "description": { "ja": "エディタ VS Code をターミナルから起動するコマンドです。code . で今いるフォルダをプロジェクトとして開くのが一番よく使う形です。拡張機能（エディタに機能を追加する部品）のインストールや、2 つのファイルの比較もできます。macOS でコマンドが見つからない場合は、VS Code のコマンドパレットで「Shell Command: Install 'code' command in PATH」を実行してください", "en": "Launches the VS Code editor from the terminal. code . opens the current folder as a project. It can also install extensions and diff two files. On macOS, if the command is missing, run \"Shell Command: Install 'code' command in PATH\" from the Command Palette" },
+  "install": {
+    "winget": "winget install Microsoft.VisualStudioCode",
+    "scoop": "scoop bucket add extras && scoop install vscode",
+    "choco": "choco install vscode",
+    "brew": "brew install --cask visual-studio-code",
+    "url": "https://code.visualstudio.com/"
+  },
+  "subcommands": [
+    {
+      "name": "tunnel",
+      "summary": { "ja": "この PC をリモート開発用に公開し、別の端末やブラウザから接続できるようにします", "en": "Exposes this machine for remote development from another device or the browser" },
+      "description": { "ja": "GitHub アカウントで認証したうえで、vscode.dev やほかの VS Code からこの PC のファイルを編集できるようになります。使い終わったら Ctrl+C で止めてください", "en": "After GitHub authentication, vscode.dev or another VS Code can edit files on this machine. Stop it with Ctrl+C when done" },
+      "options": [{ "flags": ["--name"], "takesValue": true, "valueType": "string", "summary": { "ja": "トンネルの名前", "en": "Tunnel name" } }]
+    },
+    {
+      "name": "serve-web",
+      "summary": { "ja": "ブラウザで使える VS Code をローカルで起動します", "en": "Starts a browser-based VS Code locally" },
+      "options": [{ "flags": ["--port"], "takesValue": true, "valueType": "number", "summary": { "ja": "待ち受けポート", "en": "Port to listen on" } }]
+    }
+  ],
+  "options": [
+    { "flags": ["-r", "--reuse-window"], "summary": { "ja": "すでに開いているウィンドウで開く", "en": "Open in the already open window" } },
+    { "flags": ["-n", "--new-window"], "summary": { "ja": "新しいウィンドウで開く", "en": "Open in a new window" } },
+    { "flags": ["-g", "--goto"], "takesValue": true, "valueType": "string", "summary": { "ja": "行番号を指定して開く（例: -g main.py:42）", "en": "Open at a line (e.g. -g main.py:42)" } },
+    { "flags": ["-d", "--diff"], "summary": { "ja": "2 つのファイルを比較表示", "en": "Compare two files side by side" } },
+    { "flags": ["-w", "--wait"], "summary": { "ja": "ファイルを閉じるまでターミナルを待たせる（git のエディタ用）", "en": "Wait until the file is closed (useful as git editor)" } },
+    { "flags": ["--install-extension"], "takesValue": true, "valueType": "string", "summary": { "ja": "拡張機能をインストール（例: ms-python.python）", "en": "Install an extension (e.g. ms-python.python)" } },
+    { "flags": ["--list-extensions"], "summary": { "ja": "入っている拡張機能の一覧", "en": "List installed extensions" } },
+    { "flags": ["-v", "--version"], "summary": { "ja": "バージョンを表示", "en": "Show the version" } }
+  ],
+  "args": [
+    { "name": "path", "type": "path", "optional": true, "variadic": true, "summary": { "ja": "開くファイルやフォルダ（. で今のフォルダ）", "en": "Files or folders to open (. for the current folder)" } }
+  ],
+  "examples": [
+    { "command": "code .", "summary": { "ja": "今いるフォルダを VS Code で開く", "en": "Open the current folder in VS Code" } },
+    { "command": "code -g src/main.py:42", "summary": { "ja": "main.py の 42 行目を開く", "en": "Open main.py at line 42" } },
+    { "command": "code --install-extension ms-python.python", "summary": { "ja": "Python 拡張機能を入れる", "en": "Install the Python extension" } }
+  ],
+  "errors": [
+    {
+      "pattern": "'code' is not recognized|code: command not found",
+      "hint": { "ja": "code コマンドが見つかりません。Windows はインストーラーの「PATH への追加」、macOS はコマンドパレットの「Shell Command: Install 'code' command in PATH」で有効になります", "en": "The code command is missing. On Windows enable \"Add to PATH\" in the installer; on macOS run \"Shell Command: Install 'code' command in PATH\"" }
+    },
+    {
+      "pattern": "Extension '(?<ext>[^']+)' not found",
+      "hint": { "ja": "拡張機能 {ext} が見つかりません。ID は「発行者.名前」の形式（例: ms-python.python）です。マーケットプレイスで ID を確認してください", "en": "Extension {ext} was not found. IDs look like publisher.name (e.g. ms-python.python); check the Marketplace" }
+    },
+    {
+      "pattern": "Failed Installing Extensions: (?<ext>\\S+)",
+      "hint": { "ja": "{ext} のインストールに失敗しました。ネットワークか、VS Code のバージョンが古くないか確認してください", "en": "Installing {ext} failed. Check your network, or whether VS Code is too old" }
+    },
+    {
+      "pattern": "Warning: '(?<opt>[^']+)' is not in the list of known options",
+      "hint": { "ja": "{opt} というオプションはありません。code --help で一覧を確認してください", "en": "{opt} is not a known option. See code --help" },
+      "fix": "code --help"
+    }
+  ]
+}

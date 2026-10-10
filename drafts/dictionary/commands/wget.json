@@ -1,0 +1,55 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "wget",
+  "summary": { "ja": "URL からファイルをダウンロードして保存します", "en": "Downloads a file from a URL and saves it" },
+  "description": {
+    "ja": "curl と違い、何も付けなくても URL の名前でファイルに保存されます。途中で切れたダウンロードの再開や、サイトをまるごと取ってくることもできます。macOS と Windows には最初から入っていないのでインストールが必要です。",
+    "en": "Unlike curl, it saves to a file named after the URL by default. It can resume interrupted downloads and mirror whole sites. Not preinstalled on macOS or Windows."
+  },
+  "install": {
+    "winget": "winget install JernejSimoncic.Wget",
+    "scoop": "scoop install wget",
+    "choco": "choco install wget",
+    "brew": "brew install wget",
+    "apt": "sudo apt install wget",
+    "dnf": "sudo dnf install wget",
+    "pacman": "sudo pacman -S wget"
+  },
+  "options": [
+    { "flags": ["-O", "--output-document"], "takesValue": true, "valueType": "file", "summary": { "ja": "指定した名前で保存", "en": "Save under this file name" } },
+    { "flags": ["-P", "--directory-prefix"], "takesValue": true, "valueType": "dir", "summary": { "ja": "指定したフォルダに保存", "en": "Save into this folder" } },
+    { "flags": ["-c", "--continue"], "summary": { "ja": "途中で止まったダウンロードを続きから再開", "en": "Resume a partially downloaded file" } },
+    { "flags": ["-q", "--quiet"], "summary": { "ja": "進み具合を表示しない", "en": "No progress output" } },
+    { "flags": ["-r", "--recursive"], "summary": { "ja": "リンク先もたどってまとめてダウンロード（サイトの複製）", "en": "Follow links and download recursively (mirror a site)" } },
+    { "flags": ["-np", "--no-parent"], "summary": { "ja": "-r のとき、指定した場所より上の階層には行かない", "en": "With -r, never go above the starting folder" } },
+    { "flags": ["--limit-rate"], "takesValue": true, "valueType": "string", "summary": { "ja": "速度を制限する（例: 500k）", "en": "Limit speed (e.g. 500k)" } },
+    {
+      "flags": ["--no-check-certificate"],
+      "summary": { "ja": "サーバー証明書の確認を省略する", "en": "Skip the server certificate check" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "証明書の確認を飛ばすため、偽のサーバーからファイルを受け取っても気づけません。自分で用意したサーバー以外では使わないでください", "en": "Skips certificate verification, so a file from a fake server would go unnoticed. Only use with servers you control" }
+    }
+  ],
+  "args": [
+    { "name": "url", "type": "url", "variadic": true, "summary": { "ja": "ダウンロードする URL", "en": "URL(s) to download" } }
+  ],
+  "examples": [
+    { "command": "wget https://example.com/file.zip", "summary": { "ja": "ファイルを今のフォルダにダウンロード", "en": "Download a file into the current folder" } },
+    { "command": "wget -c https://example.com/big.iso", "summary": { "ja": "大きなファイルを再開可能な形でダウンロード", "en": "Download a large file, resuming if interrupted" } },
+    { "command": "wget -O latest.tar.gz https://example.com/download", "summary": { "ja": "別の名前で保存", "en": "Save under a different name" } }
+  ],
+  "errors": [
+    {
+      "pattern": "wget: unable to resolve host address [‘'](?<host>[^'’]+)[’']",
+      "hint": { "ja": "{host} というサーバー名をアドレスに変換できませんでした。URL のスペルとインターネット接続を確認してください", "en": "The server name {host} could not be resolved. Check the URL spelling and your connection" }
+    },
+    {
+      "pattern": "ERROR (?<code>\\d{3}): (?<msg>[^.\\n]+)",
+      "hint": { "ja": "サーバーがエラー {code}（{msg}）を返しました。404 なら URL が間違っているか削除済み、403 ならアクセス権がありません", "en": "The server answered {code} ({msg}). 404 means the URL is wrong or gone; 403 means access is denied" }
+    },
+    {
+      "pattern": "ERROR: cannot verify (?<host>\\S+)'s certificate",
+      "hint": { "ja": "{host} の証明書を確認できませんでした。パソコンの時計やプロキシを確認してください。--no-check-certificate で無視するのは最後の手段です", "en": "Could not verify the certificate of {host}. Check your clock and proxy. --no-check-certificate is a last resort" }
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "swift",
+  "summary": { "ja": "Swift のプログラムを実行・ビルドします。1 ファイルならそのまま渡せます", "en": "Runs and builds Swift programs; a single file can be run directly" },
+  "description": { "ja": "Apple が開発した言語 Swift のツール群への入口です。swift main.swift でスクリプトのように実行、swift run で Package.swift のあるフォルダ（パッケージ）をビルドして実行します。コンパイル（コードを実行できる形に変換すること）は swift build が行います", "en": "Entry point to the Swift toolchain. swift main.swift runs a file like a script; swift run builds and runs a package (a folder with Package.swift). swift build compiles without running" },
+  "install": {
+    "winget": "winget install Swift.Toolchain",
+    "brew": "brew install swift",
+    "url": "https://www.swift.org/install/"
+  },
+  "subcommands": [
+    {
+      "name": "run",
+      "summary": { "ja": "パッケージをビルドして実行します", "en": "Builds and runs the package" },
+      "args": [{ "name": "target", "type": "string", "optional": true }, { "name": "args", "type": "string", "optional": true, "variadic": true }],
+      "options": [{ "flags": ["-c", "--configuration"], "takesValue": true, "valueType": "string", "summary": { "ja": "debug または release", "en": "debug or release" } }]
+    },
+    {
+      "name": "build",
+      "summary": { "ja": "パッケージをビルドします（実行はしない）", "en": "Builds the package without running" },
+      "options": [{ "flags": ["-c", "--configuration"], "takesValue": true, "valueType": "string", "summary": { "ja": "debug または release", "en": "debug or release" } }]
+    },
+    { "name": "test", "summary": { "ja": "パッケージのテストを実行します", "en": "Runs the package tests" } },
+    {
+      "name": "package",
+      "summary": { "ja": "パッケージの作成や依存の管理をします", "en": "Creates packages and manages dependencies" },
+      "options": [
+        { "flags": ["init"], "summary": { "ja": "新しいパッケージを作る（--type executable で実行ファイル用）", "en": "Create a new package (--type executable for a program)" } },
+        { "flags": ["update"], "summary": { "ja": "依存ライブラリを最新にする", "en": "Update dependencies" } },
+        { "flags": ["clean"], "summary": { "ja": "ビルド生成物を削除", "en": "Remove build outputs" } }
+      ]
+    },
+    { "name": "repl", "summary": { "ja": "対話モードで Swift を試します", "en": "Starts an interactive Swift prompt" } }
+  ],
+  "args": [
+    { "name": "script", "type": "file", "optional": true, "summary": { "ja": "そのまま実行する .swift ファイル", "en": "A .swift file to run directly" } }
+  ],
+  "examples": [
+    { "command": "swift main.swift", "summary": { "ja": "main.swift をそのまま実行", "en": "Run main.swift directly" } },
+    { "command": "swift package init --type executable", "summary": { "ja": "実行ファイル用のパッケージを作る", "en": "Create an executable package" } },
+    { "command": "swift run", "summary": { "ja": "パッケージをビルドして実行", "en": "Build and run the package" } }
+  ],
+  "errors": [
+    {
+      "pattern": "error: cannot find '(?<name>[^']+)' in scope",
+      "hint": { "ja": "{name} が見つかりません。つづりの間違いか、import の忘れです", "en": "{name} was not found. Check the spelling or add an import" }
+    },
+    {
+      "pattern": "error: no such module '(?<mod>[^']+)'",
+      "hint": { "ja": "モジュール {mod} がありません。Package.swift の dependencies と target の依存に追加してください", "en": "Module {mod} is missing. Add it to dependencies and the target in Package.swift" }
+    },
+    {
+      "pattern": "error: root manifest not found|Could not find Package.swift",
+      "hint": { "ja": "Package.swift がありません。パッケージのフォルダに移動するか、swift package init で作ってください", "en": "No Package.swift here. Move to the package folder or create one with swift package init" },
+      "fix": "swift package init --type executable"
+    },
+    {
+      "pattern": "value of optional type '(?<type>[^']+)' must be unwrapped",
+      "hint": { "ja": "{type} は値がないかもしれない型（Optional）です。if let や ?? で中身を取り出してください", "en": "{type} is an Optional. Unwrap it with if let or provide a default with ??" }
+    },
+    {
+      "pattern": "(?<file>\\S+\\.swift):(?<line>\\d+):(?<col>\\d+): error: (?<msg>.+)",
+      "hint": { "ja": "{file} の {line} 行目: {msg}", "en": "Line {line} of {file}: {msg}" }
+    },
+    {
+      "pattern": "'swift' is not recognized|swift: command not found",
+      "hint": { "ja": "Swift が見つかりません。macOS では xcode-select --install、他の OS では swift.org からインストールしてください", "en": "Swift was not found. On macOS run xcode-select --install; elsewhere install from swift.org" }
+    }
+  ]
+}

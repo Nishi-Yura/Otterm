@@ -1,0 +1,48 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "mv",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルやフォルダを移動、または名前を変更します", "en": "Moves or renames files and folders" },
+  "description": {
+    "ja": "移動先がフォルダならその中へ移動し、ファイル名なら名前を変えます。移動先に同名のファイルがあると、確認なしで上書きされます。",
+    "en": "If the destination is a folder, items move into it; otherwise the item is renamed. An existing file at the destination is overwritten without asking."
+  },
+  "learn": { "ja": "ファイルツリーでのドラッグ移動や名前の変更は、ターミナルでは mv です", "en": "Dragging to move or renaming in the file tree is mv in the terminal" },
+  "options": [
+    { "flags": ["-i", "--interactive"], "summary": { "ja": "上書きする前に 1 件ずつ確認", "en": "Ask before overwriting each file" } },
+    { "flags": ["-n", "--no-clobber"], "summary": { "ja": "すでにあるファイルは上書きしない", "en": "Never overwrite an existing file" } },
+    {
+      "flags": ["-f", "--force"],
+      "summary": { "ja": "確認せずに上書き", "en": "Overwrite without asking" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "移動先の同名ファイルを確認なしで上書きします", "en": "Overwrites files at the destination without asking" }
+    },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "移動したファイル名を表示", "en": "Print each file as it is moved" } },
+    { "flags": ["-u", "--update"], "summary": { "ja": "移動元の方が新しいときだけ上書き", "en": "Overwrite only when the source is newer" } }
+  ],
+  "args": [
+    { "name": "source", "type": "path", "variadic": true, "summary": { "ja": "移動元のファイルやフォルダ", "en": "Files or folders to move" } },
+    { "name": "dest", "type": "path", "summary": { "ja": "移動先のフォルダ、または新しい名前", "en": "Destination folder or new name" } }
+  ],
+  "examples": [
+    { "command": "mv draft.txt final.txt", "summary": { "ja": "ファイルの名前を変える", "en": "Rename a file" } },
+    { "command": "mv *.png images/", "summary": { "ja": "PNG 画像をすべて images フォルダへ移動", "en": "Move all PNG images into the images folder" } },
+    { "command": "mv -i notes.md ~/Documents/", "summary": { "ja": "上書き前に確認しながら移動", "en": "Move, asking before any overwrite" } }
+  ],
+  "errors": [
+    {
+      "pattern": "mv: cannot stat [‘'](?<path>[^’']+)[’']: No such file or directory",
+      "hint": { "ja": "移動元 {path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "Source {path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "mv: cannot move [‘'](?<path>[^’']+)[’'] to [‘'](?<dest>[^’']+)[’']: No such file or directory",
+      "hint": { "ja": "移動先 {dest} のフォルダがありません。先に mkdir で作ってください", "en": "The destination folder for {dest} does not exist. Create it with mkdir first" },
+      "fix": "mkdir -p {dest}"
+    },
+    {
+      "pattern": "mv: cannot move [‘'](?<path>[^’']+)[’'] to [‘'](?<dest>[^’']+)[’']: Directory not empty|mv: cannot overwrite (?:non-)?directory",
+      "hint": { "ja": "移動先に同じ名前のフォルダがすでにあり、まとめて置き換えられません。別の名前にするか、中身を個別に移動してください", "en": "A folder with that name already exists at the destination. Rename, or move the contents individually" }
+    }
+  ]
+}

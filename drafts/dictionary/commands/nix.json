@@ -1,0 +1,94 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "nix",
+  "aliases": ["nix-env", "nix-shell", "nix-collect-garbage"],
+  "summary": { "ja": "再現性のあるパッケージ管理・ビルドツール Nix です", "en": "Nix, the reproducible package manager and build tool" },
+  "description": { "ja": "パッケージは /nix/store に隔離して置かれ、同じ設定なら誰の PC でも同じ結果になります。nix profile や nix shell などの新コマンドは実験的機能で、設定に experimental-features = nix-command flakes が必要です。パッケージ名は nixpkgs#名前 の形です。", "en": "Packages live isolated in /nix/store, and the same config gives the same result on any machine. The newer commands (nix profile, nix shell, ...) need experimental-features = nix-command flakes in your config. Package names look like nixpkgs#name." },
+  "install": { "url": "https://nixos.org/download/" },
+  "subcommands": [
+    {
+      "name": "shell",
+      "summary": { "ja": "パッケージを一時的に使えるシェルを開きます（インストールはしない）", "en": "Opens a shell with packages available temporarily (no install)" },
+      "args": [{ "name": "package", "type": "package", "variadic": true, "summary": { "ja": "nixpkgs#名前", "en": "nixpkgs#name" } }],
+      "options": [{ "flags": ["-c", "--command"], "takesValue": true, "valueType": "command", "summary": { "ja": "シェルを開かずコマンドを実行", "en": "Run a command instead of opening a shell" } }],
+      "examples": [{ "command": "nix shell nixpkgs#ripgrep nixpkgs#fd", "summary": { "ja": "ripgrep と fd を一時的に使う", "en": "Use ripgrep and fd temporarily" } }]
+    },
+    {
+      "name": "run",
+      "summary": { "ja": "パッケージをインストールせずに実行します", "en": "Runs a package without installing it" },
+      "args": [
+        { "name": "package", "type": "package" },
+        { "name": "args", "type": "string", "optional": true, "variadic": true, "summary": { "ja": "-- の後ろにプログラムへの引数", "en": "Program arguments after --" } }
+      ],
+      "examples": [{ "command": "nix run nixpkgs#cowsay -- hello", "summary": { "ja": "cowsay を一時的に実行", "en": "Run cowsay once" } }]
+    },
+    {
+      "name": "profile",
+      "summary": { "ja": "ユーザーのプロファイルにパッケージを入れたり外したりします", "en": "Installs or removes packages in your user profile" },
+      "options": [
+        { "flags": ["install"], "summary": { "ja": "インストール（nix profile install nixpkgs#名前）", "en": "Install (nix profile install nixpkgs#name)" } },
+        { "flags": ["remove"], "summary": { "ja": "削除", "en": "Remove" } },
+        { "flags": ["list"], "summary": { "ja": "一覧", "en": "List" } },
+        { "flags": ["upgrade"], "summary": { "ja": "更新", "en": "Upgrade" } }
+      ],
+      "examples": [{ "command": "nix profile install nixpkgs#htop", "summary": { "ja": "htop を入れる", "en": "Install htop" } }],
+      "errors": [{ "pattern": "error: flake '(?<flake>[^']+)' does not provide attribute", "hint": { "ja": "{flake} にそのパッケージがありません。nix search nixpkgs 名前 で探してください", "en": "{flake} has no such package. Search with nix search nixpkgs <name>" } }]
+    },
+    {
+      "name": "search",
+      "summary": { "ja": "パッケージを検索します", "en": "Searches for packages" },
+      "args": [
+        { "name": "flake", "type": "string", "summary": { "ja": "通常は nixpkgs", "en": "Usually nixpkgs" } },
+        { "name": "query", "type": "string" }
+      ],
+      "examples": [{ "command": "nix search nixpkgs neovim", "summary": { "ja": "neovim を探す", "en": "Search for neovim" } }]
+    },
+    {
+      "name": "develop",
+      "summary": { "ja": "flake.nix に書かれた開発環境のシェルに入ります", "en": "Enters the development shell defined in flake.nix" },
+      "errors": [{ "pattern": "error: path '(?<path>[^']+)' does not contain a 'flake\\.nix'", "hint": { "ja": "{path} に flake.nix がありません。nix flake init で作れます", "en": "No flake.nix in {path}. Create one with nix flake init" }, "fix": "nix flake init" }]
+    },
+    {
+      "name": "build",
+      "summary": { "ja": "flake の出力をビルドして ./result にリンクします", "en": "Builds a flake output and links it at ./result" },
+      "args": [{ "name": "target", "type": "string", "optional": true }]
+    },
+    {
+      "name": "flake",
+      "summary": { "ja": "flake（プロジェクトの依存とビルド定義）を扱います", "en": "Works with flakes (project dependency and build definitions)" },
+      "options": [
+        { "flags": ["init"], "summary": { "ja": "flake.nix のひな形を作る", "en": "Create a flake.nix template" } },
+        { "flags": ["update"], "summary": { "ja": "flake.lock の依存を最新に", "en": "Update inputs in flake.lock" } },
+        { "flags": ["show"], "summary": { "ja": "出力の一覧", "en": "Show outputs" } },
+        { "flags": ["check"], "summary": { "ja": "定義を検証", "en": "Validate the flake" } }
+      ]
+    },
+    {
+      "name": "nix-env",
+      "summary": { "ja": "旧来のプロファイル操作（-iA で入れる、-e で消す、-q で一覧）", "en": "Legacy profile commands (-iA install, -e remove, -q list)" },
+      "examples": [{ "command": "nix-env -iA nixpkgs.htop", "summary": { "ja": "旧コマンドで htop を入れる", "en": "Install htop the old way" } }]
+    },
+    {
+      "name": "nix-shell",
+      "summary": { "ja": "旧来の一時シェル（-p でパッケージ指定、shell.nix も読む）", "en": "Legacy temporary shell (-p for packages; also reads shell.nix)" },
+      "examples": [{ "command": "nix-shell -p python3 nodejs", "summary": { "ja": "python と node を一時的に使う", "en": "Use python and node temporarily" } }]
+    },
+    {
+      "name": "nix-collect-garbage",
+      "summary": { "ja": "どこからも使われていないパッケージを /nix/store から削除します", "en": "Deletes unreferenced packages from /nix/store" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "古い世代（ロールバック先）も消えます。-d を付けると全世代が消えて戻せなくなります", "en": "Old generations (rollback targets) are deleted. With -d every old generation is gone for good" },
+      "options": [
+        { "flags": ["-d", "--delete-old"], "summary": { "ja": "古い世代もすべて削除", "en": "Also delete all old generations" }, "danger": "warn", "dangerMessage": { "ja": "古い世代が消えるため、以前の状態にロールバックできなくなります", "en": "Old generations are removed, so you can no longer roll back to them" } },
+        { "flags": ["--delete-older-than"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定より古い世代だけ削除（例: 30d）", "en": "Delete generations older than e.g. 30d" } }
+      ]
+    }
+  ],
+  "errors": [
+    { "pattern": "nix: command not found", "hint": { "ja": "Nix が入っていないか、シェルの設定が読まれていません。ターミナルを開き直すか、nixos.org のインストーラを使ってください", "en": "Nix is missing or your shell has not loaded its profile. Reopen the terminal or install from nixos.org" } },
+    { "pattern": "experimental Nix feature '(?<feat>[^']+)' is disabled", "hint": { "ja": "実験的機能 {feat} が無効です。~/.config/nix/nix.conf に experimental-features = nix-command flakes を書いてください", "en": "Experimental feature {feat} is off. Add experimental-features = nix-command flakes to ~/.config/nix/nix.conf" }, "fix": "mkdir -p ~/.config/nix && echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf" },
+    { "pattern": "error: unable to download|Couldn't resolve host|Could not resolve host", "hint": { "ja": "ダウンロードできません。ネットワークやプロキシを確認してください", "en": "Download failed. Check your network or proxy" } },
+    { "pattern": "error: cannot connect to socket at '/nix/var/nix/daemon-socket/socket'", "hint": { "ja": "nix-daemon が動いていません。サービスを起動してください", "en": "nix-daemon is not running. Start the service" }, "fix": "sudo systemctl start nix-daemon" },
+    { "pattern": "error: opening lock file .* Permission denied", "hint": { "ja": "/nix に書き込めません。マルチユーザー構成ならデーモン経由で動くはずなので、ターミナルを開き直してください", "en": "Cannot write to /nix. In a multi-user install this should go through the daemon; reopen the terminal" } }
+  ]
+}

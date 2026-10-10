@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "tasklist",
+  "platforms": ["windows"],
+  "summary": { "ja": "動いているプログラム（プロセス）の一覧と PID、メモリ使用量を表示します（Windows）", "en": "Lists running programs (processes) with their PID and memory use (Windows)" },
+  "description": { "ja": "タスクマネージャーの「詳細」タブに相当します。cmd でも PowerShell でも使えます。オプションは - ではなく / で始まります。PowerShell なら Get-Process の方が並べ替えや絞り込みがしやすいです。終了させるには taskkill を使います。", "en": "Like the Details tab in Task Manager. Works in both cmd and PowerShell. Options start with /, not -. In PowerShell, Get-Process is easier to sort and filter. Use taskkill to end a process." },
+  "options": [
+    {
+      "flags": ["/fi"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "条件で絞り込み（例: \"imagename eq chrome.exe\"）", "en": "Filter (e.g. \"imagename eq chrome.exe\")" }
+    },
+    {
+      "flags": ["/v"],
+      "summary": { "ja": "ウィンドウタイトルやユーザー名など詳細も表示", "en": "Verbose: window title, user name, etc." }
+    },
+    {
+      "flags": ["/svc"],
+      "summary": { "ja": "各プロセスが動かしているサービスを表示", "en": "Show the services hosted by each process" }
+    },
+    {
+      "flags": ["/m"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "指定した DLL を使っているプロセスを表示", "en": "Processes using the given DLL" }
+    },
+    {
+      "flags": ["/fo"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "出力形式（table / list / csv）", "en": "Output format (table / list / csv)" }
+    },
+    {
+      "flags": ["/nh"],
+      "summary": { "ja": "見出し行を省く", "en": "No header row" }
+    }
+  ],
+  "examples": [
+    { "command": "tasklist", "summary": { "ja": "すべてのプロセスを表示", "en": "List all processes" } },
+    { "command": "tasklist /fi \"imagename eq chrome.exe\"", "summary": { "ja": "Chrome のプロセスだけ表示", "en": "Only Chrome processes" } },
+    { "command": "tasklist /fi \"memusage gt 500000\"", "summary": { "ja": "メモリを 500 MB 以上使っているもの", "en": "Processes using more than 500 MB" } },
+    { "command": "tasklist /fo csv > processes.csv", "summary": { "ja": "CSV にして保存", "en": "Save as CSV" } }
+  ],
+  "errors": [
+    {
+      "pattern": "INFO: No tasks are running which match the specified criteria",
+      "hint": { "ja": "条件に合うプロセスはありません。名前は chrome.exe のように .exe まで書きます", "en": "No process matches. Include the .exe, as in chrome.exe" },
+      "fix": "tasklist"
+    },
+    {
+      "pattern": "ERROR: The search filter cannot be recognized",
+      "hint": { "ja": "/fi の条件の書き方が違います。\"imagename eq notepad.exe\" のように 項目 eq 値 を引用符で囲みます", "en": "The /fi filter is malformed. Write it as \"imagename eq notepad.exe\" in quotes" },
+      "fix": "tasklist /fi \"imagename eq notepad.exe\""
+    },
+    {
+      "pattern": "ERROR: Invalid argument/option - '(?<opt>[^']+)'",
+      "hint": { "ja": "{opt} は tasklist のオプションではありません。オプションは /fi のように / で始まります。tasklist /? で一覧が見られます", "en": "{opt} is not a tasklist option. Options start with /, like /fi. Run tasklist /? for the list" },
+      "fix": "tasklist /?"
+    },
+    {
+      "pattern": "ERROR: Access denied",
+      "hint": { "ja": "情報を取得する権限がありません。ターミナルを「管理者として実行」で開き直してください", "en": "Access denied. Reopen the terminal with Run as administrator" }
+    }
+  ]
+}

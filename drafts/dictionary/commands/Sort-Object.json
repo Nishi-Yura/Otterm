@@ -1,0 +1,62 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Sort-Object",
+  "aliases": ["sort"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "パイプで流れてきたものを並べ替えます（PowerShell）。sort と打っても同じです", "en": "Sorts items coming through the pipeline (PowerShell). sort is an alias" },
+  "description": { "ja": "Get-ChildItem | Sort-Object Length のように、| の後ろで並べ替えの基準（プロパティ）を指定します。既定は昇順で、-Descending で降順になります。PowerShell では sort は Sort-Object の別名なので、Linux の sort のオプション（-n、-r など）は使えません。Select-Object -First と組み合わせると「上位 N 件」になります。", "en": "Used after a pipe with a property to sort by, e.g. Get-ChildItem | Sort-Object Length. Ascending by default; -Descending reverses it. In PowerShell, sort is an alias of Sort-Object, so Linux-style flags like -n or -r do not work. Combine with Select-Object -First for top-N lists." },
+  "options": [
+    {
+      "flags": ["-Property"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "並べ替えの基準にするプロパティ名（複数可）", "en": "Property (or properties) to sort by" }
+    },
+    {
+      "flags": ["-Descending"],
+      "summary": { "ja": "大きい順・新しい順（降順）", "en": "Largest or newest first (descending)" }
+    },
+    {
+      "flags": ["-Unique"],
+      "summary": { "ja": "重複を取り除く", "en": "Remove duplicates" }
+    },
+    {
+      "flags": ["-CaseSensitive"],
+      "summary": { "ja": "大文字小文字を区別して並べる", "en": "Case-sensitive ordering" }
+    },
+    {
+      "flags": ["-Top"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "並べ替えた先頭 N 件だけ（PowerShell 6 以降）", "en": "Only the first N after sorting (PowerShell 6+)" }
+    },
+    {
+      "flags": ["-Bottom"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "並べ替えた末尾 N 件だけ（PowerShell 6 以降）", "en": "Only the last N after sorting (PowerShell 6+)" }
+    }
+  ],
+  "examples": [
+    { "command": "Get-Process | Sort-Object CPU -Descending | Select-Object -First 5", "summary": { "ja": "CPU 使用の多い上位 5 件", "en": "Top 5 processes by CPU" } },
+    { "command": "Get-ChildItem | Sort-Object LastWriteTime -Descending", "summary": { "ja": "新しい順に並べる", "en": "Newest files first" } },
+    { "command": "Get-ChildItem | sort Length", "summary": { "ja": "サイズの小さい順（sort は別名）", "en": "Smallest files first (sort is an alias)" } },
+    { "command": "Get-Content names.txt | Sort-Object -Unique", "summary": { "ja": "行を並べ替えて重複を除く", "en": "Sort lines and remove duplicates" } }
+  ],
+  "errors": [
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は Sort-Object にはありません。Linux の sort とは別物です。逆順は -Descending、重複除去は -Unique です", "en": "-{p} is not a parameter here. This is not Linux sort. Use -Descending to reverse and -Unique to dedupe" },
+      "fix": "Sort-Object -Descending"
+    },
+    {
+      "pattern": "Cannot bind parameter '(?<p>Top|Bottom)'\\. Cannot convert value \"(?<v>[^\"]+)\" to type \"System\\.Int32\"",
+      "hint": { "ja": "-{p} には数字を指定します。{v} は数字ではありません", "en": "-{p} needs a number; {v} is not one" },
+      "fix": "Sort-Object -{p} 5"
+    },
+    {
+      "pattern": "A positional parameter cannot be found that accepts argument '(?<a>[^']+)'",
+      "hint": { "ja": "{a} の位置が解釈できません。複数のプロパティはカンマで区切り、オプションは -Descending のようにハイフン付きで書きます", "en": "Could not place {a}. Separate properties with commas and write options with a hyphen like -Descending" }
+    }
+  ]
+}

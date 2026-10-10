@@ -1,0 +1,50 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "base64",
+  "summary": { "ja": "データを Base64（文字だけでバイナリを表す形式）に変換したり、元に戻したりします", "en": "Encodes data as Base64 (binary represented with plain characters) or decodes it back" },
+  "description": { "ja": "画像や鍵などのバイナリ（文字として読めないデータ）を、メールや JSON に埋め込める英数字の文字列に変換します。暗号化ではないので、誰でも元に戻せます。-d で復号します。GNU 版（Linux）と macOS 版でオプション名が少し違います（改行なしは Linux が -w 0、macOS が -b 0）。Windows では Git Bash や WSL で使えます", "en": "Turns binary data such as images or keys into a text string that fits in email or JSON. It is not encryption: anyone can decode it. -d decodes. GNU (Linux) and macOS differ slightly (no line wrapping is -w 0 on Linux, -b 0 on macOS). On Windows use Git Bash or WSL" },
+  "install": {
+    "apt": "sudo apt install coreutils",
+    "dnf": "sudo dnf install coreutils",
+    "pacman": "sudo pacman -S coreutils",
+    "brew": "brew install coreutils",
+    "scoop": "scoop install coreutils"
+  },
+  "options": [
+    { "flags": ["-d", "--decode"], "summary": { "ja": "Base64 から元のデータに戻す", "en": "Decode Base64 back to the original data" } },
+    { "flags": ["-w", "--wrap"], "takesValue": true, "valueType": "number", "summary": { "ja": "何文字ごとに改行するか（0 で改行なし、Linux）", "en": "Wrap every N characters (0 for none, Linux)" } },
+    { "flags": ["-b"], "takesValue": true, "valueType": "number", "summary": { "ja": "-w の macOS 版", "en": "macOS equivalent of -w" } },
+    { "flags": ["-D"], "summary": { "ja": "-d の macOS 版（新しい macOS では -d も使えます）", "en": "macOS spelling of -d (newer macOS also accepts -d)" } },
+    { "flags": ["-i", "--ignore-garbage"], "summary": { "ja": "復号時に Base64 以外の文字を無視", "en": "Ignore non-Base64 characters when decoding" } },
+    { "flags": ["--help"], "summary": { "ja": "使い方を表示", "en": "Show help" } }
+  ],
+  "args": [
+    { "name": "file", "type": "file", "optional": true, "summary": { "ja": "変換するファイル（省略時は標準入力）", "en": "File to convert (default: standard input)" } }
+  ],
+  "examples": [
+    { "command": "echo -n \"hello\" | base64", "summary": { "ja": "文字列を Base64 にする（-n で末尾の改行を含めない）", "en": "Encode a string (-n leaves out the trailing newline)" } },
+    { "command": "echo aGVsbG8= | base64 -d", "summary": { "ja": "Base64 を元に戻す", "en": "Decode Base64" } },
+    { "command": "base64 -w 0 logo.png > logo.txt", "summary": { "ja": "画像を 1 行の Base64 にしてファイルに保存", "en": "Encode an image as a single line into a file" } },
+    { "command": "base64 -d logo.txt > logo.png", "summary": { "ja": "Base64 のテキストから元のファイルを復元", "en": "Restore the original file from Base64 text" } }
+  ],
+  "errors": [
+    {
+      "pattern": "base64: invalid input",
+      "hint": { "ja": "正しい Base64 ではありません。コピー時に文字が欠けたか、末尾の = が足りないか、Base64 以外の文字が混ざっています。-i で余計な文字を無視できます", "en": "Not valid Base64. Characters may be missing, the trailing = padding may be lost, or non-Base64 characters are present. -i ignores stray characters" }
+    },
+    {
+      "pattern": "base64: (?<file>[^:\\n]+): No such file or directory",
+      "hint": { "ja": "{file} が見つかりません。ファイル名と今いるフォルダを確認してください", "en": "{file} was not found. Check the name and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "invalid option -- '?(?<opt>\\w)'?|illegal option -- (?<opt2>\\w)",
+      "hint": { "ja": "オプション -{opt}{opt2} はこの OS の base64 にはありません。macOS では改行なしが -b 0、Linux では -w 0 です", "en": "Option -{opt}{opt2} does not exist in this OS's base64. No wrapping is -b 0 on macOS and -w 0 on Linux" }
+    },
+    {
+      "pattern": "'base64' is not recognized|base64: command not found",
+      "hint": { "ja": "base64 コマンドがありません。Git Bash か WSL で実行するか、PowerShell では [Convert]::ToBase64String を使います", "en": "No base64 command here. Use Git Bash or WSL, or in PowerShell use [Convert]::ToBase64String" },
+      "fix": "[Convert]::ToBase64String([IO.File]::ReadAllBytes(\"FILE\"))"
+    }
+  ]
+}

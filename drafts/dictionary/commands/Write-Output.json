@@ -1,0 +1,64 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Write-Output",
+  "aliases": ["echo", "write"],
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "文字列や値を画面（パイプライン）に出力します（PowerShell）。echo と打っても同じです", "en": "Prints text or values to the screen (the pipeline) (PowerShell). echo is an alias" },
+  "description": { "ja": "Write-Output \"こんにちは\" のように使います。実は PowerShell では値をそのまま書くだけでも出力されるので、\"こんにちは\" だけでも同じです。変数の中身を見るには echo $name のように書きます。環境変数は $env:Path のように $env: を付けます（Linux の $PATH ではありません）。色付きで画面にだけ表示したいときは Write-Host を使います。", "en": "Use it like Write-Output \"hello\". In PowerShell a bare value is printed anyway, so \"hello\" alone does the same. Show a variable with echo $name. Environment variables need $env:, as in $env:Path (not $PATH). For colored, screen-only text use Write-Host." },
+  "options": [
+    {
+      "flags": ["-InputObject"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "出力する値", "en": "Value to print" }
+    },
+    {
+      "flags": ["-NoEnumerate"],
+      "summary": { "ja": "配列を 1 件ずつに分けず、まとめて 1 つとして渡す", "en": "Pass an array as one object instead of item by item" }
+    }
+  ],
+  "args": [{ "name": "value", "type": "string", "optional": true, "variadic": true }],
+  "examples": [
+    {
+      "command": "Write-Output \"Hello, otterm\"",
+      "summary": { "ja": "文字列を表示", "en": "Print a string" }
+    },
+    {
+      "command": "echo $env:USERNAME",
+      "summary": { "ja": "ユーザー名の環境変数を表示（echo は別名）", "en": "Print the USERNAME environment variable (echo is an alias)" }
+    },
+    {
+      "command": "Write-Output \"現在: $(Get-Date)\"",
+      "summary": { "ja": "文字列の中にコマンドの結果を埋め込む", "en": "Embed a command result inside a string" }
+    },
+    {
+      "command": "Write-Output \"done\" | Out-File status.txt",
+      "summary": { "ja": "出力をファイルに保存", "en": "Send the output to a file" }
+    },
+    {
+      "command": "Write-Host \"注意\" -ForegroundColor Yellow",
+      "summary": { "ja": "色付きで画面にだけ表示したいときは Write-Host", "en": "Use Write-Host for colored, screen-only text" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "The string is missing the terminator: (?<q>[\"'])",
+      "hint": { "ja": "引用符 {q} が閉じていません。開いた引用符と同じものを末尾に付けてください", "en": "The quote {q} is not closed. Add the matching quote at the end" },
+      "fix": "Write-Output \"text\""
+    },
+    {
+      "pattern": "A parameter cannot be found that matches parameter name '(?<p>[^']+)'",
+      "hint": { "ja": "-{p} は Write-Output にはありません。Linux の echo -n や -e は使えません。改行なしは Write-Host -NoNewline を使います", "en": "-{p} is not a parameter here. Linux echo -n / -e do not work. For no newline use Write-Host -NoNewline" },
+      "fix": "Write-Host -NoNewline"
+    },
+    {
+      "pattern": "Unexpected token '(?<t>[^']+)' in expression or statement",
+      "hint": { "ja": "{t} が解釈できません。空白や記号を含む文字列は引用符で囲んでください", "en": "Could not parse {t}. Wrap text containing spaces or symbols in quotes" }
+    },
+    {
+      "pattern": "The term '(?<term>[^']+)' is not recognized as (a|the) name of a cmdlet",
+      "hint": { "ja": "{term} はコマンドとして解釈されました。表示したい文字列は引用符で囲んでください", "en": "{term} was treated as a command. Put the text you want to print in quotes" },
+      "fix": "Write-Output \"{term}\""
+    }
+  ]
+}

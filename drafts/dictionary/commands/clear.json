@@ -1,0 +1,31 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "clear",
+  "aliases": ["cls"],
+  "summary": { "ja": "画面の表示を消してきれいにします（ファイルや履歴は消えません）", "en": "Clears the screen (your files and history are untouched)" },
+  "description": {
+    "ja": "表示がごちゃごちゃしたときに使います。Ctrl+L でも同じことができます。PowerShell では cls や Clear-Host と同じです。多くの環境では上にスクロールすると以前の出力をまだ見られます。",
+    "en": "Use it when the screen gets cluttered. Ctrl+L does the same. In PowerShell it equals cls / Clear-Host. In most terminals you can still scroll up to see earlier output."
+  },
+  "options": [
+    { "flags": ["-x"], "summary": { "ja": "見えている部分だけ消し、スクロールで戻れる過去の出力は残す", "en": "Clear the visible screen but keep the scrollback" } },
+    { "flags": ["-T"], "takesValue": true, "valueType": "string", "summary": { "ja": "端末の種類を指定する（ふつうは不要）", "en": "Terminal type to use (rarely needed)" } },
+    { "flags": ["-V"], "summary": { "ja": "バージョンを表示", "en": "Print the version" } }
+  ],
+  "examples": [
+    { "command": "clear", "summary": { "ja": "画面をきれいにする", "en": "Clear the screen" } },
+    { "command": "clear -x", "summary": { "ja": "過去の出力をスクロールで見られる状態で画面を消す", "en": "Clear but keep scrollback" } }
+  ],
+  "errors": [
+    {
+      "pattern": "TERM environment variable not set",
+      "hint": { "ja": "端末の種類が設定されていないため画面を消せません。export TERM=xterm-256color を実行してから試してください", "en": "The terminal type is not set, so the screen cannot be cleared. Run export TERM=xterm-256color and retry" },
+      "fix": "export TERM=xterm-256color"
+    },
+    {
+      "pattern": "clear: (command )?not found",
+      "hint": { "ja": "clear コマンドが入っていません。Ctrl+L を押すか、printf '\\033c' でも画面を消せます", "en": "clear is not installed. Press Ctrl+L, or use printf '\\033c'" },
+      "fix": "printf '\\033c'"
+    }
+  ]
+}

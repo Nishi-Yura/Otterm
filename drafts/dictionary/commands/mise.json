@@ -1,0 +1,85 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "mise",
+  "aliases": ["rtx"],
+  "summary": { "ja": "Node、Python、Go などあらゆる言語のバージョンをまとめて管理するツールです", "en": "Manages versions of Node, Python, Go and many more tools in one place" },
+  "description": { "ja": "nvm、pyenv、rbenv などの代わりにひとつで済みます。プロジェクトの mise.toml（または .tool-versions）に書いたバージョンへ、フォルダに入るだけで自動で切り替わります。環境変数やタスクも定義できます。", "en": "One replacement for nvm, pyenv, rbenv and friends. It switches automatically to the versions listed in the project's mise.toml (or .tool-versions) when you enter the folder, and can also manage env vars and tasks." },
+  "install": { "winget": "winget install jdx.mise", "scoop": "scoop install mise", "choco": "choco install mise", "brew": "brew install mise", "cargo": "cargo install mise", "url": "https://mise.jdx.dev/getting-started.html" },
+  "subcommands": [
+    {
+      "name": "use",
+      "aliases": ["u"],
+      "summary": { "ja": "ツールを入れて、このプロジェクトの mise.toml に記録します", "en": "Installs a tool and records it in this project's mise.toml" },
+      "args": [{ "name": "tool", "type": "string", "variadic": true, "summary": { "ja": "node@22、python@3.12 など", "en": "node@22, python@3.12, ..." } }],
+      "options": [{ "flags": ["-g", "--global"], "summary": { "ja": "全体の既定として記録", "en": "Record as the global default" } }],
+      "examples": [
+        { "command": "mise use node@22", "summary": { "ja": "このプロジェクトは Node 22", "en": "This project uses Node 22" } },
+        { "command": "mise use -g python@3.12", "summary": { "ja": "全体の既定 Python を 3.12 に", "en": "Make Python 3.12 the global default" } }
+      ],
+      "errors": [
+        { "pattern": "mise ERROR .*(?<tool>\\S+)@(?<ver>\\S+) not found|No version found for", "hint": { "ja": "そのバージョンは存在しません。mise ls-remote ツール名 で一覧を確認してください", "en": "No such version. Check mise ls-remote <tool>" } },
+        { "pattern": "mise ERROR Failed to install|build failed", "hint": { "ja": "インストールに失敗しました。Python や Ruby はビルドに必要なライブラリが足りないことが多いです", "en": "Install failed. Python and Ruby builds often need extra system libraries" } }
+      ]
+    },
+    {
+      "name": "install",
+      "aliases": ["i"],
+      "summary": { "ja": "設定ファイルに書かれたツールをすべて入れます（または指定したもの）", "en": "Installs every tool in the config (or the ones given)" },
+      "args": [{ "name": "tool", "type": "string", "optional": true, "variadic": true }],
+      "examples": [{ "command": "mise install", "summary": { "ja": "プロジェクトに必要なツールを一括で入れる", "en": "Install everything the project needs" } }]
+    },
+    {
+      "name": "ls",
+      "aliases": ["list"],
+      "summary": { "ja": "インストール済みツールと有効なバージョンの一覧", "en": "Lists installed tools and active versions" },
+      "options": [{ "flags": ["--current", "-c"], "summary": { "ja": "有効なものだけ", "en": "Active only" } }]
+    },
+    {
+      "name": "uninstall",
+      "aliases": ["remove", "rm"],
+      "summary": { "ja": "ツールのバージョンを削除します", "en": "Removes a tool version" },
+      "args": [{ "name": "tool", "type": "string", "variadic": true }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "そのバージョンに入れたパッケージも消えます", "en": "Packages installed into that version are removed too" }
+    },
+    {
+      "name": "upgrade",
+      "aliases": ["up"],
+      "summary": { "ja": "ツールを新しいバージョンに更新します", "en": "Upgrades tools to newer versions" },
+      "args": [{ "name": "tool", "type": "string", "optional": true, "variadic": true }]
+    },
+    {
+      "name": "exec",
+      "aliases": ["x"],
+      "summary": { "ja": "指定ツールでコマンドを一度だけ実行します", "en": "Runs a command once with given tools" },
+      "args": [{ "name": "command", "type": "command" }],
+      "examples": [{ "command": "mise exec node@18 -- node -v", "summary": { "ja": "Node 18 でバージョン確認", "en": "Check the version under Node 18" } }]
+    },
+    {
+      "name": "run",
+      "aliases": ["r"],
+      "summary": { "ja": "mise.toml に定義したタスクを実行します", "en": "Runs a task defined in mise.toml" },
+      "args": [{ "name": "task", "type": "string" }],
+      "errors": [{ "pattern": "mise ERROR no task (?<task>\\S+) found", "hint": { "ja": "タスク {task} がありません。mise tasks で一覧を見られます", "en": "No task named {task}. See mise tasks" }, "fix": "mise tasks" }]
+    },
+    {
+      "name": "trust",
+      "summary": { "ja": "この設定ファイルを信頼して読み込みます", "en": "Marks this config file as trusted so it is loaded" },
+      "args": [{ "name": "file", "type": "file", "optional": true }]
+    },
+    { "name": "doctor", "aliases": ["dr"], "summary": { "ja": "mise の設定に問題がないか診断します", "en": "Checks the mise setup for problems" } },
+    {
+      "name": "activate",
+      "summary": { "ja": "シェルに読み込ませる設定を出力します（初期設定用）", "en": "Prints the shell setup to be evaluated (for your shell config)" },
+      "args": [{ "name": "shell", "type": "string", "optional": true, "summary": { "ja": "bash / zsh / fish / pwsh", "en": "bash / zsh / fish / pwsh" } }],
+      "examples": [{ "command": "eval \"$(mise activate zsh)\"", "summary": { "ja": ".zshrc に書く行", "en": "The line for .zshrc" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "'mise' is not recognized|mise: command not found", "hint": { "ja": "mise が入っていないか PATH にありません。インストール後にターミナルを開き直してください", "en": "mise is missing or not on PATH. Reopen the terminal after installing" } },
+    { "pattern": "Config file (?<file>\\S+) is not trusted", "hint": { "ja": "{file} がまだ信頼されていません。内容を確認してから mise trust を実行してください", "en": "{file} is not trusted yet. Review it, then run mise trust" }, "fix": "mise trust" },
+    { "pattern": "mise ERROR .*(?<tool>\\S+)@(?<ver>\\S+) is not installed|No version is set for", "hint": { "ja": "必要なツールが未インストールです。mise install で入れてください", "en": "A required tool is not installed. Run mise install" }, "fix": "mise install" },
+    { "pattern": "error sending request|Could not resolve host|Connection refused|failed to fetch", "hint": { "ja": "ダウンロードできません。ネットワークやプロキシを確認してください", "en": "Download failed. Check your network or proxy" } },
+    { "pattern": "mise WARN .*not activated|mise is not activated", "hint": { "ja": "シェルに mise activate が設定されていません。設定ファイルに追加してください", "en": "mise activate is not in your shell config. Add it" } }
+  ]
+}

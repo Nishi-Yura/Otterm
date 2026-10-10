@@ -1,0 +1,82 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "nvm",
+  "summary": { "ja": "Node.js のバージョンを切り替えるツールです", "en": "Switches between Node.js versions" },
+  "description": { "ja": "複数の Node.js を入れておき、プロジェクトごとに使い分けられます。macOS / Linux の nvm はシェル関数なので、ターミナルを開き直すと設定が読まれます。Windows では別物の nvm-windows（コマンドは同じ nvm）が使われます。.nvmrc にバージョンを書いておくと nvm use だけで切り替わります。", "en": "Keeps several Node.js versions and lets each project use its own. On macOS/Linux nvm is a shell function loaded when you open a terminal. Windows uses the separate nvm-windows (same nvm command). Put a version in .nvmrc and plain nvm use picks it up." },
+  "install": { "winget": "winget install CoreyButler.NVMforWindows", "choco": "choco install nvm", "brew": "brew install nvm", "url": "https://github.com/nvm-sh/nvm#installing-and-updating" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["i"],
+      "summary": { "ja": "指定バージョンの Node.js を入れます", "en": "Installs a Node.js version" },
+      "args": [{ "name": "version", "type": "string", "optional": true, "summary": { "ja": "22、20.11.0、--lts、node（最新）など。省略時は .nvmrc", "en": "22, 20.11.0, --lts, node (latest); defaults to .nvmrc" } }],
+      "options": [
+        { "flags": ["--lts"], "summary": { "ja": "最新の LTS を入れる", "en": "Install the latest LTS" } },
+        { "flags": ["--reinstall-packages-from"], "takesValue": true, "valueType": "string", "summary": { "ja": "別バージョンのグローバルパッケージを引き継ぐ", "en": "Carry over global packages from another version" } }
+      ],
+      "examples": [
+        { "command": "nvm install --lts", "summary": { "ja": "最新 LTS を入れる", "en": "Install the latest LTS" } },
+        { "command": "nvm install 22", "summary": { "ja": "Node.js 22 系の最新を入れる", "en": "Install the latest Node.js 22" } }
+      ],
+      "errors": [
+        { "pattern": "Version '(?<ver>[^']+)' not found - try `nvm ls-remote`", "hint": { "ja": "{ver} というバージョンはありません。nvm ls-remote で一覧を確認してください", "en": "No version {ver}. See nvm ls-remote for what exists" }, "fix": "nvm ls-remote" },
+        { "pattern": "Binary download failed|Could not resolve host|curl: \\(\\d+\\)", "hint": { "ja": "ダウンロードできません。ネットワークやプロキシを確認してください", "en": "Download failed. Check your network or proxy" } }
+      ]
+    },
+    {
+      "name": "use",
+      "summary": { "ja": "このターミナルで使う Node.js を切り替えます", "en": "Switches the Node.js used in this terminal" },
+      "args": [{ "name": "version", "type": "string", "optional": true, "summary": { "ja": "省略時は .nvmrc", "en": "Defaults to .nvmrc" } }],
+      "examples": [{ "command": "nvm use", "summary": { "ja": ".nvmrc のバージョンに切り替え", "en": "Switch to the .nvmrc version" } }],
+      "errors": [
+        { "pattern": "N/A: version \"(?<ver>[^\"]+)\" is not yet installed", "hint": { "ja": "{ver} は未インストールです。nvm install {ver} で入れてください", "en": "{ver} is not installed. Run nvm install {ver}" }, "fix": "nvm install {ver}" },
+        { "pattern": "No \\.nvmrc file found", "hint": { "ja": ".nvmrc がありません。バージョンを指定するか、echo 22 > .nvmrc で作れます", "en": "No .nvmrc. Pass a version, or create one with echo 22 > .nvmrc" } }
+      ]
+    },
+    { "name": "ls", "aliases": ["list"], "summary": { "ja": "インストール済みバージョンの一覧", "en": "Lists installed versions" } },
+    {
+      "name": "ls-remote",
+      "aliases": ["list-remote", "list available"],
+      "summary": { "ja": "インストールできるバージョンの一覧（Windows は list available）", "en": "Lists installable versions (list available on Windows)" },
+      "options": [{ "flags": ["--lts"], "summary": { "ja": "LTS だけ", "en": "LTS only" } }]
+    },
+    { "name": "current", "summary": { "ja": "今使っているバージョンを表示", "en": "Shows the active version" } },
+    {
+      "name": "alias",
+      "summary": { "ja": "バージョンに別名を付けます（default が既定）", "en": "Names a version (default sets the default)" },
+      "args": [
+        { "name": "name", "type": "string" },
+        { "name": "version", "type": "string" }
+      ],
+      "examples": [{ "command": "nvm alias default 22", "summary": { "ja": "新しいターミナルでは 22 を使う", "en": "Use 22 in new terminals" } }]
+    },
+    {
+      "name": "uninstall",
+      "summary": { "ja": "指定バージョンを削除します", "en": "Removes a version" },
+      "args": [{ "name": "version", "type": "string" }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "そのバージョンのグローバルパッケージも消えます", "en": "Global packages of that version are removed too" }
+    },
+    {
+      "name": "exec",
+      "summary": { "ja": "指定バージョンでコマンドを一度だけ実行します", "en": "Runs a command once with a given version" },
+      "args": [
+        { "name": "version", "type": "string" },
+        { "name": "command", "type": "command" }
+      ],
+      "examples": [{ "command": "nvm exec 18 node -v", "summary": { "ja": "Node 18 でバージョン確認", "en": "Check the version under Node 18" } }]
+    },
+    {
+      "name": "which",
+      "summary": { "ja": "指定バージョンの node の場所を表示", "en": "Shows where a version's node lives" },
+      "args": [{ "name": "version", "type": "string", "optional": true }]
+    },
+    { "name": "on", "summary": { "ja": "nvm を有効にします（Windows のみ）", "en": "Enables nvm (Windows only)" } }
+  ],
+  "errors": [
+    { "pattern": "nvm: command not found|'nvm' is not recognized", "hint": { "ja": "nvm が見つかりません。インストール後はターミナルを開き直してください。macOS/Linux はシェルの設定ファイルに nvm の読み込み行が必要です", "en": "nvm was not found. Reopen the terminal after installing. On macOS/Linux your shell config must source nvm" } },
+    { "pattern": "nvm is not compatible with the npm config \"prefix\" option", "hint": { "ja": "npm の prefix 設定が nvm と衝突しています。設定を削除してください", "en": "npm's prefix setting conflicts with nvm. Remove it" }, "fix": "npm config delete prefix" },
+    { "pattern": "exit status 1: Access is denied|exit status 5", "hint": { "ja": "Windows の nvm は管理者権限が必要なことがあります。ターミナルを「管理者として実行」で開いてください", "en": "nvm-windows may need admin rights. Open the terminal with 'Run as administrator'" } },
+    { "pattern": "Could not resolve host|Connection refused|curl: \\(\\d+\\)", "hint": { "ja": "nodejs.org に接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach nodejs.org. Check your network or proxy" } }
+  ]
+}

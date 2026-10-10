@@ -1,0 +1,46 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "unzip",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": ".zip ファイルの中身を取り出します", "en": "Extracts the contents of a .zip file" },
+  "description": {
+    "ja": "何も付けないと今いるフォルダに取り出します。取り出す前に -l で中身を確認し、散らからないよう -d で取り出し先フォルダを指定するのがおすすめです。",
+    "en": "By default it extracts into the current folder. Check the contents first with -l, and use -d to extract into a folder so files do not spill everywhere."
+  },
+  "options": [
+    { "flags": ["-l"], "summary": { "ja": "中身の一覧を表示（取り出さない）", "en": "List the contents without extracting" } },
+    { "flags": ["-d"], "takesValue": true, "valueType": "dir", "summary": { "ja": "取り出し先のフォルダ（無ければ作られる）", "en": "Folder to extract into (created if missing)" } },
+    {
+      "flags": ["-o"],
+      "summary": { "ja": "すでにあるファイルを確認せず上書き", "en": "Overwrite existing files without asking" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "取り出し先の同名ファイルを確認なしで上書きします", "en": "Overwrites existing files without asking" }
+    },
+    { "flags": ["-n"], "summary": { "ja": "すでにあるファイルは上書きしない", "en": "Never overwrite existing files" } },
+    { "flags": ["-j"], "summary": { "ja": "フォルダ構造を無視して、ファイルだけ取り出す", "en": "Ignore folder paths; extract files flat" } },
+    { "flags": ["-q"], "summary": { "ja": "ファイル名を表示しない", "en": "Do not print file names" } }
+  ],
+  "args": [
+    { "name": "archive", "type": "file", "summary": { "ja": "取り出す .zip ファイル", "en": "The .zip file to extract" } },
+    { "name": "file", "type": "pattern", "optional": true, "variadic": true, "summary": { "ja": "取り出す特定のファイル（省略するとすべて）", "en": "Specific files to extract (omit for all)" } }
+  ],
+  "examples": [
+    { "command": "unzip -l download.zip", "summary": { "ja": "取り出す前に中身を確認", "en": "Check the contents before extracting" } },
+    { "command": "unzip download.zip -d download", "summary": { "ja": "download フォルダの中に取り出す", "en": "Extract into the download folder" } }
+  ],
+  "errors": [
+    {
+      "pattern": "unzip:\\s+cannot find or open (?<path>[^,\\n]+)",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "End-of-central-directory signature not found",
+      "hint": { "ja": "zip 形式ではないか、ダウンロードが途中で止まって壊れています。.tar.gz なら tar -xzf を使います", "en": "Not a zip file, or the download is incomplete. For .tar.gz use tar -xzf" }
+    },
+    {
+      "pattern": "checkdir error:\\s+cannot create (?<path>[^\\n]+)",
+      "hint": { "ja": "{path} に書き込めません。-d で自分のフォルダ内の取り出し先を指定してください", "en": "Cannot write to {path}. Use -d to extract into a folder you own" }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "du",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルやフォルダが使っているディスク容量を調べます", "en": "Shows how much disk space files and folders use" },
+  "description": {
+    "ja": "何も付けないとサブフォルダまで細かく表示されて見づらいので、-sh を付けて合計だけ見るのが定番です。",
+    "en": "Without options it lists every subfolder, which is noisy. The usual form is -sh for a single total."
+  },
+  "options": [
+    { "flags": ["-h", "--human-readable"], "summary": { "ja": "サイズを KB / MB / GB で表示", "en": "Sizes in KB / MB / GB" } },
+    { "flags": ["-s", "--summarize"], "summary": { "ja": "指定したものごとの合計だけ表示", "en": "Only the total for each argument" } },
+    { "flags": ["-a", "--all"], "summary": { "ja": "フォルダだけでなくファイルも 1 つずつ表示", "en": "Show files too, not just folders" } },
+    { "flags": ["-d", "--max-depth"], "takesValue": true, "valueType": "number", "summary": { "ja": "表示するフォルダの深さを制限（1 なら直下だけ）", "en": "Limit how deep to list (1 = direct children)" } },
+    { "flags": ["-c", "--total"], "summary": { "ja": "最後に全体の合計も表示", "en": "Add a grand total at the end" } },
+    { "flags": ["-x", "--one-file-system"], "summary": { "ja": "別のディスク（マウント先）はたどらない", "en": "Stay on one file system" } },
+    { "flags": ["--apparent-size"], "summary": { "ja": "ディスク上の使用量ではなくファイルの中身の大きさで数える", "en": "Count file contents instead of blocks used on disk" } }
+  ],
+  "args": [
+    { "name": "path", "type": "path", "optional": true, "variadic": true, "summary": { "ja": "調べるフォルダやファイル（省略時は今いるフォルダ）", "en": "Folders or files to measure (default: current folder)" } }
+  ],
+  "examples": [
+    { "command": "du -sh *", "summary": { "ja": "今いるフォルダの各項目の大きさを一覧", "en": "Size of each item in the current folder" } },
+    { "command": "du -h -d 1 | sort -h", "summary": { "ja": "直下のフォルダを小さい順に並べる", "en": "Direct subfolders sorted by size" } },
+    { "command": "du -sh ~/Downloads", "summary": { "ja": "Downloads フォルダの合計サイズ", "en": "Total size of the Downloads folder" } }
+  ],
+  "errors": [
+    {
+      "pattern": "du: cannot access '(?<path>[^']+)': No such file or directory",
+      "hint": { "ja": "{path} が見つかりません。スペルと今いるフォルダを確認してください", "en": "{path} was not found. Check the spelling and your current folder" },
+      "fix": "ls"
+    },
+    {
+      "pattern": "du: invalid maximum depth [‘'](?<depth>[^'’]+)[’']",
+      "hint": { "ja": "-d には 0 以上の整数を指定します（「{depth}」は使えません）。直下だけなら -d 1 です", "en": "-d needs a whole number of 0 or more ('{depth}' is not valid). Use -d 1 for direct children" },
+      "fix": "du -h -d 1"
+    },
+    {
+      "pattern": "du: cannot read directory '(?<path>[^']+)': Permission denied",
+      "hint": { "ja": "{path} の中を読む権限がないので、その分は合計に含まれていません。自分のフォルダだけ調べるか sudo を検討してください", "en": "No permission to read {path}, so it is left out of the total. Measure your own folders, or consider sudo" }
+    }
+  ]
+}

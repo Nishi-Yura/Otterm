@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "Test-Path",
+  "shells": ["pwsh", "powershell"],
+  "summary": { "ja": "ファイルやフォルダが存在するかを True / False で返します（PowerShell）", "en": "Returns True or False depending on whether a path exists (PowerShell)" },
+  "description": { "ja": "存在確認に使う cmdlet です。エラーにならず True か False を返すだけなので、if 文の条件にそのまま使えます。-PathType Leaf でファイルだけ、Container でフォルダだけを対象にできます。", "en": "Checks whether something exists. It never errors, it just returns True or False, so it fits directly in an if condition. -PathType Leaf matches only files, Container only folders." },
+  "options": [
+    {
+      "flags": ["-Path"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "確認するパス", "en": "Path to check" }
+    },
+    {
+      "flags": ["-PathType"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "Leaf（ファイル）か Container（フォルダ）に限定", "en": "Restrict to Leaf (file) or Container (folder)" }
+    },
+    {
+      "flags": ["-LiteralPath"],
+      "takesValue": true,
+      "valueType": "path",
+      "summary": { "ja": "ワイルドカードを展開せず、書いたとおりのパスとして扱う", "en": "Use the path exactly as written, no wildcards" }
+    },
+    {
+      "flags": ["-Filter"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "名前のパターンで絞り込み（例: *.txt）", "en": "Filter by name pattern (e.g. *.txt)" }
+    },
+    {
+      "flags": ["-IsValid"],
+      "summary": { "ja": "存在ではなく、パスの書き方が正しいかだけ確認", "en": "Check only whether the path syntax is valid, not existence" }
+    },
+    {
+      "flags": ["-NewerThan"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "指定日時より新しいか（例: \"2026-01-01\"）", "en": "Whether it is newer than the given date (e.g. \"2026-01-01\")" }
+    }
+  ],
+  "args": [{ "name": "path", "type": "path", "variadic": true }],
+  "examples": [
+    { "command": "Test-Path config.json", "summary": { "ja": "config.json があるか確認", "en": "Check whether config.json exists" } },
+    { "command": "Test-Path .\\build -PathType Container", "summary": { "ja": "build が「フォルダとして」あるか確認", "en": "Check whether build exists as a folder" } },
+    { "command": "if (-not (Test-Path out)) { New-Item -ItemType Directory out }", "summary": { "ja": "out フォルダがなければ作る", "en": "Create the out folder only if missing" } },
+    { "command": "Test-Path $env:USERPROFILE\\Desktop", "summary": { "ja": "環境変数を使ったパスを確認", "en": "Check a path built from an environment variable" } }
+  ],
+  "errors": [
+    {
+      "pattern": "Cannot bind argument to parameter 'Path' because it is (null|an empty string)",
+      "hint": { "ja": "確認するパスが空です。変数が未設定か、引用符の中が空になっていないか確認してください", "en": "The path is empty. The variable may be unset or the quotes may be empty" },
+      "fix": "Test-Path ."
+    },
+    {
+      "pattern": "Cannot bind parameter 'PathType'\\. Cannot convert value \"(?<v>[^\"]+)\"",
+      "hint": { "ja": "-PathType に {v} は使えません。Leaf（ファイル）か Container（フォルダ）か Any を指定します", "en": "{v} is not a valid -PathType. Use Leaf (file), Container (folder) or Any" },
+      "fix": "Test-Path -PathType Leaf"
+    },
+    {
+      "pattern": "Cannot bind parameter 'NewerThan'\\. Cannot convert value \"(?<v>[^\"]+)\" to type \"System\\.DateTime\"",
+      "hint": { "ja": "{v} は日付として読めません。\"2026-01-01\" のような形式で書いてください", "en": "{v} is not a readable date. Use a format like \"2026-01-01\"" }
+    }
+  ]
+}

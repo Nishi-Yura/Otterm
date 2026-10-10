@@ -1,0 +1,96 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "dnf",
+  "aliases": ["yum"],
+  "platforms": ["linux"],
+  "summary": { "ja": "Fedora / RHEL 系のパッケージ管理ツールです", "en": "Package manager for Fedora and RHEL-based systems" },
+  "description": { "ja": "インストールや削除には sudo が必要です。sudo はパスワードを聞きますが、入力中は何も表示されません。yum は dnf の古い名前で、今は同じものです。", "en": "Installing or removing needs sudo. sudo asks for your password; nothing shows while you type. yum is the old name and now points to dnf." },
+  "install": { "url": "https://dnf.readthedocs.io/" },
+  "subcommands": [
+    {
+      "name": "install",
+      "aliases": ["in"],
+      "summary": { "ja": "パッケージをインストールします", "en": "Installs packages" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "options": [
+        { "flags": ["-y", "--assumeyes"], "summary": { "ja": "確認なしで進める", "en": "Do not ask for confirmation" } },
+        { "flags": ["--enablerepo"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定リポジトリを一時的に有効化", "en": "Temporarily enable a repository" } }
+      ],
+      "examples": [{ "command": "sudo dnf install git", "summary": { "ja": "git を入れる", "en": "Install git" } }],
+      "errors": [
+        { "pattern": "No match for argument: (?<pkg>\\S+)|Unable to find a match: (?<pkg2>\\S+)", "hint": { "ja": "パッケージが見つかりません。dnf search で名前を確認してください", "en": "Package not found. Check the name with dnf search" }, "fix": "dnf search {args}" },
+        { "pattern": "conflicting requests|problem with installed package", "hint": { "ja": "依存関係が衝突しています。--allowerasing で解決できる場合がありますが、削除されるものを確認してください", "en": "Dependency conflict. --allowerasing may resolve it; check what gets removed" } },
+        { "pattern": "Waiting for process with pid (?<pid>\\d+) to finish", "hint": { "ja": "別の dnf（PID {pid}）が動いています。終わるまで待ってください", "en": "Another dnf process (PID {pid}) is running. Wait for it" } }
+      ]
+    },
+    {
+      "name": "remove",
+      "aliases": ["erase", "rm"],
+      "summary": { "ja": "パッケージを削除します", "en": "Removes packages" },
+      "args": [{ "name": "package", "type": "package", "variadic": true }],
+      "danger": "warn",
+      "dangerMessage": { "ja": "システム全体から削除します。依存して消えるものを確認してください", "en": "Removes system-wide. Check which dependents are also removed" },
+      "options": [{ "flags": ["-y"], "summary": { "ja": "確認なし", "en": "No prompts" } }]
+    },
+    {
+      "name": "upgrade",
+      "aliases": ["update", "up"],
+      "summary": { "ja": "インストール済みパッケージを更新します", "en": "Upgrades installed packages" },
+      "args": [{ "name": "package", "type": "package", "optional": true, "variadic": true }],
+      "options": [
+        { "flags": ["-y"], "summary": { "ja": "確認なし", "en": "No prompts" } },
+        { "flags": ["--refresh"], "summary": { "ja": "メタデータを取り直してから更新", "en": "Refresh metadata first" } }
+      ],
+      "examples": [{ "command": "sudo dnf upgrade --refresh", "summary": { "ja": "最新の一覧で全部更新", "en": "Upgrade everything with fresh metadata" } }]
+    },
+    {
+      "name": "search",
+      "aliases": ["se"],
+      "summary": { "ja": "パッケージを検索します", "en": "Searches for packages" },
+      "args": [{ "name": "query", "type": "string" }]
+    },
+    {
+      "name": "info",
+      "summary": { "ja": "パッケージの詳細を表示", "en": "Shows package details" },
+      "args": [{ "name": "package", "type": "package" }]
+    },
+    {
+      "name": "list",
+      "aliases": ["ls"],
+      "summary": { "ja": "パッケージの一覧", "en": "Lists packages" },
+      "options": [
+        { "flags": ["--installed"], "summary": { "ja": "インストール済みだけ", "en": "Installed only" } },
+        { "flags": ["--available"], "summary": { "ja": "入れられるもの", "en": "Available only" } }
+      ]
+    },
+    {
+      "name": "provides",
+      "aliases": ["whatprovides"],
+      "summary": { "ja": "そのファイルやコマンドを含むパッケージを探します", "en": "Finds which package provides a file or command" },
+      "args": [{ "name": "file", "type": "string" }],
+      "examples": [{ "command": "dnf provides */bin/htop", "summary": { "ja": "htop コマンドを含むパッケージを探す", "en": "Find the package that has htop" } }]
+    },
+    { "name": "autoremove", "summary": { "ja": "不要になった依存パッケージを削除します", "en": "Removes dependencies no longer needed" }, "danger": "warn", "dangerMessage": { "ja": "削除一覧に必要なものがないか確認してください", "en": "Check the removal list for anything you still need" } },
+    {
+      "name": "clean",
+      "summary": { "ja": "キャッシュを削除します", "en": "Cleans caches" },
+      "options": [{ "flags": ["all"], "summary": { "ja": "すべてのキャッシュ", "en": "All caches" } }]
+    },
+    {
+      "name": "group",
+      "summary": { "ja": "パッケージのグループ（開発ツール一式など）を扱います", "en": "Works with package groups (e.g. development tools)" },
+      "options": [
+        { "flags": ["install"], "summary": { "ja": "グループを入れる", "en": "Install a group" } },
+        { "flags": ["list"], "summary": { "ja": "グループ一覧", "en": "List groups" } }
+      ],
+      "examples": [{ "command": "sudo dnf group install \"Development Tools\"", "summary": { "ja": "C コンパイラなど一式を入れる", "en": "Install the C toolchain group" } }]
+    }
+  ],
+  "errors": [
+    { "pattern": "dnf: command not found", "hint": { "ja": "この Linux は dnf を使いません。Ubuntu なら apt、Arch なら pacman です", "en": "This Linux does not use dnf. Ubuntu uses apt; Arch uses pacman" } },
+    { "pattern": "This command has to be run with superuser privileges|Permission denied", "hint": { "ja": "管理者権限が必要です。先頭に sudo を付けてください。パスワード入力中は何も表示されません", "en": "Root is required. Prefix the command with sudo. Nothing shows while you type the password" }, "fix": "sudo dnf {args}" },
+    { "pattern": "is not in the sudoers file", "hint": { "ja": "このユーザーは sudo を使えません。管理者に権限をもらってください", "en": "This user cannot use sudo. Ask an administrator" } },
+    { "pattern": "Failed to download metadata|Cannot download|Curl error|Could not resolve host", "hint": { "ja": "リポジトリに接続できません。ネットワークやプロキシを確認してください", "en": "Cannot reach the repository. Check your network or proxy" } },
+    { "pattern": "GPG check FAILED|Public key for .* is not installed", "hint": { "ja": "リポジトリの署名鍵がありません。そのリポジトリの手順にある鍵の登録をやり直してください", "en": "The repository's signing key is missing. Re-import the key per the repository's instructions" } }
+  ]
+}

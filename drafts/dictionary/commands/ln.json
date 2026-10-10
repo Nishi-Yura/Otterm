@@ -1,0 +1,47 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ln",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "ファイルやフォルダへのリンク（ショートカットのような別名）を作ります", "en": "Creates a link (like a shortcut) to a file or folder" },
+  "description": {
+    "ja": "ふだんは -s を付けてシンボリックリンクを作ります。引数の順番は「元のファイル → リンクの名前」です。元のファイルを消すとリンクは行き先を失います。",
+    "en": "Usually used with -s to make a symbolic link. Argument order is the original first, then the link name. Deleting the original breaks the link."
+  },
+  "options": [
+    { "flags": ["-s", "--symbolic"], "summary": { "ja": "シンボリックリンク（場所を指すだけの軽いリンク）を作る。ほぼ常に付けます", "en": "Make a symbolic link (points to the path). Almost always wanted" } },
+    {
+      "flags": ["-f", "--force"],
+      "summary": { "ja": "同名のファイルがあれば消してからリンクを作る", "en": "Remove an existing file with the same name first" },
+      "danger": "warn",
+      "dangerMessage": { "ja": "リンク名と同じ名前の既存ファイルが削除されます", "en": "An existing file with the link name will be deleted" }
+    },
+    { "flags": ["-i", "--interactive"], "summary": { "ja": "上書きする前に確認する", "en": "Ask before replacing an existing file" } },
+    { "flags": ["-n", "--no-dereference"], "summary": { "ja": "リンク先がフォルダへのリンクでも、その中に作らず置き換える", "en": "Treat an existing link to a folder as a file, not as a folder to enter" } },
+    { "flags": ["-r", "--relative"], "summary": { "ja": "リンク先を相対パスで記録する（フォルダごと移動しても壊れにくい）", "en": "Store the target as a relative path (survives moving the folder)" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "作ったリンクを表示する", "en": "Print each link created" } }
+  ],
+  "args": [
+    { "name": "target", "type": "path", "summary": { "ja": "リンク先となる元のファイルやフォルダ", "en": "The original file or folder to point to" } },
+    { "name": "link_name", "type": "path", "optional": true, "summary": { "ja": "作るリンクの名前（省略時は今のフォルダに同名で作成）", "en": "Name of the link (defaults to the same name in the current folder)" } }
+  ],
+  "examples": [
+    { "command": "ln -s ~/projects/app/config.yml ./config.yml", "summary": { "ja": "設定ファイルへのシンボリックリンクを今のフォルダに作る", "en": "Link a config file into the current folder" } },
+    { "command": "ln -sfn ../shared/node_modules node_modules", "summary": { "ja": "既存のリンクを新しい行き先で置き換える", "en": "Replace an existing link with a new target" } }
+  ],
+  "errors": [
+    {
+      "pattern": "failed to create symbolic link '(?<path>[^']+)': File exists",
+      "hint": { "ja": "{path} という名前のファイルやリンクがすでにあります。別の名前にするか、-f で置き換えてください", "en": "{path} already exists. Use another name, or -f to replace it" },
+      "fix": "ln -sf"
+    },
+    {
+      "pattern": "hard link not allowed for directory",
+      "hint": { "ja": "フォルダへのリンクは -s（シンボリックリンク）で作ります", "en": "Links to folders must be symbolic. Add -s" },
+      "fix": "ln -s"
+    },
+    {
+      "pattern": "failed to create symbolic link '(?<path>[^']+)': Permission denied",
+      "hint": { "ja": "{path} を作る権限がありません。自分のフォルダの中に作るか、場所を確認してください", "en": "No permission to create {path}. Try inside your own folders" }
+    }
+  ]
+}

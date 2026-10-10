@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/dictionary.schema.json",
+  "name": "ps",
+  "shells": ["bash", "zsh", "fish", "nushell", "other"],
+  "summary": { "ja": "今動いているプログラム（プロセス）の一覧を表示します", "en": "Lists the programs (processes) currently running" },
+  "description": {
+    "ja": "各行の PID という番号がプロセスの識別番号で、kill で終了するときに使います。「ps aux」と「ps -ef」が定番の書き方で、grep と組み合わせて探すことが多いです。",
+    "en": "The PID column is the process number you pass to kill. 'ps aux' and 'ps -ef' are the usual forms, often piped to grep."
+  },
+  "options": [
+    { "flags": ["aux"], "summary": { "ja": "全ユーザーの全プロセスを CPU・メモリ使用率つきで表示（BSD 流の書き方、ハイフンなし）", "en": "Every process with CPU and memory usage (BSD style, no dash)" } },
+    { "flags": ["-e", "-A"], "summary": { "ja": "全プロセスを表示", "en": "Every process" } },
+    { "flags": ["-f"], "summary": { "ja": "ユーザー名や親プロセスを含む詳しい形式", "en": "Full format with user and parent process" } },
+    { "flags": ["-u"], "takesValue": true, "valueType": "string", "summary": { "ja": "指定ユーザーのプロセスだけ表示", "en": "Only processes of this user" } },
+    { "flags": ["-p", "--pid"], "takesValue": true, "valueType": "number", "summary": { "ja": "指定した PID だけ表示", "en": "Only the given PID" } },
+    { "flags": ["-o"], "takesValue": true, "valueType": "string", "summary": { "ja": "表示する列を選ぶ（例: pid,comm,%mem）", "en": "Choose columns (e.g. pid,comm,%mem)" } },
+    { "flags": ["--forest"], "summary": { "ja": "親子関係をツリーで表示（Linux）", "en": "Draw the parent/child tree (Linux)" } }
+  ],
+  "examples": [
+    { "command": "ps aux | grep node", "summary": { "ja": "node を含むプロセスを探す", "en": "Find processes mentioning node" } },
+    { "command": "ps -ef --forest", "summary": { "ja": "全プロセスを親子ツリーで表示", "en": "All processes as a tree" } },
+    { "command": "ps -o pid,%cpu,%mem,comm -p 1234", "summary": { "ja": "PID 1234 の CPU とメモリ使用率を見る", "en": "CPU and memory of PID 1234" } }
+  ],
+  "errors": [
+    {
+      "pattern": "error: process ID list syntax error",
+      "hint": { "ja": "-p には数字の PID を指定します。名前で探すときは ps aux | grep 名前 を使ってください", "en": "-p takes numeric PIDs. To search by name use ps aux | grep name" },
+      "fix": "ps aux | grep "
+    },
+    {
+      "pattern": "error: user name does not exist",
+      "hint": { "ja": "そのユーザー名は存在しません。whoami で自分のユーザー名を確認できます", "en": "That user does not exist. Check your own name with whoami" },
+      "fix": "whoami"
+    },
+    {
+      "pattern": "error: (unsupported|unrecognized|garbage) option",
+      "hint": { "ja": "そのオプションの組み合わせは使えません。ps aux か ps -ef のどちらかの流儀にそろえてください", "en": "That option mix is not valid. Stick to either ps aux or ps -ef style" },
+      "fix": "ps aux"
+    }
+  ]
+}
