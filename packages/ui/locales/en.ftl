@@ -306,6 +306,9 @@ menu-copy-link = Copy link
 tab-new = New tab
 tab-close = Close tab
 tab-untitled = Terminal
+close-running-title = A program is still running
+close-running-body = { $program } is running. Closing ends it.
+close-running-confirm = Close
 
 ## Clipboard (OSC 52)
 

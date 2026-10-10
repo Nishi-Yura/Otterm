@@ -24,6 +24,7 @@ getrandom = "0.4"
 unicode-width = "0.2"
 vte = "0.15"
 regex = "1"
+sysinfo = { version = "0.39", default-features = false, features = ["system"] }
 otterm-vt = { path = "crates/otterm-vt" }
 otterm-pty = { path = "crates/otterm-pty" }
 otterm-session = { path = "crates/otterm-session" }

@@ -9,6 +9,7 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+sysinfo.workspace = true
 anyhow.workspace = true
 otterm-pty.workspace = true
 otterm-vt.workspace = true

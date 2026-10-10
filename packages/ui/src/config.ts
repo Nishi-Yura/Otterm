@@ -35,6 +35,7 @@ export interface UiConfig {
   rightClick: "context-menu" | "paste" | "copy-or-paste";
   osc52Clipboard: "allow" | "deny" | "ask";
   bell: "none" | "visual" | "sound" | "both";
+  confirmCloseRunning: boolean;
   warnings: { key: string; message: string }[];
   configPath: string | null;
 }

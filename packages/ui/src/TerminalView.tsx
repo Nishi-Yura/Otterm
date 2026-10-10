@@ -44,6 +44,8 @@ export interface TerminalViewProps {
   onExit: (code: number | null) => void;
   /** The program rang the bell (BEL). */
   onBell: () => void;
+  /** The session started; App asks it what runs before closing the pane. */
+  onSession: (id: number) => void;
   /** The user clicked into this pane. */
   onActivate: () => void;
   /** Window-level shortcuts (tabs, panes). Returns true when it handled the key. */
@@ -147,6 +149,7 @@ export function TerminalView(props: TerminalViewProps) {
         props.cwd,
       );
       startupMark("session created");
+      props.onSession(session.id);
       if (closed) {
         session.close().catch(() => {});
         return;

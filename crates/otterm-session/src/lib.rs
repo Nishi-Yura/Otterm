@@ -109,6 +109,8 @@ pub trait SessionManager: Send + Sync {
     fn reveal(&self, id: SessionId, line: u64) -> Result<()>;
     /// Drop the scrollback.
     fn clear_scrollback(&self, id: SessionId) -> Result<()>;
+    /// The name of a program the shell is running (for "close anyway?"), if any.
+    fn running_program(&self, id: SessionId) -> Result<Option<String>>;
     /// Turn off modes a crashed program left on; the text stays.
     fn reset_modes(&self, id: SessionId) -> Result<()>;
     /// Kill the process. [`SessionEvent::Exited`] follows.
@@ -132,6 +134,8 @@ struct Session {
     /// Holding a line number rather than an offset keeps the view still while output arrives.
     view_top: Mutex<Option<u64>>,
     frame: FrameSignal,
+    /// The shell's process id.
+    pid: Option<u32>,
 }
 
 impl Session {
@@ -253,6 +257,7 @@ impl SessionManager for LocalSessionManager {
             term: Mutex::new(term),
             view_top: Mutex::new(None),
             frame: FrameSignal::default(),
+            pid: child.pid(),
         });
         self.sessions.lock().unwrap().insert(id, Arc::clone(&session));
         let sink: Arc<EventSink> = Arc::new(sink);
@@ -412,6 +417,11 @@ impl SessionManager for LocalSessionManager {
         Ok(())
     }
 
+    fn running_program(&self, id: SessionId) -> Result<Option<String>> {
+        let session = self.get(id)?;
+        Ok(session.pid.and_then(child_program))
+    }
+
     fn reset_modes(&self, id: SessionId) -> Result<()> {
         let session = self.get(id)?;
         session.term.lock().unwrap().reset_modes();
@@ -422,6 +432,37 @@ impl SessionManager for LocalSessionManager {
     fn close(&self, id: SessionId) -> Result<()> {
         self.get(id)?.with_pty(|p| p.kill())
     }
+}
+
+/// The most recently started child process of `shell`, by name without `.exe`. Console hosts
+/// (ConPTY's OpenConsole, conhost) are not programs the user started. A child with the shell's
+/// own name is looked through: launchers such as scoop's shims start the real shell that way.
+fn child_program(shell: u32) -> Option<String> {
+    use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
+    let mut sys = System::new();
+    sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing());
+    let stem = |p: &sysinfo::Process| {
+        let n = p.name().to_string_lossy().into_owned();
+        if n.to_ascii_lowercase().ends_with(".exe") { n[..n.len() - 4].to_owned() } else { n }
+    };
+    let mut parent = Pid::from_u32(shell);
+    let mut parent_name = sys.process(parent).map(stem).unwrap_or_default();
+    // Bounded: a chain of same-named launchers is short.
+    for _ in 0..4 {
+        let newest = sys
+            .processes()
+            .values()
+            .filter(|p| p.parent() == Some(parent))
+            .map(|p| (p.start_time(), stem(p), p.pid()))
+            .filter(|(_, n, _)| !n.eq_ignore_ascii_case("conhost") && !n.eq_ignore_ascii_case("OpenConsole"))
+            .max()?;
+        if !newest.1.eq_ignore_ascii_case(&parent_name) {
+            return Some(newest.1);
+        }
+        parent = newest.2;
+        parent_name = newest.1;
+    }
+    None
 }
 
 /// Feed output to the terminal, answer its queries and forward its events.
@@ -567,6 +608,27 @@ mod tests {
         assert!(String::from_utf8_lossy(&out).contains("otterm-1"), "output: {:?}", String::from_utf8_lossy(&out));
         assert_eq!(code, Some(0));
         assert!(rx.recv_timeout(Duration::from_millis(200)).is_err(), "no events after Exited");
+    }
+
+    #[test]
+    fn a_program_started_by_the_shell_is_reported() {
+        let mgr = LocalSessionManager::new();
+        let (id, _rx) = start(&mgr);
+        thread::sleep(Duration::from_millis(500));
+        assert_eq!(mgr.running_program(id).unwrap(), None, "an idle shell runs nothing");
+        let cmd: &[u8] = if cfg!(windows) { b"ping -n 30 127.0.0.1 > nul\r" } else { b"sleep 30\r" };
+        mgr.write(id, cmd).unwrap();
+        let want = if cfg!(windows) { "PING" } else { "sleep" };
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            let got = mgr.running_program(id).unwrap();
+            if got.as_deref().is_some_and(|n| n.eq_ignore_ascii_case(want)) {
+                break;
+            }
+            assert!(Instant::now() < deadline, "still {got:?}");
+            thread::sleep(Duration::from_millis(100));
+        }
+        mgr.close(id).unwrap();
     }
 
     #[test]

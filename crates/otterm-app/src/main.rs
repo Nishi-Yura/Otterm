@@ -251,6 +251,13 @@ fn with_clipboard<T>(mut f: impl FnMut(&mut arboard::Clipboard) -> Result<T, arb
     Err(last.map(err).unwrap_or_default())
 }
 
+/// A program the shell is running, to ask before closing its tab (docs/03 §3.2).
+#[tauri::command]
+async fn session_running(state: State<'_, AppState>, id: SessionId) -> CmdResult<Option<String>> {
+    // Listing processes takes a moment; keep it off the main thread.
+    state.sessions.running_program(id).map_err(err)
+}
+
 #[tauri::command]
 fn session_reset_modes(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.reset_modes(id).map_err(err)
@@ -417,6 +424,7 @@ fn main() {
             session_reveal,
             session_clear_scrollback,
             session_reset_modes,
+            session_running,
             clipboard_read,
             clipboard_write,
             open_url,
@@ -459,6 +467,7 @@ fn main() {
             session_reveal,
             session_clear_scrollback,
             session_reset_modes,
+            session_running,
             clipboard_read,
             clipboard_write,
             open_url,

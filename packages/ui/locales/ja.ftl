@@ -306,6 +306,9 @@ menu-copy-link = リンクをコピー
 tab-new = 新しいタブ
 tab-close = タブを閉じる
 tab-untitled = ターミナル
+close-running-title = 実行中のプログラムがあります
+close-running-body = { $program } が実行中です。閉じると終了します。
+close-running-confirm = 閉じる
 
 ## クリップボード（OSC 52）
 

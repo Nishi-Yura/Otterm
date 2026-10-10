@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInternals, startupMark } from "./bench";
@@ -18,6 +19,7 @@ import {
   setRatio,
   splitPane,
 } from "./layout";
+import { PromptBar, type PromptProps } from "./PromptBar";
 import type { Frame } from "./screen/protocol";
 import { connectScreen } from "./session";
 import { type ScreenHub, TerminalView } from "./TerminalView";
@@ -57,12 +59,17 @@ export function App() {
   /** Tabs whose program rang the bell while they were in the background. */
   const [rang, setRang] = createSignal<Set<number>>(new Set());
   const cwds = new Map<number, string>();
+  /** Session id of each pane, once started. */
+  const sessionOf = new Map<number, number>();
+  const [confirm, setConfirm] = createSignal<PromptProps>();
   const routes = new Map<number, (f: Frame) => void>();
   let area!: HTMLDivElement;
   let ws: WebSocket | undefined;
   let unlistenConfig: (() => void) | undefined;
   let noticeTimer: ReturnType<typeof setTimeout> | undefined;
   let nextId = 1;
+  /** The user confirmed closing the window; do not ask again. */
+  let closingWindow = false;
   let keymap = new Keymap();
 
   const hub: ScreenHub = {
@@ -122,8 +129,29 @@ export function App() {
     }
   });
 
+  // The window's close button: ask when something still runs anywhere.
+  let unlistenClose: (() => void) | undefined;
+  void getCurrentWindow()
+    .onCloseRequested(async (event) => {
+      if (closingWindow) return;
+      const program = await runningIn(panes().map((p) => p.id));
+      if (!program) return;
+      event.preventDefault();
+      await askThenClose(
+        panes().map((p) => p.id),
+        () => {
+          closingWindow = true;
+          void getCurrentWindow().destroy();
+        },
+      );
+    })
+    .then((f) => {
+      unlistenClose = f;
+    });
+
   onCleanup(() => {
     unlistenConfig?.();
+    unlistenClose?.();
     clearTimeout(noticeTimer);
     ws?.close();
   });
@@ -207,6 +235,42 @@ export function App() {
     if (tab && tab.active !== paneId) updateTab(tab.id, (x) => ({ ...x, active: paneId }));
   };
 
+  /** A program running in one of these panes, if any (when the user wants to be asked). */
+  const runningIn = async (paneIds: number[]): Promise<string | undefined> => {
+    if (!(config()?.confirmCloseRunning ?? true)) return undefined;
+    for (const pane of paneIds) {
+      const id = sessionOf.get(pane);
+      if (id === undefined) continue;
+      const name = await invoke<string | null>("session_running", { id }).catch(() => null);
+      if (name) return name;
+    }
+    return undefined;
+  };
+
+  /** Close, asking first when a program is still running there (docs/03 §3.2). */
+  const askThenClose = async (paneIds: number[], close: () => void) => {
+    const program = await runningIn(paneIds);
+    if (!program) return close();
+    const done = () => setConfirm(undefined);
+    setConfirm({
+      title: t("close-running-title"),
+      body: t("close-running-body", { program }),
+      buttons: [
+        {
+          label: t("close-running-confirm"),
+          action: () => {
+            done();
+            close();
+          },
+        },
+        { label: t("action-cancel"), action: done },
+      ],
+      // Enter alone keeps the program running.
+      focus: 1,
+      cancel: done,
+    });
+  };
+
   /**
    * Window-level shortcuts; called by the focused terminal before it handles a key. On the
    * alternate screen (vim, less, …) only Ctrl+Shift and Cmd chords stay with otterm, unless
@@ -229,7 +293,7 @@ export function App() {
         newTab(tab ? cwds.get(tab.active) : undefined);
         break;
       case "closeTab":
-        if (tab) closeTab(tab.id);
+        if (tab) void askThenClose(leaves(tab.root), () => closeTab(tab.id));
         break;
       case "nextTab":
       case "prevTab": {
@@ -265,7 +329,7 @@ export function App() {
         updateTab(tab.id, (x) => ({ ...x, zoomed: x.zoomed === undefined ? x.active : undefined }));
         break;
       case "closePane":
-        if (tab) closePane(tab.active);
+        if (tab) void askThenClose([tab.active], () => closePane(tab.active));
         break;
     }
     return true;
@@ -352,7 +416,7 @@ export function App() {
                 // Middle click closes, as in browsers.
                 if (e.button === 1) {
                   e.preventDefault();
-                  closeTab(tab.id);
+                  void askThenClose(leaves(tab.root), () => closeTab(tab.id));
                 } else if (e.button === 0) {
                   setActiveTab(tab.id);
                 }
@@ -365,7 +429,7 @@ export function App() {
                 class="tab-close"
                 title={t("tab-close")}
                 onMouseDown={(e) => e.stopPropagation()}
-                onClick={() => closeTab(tab.id)}
+                onClick={() => void askThenClose(leaves(tab.root), () => closeTab(tab.id))}
               >
                 ×
               </button>
@@ -404,6 +468,7 @@ export function App() {
                   onTitle={(title) => setTitles({ ...titles(), [p.id]: title })}
                   onCwd={(url) => cwds.set(p.id, url)}
                   onExit={() => closePane(p.id)}
+                  onSession={(id) => sessionOf.set(p.id, id)}
                   onBell={() => {
                     if (p.tab !== activeTab()) setRang(new Set([...rang(), p.tab]));
                   }}
@@ -430,6 +495,13 @@ export function App() {
           )}
         </For>
       </div>
+      <Show when={confirm()} keyed>
+        {(c) => (
+          <div class="app-prompt">
+            <PromptBar {...c} />
+          </div>
+        )}
+      </Show>
       {notice() && (
         <div class="notice" role="status">
           {notice()}

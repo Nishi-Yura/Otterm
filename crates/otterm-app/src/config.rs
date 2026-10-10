@@ -47,6 +47,8 @@ pub struct UiConfig {
     /// OSC 52 clipboard writes from applications (decision H2).
     pub osc52_clipboard: Permission,
     pub bell: Bell,
+    /// Ask before closing a tab or the window while a program runs in it.
+    pub confirm_close_running: bool,
     /// Keys that were ignored, to show once.
     pub warnings: Vec<UiWarning>,
     pub config_path: Option<String>,
@@ -126,6 +128,7 @@ impl ConfigState {
             right_click: effective.right_click,
             osc52_clipboard: c.terminal.osc52_clipboard,
             bell: c.terminal.bell,
+            confirm_close_running: c.general.confirm_close_running,
             warnings,
             config_path: self.path.as_ref().map(|p| p.display().to_string()),
         }
