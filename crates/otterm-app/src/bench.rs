@@ -106,19 +106,23 @@ fn run(
         }
     };
 
-    let clock = calibrate(&mut ws_send)?;
-
+    // Recalibrate before every round: the offset drifts during a run (seen on Linux and Windows
+    // runners), so a single estimate left one-way times slightly negative.
+    let mut clocks = Vec::new();
     for &(name, size) in SIZES {
+        let clock = calibrate(&mut ws_send)?;
         let r = measure(size, |payload| {
             channel.send(InvokeResponseBody::Raw(payload)).map_err(|e| e.to_string())?;
             let ack = acks.recv_timeout(Duration::from_secs(5)).map_err(|_| "no ack from the UI within 5 s")?;
             Ok((ack.seq, ack.js_received_at, ack.at))
         })?;
         add(&mut metrics, "tauri", name, r, clock.offset_ms);
-    }
-    for &(name, size) in SIZES {
+        clocks.push(clock.to_json(&format!("tauri.{name}")));
+
+        let clock = calibrate(&mut ws_send)?;
         let r = measure(size, &mut ws_send)?;
         add(&mut metrics, "websocket", name, r, clock.offset_ms);
+        clocks.push(clock.to_json(&format!("websocket.{name}")));
     }
 
     Ok(json!({
@@ -128,8 +132,7 @@ fn run(
         "params": {
             "iterations": ITERATIONS,
             "warmup": WARMUP,
-            "clock_offset_ms": round3(clock.offset_ms),
-            "clock_uncertainty_ms": round3(clock.uncertainty_ms),
+            "clocks": clocks,
             "sizes": SIZES.iter().map(|(n, s)| json!({ "name": n, "bytes": s })).collect::<Vec<_>>(),
         },
         "metrics": metrics,
@@ -142,6 +145,12 @@ struct Clock {
     offset_ms: f64,
     /// Half the round trip of the sample the offset came from: the most the offset can be off by.
     uncertainty_ms: f64,
+}
+
+impl Clock {
+    fn to_json(&self, round: &str) -> Value {
+        json!({ "round": round, "offset_ms": round3(self.offset_ms), "uncertainty_ms": round3(self.uncertainty_ms) })
+    }
 }
 
 /// NTP-style: send small payloads and take the offset from the one with the shortest round trip,
