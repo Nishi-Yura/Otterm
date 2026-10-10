@@ -5,7 +5,7 @@ members = ["crates/*"]
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 license = "Apache-2.0"
 repository = "https://github.com/Nishi-Yura/Otterm"
 publish = false
@@ -19,6 +19,7 @@ anyhow = "1"
 portable-pty = "0.9"
 tauri = "2"
 tauri-build = "2"
+tungstenite = "0.30"
 otterm-pty = { path = "crates/otterm-pty" }
 otterm-session = { path = "crates/otterm-session" }
 

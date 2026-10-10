@@ -135,6 +135,9 @@
 
 M0 の進み具合（2026-10-11）: モノレポ初期化、型とデータの配置（`packages/api`、`mods/dictionary-core`、`crates/otterm-config`、`packages/ui/locales`）、3 OS の CI（fmt、clippy、Biome、型検査、テスト、辞書検証）は済み。Tauri 2 + portable-pty の最小起動（`otterm-pty`、`otterm-session` の `SessionManager` trait、`otterm-app`、`packages/ui`）も済み。Windows では pwsh を起動して `ls` の出力が出ることを確認した。ConPTY は起動時のカーソル位置問い合わせ（DSR）に応答するまで出力を止めるため、M0 では UI が仮に応答している（M1 で `otterm-vt` に移す）
 
-1. macOS / Linux での起動確認
-2. グリッド差分 IPC のベンチ、他ターミナルの基準値取り、レンダラ判定
+ベンチの土台（`tests/bench/`。PTY のスループットと往復、Rust → WebView の転送を Tauri Channel と WebSocket で比較）も済み。開発機の結果は [bench/baseline.md](bench/baseline.md)。転送手段（判断 M2）と ConPTY の同梱（判断 M3）が新たな判断事項になった。
+
+1. macOS / Linux での起動確認とベンチ（M2 を決めるため）
+2. 他ターミナルの基準値取り（参照マシンが要る。判断 C12）
 3. 商標調査（判断 A3）と libghostty の確認
+4. レンダラ判定（09 §4.4）は打鍵遅延が測れる M1 の最初に持ち越す

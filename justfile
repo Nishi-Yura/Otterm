@@ -39,6 +39,10 @@ typecheck:
 test:
     cargo test --workspace
 
+# Run benchmarks (tests/bench/README.md). Example: just bench --suite pty --quick
+bench *ARGS:
+    node tests/bench/run.js {{ARGS}}
+
 # Validate the command dictionary against its schema.
 validate:
     node tests/dictionary/validate-dictionary.js

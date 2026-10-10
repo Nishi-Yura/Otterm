@@ -33,3 +33,6 @@ assets/mascot/src/*.psd
 
 # Tauri generated schemas
 crates/otterm-app/gen/
+
+# Benchmark output (baselines are committed under docs/bench/)
+tests/bench/results/

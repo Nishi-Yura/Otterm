@@ -17,7 +17,16 @@ tauri-build.workspace = true
 
 [dependencies]
 otterm-session.workspace = true
+serde_json = { workspace = true, optional = true }
 tauri.workspace = true
+tungstenite = { workspace = true, optional = true }
+
+[features]
+default = ["custom-protocol"]
+# Serve the bundled frontend instead of the dev server. The Tauri CLI turns this off for `tauri dev`.
+custom-protocol = ["tauri/custom-protocol"]
+# IPC benchmarks (tests/bench/README.md). Off in normal builds.
+bench = ["dep:serde_json", "dep:tungstenite"]
 
 [lints]
 workspace = true

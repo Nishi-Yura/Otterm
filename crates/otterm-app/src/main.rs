@@ -56,10 +56,32 @@ fn session_close(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.close(id).map_err(err)
 }
 
+#[cfg(not(feature = "bench"))]
 fn main() {
     tauri::Builder::default()
         .manage(AppState { sessions: Box::new(LocalSessionManager::new()) })
         .invoke_handler(tauri::generate_handler![session_create, session_write, session_resize, session_close])
+        .run(tauri::generate_context!())
+        .expect("failed to run otterm");
+}
+
+#[cfg(feature = "bench")]
+mod bench;
+
+#[cfg(feature = "bench")]
+fn main() {
+    tauri::Builder::default()
+        .manage(AppState { sessions: Box::new(LocalSessionManager::new()) })
+        .manage(bench::BenchState::default())
+        .invoke_handler(tauri::generate_handler![
+            session_create,
+            session_write,
+            session_resize,
+            session_close,
+            bench::bench_mode,
+            bench::bench_ipc_start,
+            bench::bench_ipc_ack,
+        ])
         .run(tauri::generate_context!())
         .expect("failed to run otterm");
 }

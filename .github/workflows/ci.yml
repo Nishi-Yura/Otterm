@@ -48,3 +48,7 @@ jobs:
 
       - run: just setup
       - run: just check
+
+      # Keeps the PTY bench harness working on every OS. Numbers from shared runners are not compared.
+      - name: Bench smoke run (PTY)
+        run: node tests/bench/run.js --suite pty --quick

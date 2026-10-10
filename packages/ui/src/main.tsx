@@ -1,5 +1,6 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { render } from "solid-js/web";
+import { benchMode, runIpcBench } from "./bench";
 import { keyToInput } from "./keys";
 import { appendWithBackspace, CURSOR_POSITION_QUERY, toPlainText } from "./rawText";
 import { createSession, type Session } from "./session";
@@ -18,6 +19,15 @@ function App() {
   let session: Session | undefined;
 
   onMount(async () => {
+    if ((await benchMode()) === "ipc") {
+      await runIpcBench((line) =>
+        setScreen(
+          (s) => `${s}${line}
+`,
+        ),
+      );
+      return;
+    }
     const decoder = new TextDecoder();
     try {
       session = await createSession(COLS, ROWS, {

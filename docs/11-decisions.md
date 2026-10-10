@@ -708,6 +708,23 @@ A〜H を決定した後に見つかった事項。同日に推奨どおり決�
 - 影響: 02 §4.3、05 §5
 - 時期: M3
 
+### M2. グリッド差分の転送手段（C13 の見直し）
+- 経緯: C13 で「Tauri の生ペイロード IPC を第一候補とし、M0 で WebSocket と比較。差が小さければ単純な方」とした。M0 で測ると差は 10 倍以上あった（[bench/baseline.md](bench/baseline.md) §4.1）。全画面 96 KiB の片道 p99 が Tauri Channel 4.9 ms、WebSocket 0.34 ms。段 4 の予算は 1〜2 ms
+- 選択肢:
+  - (a) Tauri Channel のまま。差分を小さく保つ工夫（変更行だけ送る、圧縮）で予算に収める
+  - (b) **ローカル WebSocket**（127.0.0.1 の空きポート）。起動ごとのトークンで接続を認証し、同じユーザーの別プロセスからの接続も拒む（K6 と同じ考え方）。コマンドと設定は Tauri IPC のまま、グリッド差分と PTY 出力だけを WebSocket に流す
+  - (c) カスタム URI スキーム + `fetch` のストリーミング
+- 推奨: **(b)**。全画面の差分でも予算の 1/5 以下に収まり、1 MiB でも p50 1.1 ms。ポートを開くことの危険はトークン認証と 127.0.0.1 限定で抑える。macOS / Linux でも同じ比較を取ってから決める。(c) は未計測なので、M1 で同じベンチに足して比べる
+- 影響: 02 §2、09 §3.3、C13
+- 時期: M1 の着手前
+
+### M3. Windows の ConPTY のスループット
+- 経緯: OS 同梱の ConPTY（conhost）経由だと 8.5 MiB/s しか出ない（[bench/baseline.md](bench/baseline.md) §4.1）。09 の目標「大量出力で Windows Terminal を下回らない」を満たせない。Windows Terminal と WezTerm は Microsoft が MIT で配布している新しい `conpty.dll` と `OpenConsole.exe` を同梱している。portable-pty は実行ファイルと同じフォルダにこの 2 つがあれば自動で使う
+- 選択肢: OS 同梱の ConPTY のまま / **`conpty.dll` と `OpenConsole.exe` を同梱**（NuGet の Microsoft.Windows.Console.ConPTY から取得）
+- 推奨: **同梱**。インストーラに 2 ファイル（数 MB）が増える。採用前に、同梱版でスループットが何倍になるかをこのベンチで確かめる
+- 影響: 02 §1.2、A9（インストーラ）、09
+- 時期: M1
+
 ## 決定の記録方法
 
 - 決まった項目には `決定: <内容>（<日付>）` と `根拠:` を 1 行足す
