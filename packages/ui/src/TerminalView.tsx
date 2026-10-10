@@ -4,6 +4,7 @@ import { ContextMenu, type MenuItem } from "./ContextMenu";
 import type { UiConfig } from "./config";
 import { t } from "./i18n";
 import { isCopyShortcut, isSearchShortcut, platform, scrollKey, terminalKey, zoomKey } from "./keys";
+import { PromptBar, type PromptProps } from "./PromptBar";
 import { attachPointer } from "./pointer";
 import { SearchBar } from "./SearchBar";
 import { CanvasRenderer, DEFAULT_FONT, type FontConfig } from "./screen/canvasRenderer";
@@ -59,6 +60,9 @@ export function TerminalView(props: TerminalViewProps) {
   const [font, setFont] = createSignal<FontConfig>(DEFAULT_FONT);
   const [searching, setSearching] = createSignal(false);
   const [menu, setMenu] = createSignal<{ x: number; y: number; items: MenuItem[] }>();
+  const [prompt, setPrompt] = createSignal<PromptProps>();
+  /** The user chose "always allow" for OSC 52 in this pane. */
+  let osc52Allowed = false;
   let host!: HTMLDivElement;
   let viewport!: HTMLDivElement;
   let canvas!: HTMLCanvasElement;
@@ -125,6 +129,7 @@ export function TerminalView(props: TerminalViewProps) {
         (e) => {
           if (e.kind === "title") props.onTitle(e.title);
           if (e.kind === "cwd") props.onCwd(e.url);
+          if (e.kind === "clipboard") clipboardRequest(e.data);
           // A view that is gone (its pane was closed) has nothing left to report.
           if (e.kind === "exited" && !closed) {
             setStatus(t("process-exited", { code: e.code ?? "none" }));
@@ -199,7 +204,7 @@ export function TerminalView(props: TerminalViewProps) {
         canvas.title = link ? t("link-hint-first") : "";
         r.invalidate();
       },
-      menu: (x, y) => openMenu(x, y),
+      menu: (x, y, shift) => rightClick(x, y, shift),
     });
     if (props.active()) input.focus();
   });
@@ -272,8 +277,94 @@ export function TerminalView(props: TerminalViewProps) {
   };
 
   const pasteClipboard = async () => {
-    const text = await clipboard.read().catch(() => "");
-    if (text && session) await session.paste(text);
+    pasteText(await clipboard.read().catch(() => ""));
+  };
+
+  const closePrompt = () => {
+    setPrompt(undefined);
+    input.focus();
+  };
+
+  /** Paste, asking first when the text has line breaks (decision B16): each line could run. */
+  const pasteText = (text: string) => {
+    if (!text || !session) return;
+    if (!props.config()?.confirmMultilinePaste || !/[\r\n]/.test(text)) {
+      void session.paste(text);
+      return;
+    }
+    const lines = text.split(/\r\n|\r|\n/);
+    if (lines[lines.length - 1] === "") lines.pop();
+    const shown = lines.slice(0, 5).join("\n") + (lines.length > 5 ? "\n…" : "");
+    const send = (value: string) => {
+      closePrompt();
+      void session?.paste(value);
+    };
+    setPrompt({
+      title: t("paste-multiline-title"),
+      body: t("paste-multiline-body", { lines: lines.length }),
+      preview: shown,
+      buttons: [
+        { label: t("paste-confirm"), action: () => send(text) },
+        {
+          label: t("paste-as-single-line"),
+          action: () =>
+            send(
+              lines
+                .map((l) => l.trim())
+                .filter(Boolean)
+                .join(" "),
+            ),
+        },
+        { label: t("action-cancel"), action: closePrompt },
+      ],
+      cancel: closePrompt,
+    });
+  };
+
+  /** An application asked to set the clipboard with OSC 52 (decision H2). */
+  const clipboardRequest = (data: string) => {
+    const policy = props.config()?.osc52Clipboard ?? "ask";
+    const write = () => void clipboard.write(data).catch((e) => props.notify(t("copy-failed", { error: String(e) })));
+    if (policy === "deny") return;
+    if (policy === "allow" || osc52Allowed) return write();
+    setPrompt({
+      title: t("osc52-ask", { chars: [...data].length }),
+      preview: data.length > 200 ? `${data.slice(0, 200)}…` : data,
+      buttons: [
+        {
+          label: t("osc52-allow"),
+          action: () => {
+            closePrompt();
+            write();
+          },
+        },
+        {
+          label: t("osc52-allow-always"),
+          action: () => {
+            osc52Allowed = true;
+            closePrompt();
+            write();
+          },
+        },
+        { label: t("osc52-deny"), action: closePrompt },
+      ],
+      cancel: closePrompt,
+    });
+  };
+
+  /** Right button (decision I1): the menu, or paste / copy-or-paste as configured. Shift: menu. */
+  const rightClick = (x: number, y: number, shift: boolean) => {
+    const mode = shift ? "context-menu" : (props.config()?.rightClick ?? "context-menu");
+    if (mode === "paste") {
+      props.onActivate();
+      void pasteClipboard();
+    } else if (mode === "copy-or-paste" && selection.active && !selection.empty) {
+      void copySelection().then(clearSelection);
+    } else if (mode === "copy-or-paste") {
+      void pasteClipboard();
+    } else {
+      openMenu(x, y);
+    }
   };
 
   /** Select every line: the scrollback and the screen. */
@@ -423,7 +514,7 @@ export function TerminalView(props: TerminalViewProps) {
   const onPaste = (e: ClipboardEvent) => {
     const text = e.clipboardData?.getData("text/plain");
     e.preventDefault();
-    if (text && session) void session.paste(text);
+    if (text) pasteText(text);
   };
 
   return (
@@ -486,6 +577,7 @@ export function TerminalView(props: TerminalViewProps) {
           style={{ top: `${(thumb()?.top ?? 0) * 100}%`, height: `${(thumb()?.height ?? 0) * 100}%` }}
         />
       )}
+      {prompt() && <PromptBar {...(prompt() as PromptProps)} />}
       {status() && <div class="status">{status()}</div>}
     </div>
   );

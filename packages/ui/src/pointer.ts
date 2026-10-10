@@ -27,7 +27,7 @@ export interface PointerHost {
   /** The link under the pointer while the open modifier is held, for the underline. */
   hoverLink?: (link: Link | undefined) => void;
   /** Right-click outside mouse reporting; `x`/`y` are client coordinates. */
-  menu?: (x: number, y: number) => void;
+  menu?: (x: number, y: number, shift: boolean) => void;
 }
 
 /** The modifier that turns a click into "open the link". */
@@ -160,7 +160,7 @@ export function attachPointer(h: PointerHost): () => void {
   // the right button goes to it; Shift+right-click still opens the menu.
   const onContextMenu = (e: MouseEvent) => {
     e.preventDefault();
-    if (!reporting(e)) h.menu?.(e.clientX, e.clientY);
+    if (!reporting(e)) h.menu?.(e.clientX, e.clientY, e.shiftKey);
   };
 
   // Letting go of the modifier ends the link hover.

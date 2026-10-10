@@ -308,6 +308,77 @@ body,
   color: var(--muted);
 }
 
+/* A question about the terminal: paste confirmation, clipboard requests. */
+.prompt {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  left: 14px;
+  z-index: 8;
+  max-width: 640px;
+  margin-left: auto;
+  padding: 10px 12px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 85%, #808080);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.4);
+  font:
+    13px system-ui,
+    sans-serif;
+  color: var(--fg);
+}
+
+.prompt-title {
+  font-weight: 600;
+}
+
+.prompt-body {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.prompt-preview {
+  max-height: 8em;
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  overflow: auto;
+  border-radius: 4px;
+  background: var(--bg);
+  font:
+    12px "Cascadia Mono",
+    monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.prompt-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.prompt-button {
+  padding: 4px 12px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 5px;
+  background: rgb(255 255 255 / 0.06);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.prompt-button:first-child {
+  border-color: #4f8cff;
+  background: rgb(79 140 255 / 0.3);
+}
+
+.prompt-button:hover,
+.prompt-button:focus-visible {
+  outline: none;
+  background: rgb(79 140 255 / 0.45);
+}
+
 /* One-off messages such as ignored configuration keys. */
 .notice {
   position: absolute;

@@ -305,3 +305,10 @@ menu-copy-link = Copy link
 tab-new = New tab
 tab-close = Close tab
 tab-untitled = Terminal
+
+## Clipboard (OSC 52)
+
+osc52-ask = The running program wants to put { $chars } characters on the clipboard.
+osc52-allow = Allow
+osc52-allow-always = Always allow in this tab
+osc52-deny = Deny

@@ -5,7 +5,9 @@ use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, SystemTime};
 
-use otterm_config::{AmbiguousWidth, Auto, Config, CursorStyle, Language, Theme, Warning};
+use otterm_config::{
+    AmbiguousWidth, Auto, Config, CursorStyle, Effective, Language, Permission, RightClick, Theme, Warning,
+};
 use serde::Serialize;
 
 /// How often the config file is checked for changes.
@@ -38,6 +40,12 @@ pub struct UiConfig {
     /// `[keybindings.bindings]`: action id → key chords (an empty list unbinds).
     pub keybindings: std::collections::BTreeMap<String, Vec<String>>,
     pub alt_screen_passthrough: bool,
+    /// Ask before pasting text with line breaks (decision B16, resolved against the guide level).
+    pub confirm_multiline_paste: bool,
+    /// Right button: menu, paste, or copy-if-selected-else-paste (decision I1).
+    pub right_click: RightClick,
+    /// OSC 52 clipboard writes from applications (decision H2).
+    pub osc52_clipboard: Permission,
     /// Keys that were ignored, to show once.
     pub warnings: Vec<UiWarning>,
     pub config_path: Option<String>,
@@ -73,6 +81,7 @@ impl ConfigState {
     pub fn ui(&self) -> UiConfig {
         let l = self.loaded.lock().unwrap();
         let c = &l.config;
+        let effective = Effective::resolve(c);
         let theme = otterm_config::find_theme(&l.themes, &c.appearance.theme)
             .or_else(|| otterm_config::find_theme(&l.themes, "otterm Dark"))
             .cloned()
@@ -112,6 +121,9 @@ impl ConfigState {
                 })
                 .collect(),
             alt_screen_passthrough: c.keybindings.alt_screen_passthrough,
+            confirm_multiline_paste: effective.confirm_multiline_paste,
+            right_click: effective.right_click,
+            osc52_clipboard: c.terminal.osc52_clipboard,
             warnings,
             config_path: self.path.as_ref().map(|p| p.display().to_string()),
         }

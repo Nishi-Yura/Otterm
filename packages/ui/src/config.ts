@@ -31,6 +31,9 @@ export interface UiConfig {
   wordSeparators: string;
   keybindings: Record<string, string[]>;
   altScreenPassthrough: boolean;
+  confirmMultilinePaste: boolean;
+  rightClick: "context-menu" | "paste" | "copy-or-paste";
+  osc52Clipboard: "allow" | "deny" | "ask";
   warnings: { key: string; message: string }[];
   configPath: string | null;
 }

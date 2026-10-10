@@ -305,3 +305,10 @@ menu-copy-link = リンクをコピー
 tab-new = 新しいタブ
 tab-close = タブを閉じる
 tab-untitled = ターミナル
+
+## クリップボード（OSC 52）
+
+osc52-ask = 実行中のプログラムがクリップボードに { $chars } 文字を書き込もうとしています。
+osc52-allow = 許可する
+osc52-allow-always = このタブでは常に許可
+osc52-deny = 拒否する

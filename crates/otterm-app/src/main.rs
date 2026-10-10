@@ -103,7 +103,11 @@ fn session_create(
                     SessionEvent::Title(title) => events.send(UiEvent::Title { title }),
                     SessionEvent::Bell => events.send(UiEvent::Bell),
                     SessionEvent::Cwd(url) => events.send(UiEvent::Cwd { url }),
-                    SessionEvent::ClipboardWrite(data) => events.send(UiEvent::Clipboard { data }),
+                    // OSC 52 carries base64; the UI applies the clipboard policy (decision H2).
+                    SessionEvent::ClipboardWrite(data) => match decode_base64(&data) {
+                        Some(data) => events.send(UiEvent::Clipboard { data }),
+                        None => Ok(()),
+                    },
                     SessionEvent::Exited { code } => events.send(UiEvent::Exited { code }),
                     SessionEvent::Output(_) => Ok(()),
                 };
@@ -287,6 +291,35 @@ fn session_close(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.close(id).map_err(err)
 }
 
+/// Text from OSC 52's base64 payload; `None` if it is not base64 of UTF-8 or is over 1 MiB.
+fn decode_base64(s: &str) -> Option<String> {
+    const MAX: usize = 1 << 20;
+    if s.len() > MAX / 3 * 4 + 4 {
+        return None;
+    }
+    let mut out = Vec::with_capacity(s.len() / 4 * 3);
+    let (mut acc, mut bits) = (0u32, 0);
+    for c in s.bytes().filter(|c| !c.is_ascii_whitespace()) {
+        let v = match c {
+            b'A'..=b'Z' => c - b'A',
+            b'a'..=b'z' => c - b'a' + 26,
+            b'0'..=b'9' => c - b'0' + 52,
+            b'+' => 62,
+            b'/' => 63,
+            b'=' => break,
+            _ => return None,
+        };
+        acc = acc << 6 | v as u32;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((acc >> bits) as u8);
+            acc &= (1 << bits) - 1;
+        }
+    }
+    String::from_utf8(out).ok()
+}
+
 /// A local path from a path or a `file://` URL (OSC 7 sends `file://host/path`, percent-encoded).
 fn local_path(s: &str) -> Option<std::path::PathBuf> {
     let Some(rest) = s.strip_prefix("file://") else { return Some(s.into()) };
@@ -415,6 +448,14 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn osc52_base64_decodes() {
+        assert_eq!(decode_base64("aGVsbG8="), Some("hello".into()));
+        assert_eq!(decode_base64("5pel5pys"), Some("日本".into()));
+        assert_eq!(decode_base64(""), Some(String::new()));
+        assert_eq!(decode_base64("not base64!"), None);
+    }
 
     #[test]
     fn file_urls_become_paths() {
