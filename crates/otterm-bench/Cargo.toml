@@ -11,6 +11,7 @@ publish.workspace = true
 [dependencies]
 anyhow.workspace = true
 otterm-session.workspace = true
+otterm-vt.workspace = true
 serde_json.workspace = true
 
 [lints]

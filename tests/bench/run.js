@@ -38,6 +38,7 @@ if (suites.includes("pty")) {
   const benches = [
     ["pty-throughput", ...(quick ? ["--mib", "10", "--runs", "2"] : [])],
     ["pty-roundtrip", ...(quick ? ["--samples", "100"] : [])],
+    ["vt-throughput", ...(quick ? ["--mib", "10", "--runs", "2"] : [])],
   ];
   for (const [name, ...rest] of benches) {
     const out = path.join(tmp, `${name}.json`);

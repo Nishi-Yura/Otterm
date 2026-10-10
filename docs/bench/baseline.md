@@ -42,6 +42,14 @@ M0 で測る対象: Ghostty、WezTerm、Windows Terminal、Alacritty（それぞ
 | スループット（中央値） | 8.5 MiB/s |
 | 1 行の往復 p50 / p99 | 0.13 ms / 0.39 ms |
 
+**VT 解析**（`otterm-vt`、M1 着手時。`vt-throughput`、120×40、`ls --color` 風の行、プロセス内）
+
+| 指標 | 値 |
+| --- | --- |
+| スループット（中央値） | 62 MiB/s（最初の実装は 42 MiB/s。セルを 20 バイトの `Copy` 型にし、行ごとに使用幅を持たせて改善） |
+
+vte パーサ単体は約 1,800 MiB/s 出るので、残りは 1 文字約 10 ns の印字処理。PTY 側の上限（同梱 ConPTY 29 MiB/s、macOS / Linux 40〜60 MiB/s）は上回っているため、さらなる最適化は後回しにする。入力の形ごとの内訳は `cargo run --release -p otterm-vt --example profile`
+
 **Rust → WebView の転送**（片道、p50 / p99、ms）
 
 | 大きさ | Tauri 生ペイロード Channel | WebSocket（127.0.0.1） |

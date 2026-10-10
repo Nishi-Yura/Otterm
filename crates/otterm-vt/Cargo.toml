@@ -1,0 +1,19 @@
+[package]
+name = "otterm-vt"
+description = "VT parser and terminal grid for otterm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+unicode-width.workspace = true
+vte.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+vte.workspace = true

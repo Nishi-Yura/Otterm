@@ -2,6 +2,7 @@
 //!
 //!   otterm-bench pty-throughput [--mib 100] [--runs 5] [--out FILE]
 //!   otterm-bench pty-roundtrip  [--samples 1000] [--out FILE]
+//!   otterm-bench vt-throughput  [--mib 100] [--runs 5] [--out FILE]
 //!
 //! Each command prints one result as JSON (format: tests/bench/README.md). The child process is this
 //! binary itself in a hidden mode (`emit`, `pong`), so no shell or coreutils are needed on any OS.
@@ -30,6 +31,7 @@ fn main() -> Result<()> {
     let result = match cmd {
         "pty-throughput" => pty_throughput(opt("--mib", 100)?, opt("--runs", 5)?)?,
         "pty-roundtrip" => pty_roundtrip(opt("--samples", 1000)?)?,
+        "vt-throughput" => vt_throughput(opt("--mib", 100)?, opt("--runs", 5)?),
         // Child modes.
         "emit" => return emit(opt("--bytes", 0)?),
         "pong" => return pong(),
@@ -93,6 +95,33 @@ fn pty_roundtrip(samples: u64) -> Result<Value> {
         }),
         &ms,
     ))
+}
+
+/// How fast `otterm-vt` parses typical colored output into the grid (stage 3 in docs/09 §2), in-process.
+fn vt_throughput(mib: u64, runs: u64) -> Value {
+    // `ls --color`-like lines: SGR changes, a wide-character name, plain text.
+    let line = "[0m[01;34mdirectory[0m  [01;32mscript.sh[0m  ファイル.txt  README.md  [38;5;208mnotes[0m  src
+";
+    let chunk = line.repeat(64 * 1024 / line.len());
+    let bytes = mib * 1024 * 1024;
+    let mut samples = Vec::new();
+    for _ in 0..runs {
+        let mut term = otterm_vt::Terminal::new(120, 40);
+        let start = Instant::now();
+        let mut fed = 0;
+        while fed < bytes {
+            term.advance(chunk.as_bytes());
+            let _ = term.take_damage();
+            fed += chunk.len() as u64;
+        }
+        samples.push(fed as f64 / (1024.0 * 1024.0) / start.elapsed().as_secs_f64());
+    }
+    report(
+        "vt-throughput",
+        json!({ "mib": mib, "runs": runs, "size": "120x40" }),
+        json!({ "throughput_median": metric(median(&mut samples), "MiB/s", "higher") }),
+        &samples,
+    )
 }
 
 // ---------------------------------------------------------------------------
