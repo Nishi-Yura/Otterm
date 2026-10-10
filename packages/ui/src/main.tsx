@@ -127,7 +127,14 @@ function Terminal() {
   };
 
   return (
-    <div ref={host} class="terminal" onMouseDown={() => setTimeout(() => input.focus())}>
+    // A terminal is an application region: it takes its own keyboard and mouse input.
+    <div
+      ref={host}
+      class="terminal"
+      role="application"
+      aria-label="Terminal"
+      onMouseDown={() => setTimeout(() => input.focus())}
+    >
       <div ref={viewport} class="viewport">
         <canvas ref={canvas} />
         <textarea
