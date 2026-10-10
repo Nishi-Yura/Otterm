@@ -2219,6 +2219,7 @@ dependencies = [
 name = "otterm-vt"
 version = "0.0.0"
 dependencies = [
+ "regex",
  "unicode-width",
  "vte",
 ]

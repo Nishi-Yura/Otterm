@@ -76,6 +76,74 @@ body,
   pointer-events: none;
 }
 
+/* Scrollback search (docs/03 §4). */
+.search {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg) 85%, #808080);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.35);
+  font:
+    12px system-ui,
+    sans-serif;
+  color: var(--fg);
+}
+
+.search-input {
+  width: 220px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  outline: none;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.search-input:focus {
+  border-color: #4f8cff;
+}
+
+.search-input.invalid {
+  border-color: #ff5c5c;
+}
+
+.search-toggle,
+.search-step {
+  min-width: 24px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.search-toggle[aria-pressed="true"] {
+  border-color: #4f8cff;
+  background: rgb(79 140 255 / 0.25);
+}
+
+.search-toggle:hover,
+.search-step:hover {
+  background: rgb(255 255 255 / 0.1);
+}
+
+.search-count {
+  min-width: 52px;
+  padding: 0 4px;
+  text-align: center;
+  color: var(--muted);
+}
+
 /* One-off messages such as ignored configuration keys. */
 .notice {
   position: absolute;

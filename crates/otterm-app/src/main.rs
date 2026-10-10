@@ -9,8 +9,8 @@ mod config;
 mod screen;
 
 use otterm_session::{
-    Key, LocalSessionManager, Mouse, MouseAction, MouseButton, PtySize, SessionEvent, SessionId, SessionManager,
-    SpawnOptions,
+    Key, LocalSessionManager, Mouse, MouseAction, MouseButton, PtySize, SearchOptions, SessionEvent, SessionId,
+    SessionManager, SpawnOptions,
 };
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -190,6 +190,27 @@ fn session_text(
     state.sessions.text(id, (start_line, start_col), (end_line, end_col)).map_err(err)
 }
 
+/// Matches as `[start line, start col, end line, end col]`, oldest first.
+#[tauri::command]
+fn session_search(
+    state: State<'_, AppState>,
+    id: SessionId,
+    query: String,
+    regex: bool,
+    case_sensitive: bool,
+    whole_word: bool,
+) -> CmdResult<Vec<(u64, usize, u64, usize)>> {
+    let opts = SearchOptions { regex, case_sensitive, whole_word };
+    let matches = state.sessions.search(id, &query, opts).map_err(err)?;
+    Ok(matches.into_iter().map(|m| (m.start.0, m.start.1, m.end.0, m.end.1)).collect())
+}
+
+/// Scroll so that `line` is in view.
+#[tauri::command]
+fn session_reveal(state: State<'_, AppState>, id: SessionId, line: u64) -> CmdResult {
+    state.sessions.reveal(id, line).map_err(err)
+}
+
 #[tauri::command]
 fn session_close(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.close(id).map_err(err)
@@ -244,6 +265,8 @@ fn main() {
             session_scroll,
             session_mouse,
             session_text,
+            session_search,
+            session_reveal,
             session_close,
         ])
         .run(tauri::generate_context!())
@@ -274,6 +297,8 @@ fn main() {
             session_scroll,
             session_mouse,
             session_text,
+            session_search,
+            session_reveal,
             session_close,
             bench::bench_mode,
             bench::bench_ipc_start,

@@ -37,6 +37,12 @@ export function isCopyShortcut(e: KeyboardEvent, hasSelection: boolean): boolean
   return platform === "windows" && e.ctrlKey && hasSelection;
 }
 
+/** Open the search bar (docs/06 §5.2): Ctrl+Shift+F, Cmd+F on macOS. */
+export function isSearchShortcut(e: KeyboardEvent): boolean {
+  if (e.key.toLowerCase() !== "f" || e.altKey) return false;
+  return platform === "macos" ? e.metaKey && !e.ctrlKey : e.ctrlKey && e.shiftKey && !e.metaKey;
+}
+
 /** Font size keys (docs/06 §5.2): Ctrl (Cmd on macOS) with `=` / `+` bigger, `-` smaller, `0` reset. */
 export function zoomKey(e: KeyboardEvent): 1 | -1 | 0 | undefined {
   const mod = platform === "macos" ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;

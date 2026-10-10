@@ -2,13 +2,15 @@ import { createSignal, onCleanup, onMount } from "solid-js";
 import { render } from "solid-js/web";
 import { benchMode, runIpcBench } from "./bench";
 import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
-import { isCopyShortcut, scrollKey, terminalKey, zoomKey } from "./keys";
+import { isCopyShortcut, isSearchShortcut, scrollKey, terminalKey, zoomKey } from "./keys";
 import { attachPointer } from "./pointer";
+import { SearchBar } from "./SearchBar";
 import { CanvasRenderer, DEFAULT_FONT, type FontConfig } from "./screen/canvasRenderer";
+import { Highlights } from "./screen/highlights";
 import { ScreenModel } from "./screen/model";
 import { themeFromConfig } from "./screen/palette";
 import { Selection } from "./screen/selection";
-import { connectScreen, createSession, SCROLL_BOTTOM, SCROLL_TOP, type Session } from "./session";
+import { connectScreen, createSession, SCROLL_BOTTOM, SCROLL_TOP, type SearchOptions, type Session } from "./session";
 import "./style.css";
 
 /** PTY resizes are debounced (docs/03 §1.2). */
@@ -25,6 +27,7 @@ function Terminal() {
   const [thumb, setThumb] = createSignal<{ top: number; height: number }>();
   const [font, setFont] = createSignal<FontConfig>(DEFAULT_FONT);
   const [notice, setNotice] = createSignal<string>();
+  const [searching, setSearching] = createSignal(false);
   let host!: HTMLDivElement;
   let viewport!: HTMLDivElement;
   let canvas!: HTMLCanvasElement;
@@ -44,6 +47,8 @@ function Terminal() {
   let noticeTimer: ReturnType<typeof setTimeout> | undefined;
   const model = new ScreenModel();
   const selection = new Selection();
+  const highlights = new Highlights();
+  let focusSearch: (() => void) | undefined;
   // Dev builds expose the screen for automated checks (screen text, cursor).
   if (import.meta.env.DEV) Object.assign(window, { __otterm: { model, selection } });
 
@@ -57,6 +62,7 @@ function Terminal() {
     const r = new CanvasRenderer(canvas, model);
     renderer = r;
     r.selection = selection;
+    r.highlights = highlights;
     const fit = () => r.gridSize(viewport.clientWidth, viewport.clientHeight);
 
     const applyConfig = (c: UiConfig) => {
@@ -203,6 +209,12 @@ function Terminal() {
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (!session) return;
+    if (isSearchShortcut(e)) {
+      e.preventDefault();
+      if (searching()) focusSearch?.();
+      else setSearching(true);
+      return;
+    }
     const z = zoomKey(e);
     if (z !== undefined) {
       e.preventDefault();
@@ -228,6 +240,36 @@ function Terminal() {
     e.preventDefault();
     clearSelection();
     void session.key(key);
+  };
+
+  const runSearch = async (query: string, opts: SearchOptions) => {
+    if (!session) return 0;
+    const matches = query ? await session.search(query, opts) : [];
+    // Start at the newest match, nearest the prompt.
+    highlights.set(matches, matches.length - 1);
+    revealCurrent();
+    return matches.length;
+  };
+
+  const stepSearch = (dir: -1 | 1) => {
+    const n = highlights.matches.length;
+    if (n === 0) return 0;
+    highlights.current = (highlights.current + dir + n) % n;
+    revealCurrent();
+    return highlights.current + 1;
+  };
+
+  const revealCurrent = () => {
+    const m = highlights.matches[highlights.current];
+    if (m && session) void session.reveal(m[0]);
+    renderer?.invalidate();
+  };
+
+  const closeSearch = () => {
+    setSearching(false);
+    highlights.clear();
+    renderer?.invalidate();
+    input.focus();
   };
 
   // Text that did not come as a key press: committed IME compositions, some input methods.
@@ -290,6 +332,16 @@ function Terminal() {
           </span>
         )}
       </div>
+      {searching() && (
+        <SearchBar
+          search={runSearch}
+          step={stepSearch}
+          close={closeSearch}
+          focusRef={(f) => {
+            focusSearch = f;
+          }}
+        />
+      )}
       {thumb() && (
         <div
           class="scrollbar"

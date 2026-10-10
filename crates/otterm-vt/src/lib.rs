@@ -8,6 +8,7 @@ mod cell;
 pub mod diff;
 mod input;
 mod reflow;
+pub mod search;
 mod term;
 
 pub use cell::{Attrs, Cell, Color, Row, flags};

@@ -1,3 +1,4 @@
+import type { Highlights } from "./highlights";
 import { DEFAULT_ATTR, type ScreenModel } from "./model";
 import { Palette, type Theme } from "./palette";
 import { CursorShape, Flags } from "./protocol";
@@ -37,6 +38,7 @@ export class CanvasRenderer {
   private scheduled = false;
   focused = true;
   selection: Selection | undefined;
+  highlights: Highlights | undefined;
   /** Called after each draw, e.g. to move the IME anchor to the cursor. */
   onDraw: (() => void) | undefined;
 
@@ -164,7 +166,10 @@ export class CanvasRenderer {
 
     ctx.fillStyle = theme.background;
     ctx.fillRect(0, y, this.model.cols * cw, ch);
-    const selected = this.selection?.colsOn(this.model, this.model.topLine + row);
+    const lineNo = this.model.topLine + row;
+    const selected = this.selection?.colsOn(this.model, lineNo);
+    const found = this.highlights?.colsOn(lineNo, this.model.cols) ?? [];
+    const findColors = searchColors(theme.background);
 
     for (let col = 0; col < this.model.cols; col++) {
       const attr = line.attrs[col] ?? DEFAULT_ATTR;
@@ -173,6 +178,12 @@ export class CanvasRenderer {
       let fg = this.palette.resolve(attr.fg, theme.foreground);
       let bg = this.palette.resolve(attr.bg, theme.background);
       if (attr.flags & Flags.INVERSE) [fg, bg] = [bg, fg];
+      for (const [from, to, current] of found) {
+        if (col >= from && col < to) {
+          bg = current ? findColors.current : findColors.match;
+          if (current) fg = findColors.currentText;
+        }
+      }
       if (selected && col >= selected[0] && col < selected[1]) bg = theme.selection;
       const x = col * cw;
 
@@ -233,4 +244,13 @@ export class CanvasRenderer {
       }
     }
   }
+}
+
+/** Search highlight colors that stand out on dark and on light backgrounds. */
+function searchColors(background: string): { match: string; current: string; currentText: string } {
+  const n = Number.parseInt(background.slice(1), 16);
+  const luma = 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+  return luma < 128
+    ? { match: "#5a4a12", current: "#f0c674", currentText: "#1b1d23" }
+    : { match: "#fff0a8", current: "#f5a623", currentText: "#000000" };
 }

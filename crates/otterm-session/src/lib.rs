@@ -16,10 +16,14 @@ use anyhow::{Result, anyhow};
 use otterm_pty::{Pty, Spawned};
 pub use otterm_pty::{PtySize, SpawnOptions};
 use otterm_vt::diff::FrameState;
+pub use otterm_vt::search::{Match, SearchOptions};
 pub use otterm_vt::{CursorShape, Key, Mouse, MouseAction, MouseButton};
 use otterm_vt::{Event, Terminal};
 
 pub type SessionId = u64;
+
+/// Most search matches returned at once.
+const MAX_MATCHES: usize = 10_000;
 
 /// Minimum time between two frames of one session: output within a frame is coalesced (docs/09 §3.2).
 const FRAME_INTERVAL: Duration = Duration::from_millis(16);
@@ -87,6 +91,11 @@ pub trait SessionManager: Send + Sync {
     /// Text between two (line, column) positions, inclusive. Line numbers are those of the frames
     /// (`otterm_vt::Terminal::line`).
     fn text(&self, id: SessionId, start: (u64, usize), end: (u64, usize)) -> Result<String>;
+    /// Find `query` in the scrollback and the screen, oldest first. An invalid regular expression
+    /// is an error meant for the user.
+    fn search(&self, id: SessionId, query: &str, opts: SearchOptions) -> Result<Vec<Match>>;
+    /// Scroll so that `line` is in view, if it is not already.
+    fn reveal(&self, id: SessionId, line: u64) -> Result<()>;
     /// Kill the process. [`SessionEvent::Exited`] follows.
     fn close(&self, id: SessionId) -> Result<()>;
 }
@@ -350,6 +359,33 @@ impl SessionManager for LocalSessionManager {
 
     fn text(&self, id: SessionId, start: (u64, usize), end: (u64, usize)) -> Result<String> {
         Ok(self.get(id)?.term.lock().unwrap().text_range(start, end))
+    }
+
+    fn search(&self, id: SessionId, query: &str, opts: SearchOptions) -> Result<Vec<Match>> {
+        let session = self.get(id)?;
+        if query.is_empty() {
+            return Ok(Vec::new());
+        }
+        let re = otterm_vt::search::compile(query, opts).map_err(|e| anyhow!(e))?;
+        let term = session.term.lock().unwrap();
+        Ok(otterm_vt::search::search(&term, &re, MAX_MATCHES))
+    }
+
+    fn reveal(&self, id: SessionId, line: u64) -> Result<()> {
+        let session = self.get(id)?;
+        let term = session.term.lock().unwrap();
+        let rows = term.rows() as u64;
+        let offset = session.view_offset(&term) as u64;
+        let top = term.screen_top() - offset;
+        if (top..top + rows).contains(&line) {
+            return Ok(());
+        }
+        // Put the line a third of the way down, so some context above it shows too.
+        let wanted = line.saturating_sub(rows / 3).clamp(term.history_base(), term.screen_top());
+        drop(term);
+        *session.view_top.lock().unwrap() = Some(wanted);
+        session.frame.notify(false);
+        Ok(())
     }
 
     fn close(&self, id: SessionId) -> Result<()> {

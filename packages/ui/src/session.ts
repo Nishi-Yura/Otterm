@@ -26,7 +26,17 @@ export interface Session {
   mouse(input: MouseInput): Promise<boolean>;
   /** Text between two cells (line numbers from the frames), inclusive. */
   text(startLine: number, startCol: number, endLine: number, endCol: number): Promise<string>;
+  /** Matches as [start line, start col, end line, end col], oldest first. Rejects on a bad regex. */
+  search(query: string, opts: SearchOptions): Promise<[number, number, number, number][]>;
+  /** Scroll so that a line is in view. */
+  reveal(line: number): Promise<void>;
   close(): Promise<void>;
+}
+
+export interface SearchOptions {
+  regex: boolean;
+  caseSensitive: boolean;
+  wholeWord: boolean;
 }
 
 export interface MouseInput {
@@ -58,6 +68,8 @@ export async function createSession(cols: number, rows: number, onEvent: (e: Ses
     mouse: (input) => invoke<boolean>("session_mouse", { id, input }),
     text: (startLine, startCol, endLine, endCol) =>
       invoke<string>("session_text", { id, startLine, startCol, endLine, endCol }),
+    search: (query, opts) => invoke("session_search", { id, query, ...opts }),
+    reveal: (line) => invoke("session_reveal", { id, line }),
     close: () => invoke("session_close", { id }),
   };
 }

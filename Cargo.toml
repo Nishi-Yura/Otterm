@@ -23,6 +23,7 @@ tungstenite = "0.30"
 getrandom = "0.4"
 unicode-width = "0.2"
 vte = "0.15"
+regex = "1"
 otterm-vt = { path = "crates/otterm-vt" }
 otterm-pty = { path = "crates/otterm-pty" }
 otterm-session = { path = "crates/otterm-session" }
