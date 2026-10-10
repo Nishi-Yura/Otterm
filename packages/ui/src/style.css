@@ -59,6 +59,15 @@ body,
   background: rgb(255 255 255 / 0.05);
 }
 
+/* The tab's program rang the bell while it was in the background. */
+.tab-bell {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f0c674;
+}
+
 .tab-title {
   flex: 1;
   overflow: hidden;
@@ -129,6 +138,15 @@ body,
   padding: 3px 0;
   height: 1px !important;
   cursor: row-resize;
+}
+
+/* Visual bell: a brief tint over the pane. */
+.terminal.flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(255 255 255 / 0.08);
+  pointer-events: none;
 }
 
 .terminal {

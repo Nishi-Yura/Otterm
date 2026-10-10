@@ -54,6 +54,8 @@ export function App() {
   /** Every pane of every tab, in creation order. Each keeps its object so its view stays mounted. */
   const [panes, setPanes] = createSignal<Pane[]>([]);
   const [titles, setTitles] = createSignal<Record<number, string>>({});
+  /** Tabs whose program rang the bell while they were in the background. */
+  const [rang, setRang] = createSignal<Set<number>>(new Set());
   const cwds = new Map<number, string>();
   const routes = new Map<number, (f: Frame) => void>();
   let area!: HTMLDivElement;
@@ -288,6 +290,12 @@ export function App() {
 
   const tabTitle = (tab: Tab) => titles()[tab.active] || t("tab-untitled");
 
+  // Looking at a tab clears its bell marker.
+  createEffect(() => {
+    const id = activeTab();
+    if (rang().has(id)) setRang(new Set([...rang()].filter((x) => x !== id)));
+  });
+
   // The window title follows the active tab.
   createEffect(() => {
     const tab = currentTab();
@@ -345,6 +353,7 @@ export function App() {
                 }
               }}
             >
+              {rang().has(tab.id) && <span class="tab-bell" aria-hidden="true" />}
               <span class="tab-title">{tabTitle(tab)}</span>
               <button
                 type="button"
@@ -390,6 +399,9 @@ export function App() {
                   onTitle={(title) => setTitles({ ...titles(), [p.id]: title })}
                   onCwd={(url) => cwds.set(p.id, url)}
                   onExit={() => closePane(p.id)}
+                  onBell={() => {
+                    if (p.tab !== activeTab()) setRang(new Set([...rang(), p.tab]));
+                  }}
                   onActivate={() => {
                     setActiveTab(p.tab);
                     activatePane(p.id);

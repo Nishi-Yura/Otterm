@@ -42,6 +42,8 @@ export interface TerminalViewProps {
   onTitle: (title: string) => void;
   onCwd: (url: string) => void;
   onExit: (code: number | null) => void;
+  /** The program rang the bell (BEL). */
+  onBell: () => void;
   /** The user clicked into this pane. */
   onActivate: () => void;
   /** Window-level shortcuts (tabs, panes). Returns true when it handled the key. */
@@ -61,6 +63,8 @@ export function TerminalView(props: TerminalViewProps) {
   const [searching, setSearching] = createSignal(false);
   const [menu, setMenu] = createSignal<{ x: number; y: number; items: MenuItem[] }>();
   const [prompt, setPrompt] = createSignal<PromptProps>();
+  const [flash, setFlash] = createSignal(false);
+  let lastBell = 0;
   /** The user chose "always allow" for OSC 52 in this pane. */
   let osc52Allowed = false;
   let host!: HTMLDivElement;
@@ -130,6 +134,7 @@ export function TerminalView(props: TerminalViewProps) {
           if (e.kind === "title") props.onTitle(e.title);
           if (e.kind === "cwd") props.onCwd(e.url);
           if (e.kind === "clipboard") clipboardRequest(e.data);
+          if (e.kind === "bell") bell();
           // A view that is gone (its pane was closed) has nothing left to report.
           if (e.kind === "exited" && !closed) {
             setStatus(t("process-exited", { code: e.code ?? "none" }));
@@ -283,6 +288,21 @@ export function TerminalView(props: TerminalViewProps) {
   const closePrompt = () => {
     setPrompt(undefined);
     input.focus();
+  };
+
+  /** BEL, as `terminal.bell` says: a short flash of the pane, a beep, or both. */
+  const bell = () => {
+    props.onBell();
+    const mode = props.config()?.bell ?? "visual";
+    // A program printing many BELs (cat of a binary file) should not strobe or buzz.
+    const now = performance.now();
+    if (mode === "none" || now - lastBell < 200) return;
+    lastBell = now;
+    if (mode === "visual" || mode === "both") {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 120);
+    }
+    if (mode === "sound" || mode === "both") beep();
   };
 
   /** Paste, asking first when the text has line breaks (decision B16): each line could run. */
@@ -522,7 +542,7 @@ export function TerminalView(props: TerminalViewProps) {
     <div
       ref={host}
       class="terminal"
-      classList={{ active: props.active() }}
+      classList={{ active: props.active(), flash: flash() }}
       role="application"
       aria-label={t("terminal-label")}
       onMouseDown={() => {
@@ -585,4 +605,19 @@ export function TerminalView(props: TerminalViewProps) {
 
 function sameLink(a: Link | undefined, b: Link | undefined): boolean {
   return a?.url === b?.url && a?.start.row === b?.start.row && a?.start.col === b?.start.col;
+}
+
+let audio: AudioContext | undefined;
+
+/** A short, quiet tone for the audible bell. */
+function beep(): void {
+  audio ??= new AudioContext();
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+  osc.frequency.value = 880;
+  gain.gain.setValueAtTime(0.06, audio.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.12);
+  osc.connect(gain).connect(audio.destination);
+  osc.start();
+  osc.stop(audio.currentTime + 0.12);
 }

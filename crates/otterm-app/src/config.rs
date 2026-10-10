@@ -6,7 +6,7 @@ use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, SystemTime};
 
 use otterm_config::{
-    AmbiguousWidth, Auto, Config, CursorStyle, Effective, Language, Permission, RightClick, Theme, Warning,
+    AmbiguousWidth, Auto, Bell, Config, CursorStyle, Effective, Language, Permission, RightClick, Theme, Warning,
 };
 use serde::Serialize;
 
@@ -46,6 +46,7 @@ pub struct UiConfig {
     pub right_click: RightClick,
     /// OSC 52 clipboard writes from applications (decision H2).
     pub osc52_clipboard: Permission,
+    pub bell: Bell,
     /// Keys that were ignored, to show once.
     pub warnings: Vec<UiWarning>,
     pub config_path: Option<String>,
@@ -124,6 +125,7 @@ impl ConfigState {
             confirm_multiline_paste: effective.confirm_multiline_paste,
             right_click: effective.right_click,
             osc52_clipboard: c.terminal.osc52_clipboard,
+            bell: c.terminal.bell,
             warnings,
             config_path: self.path.as_ref().map(|p| p.display().to_string()),
         }
