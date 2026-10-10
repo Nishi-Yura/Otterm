@@ -70,3 +70,24 @@ M0 で測る対象: Ghostty、WezTerm、Windows Terminal、Alacritty（それぞ
 | 1 行の往復 p50 / p99 | 0.09 / 0.30 ms | 0.10 / 0.36〜0.45 ms |
 
 スループットは約 3.2 倍。往復遅延は誤差の範囲で変わらない。
+
+### 4.4 IPC 転送の 3 OS 比較（2026-10-11、GitHub Actions、コミット `aa04566`）
+
+判断 M2 の材料。共有ランナーは GPU がなく揺れも大きいので、**同じ実行の中での Tauri と WebSocket の比較**にだけ使う。生データは Bench ワークフローの成果物（run 38079432192）。
+
+macOS ランナー（仮想マシン）は JS と Rust の時計のずれがラウンドごとに 0.15〜1.5 ms の幅で変わり、補正しても片道の値が負になる。そのため比較には**往復**（Rust 送信 → JS 受信 → Rust に応答が届くまで）を使う。応答の経路は Tauri が `invoke`、WebSocket が同じソケットで、行きと帰りの両方の速さを含む。
+
+往復 p50 / p99（ms）
+
+| 大きさ | macOS 14（M2 Pro、仮想） | Linux（Ubuntu、Xvfb） | Windows（Server 2022 系） |
+| --- | --- | --- | --- |
+| 64 B | Tauri 0.39 / 0.60 ・ WS 0.30 / 0.50 | Tauri 0.77 / 2.39 ・ WS 0.26 / 0.33 | Tauri 1.56 / 4.71 ・ WS 0.16 / 0.22 |
+| 2 KiB | Tauri 0.87 / 1.79 ・ WS 0.32 / 0.59 | Tauri 1.03 / 1.57 ・ WS 0.27 / 0.35 | Tauri 3.16 / 3.90 ・ WS 0.16 / 0.22 |
+| 96 KiB | Tauri 0.96 / 2.57 ・ WS 0.38 / 4.04 | Tauri 1.98 / 3.38 ・ WS 0.64 / 0.86 | Tauri 4.25 / 6.01 ・ WS 0.26 / 1.46 |
+| 1 MiB | Tauri 1.42 / 6.28 ・ WS 0.96 / 3.52 | Tauri 9.88 / 11.96 ・ WS 3.29 / 4.50 | Tauri 13.12 / 20.00 ・ WS 1.91 / 15.72 |
+
+所見:
+
+- p50 は 3 OS とも、すべての大きさで WebSocket が速い。差は Windows で最も大きく（96 KiB で 16 倍）、macOS で最も小さい（2.5 倍）
+- Tauri Channel が 96 KiB で往復 2 ms を切るのは macOS だけ。Linux と Windows では段 4 の予算を超える
+- p99 は共有ランナーの揺れが大きく（macOS の WS 96 KiB が 4 ms など）、ここからは結論を出さない。参照マシンで測り直す
