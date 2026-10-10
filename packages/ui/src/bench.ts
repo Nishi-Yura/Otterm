@@ -20,13 +20,12 @@ export async function runIpcBench(log: (line: string) => void): Promise<void> {
     const seq = new DataView(buf).getUint32(0, true);
     void invoke("bench_ipc_ack", { seq, receivedAt });
   };
-  log("ipc bench: Tauri raw channel…");
   const port = await invoke<number>("bench_ipc_start", { channel });
 
-  // Rust accepts the socket after the Tauri round; connecting early just waits in the backlog.
+  // Rust calibrates the clocks over this socket, then runs the Tauri round, then the WebSocket round.
   const ws = new WebSocket(`ws://127.0.0.1:${port}`);
   ws.binaryType = "arraybuffer";
-  ws.onopen = () => log("ipc bench: WebSocket…");
+  ws.onopen = () => log("ipc bench: running…");
   ws.onmessage = (e: MessageEvent<ArrayBuffer>) => {
     const receivedAt = now();
     const seq = new DataView(e.data).getUint32(0, true);

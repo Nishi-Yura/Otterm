@@ -25,7 +25,7 @@ Not yet possible, waiting for the VT grid and renderer (M1): `typing-latency`, `
 - The child process in the `pty` suite is `otterm-bench` itself (hidden modes `emit` and `pong`), so the suite needs no shell or coreutils.
 - On Windows, ConPTY holds all output until its cursor position query (`ESC[6n`) is answered; the bench answers it.
 - On Windows, ConPTY sends a line's text immediately but the following line end (a cursor move) about one frame (16 ms) later. `pty-roundtrip` waits for the text. Typing latency in M1 must decide which of the two counts as "drawn".
-- `ipc-transfer` one-way times use the wall clock on both sides (`SystemTime` in Rust, `performance.timeOrigin + performance.now()` in JS). WebView2 coarsens the JS clock to about 0.1 ms, so one-way values below that are noise.
+- `ipc-transfer` one-way times compare Rust's `SystemTime` with `performance.timeOrigin + performance.now()` in JS. The two clocks can differ by a millisecond or more (seen on macOS and Linux), so the bench first estimates the offset NTP-style over the WebSocket (shortest of 520 round trips, assumed symmetric) and subtracts it. `params.clock_offset_ms` and `params.clock_uncertainty_ms` record the estimate; one-way values smaller than the uncertainty are noise. WebViews also coarsen the JS clock to about 0.1 ms.
 - The `ipc` suite builds the app with `--features bench` into `target/bench/`, with a CSP that also allows `ws://127.0.0.1:*`. Normal builds keep the strict CSP and have no bench commands.
 
 ## Result format
