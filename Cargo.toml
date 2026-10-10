@@ -26,6 +26,7 @@ vte = "0.15"
 otterm-vt = { path = "crates/otterm-vt" }
 otterm-pty = { path = "crates/otterm-pty" }
 otterm-session = { path = "crates/otterm-session" }
+otterm-config = { path = "crates/otterm-config" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

@@ -1,5 +1,5 @@
 import { DEFAULT_ATTR, type ScreenModel } from "./model";
-import { Palette } from "./palette";
+import { Palette, type Theme } from "./palette";
 import { CursorShape, Flags } from "./protocol";
 import type { Selection } from "./selection";
 
@@ -8,12 +8,17 @@ export interface FontConfig {
   /** CSS pixels (decision I9). */
   size: number;
   lineHeight: number;
+  weight: number;
+  weightBold: number;
 }
 
+/** Used until the configuration arrives. */
 export const DEFAULT_FONT: FontConfig = {
   family: '"Cascadia Mono", "SF Mono", Menlo, "DejaVu Sans Mono", "BIZ UDGothic", "Noto Sans Mono CJK JP", monospace',
   size: 14,
-  lineHeight: 1.25,
+  lineHeight: 1.2,
+  weight: 400,
+  weightBold: 700,
 };
 
 /**
@@ -38,7 +43,7 @@ export class CanvasRenderer {
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly model: ScreenModel,
-    private readonly font: FontConfig = DEFAULT_FONT,
+    private font: FontConfig = DEFAULT_FONT,
   ) {
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) throw new Error("2D canvas is not available");
@@ -47,9 +52,25 @@ export class CanvasRenderer {
   }
 
   private fontFor(flags: number): string {
-    const weight = flags & Flags.BOLD ? "bold " : "";
+    const weight = flags & Flags.BOLD ? this.font.weightBold : this.font.weight;
     const style = flags & Flags.ITALIC ? "italic " : "";
-    return `${style}${weight}${this.font.size * this.dpr}px ${this.font.family}`;
+    return `${style}${weight} ${this.font.size * this.dpr}px ${this.font.family}`;
+  }
+
+  get currentFont(): FontConfig {
+    return this.font;
+  }
+
+  /** Change the font; the caller refits the grid since the cell size changes. */
+  setFont(font: FontConfig): void {
+    this.font = font;
+    this.measure();
+    this.invalidate();
+  }
+
+  setTheme(theme: Theme): void {
+    this.palette.setTheme(theme);
+    this.invalidate();
   }
 
   /** Recompute the cell size for the current font and display scale. */

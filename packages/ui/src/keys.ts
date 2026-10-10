@@ -37,6 +37,16 @@ export function isCopyShortcut(e: KeyboardEvent, hasSelection: boolean): boolean
   return platform === "windows" && e.ctrlKey && hasSelection;
 }
 
+/** Font size keys (docs/06 §5.2): Ctrl (Cmd on macOS) with `=` / `+` bigger, `-` smaller, `0` reset. */
+export function zoomKey(e: KeyboardEvent): 1 | -1 | 0 | undefined {
+  const mod = platform === "macos" ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
+  if (!mod || e.altKey) return undefined;
+  if (e.key === "=" || e.key === "+" || e.code === "NumpadAdd") return 1;
+  if ((e.key === "-" && !e.shiftKey) || e.code === "NumpadSubtract") return -1;
+  if (e.key === "0" && !e.shiftKey) return 0;
+  return undefined;
+}
+
 /** Scrollback keys: Shift+PageUp/PageDown by a page, Ctrl+Shift+Home/End to the top / bottom. */
 export function scrollKey(e: KeyboardEvent, rows: number): number | "top" | "bottom" | undefined {
   if (!e.shiftKey || e.altKey || e.metaKey) return undefined;

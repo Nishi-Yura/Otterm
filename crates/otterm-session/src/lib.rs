@@ -16,8 +16,8 @@ use anyhow::{Result, anyhow};
 use otterm_pty::{Pty, Spawned};
 pub use otterm_pty::{PtySize, SpawnOptions};
 use otterm_vt::diff::FrameState;
+pub use otterm_vt::{CursorShape, Key, Mouse, MouseAction, MouseButton};
 use otterm_vt::{Event, Terminal};
-pub use otterm_vt::{Key, Mouse, MouseAction, MouseButton};
 
 pub type SessionId = u64;
 
@@ -42,6 +42,24 @@ pub enum SessionEvent {
     Exited {
         code: Option<u32>,
     },
+}
+
+/// Settings for each new session's terminal.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TerminalOptions {
+    /// Scrollback lines kept.
+    pub scrollback: usize,
+    /// East Asian Ambiguous characters are two cells wide.
+    pub ambiguous_wide: bool,
+    /// Cursor style until an application sets one.
+    pub cursor_shape: CursorShape,
+    pub cursor_blink: bool,
+}
+
+impl Default for TerminalOptions {
+    fn default() -> Self {
+        Self { scrollback: 10_000, ambiguous_wide: false, cursor_shape: CursorShape::Block, cursor_blink: true }
+    }
 }
 
 /// Receives a session's events. Called from background threads.
@@ -154,6 +172,7 @@ pub struct LocalSessionManager {
     sessions: Arc<Mutex<HashMap<SessionId, Arc<Session>>>>,
     next_id: AtomicU64,
     mode: Mode,
+    options: Mutex<TerminalOptions>,
 }
 
 impl Default for LocalSessionManager {
@@ -165,12 +184,22 @@ impl Default for LocalSessionManager {
 impl LocalSessionManager {
     /// Sessions that parse their output and send [`SessionEvent::Frame`]s.
     pub fn new() -> Self {
-        Self { sessions: Arc::default(), next_id: AtomicU64::new(0), mode: Mode::Screen }
+        Self {
+            sessions: Arc::default(),
+            next_id: AtomicU64::new(0),
+            mode: Mode::Screen,
+            options: Mutex::new(TerminalOptions::default()),
+        }
     }
 
     /// Sessions that send raw [`SessionEvent::Output`] instead of frames.
     pub fn raw() -> Self {
         Self { mode: Mode::Raw, ..Self::new() }
+    }
+
+    /// Settings for sessions created from now on.
+    pub fn set_terminal_options(&self, options: TerminalOptions) {
+        *self.options.lock().unwrap() = options;
     }
 
     fn get(&self, id: SessionId) -> Result<Arc<Session>> {
@@ -189,9 +218,14 @@ impl SessionManager for LocalSessionManager {
         opts.session_id = id.to_string();
         let size = opts.size;
         let Spawned { pty, mut reader, child } = Pty::spawn(opts)?;
+        let options = *self.options.lock().unwrap();
+        let mut term = Terminal::new(size.cols as usize, size.rows as usize);
+        term.set_scrollback_limit(options.scrollback);
+        term.set_ambiguous_wide(options.ambiguous_wide);
+        term.set_default_cursor(options.cursor_shape, options.cursor_blink);
         let session = Arc::new(Session {
             pty: Mutex::new(Some(pty)),
-            term: Mutex::new(Terminal::new(size.cols as usize, size.rows as usize)),
+            term: Mutex::new(term),
             view_top: Mutex::new(None),
             frame: FrameSignal::default(),
         });

@@ -1,0 +1,11 @@
+[theme]
+name = "One Dark"
+appearance = "dark"
+
+[theme.terminal]
+foreground = "#abb2bf"
+background = "#282c34"
+cursor = "#528bff"
+selection = "#3e4451"
+ansi = ["#282c34", "#e06c75", "#98c379", "#e5c07b", "#61afef", "#c678dd", "#56b6c2", "#abb2bf"]
+bright = ["#5c6370", "#e06c75", "#98c379", "#e5c07b", "#61afef", "#c678dd", "#56b6c2", "#ffffff"]

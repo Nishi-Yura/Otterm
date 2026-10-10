@@ -48,10 +48,34 @@ function xtermColor(i: number): string {
   return `#${hex(g)}${hex(g)}${hex(g)}`;
 }
 
-export class Palette {
-  private readonly table: string[];
+/** A theme from the configuration (`theme.terminal` in docs/04 §2.1). */
+export function themeFromConfig(t: {
+  foreground: string;
+  background: string;
+  cursor: string;
+  selection: string;
+  ansi: string[];
+  bright: string[];
+}): Theme {
+  return {
+    foreground: t.foreground,
+    background: t.background,
+    cursor: t.cursor,
+    selection: t.selection,
+    ansi: [...t.ansi, ...t.bright],
+  };
+}
 
-  constructor(readonly theme: Theme = DEFAULT_THEME) {
+export class Palette {
+  private table: string[] = [];
+  theme: Theme = DEFAULT_THEME;
+
+  constructor(theme: Theme = DEFAULT_THEME) {
+    this.setTheme(theme);
+  }
+
+  setTheme(theme: Theme): void {
+    this.theme = theme;
     this.table = [...theme.ansi];
     for (let i = 16; i < 256; i++) this.table.push(xtermColor(i));
   }

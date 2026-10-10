@@ -1,0 +1,11 @@
+[theme]
+name = "High Contrast"
+appearance = "dark"
+
+[theme.terminal]
+foreground = "#ffffff"
+background = "#000000"
+cursor = "#ffff00"
+selection = "#1d4ed8"
+ansi = ["#000000", "#ff4d4d", "#4dff4d", "#ffff4d", "#4da6ff", "#ff4dff", "#4dffff", "#e6e6e6"]
+bright = ["#808080", "#ff8080", "#80ff80", "#ffff80", "#80c0ff", "#ff80ff", "#80ffff", "#ffffff"]

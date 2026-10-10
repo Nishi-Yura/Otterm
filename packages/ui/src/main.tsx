@@ -1,16 +1,20 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
 import { render } from "solid-js/web";
 import { benchMode, runIpcBench } from "./bench";
-import { isCopyShortcut, scrollKey, terminalKey } from "./keys";
+import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
+import { isCopyShortcut, scrollKey, terminalKey, zoomKey } from "./keys";
 import { attachPointer } from "./pointer";
-import { CanvasRenderer, DEFAULT_FONT } from "./screen/canvasRenderer";
+import { CanvasRenderer, DEFAULT_FONT, type FontConfig } from "./screen/canvasRenderer";
 import { ScreenModel } from "./screen/model";
+import { themeFromConfig } from "./screen/palette";
 import { Selection } from "./screen/selection";
 import { connectScreen, createSession, SCROLL_BOTTOM, SCROLL_TOP, type Session } from "./session";
 import "./style.css";
 
 /** PTY resizes are debounced (docs/03 §1.2). */
 const RESIZE_DEBOUNCE_MS = 16;
+/** How long a notice (such as ignored config keys) stays up. */
+const NOTICE_MS = 10_000;
 
 function Terminal() {
   const [status, setStatus] = createSignal<string>();
@@ -19,6 +23,8 @@ function Terminal() {
   const [anchor, setAnchor] = createSignal({ x: 0, y: 0, height: 0 });
   /** Scrollbar thumb as fractions of the view height; shown while the view is scrolled up. */
   const [thumb, setThumb] = createSignal<{ top: number; height: number }>();
+  const [font, setFont] = createSignal<FontConfig>(DEFAULT_FONT);
+  const [notice, setNotice] = createSignal<string>();
   let host!: HTMLDivElement;
   let viewport!: HTMLDivElement;
   let canvas!: HTMLCanvasElement;
@@ -28,6 +34,14 @@ function Terminal() {
   let observer: ResizeObserver | undefined;
   let detachPointer: (() => void) | undefined;
   let renderer: CanvasRenderer | undefined;
+  let unlistenConfig: (() => void) | undefined;
+  /** Fit the grid to the window again (after a resize or a font change). */
+  let refit: (() => void) | undefined;
+  /** The configured font; `zoom` is added to its size by the font size keys. */
+  let baseFont: FontConfig = DEFAULT_FONT;
+  let zoom = 0;
+  let copyOnSelect = false;
+  let noticeTimer: ReturnType<typeof setTimeout> | undefined;
   const model = new ScreenModel();
   const selection = new Selection();
   // Dev builds expose the screen for automated checks (screen text, cursor).
@@ -44,6 +58,28 @@ function Terminal() {
     renderer = r;
     r.selection = selection;
     const fit = () => r.gridSize(viewport.clientWidth, viewport.clientHeight);
+
+    const applyConfig = (c: UiConfig) => {
+      applyThemeCss(c.theme);
+      r.setTheme(themeFromConfig(c.theme.terminal));
+      baseFont = c.font;
+      applyFont();
+      selection.setWordSeparators(c.wordSeparators);
+      copyOnSelect = c.copyOnSelect;
+      if (c.warnings.length > 0) {
+        const keys = c.warnings.map((w) => (w.key ? `${w.key}: ${w.message}` : w.message)).join("; ");
+        showNotice(`config.toml: ignored ${keys}`);
+      }
+    };
+    try {
+      applyConfig(await loadConfig());
+      unlistenConfig = await onConfigChanged((c) => {
+        applyConfig(c);
+        refit?.();
+      });
+    } catch (e) {
+      showNotice(`could not read the configuration: ${String(e)}`);
+    }
 
     try {
       ws = await connectScreen((frame) => {
@@ -66,22 +102,22 @@ function Terminal() {
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     let last = fit();
+    refit = () => {
+      // The display scale may have changed (window moved to another monitor).
+      r.measure();
+      const next = fit();
+      if (next.cols !== last.cols || next.rows !== last.rows) {
+        last = next;
+        // Reflow renumbers lines; a selection would point at other text.
+        clearSelection();
+        void session?.resize(next.cols, next.rows);
+      } else {
+        r.invalidate();
+      }
+    };
     observer = new ResizeObserver(() => {
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        // The display scale may have changed (window moved to another monitor).
-        r.measure();
-        const next = fit();
-        if (next.cols !== last.cols || next.rows !== last.rows) {
-          last = next;
-          // Reflow renumbers lines; a selection would point at other text.
-          clearSelection();
-          void session?.resize(next.cols, next.rows);
-        } else {
-          for (let r = 0; r < model.rows; r++) model.dirty.add(r);
-          r.schedule();
-        }
-      }, RESIZE_DEBOUNCE_MS);
+      timer = setTimeout(() => refit?.(), RESIZE_DEBOUNCE_MS);
     });
     observer.observe(viewport);
 
@@ -93,7 +129,16 @@ function Terminal() {
     input.addEventListener("focus", onFocus(true));
     input.addEventListener("blur", onFocus(false));
     r.onDraw = () => placeInput(r.cursorRect());
-    detachPointer = attachPointer({ canvas, renderer: r, model, selection, session: () => session });
+    detachPointer = attachPointer({
+      canvas,
+      renderer: r,
+      model,
+      selection,
+      session: () => session,
+      onSelect: () => {
+        if (copyOnSelect) void copySelection();
+      },
+    });
     input.focus();
   });
 
@@ -101,6 +146,8 @@ function Terminal() {
   onCleanup(() => {
     observer?.disconnect();
     detachPointer?.();
+    unlistenConfig?.();
+    clearTimeout(noticeTimer);
     void session?.close();
     ws?.close();
   });
@@ -110,6 +157,18 @@ function Terminal() {
     input.style.transform = `translate(${r.x}px, ${r.y}px)`;
     input.style.height = `${r.height}px`;
     setAnchor(r);
+  };
+
+  const showNotice = (text: string) => {
+    setNotice(text);
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => setNotice(undefined), NOTICE_MS);
+  };
+
+  const applyFont = () => {
+    const size = Math.min(72, Math.max(6, baseFont.size + zoom));
+    renderer?.setFont({ ...baseFont, size });
+    setFont(renderer?.currentFont ?? baseFont);
   };
 
   const updateThumb = () => {
@@ -144,6 +203,14 @@ function Terminal() {
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (!session) return;
+    const z = zoomKey(e);
+    if (z !== undefined) {
+      e.preventDefault();
+      zoom = z === 0 ? 0 : zoom + z;
+      applyFont();
+      refit?.();
+      return;
+    }
     const hasSelection = selection.active && !selection.empty;
     if (isCopyShortcut(e, hasSelection)) {
       e.preventDefault();
@@ -215,8 +282,8 @@ function Terminal() {
             style={{
               transform: `translate(${anchor().x}px, ${anchor().y}px)`,
               "line-height": `${anchor().height}px`,
-              "font-family": DEFAULT_FONT.family,
-              "font-size": `${DEFAULT_FONT.size}px`,
+              "font-family": font().family,
+              "font-size": `${font().size}px`,
             }}
           >
             {preedit()}
@@ -230,6 +297,11 @@ function Terminal() {
         />
       )}
       {status() && <div class="status">{status()}</div>}
+      {notice() && (
+        <div class="notice" role="status">
+          {notice()}
+        </div>
+      )}
     </div>
   );
 }

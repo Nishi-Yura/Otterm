@@ -1,0 +1,11 @@
+[theme]
+name = "otterm Light"
+appearance = "light"
+
+[theme.terminal]
+foreground = "#2b2f36"
+background = "#fafafa"
+cursor = "#3a6ea5"
+selection = "#cfe0f5"
+ansi = ["#2b2f36", "#c4373d", "#2f8a3a", "#9a6700", "#2f6fc4", "#9c3fb5", "#1b7f8a", "#d0d4da"]
+bright = ["#6b7280", "#d9464c", "#3aa148", "#b88100", "#3f82d9", "#b04fc9", "#26a0ad", "#ffffff"]

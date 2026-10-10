@@ -1,0 +1,11 @@
+[theme]
+name = "otterm Dark"
+appearance = "dark"
+
+[theme.terminal]
+foreground = "#d8dee9"
+background = "#1b1d23"
+cursor = "#88c0d0"
+selection = "#3d4b63"
+ansi = ["#2e3440", "#e06c75", "#98c379", "#e5c07b", "#61afef", "#c678dd", "#56b6c2", "#d8dee9"]
+bright = ["#5c6370", "#ef8891", "#a8d68a", "#f0d08a", "#7cc0ff", "#d690ea", "#6fcbd6", "#ffffff"]

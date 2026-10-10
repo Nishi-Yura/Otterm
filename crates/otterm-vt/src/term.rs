@@ -151,6 +151,8 @@ pub struct Terminal {
     active_charset: usize,
     /// Treat East Asian Ambiguous characters as wide (docs/03 §2.2).
     ambiguous_wide: bool,
+    /// The user's cursor style, restored by DECSCUSR 0 and RIS.
+    default_cursor: (CursorShape, bool),
     /// Last printed character, for REP.
     last_char: Option<char>,
     dirty: Vec<bool>,
@@ -184,6 +186,7 @@ impl Terminal {
             charsets: [Charset::Ascii; 2],
             active_charset: 0,
             ambiguous_wide: false,
+            default_cursor: (CursorShape::Block, true),
             last_char: None,
             dirty: vec![true; rows],
             full_damage: true,
@@ -289,6 +292,14 @@ impl Terminal {
 
     pub fn set_ambiguous_wide(&mut self, wide: bool) {
         self.ambiguous_wide = wide;
+    }
+
+    /// The cursor style used until an application asks for another (and after it asks for the
+    /// default with DECSCUSR 0).
+    pub fn set_default_cursor(&mut self, shape: CursorShape, blink: bool) {
+        self.default_cursor = (shape, blink);
+        self.modes.cursor_shape = shape;
+        self.modes.cursor_blink = blink;
     }
 
     /// Bytes the terminal must send back to the application (DSR, DA, …). Write them to the PTY.
@@ -686,7 +697,9 @@ impl Terminal {
         let limit = self.scrollback_limit;
         let ambiguous = self.ambiguous_wide;
         let base = self.history_base + self.scrollback.len() as u64;
+        let (shape, blink) = self.default_cursor;
         *self = Terminal::new(cols, rows);
+        self.set_default_cursor(shape, blink);
         self.history_base = base;
         self.scrollback_limit = limit;
         self.ambiguous_wide = ambiguous;
@@ -1126,7 +1139,8 @@ impl Perform for Terminal {
             ('u', []) => self.restore_cursor(),
             ('q', [b' ']) => {
                 let (shape, blink) = match arg(params, 0, 0) {
-                    0 | 1 => (CursorShape::Block, true),
+                    0 => self.default_cursor,
+                    1 => (CursorShape::Block, true),
                     2 => (CursorShape::Block, false),
                     3 => (CursorShape::Underline, true),
                     4 => (CursorShape::Underline, false),

@@ -16,6 +16,8 @@ path = "src/main.rs"
 tauri-build.workspace = true
 
 [dependencies]
+fontdb = "0.24"
+otterm-config.workspace = true
 getrandom.workspace = true
 otterm-session.workspace = true
 serde.workspace = true

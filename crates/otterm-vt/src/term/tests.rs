@@ -322,6 +322,19 @@ fn rows_are_fully_cleared_after_scrolling_any_content() {
 }
 
 #[test]
+fn decscusr_zero_restores_the_configured_cursor() {
+    let mut t = Terminal::new(10, 2);
+    t.set_default_cursor(CursorShape::Bar, false);
+    assert_eq!(t.modes().cursor_shape, CursorShape::Bar);
+    t.advance(b"\x1b[2 q");
+    assert_eq!((t.modes().cursor_shape, t.modes().cursor_blink), (CursorShape::Block, false));
+    t.advance(b"\x1b[0 q");
+    assert_eq!((t.modes().cursor_shape, t.modes().cursor_blink), (CursorShape::Bar, false));
+    t.advance(b"\x1b[2 q\x1bc");
+    assert_eq!(t.modes().cursor_shape, CursorShape::Bar, "RIS keeps the configured style");
+}
+
+#[test]
 fn lines_keep_their_number_when_they_scroll_into_history() {
     let mut t = Terminal::new(10, 2);
     t.set_scrollback_limit(2);

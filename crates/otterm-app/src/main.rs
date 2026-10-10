@@ -5,6 +5,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod config;
 mod screen;
 
 use otterm_session::{
@@ -15,11 +16,13 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 use tauri::ipc::Channel;
 
+use crate::config::{ConfigState, UiConfig};
 use crate::screen::ScreenServer;
 
 struct AppState {
-    sessions: Box<dyn SessionManager>,
+    sessions: Box<LocalSessionManager>,
     screen: std::sync::Arc<ScreenServer>,
+    config: &'static ConfigState,
 }
 
 type CmdResult<T = ()> = Result<T, String>;
@@ -51,10 +54,25 @@ fn screen_endpoint(state: State<'_, AppState>) -> ScreenEndpoint {
     ScreenEndpoint { port: state.screen.port(), token: state.screen.token().to_owned() }
 }
 
-/// Start a shell. Frames go to the screen socket; everything else to `events`.
+/// The configuration as the UI uses it. Changes arrive later as `config-changed` events.
+#[tauri::command]
+fn config_get(state: State<'_, AppState>) -> UiConfig {
+    state.config.ui()
+}
+
+/// Start a shell (the default profile, if one is set). Frames go to the screen socket; everything
+/// else to `events`.
 #[tauri::command]
 fn session_create(state: State<'_, AppState>, cols: u16, rows: u16, events: Channel<UiEvent>) -> CmdResult<SessionId> {
-    let opts = SpawnOptions { size: PtySize { cols, rows }, ..Default::default() };
+    let config = state.config.config();
+    state.sessions.set_terminal_options(config::terminal_options(&config));
+    let mut opts = SpawnOptions { size: PtySize { cols, rows }, ..Default::default() };
+    if let Some(p) = config::default_profile(&config) {
+        opts.program = Some(p.command.clone());
+        opts.args = p.args.clone();
+        opts.cwd = p.cwd.as_deref().filter(|c| !c.is_empty()).map(expand_home);
+        opts.env = p.env.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+    }
     let screen = std::sync::Arc::clone(&state.screen);
     state
         .sessions
@@ -177,19 +195,46 @@ fn session_close(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.close(id).map_err(err)
 }
 
+/// `~` at the start of a profile's directory is the home directory.
+fn expand_home(path: &str) -> std::path::PathBuf {
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" });
+    match (path.strip_prefix('~'), home) {
+        (Some(rest), Some(home)) => std::path::PathBuf::from(home).join(rest.trim_start_matches(['/', '\\'])),
+        _ => path.into(),
+    }
+}
+
 fn app_state() -> AppState {
+    config::warm_up();
     AppState {
         sessions: Box::new(LocalSessionManager::new()),
         screen: std::sync::Arc::new(ScreenServer::start().expect("start the screen socket")),
+        // Lives as long as the app; the watcher thread holds it.
+        config: Box::leak(Box::new(ConfigState::load())),
     }
+}
+
+/// Tell the UI when `config.toml` changes.
+fn watch_config(app: &tauri::App) {
+    use tauri::{Emitter, Manager};
+    let handle = app.handle().clone();
+    let config = app.state::<AppState>().config;
+    ConfigState::watch(config, move |ui| {
+        let _ = handle.emit("config-changed", ui);
+    });
 }
 
 #[cfg(not(feature = "bench"))]
 fn main() {
     tauri::Builder::default()
         .manage(app_state())
+        .setup(|app| {
+            watch_config(app);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             screen_endpoint,
+            config_get,
             session_create,
             session_write,
             session_key,
@@ -213,8 +258,13 @@ fn main() {
     tauri::Builder::default()
         .manage(app_state())
         .manage(bench::BenchState::default())
+        .setup(|app| {
+            watch_config(app);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             screen_endpoint,
+            config_get,
             session_create,
             session_write,
             session_key,

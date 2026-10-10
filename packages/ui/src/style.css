@@ -76,6 +76,22 @@ body,
   pointer-events: none;
 }
 
+/* One-off messages such as ignored configuration keys. */
+.notice {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  max-width: min(560px, calc(100% - 24px));
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.75);
+  color: #f0c674;
+  font:
+    12px system-ui,
+    sans-serif;
+  pointer-events: none;
+}
+
 .status {
   position: absolute;
   right: 12px;
