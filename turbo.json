@@ -1,6 +1,7 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "agentGuidance": false,
+  "globalPassThroughEnv": ["GITHUB_STEP_SUMMARY"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

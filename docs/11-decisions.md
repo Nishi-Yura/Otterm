@@ -721,7 +721,8 @@ A〜H を決定した後に見つかった事項。同日に推奨どおり決�
 ### M3. Windows の ConPTY のスループット
 - 経緯: OS 同梱の ConPTY（conhost）経由だと 8.5 MiB/s しか出ない（[bench/baseline.md](bench/baseline.md) §4.1）。09 の目標「大量出力で Windows Terminal を下回らない」を満たせない。Windows Terminal と WezTerm は Microsoft が MIT で配布している新しい `conpty.dll` と `OpenConsole.exe` を同梱している。portable-pty は実行ファイルと同じフォルダにこの 2 つがあれば自動で使う
 - 選択肢: OS 同梱の ConPTY のまま / **`conpty.dll` と `OpenConsole.exe` を同梱**（NuGet の Microsoft.Windows.Console.ConPTY から取得）
-- 推奨: **同梱**。インストーラに 2 ファイル（数 MB）が増える。採用前に、同梱版でスループットが何倍になるかをこのベンチで確かめる
+- 推奨: **同梱**。インストーラに 2 ファイル（数 MB）が増える
+- 検証（2026-10-11）: 同梱版 1.25.260930003 でスループットが 9.0 → 29 MiB/s（約 3.2 倍）、往復遅延は変わらず（[bench/baseline.md](bench/baseline.md) §4.3）。Windows Terminal との比較は参照マシンで行う
 - 影響: 02 §1.2、A9（インストーラ）、09
 - 時期: M1
 

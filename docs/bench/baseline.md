@@ -56,6 +56,17 @@ M0 で測る対象: Ghostty、WezTerm、Windows Terminal、Alacritty（それぞ
 ### 4.2 所見
 
 1. **段 4（転送）の予算 1〜2 ms を、Tauri の生ペイロード Channel は全画面の差分で超える**。p50 で 2.6 ms、p99 で 5〜9 ms。1 セルの差分なら p99 1.2 ms で収まる。WebSocket は全画面でも p99 0.34 ms で、10 倍以上速い → 判断 M2
-2. **Windows の ConPTY が 8.5 MiB/s しか流さない**。パイプへ直接書くと 100 MiB が 0.05 秒で終わるので、律速は OS 同梱の conhost。Windows Terminal と WezTerm は新しい `OpenConsole.exe` と `conpty.dll` を同梱して回避している → 判断 M3
+2. **Windows の ConPTY が 8.5 MiB/s しか流さない**。パイプへ直接書くと 100 MiB が 0.05 秒で終わるので、律速は OS 同梱の conhost。Windows Terminal と WezTerm は新しい `OpenConsole.exe` と `conpty.dll` を同梱して回避している → 判断 M3。同梱版で測った結果は §4.3
 3. ConPTY は行の本文をすぐ送るが、続く改行（カーソル移動）を約 1 フレーム遅れて送る。M1 の打鍵遅延で「描画された」をどちらで判定するかに効く
 4. 打鍵遅延、起動時間、レンダラ判定（09 §4.4）は VT グリッドとレンダラ（M1）ができるまで測れない。M0 の完了条件のうち「レンダラ判定の文書化」は、M1 の最初のベンチに持ち越す
+
+### 4.3 同梱版 ConPTY との比較（2026-10-11、開発機、Windows）
+
+判断 M3 の検証。NuGet の Microsoft.Windows.Console.ConPTY 1.25.260930003（MIT、Microsoft の署名を確認）から x64 の `conpty.dll` と `OpenConsole.exe` を取り出し、`otterm-bench.exe` と同じフォルダに置いて測った。portable-pty はこの配置で同梱版を使う（実行中に `OpenConsole.exe` が子プロセスとして動くことを確認）。
+
+| 指標 | OS 同梱（conhost） | 同梱版（OpenConsole） |
+| --- | --- | --- |
+| スループット（100 MiB × 3 回の中央値） | 9.0 MiB/s | 28.4〜29.2 MiB/s（200 MiB で 31.8） |
+| 1 行の往復 p50 / p99 | 0.09 / 0.30 ms | 0.10 / 0.36〜0.45 ms |
+
+スループットは約 3.2 倍。往復遅延は誤差の範囲で変わらない。

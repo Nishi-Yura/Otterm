@@ -93,3 +93,16 @@ for (const r of results) {
   for (const [k, m] of Object.entries(r.metrics))
     console.log(`${r.bench.padEnd(15)} ${k.padEnd(36)} ${m.value} ${m.unit}`);
 }
+
+// In GitHub Actions, also show the numbers on the run's summary page.
+if (process.env.GITHUB_STEP_SUMMARY) {
+  const lines = [
+    `### Bench: ${report.platform} (${report.machine.cpu})`,
+    "",
+    "| bench | metric | value |",
+    "| --- | --- | --- |",
+  ];
+  for (const r of results)
+    for (const [k, m] of Object.entries(r.metrics)) lines.push(`| ${r.bench} | ${k} | ${m.value} ${m.unit} |`);
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join("\n")}\n\n`);
+}
