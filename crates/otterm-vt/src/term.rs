@@ -252,6 +252,11 @@ impl Terminal {
         damage
     }
 
+    /// Redraw everything in the next frame.
+    pub fn mark_full_damage(&mut self) {
+        self.full_damage = true;
+    }
+
     /// Visible text, one string per row, trailing blanks removed. For tests and accessibility.
     pub fn screen_text(&self) -> Vec<String> {
         self.screen().iter().map(Row::text).collect()

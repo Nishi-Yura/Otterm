@@ -4,7 +4,7 @@
 //! The rare combining characters of a grapheme cluster live beside the cells in [`Row`].
 
 /// A color as the application asked for it. Resolving to RGB is the renderer's job (themes).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum Color {
     #[default]
     Default,
@@ -37,7 +37,7 @@ pub mod flags {
 }
 
 /// The "pen": what newly printed characters look like.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct Attrs {
     pub fg: Color,
     pub bg: Color,

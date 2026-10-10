@@ -20,6 +20,7 @@ portable-pty = "0.9"
 tauri = "2"
 tauri-build = "2"
 tungstenite = "0.30"
+getrandom = "0.4"
 unicode-width = "0.2"
 vte = "0.15"
 otterm-vt = { path = "crates/otterm-vt" }

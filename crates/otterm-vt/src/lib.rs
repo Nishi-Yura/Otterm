@@ -5,6 +5,7 @@
 //! the PTY) and events after each call.
 
 mod cell;
+pub mod diff;
 mod term;
 
 pub use cell::{Attrs, Cell, Color, Row, flags};

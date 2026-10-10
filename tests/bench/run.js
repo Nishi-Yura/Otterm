@@ -48,13 +48,11 @@ if (suites.includes("pty")) {
 }
 
 if (suites.includes("ipc")) {
-  // A separate target dir keeps the bench build (with a WebSocket-friendly CSP) apart from normal builds.
+  // A separate target dir keeps the bench build (with the bench commands) apart from normal builds.
   const targetDir = path.join(root, "target", "bench");
-  const csp =
-    "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost ws://127.0.0.1:*; style-src 'self' 'unsafe-inline'";
   run("pnpm", ["--filter", "@otterm/ui", "build"]);
   run("cargo", ["build", "--release", "-p", "otterm-app", "--features", "bench"], {
-    env: { ...process.env, CARGO_TARGET_DIR: targetDir, TAURI_CONFIG: JSON.stringify({ app: { security: { csp } } }) },
+    env: { ...process.env, CARGO_TARGET_DIR: targetDir },
   });
   const out = path.join(tmp, "ipc.json");
   console.error("$ otterm (OTTERM_BENCH=ipc)");

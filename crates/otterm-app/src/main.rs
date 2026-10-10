@@ -1,13 +1,22 @@
-//! The otterm desktop app. M0: one window, one shell, raw output (docs/07-roadmap.md M0).
+//! The otterm desktop app.
+//!
+//! Screen frames go to the WebView over the local WebSocket in [`screen`] (decision M2); commands,
+//! input and the other session events use Tauri IPC.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod screen;
+
 use otterm_session::{LocalSessionManager, PtySize, SessionEvent, SessionId, SessionManager, SpawnOptions};
+use serde::Serialize;
 use tauri::State;
-use tauri::ipc::{Channel, InvokeResponseBody};
+use tauri::ipc::Channel;
+
+use crate::screen::ScreenServer;
 
 struct AppState {
     sessions: Box<dyn SessionManager>,
+    screen: std::sync::Arc<ScreenServer>,
 }
 
 type CmdResult<T = ()> = Result<T, String>;
@@ -16,16 +25,34 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
-/// Start a shell. Output goes to `output` as raw bytes (decision C13); `exit` fires once at the end.
+/// Session events other than frames, for the UI.
+#[derive(Clone, Serialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+enum UiEvent {
+    Title { title: String },
+    Bell,
+    Cwd { url: String },
+    Clipboard { data: String },
+    Exited { code: Option<u32> },
+}
+
+#[derive(Serialize)]
+struct ScreenEndpoint {
+    port: u16,
+    token: String,
+}
+
+/// Where the UI connects for screen frames.
 #[tauri::command]
-fn session_create(
-    state: State<'_, AppState>,
-    cols: u16,
-    rows: u16,
-    output: Channel<InvokeResponseBody>,
-    exit: Channel<Option<u32>>,
-) -> CmdResult<SessionId> {
+fn screen_endpoint(state: State<'_, AppState>) -> ScreenEndpoint {
+    ScreenEndpoint { port: state.screen.port(), token: state.screen.token().to_owned() }
+}
+
+/// Start a shell. Frames go to the screen socket; everything else to `events`.
+#[tauri::command]
+fn session_create(state: State<'_, AppState>, cols: u16, rows: u16, events: Channel<UiEvent>) -> CmdResult<SessionId> {
     let opts = SpawnOptions { size: PtySize { cols, rows }, ..Default::default() };
+    let screen = std::sync::Arc::clone(&state.screen);
     state
         .sessions
         .create(
@@ -33,8 +60,16 @@ fn session_create(
             Box::new(move |ev| {
                 // A failed send means the window is gone; the session ends with the app.
                 let _ = match ev {
-                    SessionEvent::Output(bytes) => output.send(InvokeResponseBody::Raw(bytes)),
-                    SessionEvent::Exited { code } => exit.send(code),
+                    SessionEvent::Frame(frame) => {
+                        screen.broadcast(frame);
+                        Ok(())
+                    }
+                    SessionEvent::Title(title) => events.send(UiEvent::Title { title }),
+                    SessionEvent::Bell => events.send(UiEvent::Bell),
+                    SessionEvent::Cwd(url) => events.send(UiEvent::Cwd { url }),
+                    SessionEvent::ClipboardWrite(data) => events.send(UiEvent::Clipboard { data }),
+                    SessionEvent::Exited { code } => events.send(UiEvent::Exited { code }),
+                    SessionEvent::Output(_) => Ok(()),
                 };
             }),
         )
@@ -52,15 +87,34 @@ fn session_resize(state: State<'_, AppState>, id: SessionId, cols: u16, rows: u1
 }
 
 #[tauri::command]
+fn session_redraw(state: State<'_, AppState>, id: SessionId) -> CmdResult {
+    state.sessions.redraw(id).map_err(err)
+}
+
+#[tauri::command]
 fn session_close(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.close(id).map_err(err)
+}
+
+fn app_state() -> AppState {
+    AppState {
+        sessions: Box::new(LocalSessionManager::new()),
+        screen: std::sync::Arc::new(ScreenServer::start().expect("start the screen socket")),
+    }
 }
 
 #[cfg(not(feature = "bench"))]
 fn main() {
     tauri::Builder::default()
-        .manage(AppState { sessions: Box::new(LocalSessionManager::new()) })
-        .invoke_handler(tauri::generate_handler![session_create, session_write, session_resize, session_close])
+        .manage(app_state())
+        .invoke_handler(tauri::generate_handler![
+            screen_endpoint,
+            session_create,
+            session_write,
+            session_resize,
+            session_redraw,
+            session_close,
+        ])
         .run(tauri::generate_context!())
         .expect("failed to run otterm");
 }
@@ -71,12 +125,14 @@ mod bench;
 #[cfg(feature = "bench")]
 fn main() {
     tauri::Builder::default()
-        .manage(AppState { sessions: Box::new(LocalSessionManager::new()) })
+        .manage(app_state())
         .manage(bench::BenchState::default())
         .invoke_handler(tauri::generate_handler![
+            screen_endpoint,
             session_create,
             session_write,
             session_resize,
+            session_redraw,
             session_close,
             bench::bench_mode,
             bench::bench_ipc_start,

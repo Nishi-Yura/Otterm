@@ -2,7 +2,6 @@
   --bg: #1b1d23;
   --fg: #d8dee9;
   --muted: #7b8394;
-  --cursor: #88c0d0;
   color-scheme: dark;
 }
 
@@ -11,37 +10,37 @@ body,
 #root {
   margin: 0;
   height: 100%;
+  overflow: hidden;
   background: var(--bg);
 }
 
-.screen {
+.terminal {
+  position: relative;
   box-sizing: border-box;
   height: 100%;
-  margin: 0;
-  padding: 8px 10px;
-  overflow-y: auto;
-  color: var(--fg);
-  font:
-    14px / 1.35 "Cascadia Mono",
-    "SF Mono",
-    Menlo,
-    "DejaVu Sans Mono",
-    monospace;
-  white-space: pre-wrap;
-  word-break: break-all;
+  padding: 6px 8px;
   outline: none;
 }
 
-.cursor {
-  background: var(--cursor);
+.viewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
-.screen:not(:focus) .cursor {
-  background: transparent;
-  outline: 1px solid var(--cursor);
+.viewport canvas {
+  display: block;
 }
 
-.exited {
-  margin-top: 8px;
+.status {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.5);
   color: var(--muted);
+  font:
+    12px system-ui,
+    sans-serif;
 }

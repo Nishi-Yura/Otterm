@@ -137,7 +137,7 @@ struct Session {
 
 impl Session {
     fn start(child_args: &[&str]) -> Result<Self> {
-        let mgr = LocalSessionManager::new();
+        let mgr = LocalSessionManager::raw();
         let (tx, rx) = mpsc::channel();
         let exe = std::env::current_exe()?.to_string_lossy().into_owned();
         let opts = SpawnOptions {
@@ -186,6 +186,8 @@ impl Session {
                     }
                 }
                 (_, SessionEvent::Exited { code }) => bail!("child exited early ({code:?})"),
+                // A raw-mode session sends nothing else.
+                _ => {}
             }
         }
     }

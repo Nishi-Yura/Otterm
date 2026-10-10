@@ -2136,7 +2136,9 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 name = "otterm-app"
 version = "0.0.0"
 dependencies = [
+ "getrandom 0.4.3",
  "otterm-session",
+ "serde",
  "serde_json",
  "tauri",
  "tauri-build",
@@ -2177,6 +2179,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "otterm-pty",
+ "otterm-vt",
 ]
 
 [[package]]
