@@ -71,6 +71,8 @@ impl ChildProcess {
 
 impl Pty {
     pub fn spawn(opts: SpawnOptions) -> Result<Spawned> {
+        #[cfg(windows)]
+        let_children_handle_ctrl_c();
         let pair = native_pty_system().openpty(opts.size.into()).context("open pty")?;
 
         let program = opts.program.clone().unwrap_or_else(default_shell);
@@ -133,6 +135,22 @@ fn otterm_env(session_id: &str) -> Vec<(&'static str, String)> {
         ("OTTERM", "1".into()),
         ("OTTERM_SESSION_ID", session_id.into()),
     ]
+}
+
+/// Windows passes "ignore Ctrl+C" from a process to the processes it starts. otterm started from
+/// a program that ignores Ctrl+C (some launchers, MSYS shells) would hand that to every shell, and
+/// Ctrl+C would stop nothing. Clear it for ourselves before the first child is created.
+#[cfg(windows)]
+#[allow(unsafe_code)]
+fn let_children_handle_ctrl_c() {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| {
+        // SAFETY: with no handler routine, SetConsoleCtrlHandler only sets this process's
+        // "ignore Ctrl+C" attribute (here: off). It touches no memory of ours.
+        unsafe {
+            windows_sys::Win32::System::Console::SetConsoleCtrlHandler(None, 0);
+        }
+    });
 }
 
 /// The shell used when no profile is configured.

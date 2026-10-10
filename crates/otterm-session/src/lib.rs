@@ -697,3 +697,42 @@ mod tests {
         mgr.close(id).unwrap();
     }
 }
+
+/// Ctrl+C (ETX) interrupts a program in the session, also when otterm itself was started with
+/// Ctrl+C ignored (otterm-pty clears that before spawning).
+#[cfg(all(test, windows))]
+mod ctrl_c {
+    use super::*;
+    use std::sync::mpsc;
+
+    #[test]
+    fn ctrl_c_stops_ping() {
+        let mgr = LocalSessionManager::new();
+        let (tx, rx) = mpsc::channel();
+        let program = "ping.exe";
+        let args = vec!["-t".into(), "127.0.0.1".into()];
+        let id = mgr
+            .create(
+                SpawnOptions { program: Some(program.into()), args, ..Default::default() },
+                Box::new(move |ev| {
+                    let _ = tx.send(ev);
+                }),
+            )
+            .unwrap();
+        // Let ping start and print, so the ETX is not read before it installed its handler.
+        thread::sleep(Duration::from_secs(2));
+        mgr.write(id, b"\x03").unwrap();
+        let t = Instant::now();
+        loop {
+            match rx.recv_timeout(Duration::from_secs(5)) {
+                // 0xC000013A: STATUS_CONTROL_C_EXIT.
+                Ok(SessionEvent::Exited { code }) => {
+                    assert_eq!(code, Some(0xC000_013A));
+                    break;
+                }
+                Ok(_) if t.elapsed() < Duration::from_secs(5) => {}
+                _ => panic!("ping did not stop; screen: {:?}", mgr.screen_text(id).unwrap()),
+            }
+        }
+    }
+}
