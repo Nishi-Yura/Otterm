@@ -96,6 +96,9 @@ export function App() {
     const c = light ? { ...loaded, theme: loaded.themeLight as UiConfig["theme"] } : loaded;
     applyThemeCss(c.theme);
     setConfig(c);
+    // Programs ask for these (OSC 10/11) to pick light or dark colors of their own.
+    const { foreground, background, cursor } = c.theme.terminal;
+    void invoke("terminal_colors", { foreground, background, cursor }).catch(() => {});
   };
   lightMode.addEventListener("change", applyTheme);
   onCleanup(() => lightMode.removeEventListener("change", applyTheme));

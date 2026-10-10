@@ -467,6 +467,18 @@ fn app_state() -> AppState {
     }
 }
 
+/// The theme in use (`#rrggbb`), for programs that ask the terminal for its colors (OSC 10/11/12).
+#[tauri::command]
+fn terminal_colors(state: State<'_, AppState>, foreground: String, background: String, cursor: String) -> CmdResult {
+    let rgb = |s: &str| -> Result<(u8, u8, u8), String> {
+        let hex = s.strip_prefix('#').filter(|h| h.len() == 6).ok_or_else(|| format!("not #rrggbb: {s}"))?;
+        let n = u32::from_str_radix(hex, 16).map_err(err)?;
+        Ok(((n >> 16) as u8, (n >> 8) as u8, n as u8))
+    };
+    state.sessions.set_default_colors([rgb(&foreground)?, rgb(&background)?, rgb(&cursor)?]);
+    Ok(())
+}
+
 /// Command-line arguments that were not understood, for the UI to mention.
 #[tauri::command]
 fn launch_problems(state: State<'_, AppState>) -> Vec<String> {
@@ -515,6 +527,7 @@ fn main() {
             config_get,
             config_open,
             launch_problems,
+            terminal_colors,
             session_create,
             session_write,
             session_key,
@@ -566,6 +579,7 @@ fn main() {
             config_get,
             config_open,
             launch_problems,
+            terminal_colors,
             session_create,
             session_write,
             session_key,

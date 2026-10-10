@@ -349,6 +349,20 @@ fn reset_modes_recovers_from_a_crashed_program_and_keeps_text() {
 }
 
 #[test]
+fn programs_can_ask_for_colors_modes_and_version() {
+    let mut t = Terminal::new(10, 2);
+    t.set_default_colors((0x2b, 0x2f, 0x36), (0xfa, 0xfa, 0xfa), (0x3a, 0x6e, 0xa5));
+    t.advance(b"\x1b]11;?\x07");
+    assert_eq!(t.take_responses(), b"\x1b]11;rgb:fafa/fafa/fafa\x1b\\");
+    t.advance(b"\x1b]10;?\x1b\\");
+    assert_eq!(t.take_responses(), b"\x1b]10;rgb:2b2b/2f2f/3636\x1b\\");
+    t.advance(b"\x1b[?2004h\x1b[?2004$p\x1b[?2026$p\x1b[?9999$p");
+    assert_eq!(t.take_responses(), b"\x1b[?2004;1$y\x1b[?2026;2$y\x1b[?9999;0$y");
+    t.advance(b"\x1b[>q");
+    assert!(t.take_responses().starts_with(b"\x1bP>|otterm "));
+}
+
+#[test]
 fn decscusr_zero_restores_the_configured_cursor() {
     let mut t = Terminal::new(10, 2);
     t.set_default_cursor(CursorShape::Bar, false);

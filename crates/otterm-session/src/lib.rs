@@ -201,6 +201,7 @@ pub struct LocalSessionManager {
     next_id: AtomicU64,
     mode: Mode,
     options: Mutex<TerminalOptions>,
+    colors: Mutex<[(u8, u8, u8); 3]>,
 }
 
 impl Default for LocalSessionManager {
@@ -217,12 +218,22 @@ impl LocalSessionManager {
             next_id: AtomicU64::new(0),
             mode: Mode::Screen,
             options: Mutex::new(TerminalOptions::default()),
+            colors: Mutex::new([(0xd8, 0xde, 0xe9), (0x1b, 0x1d, 0x23), (0x88, 0xc0, 0xd0)]),
         }
     }
 
     /// Sessions that send raw [`SessionEvent::Output`] instead of frames.
     pub fn raw() -> Self {
         Self { mode: Mode::Raw, ..Self::new() }
+    }
+
+    /// The theme's default colors (foreground, background, cursor) that programs ask for with
+    /// OSC 10 / 11 / 12; for every session, now and later.
+    pub fn set_default_colors(&self, colors: [(u8, u8, u8); 3]) {
+        *self.colors.lock().unwrap() = colors;
+        for session in self.sessions.lock().unwrap().values() {
+            session.term.lock().unwrap().set_default_colors(colors[0], colors[1], colors[2]);
+        }
     }
 
     /// Settings for sessions created from now on.
@@ -252,6 +263,8 @@ impl SessionManager for LocalSessionManager {
         term.set_ambiguous_wide(options.ambiguous_wide);
         term.set_default_cursor(options.cursor_shape, options.cursor_blink);
         term.set_kitty_keyboard_enabled(options.kitty_keyboard);
+        let [fg, bg, cursor] = *self.colors.lock().unwrap();
+        term.set_default_colors(fg, bg, cursor);
         let session = Arc::new(Session {
             pty: Mutex::new(Some(pty)),
             term: Mutex::new(term),

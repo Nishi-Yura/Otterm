@@ -175,6 +175,8 @@ pub struct Terminal {
     kitty_enabled: bool,
     /// OSC 8 hyperlink targets; id `n` is `links[n - 1]`.
     links: Vec<Box<str>>,
+    /// The theme's foreground, background and cursor colors, for OSC 10 / 11 / 12 queries.
+    colors: [(u8, u8, u8); 3],
     link_ids: std::collections::HashMap<Box<str>, u16>,
     link_bytes: usize,
     /// Last printed character, for REP.
@@ -214,6 +216,7 @@ impl Terminal {
             kitty: [Vec::new(), Vec::new()],
             kitty_enabled: true,
             links: Vec::new(),
+            colors: [(0xd8, 0xde, 0xe9), (0x1b, 0x1d, 0x23), (0x88, 0xc0, 0xd0)],
             link_ids: std::collections::HashMap::new(),
             link_bytes: 0,
             last_char: None,
@@ -344,6 +347,12 @@ impl Terminal {
         self.history_base += self.scrollback.len() as u64;
         self.scrollback.clear();
         self.full_damage = true;
+    }
+
+    /// The theme's default foreground, background and cursor colors, which programs ask for with
+    /// OSC 10 / 11 / 12 (to pick light or dark colors of their own).
+    pub fn set_default_colors(&mut self, fg: (u8, u8, u8), bg: (u8, u8, u8), cursor: (u8, u8, u8)) {
+        self.colors = [fg, bg, cursor];
     }
 
     /// The target of an OSC 8 hyperlink id (see [`Attrs::link`]).
@@ -848,7 +857,9 @@ impl Terminal {
         let base = self.history_base + self.scrollback.len() as u64;
         let (shape, blink) = self.default_cursor;
         let kitty_enabled = self.kitty_enabled;
+        let colors = self.colors;
         *self = Terminal::new(cols, rows);
+        self.colors = colors;
         self.set_default_cursor(shape, blink);
         self.kitty_enabled = kitty_enabled;
         self.history_base = base;
@@ -886,6 +897,27 @@ impl Terminal {
             2026 => self.modes.synchronized_output = on,
             _ => {}
         }
+    }
+
+    /// The state of a private mode for DECRQM, `None` when otterm does not know it.
+    fn private_mode(&self, mode: u16) -> Option<bool> {
+        let m = &self.modes;
+        Some(match mode {
+            1 => m.app_cursor,
+            6 => m.origin,
+            7 => m.autowrap,
+            12 => m.cursor_blink,
+            25 => m.cursor_visible,
+            47 | 1047 | 1049 => m.alt_screen,
+            1000 => m.mouse == MouseMode::Click,
+            1002 => m.mouse == MouseMode::Drag,
+            1003 => m.mouse == MouseMode::Motion,
+            1004 => m.focus_events,
+            1006 => m.mouse_sgr,
+            2004 => m.bracketed_paste,
+            2026 => m.synchronized_output,
+            _ => return None,
+        })
     }
 
     fn set_mode(&mut self, mode: u16, on: bool) {
@@ -1253,6 +1285,22 @@ impl Perform for Terminal {
             }
             ('c', []) if arg(params, 0, 0) == 0 => self.respond("\x1b[?62;22c"),
             ('c', [b'>']) => self.respond("\x1b[>1;10;0c"),
+            // XTVERSION: the terminal's name and version.
+            ('q', [b'>']) => {
+                let s = format!("\x1bP>|otterm {}\x1b\\", env!("CARGO_PKG_VERSION"));
+                self.respond(&s);
+            }
+            // DECRQM: is a mode set (1), reset (2) or unknown (0)?
+            ('p', [b'?', b'$']) => {
+                let mode = arg(params, 0, 0);
+                let state = match self.private_mode(mode) {
+                    Some(true) => 1,
+                    Some(false) => 2,
+                    None => 0,
+                };
+                let s = format!("\x1b[?{mode};{state}$y");
+                self.respond(&s);
+            }
             ('d', []) => {
                 let col = self.cursor.col;
                 self.goto(n(0) - 1, col);
@@ -1375,6 +1423,13 @@ impl Perform for Terminal {
                     .collect::<Vec<_>>()
                     .join(";");
                 self.set_link(&uri);
+            }
+            // OSC 10 / 11 / 12 ; ? : report the default foreground / background / cursor color.
+            b"10" | b"11" | b"12" if params.get(1).is_some_and(|p| *p == b"?") => {
+                let which = (cmd[1] - b'0') as usize;
+                let (r, g, b) = self.colors[which];
+                let s = format!("\x1b]1{which};rgb:{r:02x}{r:02x}/{g:02x}{g:02x}/{b:02x}{b:02x}\x1b\\");
+                self.respond(&s);
             }
             b"52" => {
                 let data = text(2);
