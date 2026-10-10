@@ -400,3 +400,188 @@ fn text_range_joins_wrapped_lines_and_trims_blanks() {
     // Starting on a wide character's spacer copies what follows; trailing blanks are dropped.
     assert_eq!(t.text_range((2, 1), (2, 4)), "本");
 }
+
+// Checks modelled on vttest's menus 1 and 2 (vttest itself needs a Unix pty; this machine has no WSL).
+
+#[test]
+fn vttest_cursor_stops_at_the_edges() {
+    // CUU/CUD/CUF/CUB never leave the screen; a count of 0 means 1.
+    let t = term(10, 5, "\x1b[3;3H\x1b[99A");
+    assert_eq!((t.cursor().row, t.cursor().col), (0, 2));
+    let t = term(10, 5, "\x1b[3;3H\x1b[99B\x1b[99C");
+    assert_eq!((t.cursor().row, t.cursor().col), (4, 9));
+    let t = term(10, 5, "\x1b[3;3H\x1b[99D\x1b[0C");
+    assert_eq!((t.cursor().row, t.cursor().col), (2, 1));
+    // CUP and HVP are the same; missing parameters are 1.
+    let t = term(10, 5, "\x1b[4;5f");
+    assert_eq!((t.cursor().row, t.cursor().col), (3, 4));
+    let t = term(10, 5, "\x1b[3;3H\x1b[;H");
+    assert_eq!((t.cursor().row, t.cursor().col), (0, 0));
+}
+
+#[test]
+fn vttest_control_characters_inside_escape_sequences() {
+    // vttest 1: "ESC [ 2 BS C" runs the BS mid-sequence, then moves 2 right.
+    let t = term(10, 3, "\x1b[1;5H\x1b[2\x08C");
+    assert_eq!(t.cursor().col, 5);
+    // A CR and a VT inside a CUP sequence.
+    let t = term(10, 5, "abc\x1b[\r2;\x0b4Hx");
+    assert_eq!(text(&t)[1], "   x");
+}
+
+#[test]
+fn vttest_backspace_and_cr_clear_the_pending_wrap() {
+    // After the last column, BS steps back from the last column (not past it) and cancels the wrap.
+    let t = term(5, 2, "abcde\x08x");
+    assert_eq!(text(&t), ["abcxe", ""]);
+    let t = term(5, 2, "abcde\rx");
+    assert_eq!(text(&t), ["xbcde", ""]);
+    // A cursor move also cancels it.
+    let t = term(5, 2, "abcde\x1b[1;2Hx");
+    assert_eq!(text(&t), ["axcde", ""]);
+}
+
+#[test]
+fn vttest_autowrap_off_overwrites_the_last_column() {
+    let t = term(5, 2, "\x1b[?7labcdefg");
+    assert_eq!(text(&t), ["abcdg", ""]);
+    let t = term(5, 2, "\x1b[?7labcdefg\x1b[?7hxy");
+    assert_eq!(text(&t), ["abcdx", "y"]);
+}
+
+#[test]
+fn vttest_decaln_fills_with_e_and_homes() {
+    let t = term(4, 2, "ab\x1b#8");
+    assert_eq!(text(&t), ["EEEE", "EEEE"]);
+    assert_eq!((t.cursor().row, t.cursor().col), (0, 0));
+}
+
+#[test]
+fn vttest_erase_in_display_and_line_variants() {
+    let fill = "\x1b#8\x1b[2;3H";
+    assert_eq!(text(&term(4, 3, &format!("{fill}\x1b[0J"))), ["EEEE", "EE", ""]);
+    assert_eq!(text(&term(4, 3, &format!("{fill}\x1b[1J"))), ["", "   E", "EEEE"]);
+    assert_eq!(text(&term(4, 3, &format!("{fill}\x1b[2J"))), ["", "", ""]);
+    assert_eq!(text(&term(4, 3, &format!("{fill}\x1b[0K"))), ["EEEE", "EE", "EEEE"]);
+    assert_eq!(text(&term(4, 3, &format!("{fill}\x1b[1K"))), ["EEEE", "   E", "EEEE"]);
+    assert_eq!(text(&term(4, 3, &format!("{fill}\x1b[2K"))), ["EEEE", "", "EEEE"]);
+    // ECH erases without moving anything.
+    assert_eq!(text(&term(4, 3, &format!("{fill}\x1b[1X"))), ["EEEE", "EE E", "EEEE"]);
+}
+
+#[test]
+fn vttest_index_and_next_line_inside_a_region() {
+    // IND at the region's bottom scrolls only the region; the lines outside stay.
+    let t = term(3, 4, "a\r\nb\r\nc\r\nd\x1b[2;3r\x1b[3;1H\x1bDx");
+    assert_eq!(text(&t), ["a", "c", "x", "d"]);
+    // NEL is CR + IND.
+    let t = term(3, 3, "ab\x1bEx");
+    assert_eq!(text(&t), ["ab", "x", ""]);
+    // RI at the region's top scrolls the region down.
+    let t = term(3, 4, "a\r\nb\r\nc\r\nd\x1b[2;3r\x1b[2;1H\x1bMx");
+    assert_eq!(text(&t), ["a", "x", "b", "d"]);
+}
+
+#[test]
+fn vttest_linefeed_below_the_region_does_not_scroll_it() {
+    // Below the region, LF moves down until the last line and then stays.
+    let t = term(3, 4, "a\x1b[1;2r\x1b[4;1Hx\n\ny");
+    assert_eq!(text(&t), ["a", "", "", "xy"]);
+}
+
+#[test]
+fn vttest_save_and_restore_cursor_keeps_attributes_and_origin() {
+    let t = term(10, 5, "\x1b[2;4H\x1b[1;31m\x1b7\x1b[0m\x1b[5;5H\x1b8x");
+    assert_eq!(text(&t)[1], "   x");
+    assert!(cell(&t, 1, 3).attrs.flags & crate::cell::flags::BOLD != 0);
+    let t = term(5, 5, "\x1b[2;4r\x1b[?6h\x1b7\x1b[?6l\x1b8\x1b[1;1Hx");
+    assert_eq!(text(&t)[1], "x", "origin mode comes back with DECRC");
+}
+
+#[test]
+fn vttest_setting_a_region_homes_the_cursor() {
+    let t = term(5, 5, "\x1b[3;3H\x1b[2;4r");
+    assert_eq!((t.cursor().row, t.cursor().col), (0, 0));
+    let t = term(5, 5, "\x1b[?6h\x1b[2;4r");
+    assert_eq!((t.cursor().row, t.cursor().col), (1, 0));
+    // An invalid region (top >= bottom) is ignored.
+    let t = term(5, 5, "\x1b[2;4r\x1b[4;2r\x1b[4;1H\n\nx");
+    assert_eq!(text(&t)[3], "x");
+}
+
+#[test]
+fn vttest_origin_mode_clamps_to_the_region() {
+    let t = term(5, 5, "\x1b[2;3r\x1b[?6h\x1b[9;1Hx");
+    assert_eq!(text(&t)[2], "x");
+}
+
+#[test]
+fn vttest_tab_stops_set_and_clear() {
+    // Clear all, set at 3 and 7, then tab twice.
+    let t = term(10, 1, "\x1b[3g\x1b[1;4H\x1bH\x1b[1;8H\x1bH\r\tx\ty");
+    assert_eq!(text(&t), ["   x   y"]);
+    // TBC 0 clears only the stop under the cursor; CHT and CBT move by stops.
+    let t = term(20, 1, "\x1b[1;9H\x1b[0g\r\tx");
+    assert_eq!(text(&t), ["                x"]);
+    let t = term(20, 1, "\x1b[2Ix\x1b[2Zy");
+    assert_eq!(text(&t), ["        y       x"]);
+    // With no stops left, a tab goes to the last column.
+    let t = term(10, 1, "\x1b[3g\tx");
+    assert_eq!(text(&t), ["         x"]);
+}
+
+#[test]
+fn vttest_insert_mode_shifts_text_right() {
+    let t = term(6, 1, "abcd\x1b[1;2H\x1b[4hXY\x1b[4lZ");
+    assert_eq!(text(&t), ["aXYZcd"]);
+}
+
+#[test]
+fn vttest_dch_and_ich_respect_the_line_end() {
+    let t = term(5, 1, "abcde\x1b[1;2H\x1b[9P");
+    assert_eq!(text(&t), ["a"]);
+    let t = term(5, 1, "abcde\x1b[1;2H\x1b[9@");
+    assert_eq!(text(&t), ["a"]);
+}
+
+#[test]
+fn vttest_il_and_dl_outside_the_region_do_nothing() {
+    let t = term(3, 4, "a\r\nb\r\nc\r\nd\x1b[2;3r\x1b[4;1H\x1b[L");
+    assert_eq!(text(&t), ["a", "b", "c", "d"]);
+    let t = term(3, 4, "a\r\nb\r\nc\r\nd\x1b[2;3r\x1b[1;1H\x1b[M");
+    assert_eq!(text(&t), ["a", "b", "c", "d"]);
+}
+
+#[test]
+fn vttest_scroll_up_and_down_inside_the_region() {
+    let t = term(3, 4, "a\r\nb\r\nc\r\nd\x1b[2;3r\x1b[S");
+    assert_eq!(text(&t), ["a", "c", "", "d"]);
+    let t = term(3, 4, "a\r\nb\r\nc\r\nd\x1b[2;3r\x1b[T");
+    assert_eq!(text(&t), ["a", "", "b", "d"]);
+}
+
+#[test]
+fn vttest_vpa_cha_hpa_and_relative_moves() {
+    let t = term(10, 5, "\x1b[3d\x1b[4Gx");
+    assert_eq!(text(&t)[2], "   x");
+    let t = term(10, 5, "\x1b[5`x\x1b[2ay");
+    assert_eq!(text(&t)[0], "    x  y");
+    let t = term(10, 5, "\x1b[2;1H\x1b[2Ex\x1b[F");
+    assert_eq!(text(&t)[3], "x");
+    assert_eq!((t.cursor().row, t.cursor().col), (2, 0));
+    let t = term(10, 5, "\x1b[3;1H\x1b[2ex");
+    assert_eq!(text(&t)[4], "x");
+}
+
+#[test]
+fn vttest_line_drawing_set_switches_with_shift_out() {
+    // G1 = DEC graphics; SO selects it, SI goes back.
+    let t = term(5, 1, "\x1b)0q\x0eq\x0fq");
+    assert_eq!(text(&t), ["q─q"]);
+}
+
+#[test]
+fn vttest_answers_cursor_position_in_origin_mode() {
+    let mut t = term(10, 5, "\x1b[2;4r\x1b[?6h\x1b[2;3H\x1b[6n");
+    assert_eq!(t.take_responses(), b"\x1b[2;3R");
+}

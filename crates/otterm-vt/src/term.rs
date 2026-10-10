@@ -720,7 +720,8 @@ impl Terminal {
 
         if col + width >= self.cols {
             self.cursor.col = self.cols - 1;
-            self.cursor.pending_wrap = true;
+            // Without autowrap the cursor stays put and the next character overwrites this one.
+            self.cursor.pending_wrap = self.modes.autowrap;
         } else {
             self.cursor.col = col + width;
         }
@@ -1188,11 +1189,9 @@ impl Perform for Terminal {
         match byte {
             0x07 => self.events.push(Event::Bell),
             0x08 => {
-                if self.cursor.pending_wrap {
-                    self.cursor.pending_wrap = false;
-                } else {
-                    self.cursor.col = self.cursor.col.saturating_sub(1);
-                }
+                // Like xterm: a pending wrap is dropped and the cursor still steps back.
+                self.cursor.pending_wrap = false;
+                self.cursor.col = self.cursor.col.saturating_sub(1);
             }
             0x09 => self.tab_forward(1),
             0x0a..=0x0c => {
@@ -1396,6 +1395,11 @@ impl Perform for Terminal {
                     row.extra.clear();
                     row.touch_to(cols);
                 }
+                // Like xterm: the margins are reset and the cursor goes home.
+                self.scroll_top = 0;
+                self.scroll_bottom = self.rows - 1;
+                self.modes.origin = false;
+                self.cursor = Cursor { row: 0, col: 0, pending_wrap: false };
                 self.full_damage = true;
             }
             _ => {}
