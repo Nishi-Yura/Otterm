@@ -20,6 +20,32 @@ const TRAILING = /[.,;:!?)\]}'"]+$/;
  * a link that continues off screen is cut at the edge.
  */
 export function linkAt(model: ScreenModel, row: number, col: number): Link | undefined {
+  return hyperlinkAt(model, row, col) ?? urlAt(model, row, col);
+}
+
+/** An OSC 8 hyperlink under a cell: the run of cells, across rows, with the same link id. */
+function hyperlinkAt(model: ScreenModel, row: number, col: number): Link | undefined {
+  const id = model.lines[row]?.attrs[col]?.link ?? 0;
+  const url = id ? model.links.get(id) : undefined;
+  if (!url) return undefined;
+  const at = (r: number, c: number) => model.lines[r]?.attrs[c]?.link === id;
+  let start = { row, col };
+  for (;;) {
+    const prev = start.col > 0 ? { row: start.row, col: start.col - 1 } : { row: start.row - 1, col: model.cols - 1 };
+    if (prev.row < 0 || !at(prev.row, prev.col)) break;
+    start = prev;
+  }
+  let end = { row, col };
+  for (;;) {
+    const next = end.col < model.cols - 1 ? { row: end.row, col: end.col + 1 } : { row: end.row + 1, col: 0 };
+    if (next.row >= model.rows || !at(next.row, next.col)) break;
+    end = next;
+  }
+  return { url, start, end };
+}
+
+/** A URL written out in the text. */
+function urlAt(model: ScreenModel, row: number, col: number): Link | undefined {
   // The visible logical line around `row`.
   let first = row;
   while (first > 0 && model.lines[first - 1]?.wrapped) first--;

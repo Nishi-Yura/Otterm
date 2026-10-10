@@ -8,6 +8,8 @@ export interface Attr {
   bg: number;
   underline: number;
   flags: number;
+  /** OSC 8 hyperlink id; 0 for none. The target is in `Frame.links` / `ScreenModel.links`. */
+  link: number;
 }
 
 /** Mirrors `otterm_vt::flags`. */
@@ -60,6 +62,8 @@ export interface Frame {
   /** How many lines the view is scrolled up from the live screen. */
   offset: number;
   lines: FrameRow[];
+  /** Targets of the OSC 8 hyperlinks used in this frame, by id. */
+  links: Map<number, string>;
 }
 
 const utf8 = new TextDecoder();
@@ -94,7 +98,7 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
 
   const table: Attr[] = [];
   for (let n = u16(); n > 0; n--) {
-    table.push({ fg: u32(), bg: u32(), underline: u32(), flags: u16() });
+    table.push({ fg: u32(), bg: u32(), underline: u32(), flags: u16(), link: u16() });
   }
 
   const lines: FrameRow[] = [];
@@ -118,6 +122,14 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
     lines.push({ index, wrapped, codepoints, attrs, extras });
   }
 
+  const links = new Map<number, string>();
+  for (let n = u16(); n > 0; n--) {
+    const id = u16();
+    const len = u16();
+    links.set(id, utf8.decode(new Uint8Array(buf, p, len)));
+    p += len;
+  }
+
   return {
     session,
     cols,
@@ -134,5 +146,6 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
     scrollback,
     offset,
     lines,
+    links,
   };
 }

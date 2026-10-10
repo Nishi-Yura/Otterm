@@ -322,6 +322,22 @@ fn rows_are_fully_cleared_after_scrolling_any_content() {
 }
 
 #[test]
+fn osc8_links_mark_their_cells_and_survive_sgr_reset() {
+    let mut t = Terminal::new(20, 2);
+    t.advance(b"a\x1b]8;id=x;https://e.com/a;b\x1b\\\x1b[1mlink\x1b[0mz\x1b]8;;\x1b\\ end");
+    let row = &t.screen()[0];
+    let id = row.cells[1].attrs.link;
+    assert_ne!(id, 0);
+    assert_eq!(t.link(id), Some("https://e.com/a;b"), "a ';' in the URI is kept");
+    assert_eq!(row.cells[5].attrs.link, id, "SGR 0 does not end the link");
+    assert_eq!(row.cells[0].attrs.link, 0);
+    assert_eq!(row.cells[7].attrs.link, 0, "OSC 8 with an empty URI ends it");
+    // The same target again reuses the id.
+    t.advance(b"\r\n\x1b]8;;https://e.com/a;b\x1b\\q\x1b]8;;\x1b\\");
+    assert_eq!(t.screen()[1].cells[0].attrs.link, id);
+}
+
+#[test]
 fn decscusr_zero_restores_the_configured_cursor() {
     let mut t = Terminal::new(10, 2);
     t.set_default_cursor(CursorShape::Bar, false);

@@ -87,6 +87,9 @@ impl Default for Modes {
     }
 }
 
+/// Longest OSC 8 target kept; longer ones are shown as plain text.
+const MAX_LINK_LEN: usize = 2048;
+
 /// Kitty keyboard flags otterm implements: 1 (disambiguate escape codes) and 8 (report all keys
 /// as escape codes). Event types (2), alternate keys (4) and associated text (16) are not sent, and
 /// the query answers with this subset so applications know.
@@ -168,6 +171,8 @@ pub struct Terminal {
     kitty: [Vec<u8>; 2],
     /// The user allows the Kitty keyboard protocol (`terminal.kitty_keyboard`).
     kitty_enabled: bool,
+    /// OSC 8 hyperlink targets; id `n` is `links[n - 1]`.
+    links: Vec<Box<str>>,
     /// Last printed character, for REP.
     last_char: Option<char>,
     dirty: Vec<bool>,
@@ -204,6 +209,7 @@ impl Terminal {
             default_cursor: (CursorShape::Block, true),
             kitty: [Vec::new(), Vec::new()],
             kitty_enabled: true,
+            links: Vec::new(),
             last_char: None,
             dirty: vec![true; rows],
             full_damage: true,
@@ -316,6 +322,30 @@ impl Terminal {
         self.history_base += self.scrollback.len() as u64;
         self.scrollback.clear();
         self.full_damage = true;
+    }
+
+    /// The target of an OSC 8 hyperlink id (see [`Attrs::link`]).
+    pub fn link(&self, id: u16) -> Option<&str> {
+        self.links.get((id as usize).checked_sub(1)?).map(|s| &**s)
+    }
+
+    /// OSC 8: start (non-empty URI) or end a hyperlink for the text printed next.
+    fn set_link(&mut self, uri: &str) {
+        if uri.is_empty() || uri.len() > MAX_LINK_LEN {
+            self.pen.link = 0;
+            return;
+        }
+        // The same target again (a link split over lines, or a repeated one) reuses its id.
+        let id = match self.links.iter().rposition(|l| &**l == uri) {
+            Some(i) => i + 1,
+            None if self.links.len() < u16::MAX as usize => {
+                self.links.push(uri.into());
+                self.links.len()
+            }
+            // Out of ids: the text is shown without its link.
+            None => 0,
+        };
+        self.pen.link = id as u16;
     }
 
     /// Whether applications may turn on the Kitty keyboard protocol. When off, its requests are
@@ -837,14 +867,16 @@ impl Terminal {
 
     fn sgr(&mut self, params: &Params) {
         let mut it = params.iter();
+        // SGR resets colors and styles, not the hyperlink (that is OSC 8's).
+        let link = self.pen.link;
         if params.is_empty() {
-            self.pen = Attrs { flags: 0, ..Attrs::default() };
+            self.pen = Attrs { link, ..Attrs::default() };
             return;
         }
         while let Some(p) = it.next() {
             let f = &mut self.pen.flags;
             match p[0] {
-                0 => self.pen = Attrs::default(),
+                0 => self.pen = Attrs { link, ..Attrs::default() },
                 1 => *f |= flags::BOLD,
                 2 => *f |= flags::DIM,
                 3 => *f |= flags::ITALIC,
@@ -1302,6 +1334,17 @@ impl Perform for Terminal {
                 self.events.push(Event::Title(title));
             }
             b"7" => self.events.push(Event::Cwd(text(1))),
+            // OSC 8 ; params ; URI. The URI may itself contain ';'.
+            b"8" => {
+                let uri = params
+                    .get(2..)
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|p| String::from_utf8_lossy(p))
+                    .collect::<Vec<_>>()
+                    .join(";");
+                self.set_link(&uri);
+            }
             b"52" => {
                 let data = text(2);
                 if data != "?" {

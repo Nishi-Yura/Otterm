@@ -43,6 +43,9 @@ pub struct Attrs {
     pub bg: Color,
     pub underline_color: Color,
     pub flags: u16,
+    /// OSC 8 hyperlink: an id from [`crate::Terminal::link`], 0 for none. Kept here so that every
+    /// cell operation carries it along; it fits in the space `Cell` already had.
+    pub link: u16,
 }
 
 impl Attrs {

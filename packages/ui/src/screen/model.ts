@@ -1,6 +1,6 @@
 import type { Attr, Frame } from "./protocol";
 
-export const DEFAULT_ATTR: Attr = Object.freeze({ fg: 0, bg: 0, underline: 0, flags: 0 });
+export const DEFAULT_ATTR: Attr = Object.freeze({ fg: 0, bg: 0, underline: 0, flags: 0, link: 0 });
 
 export interface Line {
   codepoints: Uint32Array;
@@ -26,6 +26,8 @@ export class ScreenModel {
   scrollback = 0;
   /** Lines the view is scrolled up; 0 is the live screen. */
   offset = 0;
+  /** OSC 8 hyperlink targets seen so far, by id (ids are stable for the session). */
+  readonly links = new Map<number, string>();
   /** Rows changed since the renderer last drew. */
   readonly dirty = new Set<number>();
 
@@ -61,6 +63,7 @@ export class ScreenModel {
     this.topLine = f.topLine;
     this.scrollback = f.scrollback;
     this.offset = f.offset;
+    for (const [id, uri] of f.links) this.links.set(id, uri);
     this.dirty.add(this.cursorRow);
   }
 

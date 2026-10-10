@@ -14,13 +14,15 @@
 //! u32  scrollback length in lines
 //! u32  view offset: how many lines the view is scrolled up from the bottom (0 = live screen)
 //! u16  attribute count, then per attribute:
-//!        u32 fg, u32 bg, u32 underline color, u16 flags   (see `encode_color`)
+//!        u32 fg, u32 bg, u32 underline color, u16 flags   (see `encode_color`),
+//!        u16 hyperlink id (0 none)
 //! u16  row count, then per row:
 //!        u16 row index
 //!        u8  bit0 wrapped
 //!        u16 cell count (trailing default cells are omitted; missing cells are blank)
 //!        per cell: u32 code point, u16 attribute index
 //!        u16 extra count, then per extra: u16 col, u16 byte length, UTF-8 bytes
+//! u16  link count, then per link used by the attributes above: u16 id, u16 byte length, UTF-8 URI
 //! ```
 //!
 //! Wide characters occupy two cells: the character, then a spacer (code point 0x20 with the
@@ -127,6 +129,7 @@ pub fn encode_frame(
         out.extend_from_slice(&encode_color(a.bg).to_le_bytes());
         out.extend_from_slice(&encode_color(a.underline_color).to_le_bytes());
         out.extend_from_slice(&a.flags.to_le_bytes());
+        out.extend_from_slice(&a.link.to_le_bytes());
     }
 
     put_u16(out, rows.len());
@@ -146,6 +149,17 @@ pub fn encode_frame(
             put_u16(out, text.len());
             out.extend_from_slice(text.as_bytes());
         }
+    }
+    // Targets of the hyperlinks in this frame's attributes.
+    let mut ids: Vec<u16> = attrs.iter().map(|a| a.link).filter(|&id| id != 0).collect();
+    ids.sort_unstable();
+    ids.dedup();
+    let links: Vec<(u16, &str)> = ids.into_iter().filter_map(|id| Some((id, term.link(id)?))).collect();
+    put_u16(out, links.len());
+    for (id, uri) in links {
+        out.extend_from_slice(&id.to_le_bytes());
+        put_u16(out, uri.len());
+        out.extend_from_slice(uri.as_bytes());
     }
     true
 }
@@ -197,7 +211,7 @@ mod tests {
             let full = self.u8() & 1 == 1;
             let view = (self.u64(), self.u32(), self.u32());
             let n_attrs = self.u16() as usize;
-            self.0 = &self.0[n_attrs * 14..];
+            self.0 = &self.0[n_attrs * 16..];
             (full, view.0, view.1, view.2, cursor_row)
         }
     }
@@ -224,6 +238,7 @@ mod tests {
             fgs.push(r.u32());
             r.u32();
             r.u32();
+            r.u16();
             r.u16();
         }
         assert_eq!(r.u16(), 3, "all rows");
