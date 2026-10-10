@@ -35,6 +35,9 @@ pub struct UiConfig {
     pub cursor_blink: bool,
     pub copy_on_select: bool,
     pub word_separators: String,
+    /// `[keybindings.bindings]`: action id → key chords (an empty list unbinds).
+    pub keybindings: std::collections::BTreeMap<String, Vec<String>>,
+    pub alt_screen_passthrough: bool,
     /// Keys that were ignored, to show once.
     pub warnings: Vec<UiWarning>,
     pub config_path: Option<String>,
@@ -96,6 +99,19 @@ impl ConfigState {
             cursor_blink: c.terminal.cursor.blink,
             copy_on_select: c.terminal.copy_on_select,
             word_separators: c.terminal.word_separators.clone(),
+            keybindings: c
+                .keybindings
+                .bindings
+                .iter()
+                .map(|(k, v)| {
+                    let keys = match v {
+                        otterm_config::OneOrMany::One(s) => vec![s.clone()],
+                        otterm_config::OneOrMany::Many(v) => v.clone(),
+                    };
+                    (k.clone(), keys)
+                })
+                .collect(),
+            alt_screen_passthrough: c.keybindings.alt_screen_passthrough,
             warnings,
             config_path: self.path.as_ref().map(|p| p.display().to_string()),
         }

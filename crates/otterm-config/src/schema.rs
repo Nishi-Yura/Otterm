@@ -697,7 +697,7 @@ impl Default for History {
 // ---------------------------------------------------------------------------
 
 /// `bindings` overrides default keys per action id; `custom` adds bindings with args and `when` clauses.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
 pub struct Keybindings {
     /// Action id → key(s). An empty array unbinds the action.
@@ -705,6 +705,12 @@ pub struct Keybindings {
     pub custom: Vec<CustomBinding>,
     /// Let TUI apps receive keys that otterm would otherwise handle while the alternate screen is active.
     pub alt_screen_passthrough: bool,
+}
+
+impl Default for Keybindings {
+    fn default() -> Self {
+        Self { bindings: BTreeMap::new(), custom: Vec::new(), alt_screen_passthrough: true }
+    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]

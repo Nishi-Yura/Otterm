@@ -29,6 +29,8 @@ export interface UiConfig {
   cursorBlink: boolean;
   copyOnSelect: boolean;
   wordSeparators: string;
+  keybindings: Record<string, string[]>;
+  altScreenPassthrough: boolean;
   warnings: { key: string; message: string }[];
   configPath: string | null;
 }

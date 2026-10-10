@@ -3,7 +3,8 @@ import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount,
 import { benchMode, runIpcBench, runTypingBench, setExposeInternals } from "./bench";
 import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
 import { setLanguage, t } from "./i18n";
-import { type AppAction, appAction, platform } from "./keys";
+import { Keymap } from "./keymap";
+import { type AppAction, platform } from "./keys";
 import {
   type Divider,
   layout,
@@ -60,6 +61,7 @@ export function App() {
   let unlistenConfig: (() => void) | undefined;
   let noticeTimer: ReturnType<typeof setTimeout> | undefined;
   let nextId = 1;
+  let keymap = new Keymap();
 
   const hub: ScreenHub = {
     subscribe(session, onFrame) {
@@ -78,10 +80,12 @@ export function App() {
     setLanguage(c.language);
     applyThemeCss(c.theme);
     setConfig(c);
-    if (c.warnings.length > 0) {
-      const keys = c.warnings.map((w) => (w.key ? `${w.key}: ${w.message}` : w.message)).join("; ");
-      showNotice(t("config-ignored", { keys }));
-    }
+    keymap = new Keymap(c.keybindings);
+    const warnings = [
+      ...c.warnings.map((w) => (w.key ? `${w.key}: ${w.message}` : w.message)),
+      ...keymap.problems.map((p) => `keybindings.bindings.${p}`),
+    ];
+    if (warnings.length > 0) showNotice(t("config-ignored", { keys: warnings.join("; ") }));
   };
 
   onMount(async () => {
@@ -196,15 +200,20 @@ export function App() {
     if (tab && tab.active !== paneId) updateTab(tab.id, (x) => ({ ...x, active: paneId }));
   };
 
-  /** Window-level shortcuts; called by the focused terminal before it handles a key. */
-  const onAppKey = (e: KeyboardEvent): boolean => {
-    const action = appAction(e);
-    if (!action) return false;
-    run(action);
-    return true;
+  /**
+   * Window-level shortcuts; called by the focused terminal before it handles a key. On the
+   * alternate screen (vim, less, …) only Ctrl+Shift and Cmd chords stay with otterm, unless
+   * `keybindings.alt_screen_passthrough` is off (issue #5).
+   */
+  const onAppKey = (e: KeyboardEvent, altScreen: boolean): boolean => {
+    const hit = keymap.match(e);
+    if (!hit) return false;
+    if (altScreen && !hit.strong && (config()?.altScreenPassthrough ?? true)) return false;
+    return run(hit.action);
   };
 
-  const run = (action: AppAction) => {
+  /** Returns false when the action had nothing to do, so the key goes to the terminal instead. */
+  const run = (action: AppAction): boolean => {
     const tab = currentTab();
     const list = tabs();
     const index = list.findIndex((x) => x.id === activeTab());
@@ -231,14 +240,17 @@ export function App() {
       case "split":
         split(action.dir);
         break;
-      case "focusPane":
-        if (tab) {
-          const next = neighbor(tab.root, tab.active, action.dir);
-          if (next !== undefined) updateTab(tab.id, (x) => ({ ...x, active: next, zoomed: undefined }));
-        }
+      case "focusPane": {
+        // With no pane that way (one pane, or the edge), the key is the shell's: Alt+arrow moves
+        // by word in many programs.
+        const next = tab ? neighbor(tab.root, tab.active, action.dir) : undefined;
+        if (!tab || next === undefined) return false;
+        updateTab(tab.id, (x) => ({ ...x, active: next, zoomed: undefined }));
         break;
+      }
       case "resizePane":
-        if (tab) updateTab(tab.id, (x) => ({ ...x, root: resizePane(x.root, x.active, action.dir, RESIZE_STEP) }));
+        if (!tab || leaves(tab.root).length < 2) return false;
+        updateTab(tab.id, (x) => ({ ...x, root: resizePane(x.root, x.active, action.dir, RESIZE_STEP) }));
         break;
       case "zoomPane":
         if (tab && leaves(tab.root).length > 1) {
@@ -249,6 +261,7 @@ export function App() {
         if (tab) closePane(tab.active);
         break;
     }
+    return true;
   };
 
   /** Each pane's rectangle in its tab, and the active tab's dividers. */

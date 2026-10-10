@@ -44,7 +44,7 @@ export interface TerminalViewProps {
   /** The user clicked into this pane. */
   onActivate: () => void;
   /** Window-level shortcuts (tabs, panes). Returns true when it handled the key. */
-  appKey: (e: KeyboardEvent) => boolean;
+  appKey: (e: KeyboardEvent, altScreen: boolean) => boolean;
   notify: (text: string) => void;
 }
 
@@ -322,7 +322,7 @@ export function TerminalView(props: TerminalViewProps) {
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (props.appKey(e)) {
+    if (props.appKey(e, model.altScreen)) {
       e.preventDefault();
       return;
     }
