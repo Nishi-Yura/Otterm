@@ -113,7 +113,13 @@ impl Pty {
     }
 
     pub fn kill(&mut self) -> Result<()> {
-        Ok(self.killer.kill()?)
+        let res = self.killer.kill();
+        // portable-pty 0.9.0 inverts the TerminateProcess check on Windows: it returns Err when the
+        // kill succeeded (and Ok when it failed). Until that is fixed upstream, the result says nothing.
+        if cfg!(windows) {
+            return Ok(());
+        }
+        Ok(res?)
     }
 }
 

@@ -146,4 +146,30 @@ mod tests {
         assert!(rx.recv_timeout(Duration::from_millis(200)).is_err(), "no events after Exited");
         assert!(mgr.write(id, b"x").is_err(), "session is removed after exit");
     }
+
+    #[test]
+    fn close_kills_the_process_and_reports_exit() {
+        let mgr = LocalSessionManager::new();
+        let (tx, rx) = mpsc::channel();
+        let (program, args) = shell();
+        let id = mgr
+            .create(
+                SpawnOptions { program: Some(program), args, ..Default::default() },
+                Box::new(move |ev| {
+                    let _ = tx.send(ev);
+                }),
+            )
+            .unwrap();
+
+        mgr.close(id).expect("close succeeds");
+        loop {
+            match rx.recv_timeout(Duration::from_secs(10)).expect("no Exited within 10 s after close") {
+                SessionEvent::Output(bytes) if bytes.windows(4).any(|w| w == b"\x1b[6n") => {
+                    let _ = mgr.write(id, b"\x1b[1;1R");
+                }
+                SessionEvent::Output(_) => {}
+                SessionEvent::Exited { .. } => break,
+            }
+        }
+    }
 }
