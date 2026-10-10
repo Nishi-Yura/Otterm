@@ -9,6 +9,7 @@
   "scripts": {
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
     "lint": "biome check .",
     "format": "biome format --write .",
     "validate:dictionary": "node tests/dictionary/validate-dictionary.js"

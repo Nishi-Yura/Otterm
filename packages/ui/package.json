@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fluent/bundle": "0.19.1",
@@ -17,6 +18,7 @@
   "devDependencies": {
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
-    "vite-plugin-solid": "^2.11.14"
+    "vite-plugin-solid": "^2.11.14",
+    "vitest": "5.0.3"
   }
 }

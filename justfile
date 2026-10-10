@@ -39,6 +39,7 @@ typecheck:
 
 test:
     cargo test --workspace
+    pnpm test
 
 # Run benchmarks (tests/bench/README.md). Example: just bench --suite pty --quick
 bench *ARGS:
