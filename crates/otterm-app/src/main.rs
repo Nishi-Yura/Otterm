@@ -7,6 +7,7 @@
 
 mod config;
 mod screen;
+mod shell;
 mod window_state;
 
 use otterm_session::{
@@ -80,6 +81,11 @@ fn session_create(
         opts.args = p.args.clone();
         opts.cwd = p.cwd.as_deref().filter(|c| !c.is_empty()).map(expand_home);
         opts.env = p.env.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+    } else if config.shell.integration {
+        // The platform shell, with otterm's integration loaded through its arguments (B6).
+        let program = otterm_session::default_shell();
+        opts.args = shell::integration_args(&program);
+        opts.program = Some(program);
     }
     if let Some(dir) = cwd.as_deref().and_then(local_path).filter(|d| d.is_dir()) {
         opts.cwd = Some(dir);

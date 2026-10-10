@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{Result, anyhow};
 use otterm_pty::{Pty, Spawned};
-pub use otterm_pty::{PtySize, SpawnOptions};
+pub use otterm_pty::{PtySize, SpawnOptions, default_shell};
 use otterm_vt::diff::FrameState;
 pub use otterm_vt::search::{Match, SearchOptions};
 pub use otterm_vt::{CursorShape, Key, Mouse, MouseAction, MouseButton};
@@ -434,8 +434,13 @@ impl SessionManager for LocalSessionManager {
     }
 }
 
+/// Children of a shell that are not a program the user started: console hosts, and prompt
+/// engines that some setups keep running.
+const NOT_PROGRAMS: &[&str] = &["conhost", "OpenConsole", "oh-my-posh", "starship"];
+
 /// The most recently started child process of `shell`, by name without `.exe`. Console hosts
-/// (ConPTY's OpenConsole, conhost) are not programs the user started. A child with the shell's
+/// (ConPTY's OpenConsole, conhost) and prompt engines are not programs the user started; nor is
+/// anything younger than a second. A child with the shell's
 /// own name is looked through: launchers such as scoop's shims start the real shell that way.
 fn child_program(shell: u32) -> Option<String> {
     use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
@@ -453,8 +458,11 @@ fn child_program(shell: u32) -> Option<String> {
             .processes()
             .values()
             .filter(|p| p.parent() == Some(parent))
+            // Helpers a prompt starts for a moment (git status for the prompt line) are not
+            // what the user is running.
+            .filter(|p| p.run_time() >= 1)
             .map(|p| (p.start_time(), stem(p), p.pid()))
-            .filter(|(_, n, _)| !n.eq_ignore_ascii_case("conhost") && !n.eq_ignore_ascii_case("OpenConsole"))
+            .filter(|(_, n, _)| !NOT_PROGRAMS.iter().any(|x| n.eq_ignore_ascii_case(x)))
             .max()?;
         if !newest.1.eq_ignore_ascii_case(&parent_name) {
             return Some(newest.1);
