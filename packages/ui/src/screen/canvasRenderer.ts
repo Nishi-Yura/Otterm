@@ -201,15 +201,14 @@ export class CanvasRenderer {
       }
 
       const cp = line.codepoints[col] ?? 32;
-      if (cp !== 32 && !(attr.flags & Flags.HIDDEN)) {
+      // The second half of a flag was drawn with the first; its decorations below still are not.
+      if (cp !== 32 && !(attr.flags & Flags.HIDDEN) && skip !== col) {
         let text = String.fromCodePoint(cp) + (line.extras.get(col) ?? "");
         // A flag is two regional indicators in two cells; drawn together they make one glyph
-        // across both (issue #7). The second one is then skipped.
+        // across both (issue #7).
         if (isRegionalIndicator(cp) && pairedWithNext(line.codepoints, col)) {
-          text += String.fromCodePoint(line.codepoints[col + 1] ?? 32);
+          text += String.fromCodePoint(line.codepoints[col + 1] ?? 32) + (line.extras.get(col + 1) ?? "");
           skip = col + 1;
-        } else if (skip === col) {
-          continue;
         }
         ctx.font = this.fontFor(attr.flags);
         ctx.fillStyle = fg;

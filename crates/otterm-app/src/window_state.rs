@@ -71,6 +71,10 @@ fn on_a_monitor(window: &WebviewWindow, s: &Saved) -> bool {
 /// Save the window's place; called when it is about to close.
 pub fn save(window: &WebviewWindow) {
     let Some(path) = state_file() else { return };
+    // Minimized, Windows reports the window at (-32000, -32000) with no size: keep the last place.
+    if window.is_minimized().unwrap_or(false) {
+        return;
+    }
     let maximized = window.is_maximized().unwrap_or(false);
     // While maximized the size is the monitor's; keep the last normal size if we have one.
     let previous = std::fs::read_to_string(&path).ok().and_then(|t| serde_json::from_str::<Saved>(&t).ok());

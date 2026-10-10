@@ -240,6 +240,17 @@ mod tests {
     }
 
     #[test]
+    fn a_space_at_the_wrap_survives_scrollback() {
+        let mut t = Terminal::new(6, 2);
+        // "hello " fills row 0 and wraps; then enough lines to push it into scrollback.
+        t.advance(b"hello world\r\nx\r\ny\r\nz");
+        assert!(t.scrollback().iter().any(|r| r.wrapped));
+        t.resize(20, 2);
+        let all: Vec<String> = t.scrollback().iter().chain(t.screen()).map(|r| r.text()).collect();
+        assert!(all.iter().any(|l| l == "hello world"), "{all:?}");
+    }
+
+    #[test]
     fn alternate_screen_is_not_reflowed() {
         let mut t = Terminal::new(10, 3);
         t.advance(b"\x1b[?1049h0123456789");

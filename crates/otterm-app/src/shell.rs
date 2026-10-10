@@ -1,8 +1,6 @@
 //! Shell integration loaded through the shell's start arguments (decision B6: no user file is
 //! changed). PowerShell only for now, and only the working directory (OSC 7); the rest is M2.
 
-use std::path::PathBuf;
-
 const PWSH_SCRIPT: &str = include_str!("shell/otterm.ps1");
 
 /// Arguments that start `program` with otterm's integration, or none when there is none for it.
@@ -12,22 +10,33 @@ pub fn integration_args(program: &str) -> Vec<String> {
     if stem != "pwsh" && stem != "powershell" {
         return Vec::new();
     }
-    let Some(script) = script_file() else { return Vec::new() };
-    // -NoExit keeps the shell open after the command; the profile still loads first, so the
-    // script wraps the prompt the profile set up. Single quotes double inside a quoted path.
-    let path = script.display().to_string().replace('\'', "''");
-    vec!["-NoLogo".into(), "-NoExit".into(), "-Command".into(), format!(". '{path}'")]
+    // The script goes inline (-EncodedCommand: base64 of UTF-16LE). Dot-sourcing a file would be
+    // refused under the default execution policy of Windows PowerShell 5.1 (Restricted), and
+    // otterm should not loosen the user's policy. -NoExit keeps the shell open; the profile still
+    // loads first, so the script wraps the prompt the profile set up.
+    vec!["-NoLogo".into(), "-NoExit".into(), "-EncodedCommand".into(), encode_command(PWSH_SCRIPT)]
 }
 
-/// Write the script where the shell can read it; rewritten when otterm's copy differs.
-fn script_file() -> Option<PathBuf> {
-    let dir = std::env::temp_dir().join("otterm").join("shell");
-    let path = dir.join("otterm.ps1");
-    if std::fs::read_to_string(&path).ok().as_deref() != Some(PWSH_SCRIPT) {
-        std::fs::create_dir_all(&dir).ok()?;
-        std::fs::write(&path, PWSH_SCRIPT).ok()?;
+/// PowerShell's -EncodedCommand form.
+fn encode_command(script: &str) -> String {
+    let bytes: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    base64(&bytes)
+}
+
+fn base64(bytes: &[u8]) -> String {
+    const ABC: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let n = chunk.iter().enumerate().fold(0u32, |n, (i, &b)| n | (b as u32) << (16 - 8 * i));
+        for i in 0..4 {
+            if i <= chunk.len() {
+                out.push(ABC[(n >> (18 - 6 * i) & 63) as usize] as char);
+            } else {
+                out.push('=');
+            }
+        }
     }
-    Some(path)
+    out
 }
 
 #[cfg(test)]
@@ -38,8 +47,10 @@ mod tests {
     fn only_powershell_gets_arguments() {
         assert!(integration_args("/bin/zsh").is_empty());
         let args = integration_args("pwsh.exe");
-        assert_eq!(&args[..3], ["-NoLogo", "-NoExit", "-Command"]);
-        assert!(args[3].starts_with(". '") && args[3].ends_with("otterm.ps1'"));
+        assert_eq!(&args[..3], ["-NoLogo", "-NoExit", "-EncodedCommand"]);
+        assert_eq!(base64(b"ab"), "YWI=");
+        assert_eq!(base64(b"abc"), "YWJj");
+        assert_eq!(encode_command("a"), "YQA=", "UTF-16LE");
         assert_eq!(integration_args("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe").len(), 4);
     }
 }

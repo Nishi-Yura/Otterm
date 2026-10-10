@@ -276,6 +276,7 @@ process-exited = { $code ->
 start-failed = Could not start the shell: { $error }
 config-ignored = Ignored part of config.toml: { $keys }
 config-unreadable = Could not read the configuration: { $error }
+launch-unknown = Could not use these arguments: { $args }
 copy-failed = Could not copy to the clipboard: { $error }
 
 ## Search

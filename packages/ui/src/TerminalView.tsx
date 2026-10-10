@@ -268,7 +268,11 @@ export function TerminalView(props: TerminalViewProps) {
     const total = model.scrollback + model.rows;
     const top = (model.scrollback - model.offset) / total;
     const old = bar();
-    if (old && old.top === top && old.height === model.rows / total) return;
+    if (old && old.top === top && old.height === model.rows / total) {
+      // A full scrollback at the bottom keeps the thumb still while old lines drop off.
+      updateMarkers();
+      return;
+    }
     setBar({ top, height: model.rows / total, scrolled: model.offset > 0 });
     updateMarkers();
   };

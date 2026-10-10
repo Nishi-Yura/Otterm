@@ -123,6 +123,8 @@ export function App() {
     }
     newTab();
     setReady(true);
+    const unknown = await invoke<string[]>("launch_problems").catch(() => []);
+    if (unknown.length > 0) showNotice(t("launch-unknown", { args: unknown.join(" ") }));
     if (mode === "startup") runStartupBench().catch((e) => setBench(`startup bench failed: ${String(e)}`));
     if (mode === "typing") {
       runTypingBench(setBench).catch((e) => setBench(`typing bench failed: ${String(e)}`));
@@ -134,7 +136,8 @@ export function App() {
   void getCurrentWindow()
     .onCloseRequested(async (event) => {
       if (closingWindow) return;
-      const program = await runningIn(panes().map((p) => p.id));
+      // If the check fails, close: a window that cannot be closed is worse.
+      const program = await runningIn(panes().map((p) => p.id)).catch(() => undefined);
       if (!program) return;
       event.preventDefault();
       await askThenClose(

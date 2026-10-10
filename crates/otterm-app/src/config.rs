@@ -72,8 +72,9 @@ pub struct UiWarning {
 }
 
 impl ConfigState {
-    pub fn load() -> Self {
-        let path = otterm_config::config_path();
+    /// Read `path`, or the usual config.toml when it is `None`.
+    pub fn load(path: Option<PathBuf>) -> Self {
+        let path = path.or_else(otterm_config::config_path);
         Self { loaded: Mutex::new(read(path.as_ref())), path }
     }
 

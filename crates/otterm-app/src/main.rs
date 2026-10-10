@@ -6,6 +6,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod config;
+mod launch;
 mod screen;
 mod shell;
 mod window_state;
@@ -21,10 +22,17 @@ use tauri::ipc::Channel;
 use crate::config::{ConfigState, UiConfig};
 use crate::screen::ScreenServer;
 
+/// Folder and command for the first tab, from the command line.
+type FirstTab = (Option<std::path::PathBuf>, Option<Vec<String>>);
+
 struct AppState {
     sessions: Box<LocalSessionManager>,
     screen: std::sync::Arc<ScreenServer>,
     config: &'static ConfigState,
+    /// Folder and command from the command line, for the first session only.
+    first: std::sync::Mutex<Option<FirstTab>>,
+    /// Command-line arguments that were not understood.
+    unknown_args: Vec<String>,
 }
 
 type CmdResult<T = ()> = Result<T, String>;
@@ -89,6 +97,16 @@ fn session_create(
     }
     if let Some(dir) = cwd.as_deref().and_then(local_path).filter(|d| d.is_dir()) {
         opts.cwd = Some(dir);
+    }
+    // `otterm <path>` / `otterm -e <command>` apply to the first tab.
+    if let Some((dir, command)) = state.first.lock().unwrap().take() {
+        if let Some(dir) = dir {
+            opts.cwd = Some(dir);
+        }
+        if let Some(mut command) = command {
+            opts.program = Some(command.remove(0));
+            opts.args = command;
+        }
     }
     #[cfg(feature = "bench")]
     if let Some((program, args)) = bench::bench_child() {
@@ -399,7 +417,8 @@ fn decode_base64(s: &str) -> Option<String> {
 /// A local path from a path or a `file://` URL (OSC 7 sends `file://host/path`, percent-encoded).
 fn local_path(s: &str) -> Option<std::path::PathBuf> {
     let Some(rest) = s.strip_prefix("file://") else { return Some(s.into()) };
-    let path = &rest[rest.find('/')?..];
+    let slash = rest.find('/')?;
+    let (host, path) = (&rest[..slash], &rest[slash..]);
     let bytes = path.as_bytes();
     let mut decoded = Vec::with_capacity(bytes.len());
     let mut i = 0;
@@ -415,6 +434,12 @@ fn local_path(s: &str) -> Option<std::path::PathBuf> {
         }
     }
     let path = String::from_utf8(decoded).ok()?;
+    let has_drive = path.as_bytes().get(2) == Some(&b':');
+    if cfg!(windows) && !has_drive && !host.is_empty() && !host.eq_ignore_ascii_case("localhost") {
+        // file://server/share/dir is the UNC path \\server\share\dir. (Shells also send their own
+        // computer name as the host; a drive letter means the path is local.)
+        return Some(format!(r"\\{host}{}", path.replace('/', "\\")).into());
+    }
     // file:///C:/Users → C:/Users on Windows.
     let path = if cfg!(windows) && path.as_bytes().get(2) == Some(&b':') { &path[1..] } else { &path[..] };
     Some(path.into())
@@ -431,12 +456,21 @@ fn expand_home(path: &str) -> std::path::PathBuf {
 
 fn app_state() -> AppState {
     config::warm_up();
+    let launch = launch::parse(std::env::args().skip(1));
     AppState {
         sessions: Box::new(LocalSessionManager::new()),
         screen: std::sync::Arc::new(ScreenServer::start().expect("start the screen socket")),
         // Lives as long as the app; the watcher thread holds it.
-        config: Box::leak(Box::new(ConfigState::load())),
+        config: Box::leak(Box::new(ConfigState::load(launch.config))),
+        first: std::sync::Mutex::new(Some((launch.cwd, launch.command))),
+        unknown_args: launch.unknown,
     }
+}
+
+/// Command-line arguments that were not understood, for the UI to mention.
+#[tauri::command]
+fn launch_problems(state: State<'_, AppState>) -> Vec<String> {
+    state.unknown_args.clone()
 }
 
 /// Save the window's size and place when it closes (decision I7).
@@ -464,8 +498,14 @@ fn main() {
         .manage(app_state())
         .setup(|app| {
             watch_config(app);
-            if let Some(window) = tauri::Manager::get_webview_window(app, "main") {
-                window_state::restore(&window);
+            // The window starts hidden (tauri.conf.json); restore shows it once placed.
+            match tauri::Manager::get_webview_window(app, "main") {
+                Some(window) => window_state::restore(&window),
+                None => {
+                    for window in tauri::Manager::webview_windows(app).values() {
+                        let _ = window.show();
+                    }
+                }
             }
             Ok(())
         })
@@ -474,6 +514,7 @@ fn main() {
             screen_endpoint,
             config_get,
             config_open,
+            launch_problems,
             session_create,
             session_write,
             session_key,
@@ -508,8 +549,14 @@ fn main() {
         .manage(bench::BenchState::default())
         .setup(|app| {
             watch_config(app);
-            if let Some(window) = tauri::Manager::get_webview_window(app, "main") {
-                window_state::restore(&window);
+            // The window starts hidden (tauri.conf.json); restore shows it once placed.
+            match tauri::Manager::get_webview_window(app, "main") {
+                Some(window) => window_state::restore(&window),
+                None => {
+                    for window in tauri::Manager::webview_windows(app).values() {
+                        let _ = window.show();
+                    }
+                }
             }
             Ok(())
         })
@@ -518,6 +565,7 @@ fn main() {
             screen_endpoint,
             config_get,
             config_open,
+            launch_problems,
             session_create,
             session_write,
             session_key,
@@ -567,10 +615,13 @@ mod tests {
     #[test]
     fn file_urls_become_paths() {
         assert_eq!(local_path("/home/a b"), Some("/home/a b".into()));
-        assert_eq!(local_path("file://host/home/a%20b"), Some("/home/a b".into()));
+        assert_eq!(local_path("file://localhost/home/a%20b"), Some("/home/a b".into()));
         if cfg!(windows) {
             assert_eq!(local_path("file://pc/C:/Users/x"), Some("C:/Users/x".into()));
         }
         assert_eq!(local_path("file://no-path"), None);
+        if cfg!(windows) {
+            assert_eq!(local_path("file://srv/share/a%20b"), Some(r"\\srv\share\a b".into()));
+        }
     }
 }

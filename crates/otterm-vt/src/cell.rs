@@ -108,13 +108,22 @@ impl Row {
 
     /// A copy without trailing default cells, for scrollback. Readers treat missing cells as blank.
     pub fn compact(&self) -> Self {
-        let used = self.cells[..self.used].iter().rposition(|c| *c != Cell::default()).map_or(0, |i| i + 1);
+        let used = self.content_len();
         Self { cells: self.cells[..used].to_vec(), extra: self.extra.clone(), wrapped: self.wrapped, used }
+    }
+
+    /// Cells to keep when compacting. A row that wrapped keeps all of them: a blank before the
+    /// wrap (the space in "hello world" split as "hello " / "world") is part of the text.
+    fn content_len(&self) -> usize {
+        if self.wrapped {
+            return self.cells.len();
+        }
+        self.cells[..self.used].iter().rposition(|c| *c != Cell::default()).map_or(0, |i| i + 1)
     }
 
     /// Like [`Self::compact`], in place: drop trailing default cells.
     pub(crate) fn compact_in_place(&mut self) {
-        let used = self.cells[..self.used].iter().rposition(|c| *c != Cell::default()).map_or(0, |i| i + 1);
+        let used = self.content_len();
         self.cells.truncate(used);
         // Give memory back only when it is worth a reallocation (a screen row entering history).
         if self.cells.capacity() > used * 2 + 16 {
