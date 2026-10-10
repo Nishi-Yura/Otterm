@@ -7,6 +7,7 @@
 
 mod config;
 mod screen;
+mod window_state;
 
 use otterm_session::{
     Key, LocalSessionManager, Mouse, MouseAction, MouseButton, PtySize, SearchOptions, SessionEvent, SessionId,
@@ -369,6 +370,15 @@ fn app_state() -> AppState {
     }
 }
 
+/// Save the window's size and place when it closes (decision I7).
+fn remember_window(window: &tauri::Window, event: &tauri::WindowEvent) {
+    if let tauri::WindowEvent::CloseRequested { .. } = event
+        && let Some(webview) = tauri::Manager::get_webview_window(window, window.label())
+    {
+        window_state::save(&webview);
+    }
+}
+
 /// Tell the UI when `config.toml` changes.
 fn watch_config(app: &tauri::App) {
     use tauri::{Emitter, Manager};
@@ -385,8 +395,12 @@ fn main() {
         .manage(app_state())
         .setup(|app| {
             watch_config(app);
+            if let Some(window) = tauri::Manager::get_webview_window(app, "main") {
+                window_state::restore(&window);
+            }
             Ok(())
         })
+        .on_window_event(remember_window)
         .invoke_handler(tauri::generate_handler![
             screen_endpoint,
             config_get,
@@ -423,8 +437,12 @@ fn main() {
         .manage(bench::BenchState::default())
         .setup(|app| {
             watch_config(app);
+            if let Some(window) = tauri::Manager::get_webview_window(app, "main") {
+                window_state::restore(&window);
+            }
             Ok(())
         })
+        .on_window_event(remember_window)
         .invoke_handler(tauri::generate_handler![
             screen_endpoint,
             config_get,

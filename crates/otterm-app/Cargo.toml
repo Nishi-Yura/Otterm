@@ -22,7 +22,7 @@ otterm-config.workspace = true
 getrandom.workspace = true
 otterm-session.workspace = true
 serde.workspace = true
-serde_json = { workspace = true, optional = true }
+serde_json.workspace = true
 tauri.workspace = true
 tungstenite.workspace = true
 
@@ -31,7 +31,7 @@ default = ["custom-protocol"]
 # Serve the bundled frontend instead of the dev server. The Tauri CLI turns this off for `tauri dev`.
 custom-protocol = ["tauri/custom-protocol"]
 # IPC benchmarks (tests/bench/README.md). Off in normal builds.
-bench = ["dep:serde_json"]
+bench = []
 
 [lints]
 workspace = true
