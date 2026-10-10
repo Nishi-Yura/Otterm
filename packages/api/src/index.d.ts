@@ -580,7 +580,7 @@ export interface ErrorHint {
   /** Offered via an "insert" button; never auto-run. */
   fixCommand?: string;
   actions?: Action[];
-  /** When true, the host adds an "Ask Kelp" button if the AI mod is enabled. */
+  /** When true, the host adds an "Ask Pebble" button if the AI mod is enabled. */
   allowAi?: boolean;
 }
 
@@ -837,7 +837,7 @@ export interface WorkspaceApi {
 }
 
 // ---------------------------------------------------------------------------
-// Mascot (Rakko / Kelp)
+// Mascot (Kotsume / Pebble)
 // ---------------------------------------------------------------------------
 
 export type Mood = "calm" | "thinking" | "alert" | "happy";

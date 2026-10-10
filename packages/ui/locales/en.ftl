@@ -1,4 +1,4 @@
-# otterm — Kelp's lines and UI strings (English)
+# otterm — Pebble's lines and UI strings (English)
 # Host UI strings and mascot lines. Mascot lines move to mods/otterm.mascot/locales/en.ftl in M4.5
 # Spec: docs/08-character.md §5
 #
@@ -9,7 +9,7 @@
 
 ## Common
 
-mascot-name = Kelp
+mascot-name = Pebble
 app-name = otterm
 
 action-insert = Insert into terminal

@@ -1,5 +1,5 @@
-# otterm — ラコの台詞と UI 文言（日本語）
-# 本体の UI 文言とラコの台詞。ラコの分は M4.5 で mods/otterm.mascot/locales/ja.ftl に分ける
+# otterm — コツメの台詞と UI 文言（日本語）
+# 本体の UI 文言とコツメの台詞。コツメの分は M4.5 で mods/otterm.mascot/locales/ja.ftl に分ける
 # 仕様: docs/08-character.md §5
 #
 # 規約
@@ -9,7 +9,7 @@
 
 ## 共通
 
-mascot-name = ラコ
+mascot-name = コツメ
 app-name = otterm
 
 action-insert = 入力欄に入れる

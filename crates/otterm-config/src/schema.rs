@@ -526,7 +526,7 @@ pub enum ShellKind {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
 pub struct Mascot {
-    /// Show Rakko / Kelp. `auto` follows guide level (hidden at 0).
+    /// Show Kotsume / Pebble. `auto` follows guide level (hidden at 0).
     pub visible: Auto<bool>,
     /// Where the mascot lives (decision E4). Falls back to the status bar when the layout has no assist bar.
     pub position: MascotPosition,

@@ -15,7 +15,7 @@
 | `layout` | Slot 配置・パネルの開閉状態のプリセット | 不要 |
 | `dictionary` | コマンド説明・補完候補・危険ルール・エラー助言パターンの辞書 | 不要（JSON） |
 | `workflows` | ワークフロー集 | 不要（TOML） |
-| `outfit` | ラコの衣装・小物・色違い・台詞セット | 不要（TOML + 画像） |
+| `outfit` | コツメの衣装・小物・色違い・台詞セット | 不要（TOML + 画像） |
 | `extension` | 上記に加え、コードで UI・イベント・外部連携を実装する | 必要 |
 | `pack` | 複数 mod + 推奨設定をまとめたもの | 不要 |
 
@@ -158,12 +158,12 @@ export function deactivate() {}
 | `ctx.theme.current()` / `.onChange(cb)` | 現在のテーマ・CSS 変数 | なし |
 | `ctx.i18n.t(key)` | 翻訳 | なし |
 | `ctx.log.*` | ログ（mod 開発者ツールに出る） | なし |
-| `ctx.mascot.say(text, opts)` | ラコに吹き出しで話させる（mood・表示時間・ボタン付き） | なし |
+| `ctx.mascot.say(text, opts)` | コツメに吹き出しで話させる（mood・表示時間・ボタン付き） | なし |
 | `ctx.mascot.setMood(mood)` / `.onMoodChanged(cb)` | 表情の一時変更／監視 | なし |
 | `ctx.mascot.outfits.register(outfit)` | 衣装を登録（`outfit` kind の mod は自動登録） | なし |
-| `ctx.mascot.reactions.add(rule)` | 「この条件のときラコがこう反応する」ルールを追加 | なし |
+| `ctx.mascot.reactions.add(rule)` | 「この条件のときコツメがこう反応する」ルールを追加 | なし |
 
-ラコ関連 API の詳細は [08-character.md](08-character.md) を参照。全メソッドの正確なシグネチャは型定義 [packages/api/src/index.d.ts](../packages/api/src/index.d.ts) にあり、食い違う場合は型定義を正とする。
+コツメ関連 API の詳細は [08-character.md](08-character.md) を参照。全メソッドの正確なシグネチャは型定義 [packages/api/src/index.d.ts](../packages/api/src/index.d.ts) にあり、食い違う場合は型定義を正とする。
 
 - すべての API は非同期（Promise）。Worker ↔ UI ↔ Rust の 3 ホップがあるため、同期 API は提供しない
 - `terminal.write` は唯一「ユーザーの代わりにコマンドを実行できる」権限であり、承認画面で赤く強調する。既定では insert（入力欄に入れるだけ）を使うように SDK のドキュメントで誘導する
@@ -282,7 +282,7 @@ Git Status Bar v1.2.0 は次のことを行います：
 - **GitHub リポジトリ上の静的 JSON インデックス** + 配布物（GitHub Releases）で始め、サーバーレスで運用。検索はクライアント側で行う。1,000 mod を超えたら再検討（判断 D3）
 - 公開: `otterm mod publish`。作者は GitHub アカウントで認証し、mod ID の名前空間と一致していることを確認
 - 署名: **sigstore（キーレス署名）**。GitHub Actions からの公開と相性がよく、作者が鍵を管理しなくてよい。オフライン検証用に信頼ルートのバンドルを本体に同梱する（判断 D2）
-- ストア画面: カテゴリ（テーマ／見た目、入力支援、Git、Docker、言語別、ワークフロー、ラコの衣装、楽しい）、スクリーンショット、権限一覧、インストール数、互換バージョン
+- ストア画面: カテゴリ（テーマ／見た目、入力支援、Git、Docker、言語別、ワークフロー、コツメの衣装、楽しい）、スクリーンショット、権限一覧、インストール数、互換バージョン
 - 更新: 起動時に確認、ユーザーが「更新」を押す（自動更新はオプトイン）
 - モデレーション（判断 D4）: **権限で切り替える**。`terminal.write` か `network` を持つ mod は公開前に人の審査、それ以外は公開後の報告ベース。報告が一定数に達した mod は自動で非表示にし、審査に回す
 - 有料 mod（判断 D9）: **レジストリは無料の mod のみ**。決済機能は持たない。外部での販売は禁止しないが、レジストリには載せない
@@ -347,7 +347,7 @@ npm create otterm-mod@latest my-mod
 | `otterm.layouts-builtin` | layout | レイアウトプリセット | 有効 |
 | `otterm.onboarding` | extension | 初回設定・チュートリアル | 有効 |
 | `otterm.git-status` | extension | ブランチ表示、ファイルツリーの Git 装飾 | 有効（git 検出時） |
-| `otterm.mascot` | extension | ラコ本体（表情、吹き出し、反応ルール、衣装の適用） | Lv1 以上で有効 |
+| `otterm.mascot` | extension | コツメ本体（表情、吹き出し、反応ルール、衣装の適用） | Lv1 以上で有効 |
 | `otterm.outfits-builtin` | outfit | 同梱衣装 `default` / `developer` / `pixel` | 有効 |
 
 公式・同梱・既定オフ: `otterm.ai-assist`（[10-ai-assist.md](10-ai-assist.md)）

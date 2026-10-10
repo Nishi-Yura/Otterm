@@ -177,7 +177,7 @@ otterm theme import <file>         # iTerm2 / Windows Terminal / VS Code / Alacr
 otterm config get|set|path|export|import
 otterm workflow run <name>
 otterm trash <path...>             # ゴミ箱へ送る。danger-guard の「ゴミ箱に送る」が rm をこれに書き換える。単体でも使える
-otterm ask [question]              # ラコに聞く（AI mod が有効なとき）。引数なしで対話プロンプト
+otterm ask [question]              # コツメに聞く（AI mod が有効なとき）。引数なしで対話プロンプト
 ```
 
 - 既に起動している場合はそのインスタンスに新タブとして開く（単一インスタンス、`--new-window` で別窓）
@@ -209,7 +209,7 @@ otterm ask [question]              # ラコに聞く（AI mod が有効なとき
 | `palette` | `ctrl+shift+p` |
 | `history` | `ctrl+r`（Lv1 以上で otterm が使う。Lv0 はシェルへ。判断 B5） |
 | `completion.trigger` | `ctrl+space`（Lv3 は `tab` も確定キーになる。判断 B3） |
-| `ai.ask` | `ctrl+shift+space`（AI mod 有効時のみ。ラコのクリックでも開く。判断 F1） |
+| `ai.ask` | `ctrl+shift+space`（AI mod 有効時のみ。コツメのクリックでも開く。判断 F1） |
 | `mascot.toggle` | `ctrl+shift+m` |
 | `block.prev` / `block.next` | `ctrl+arrowup` / `ctrl+arrowdown` |
 | `block.collapse` | `ctrl+shift+[` |
