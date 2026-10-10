@@ -35,6 +35,19 @@ const results = [];
 if (suites.includes("pty")) {
   run("cargo", ["build", "--release", "-p", "otterm-bench"]);
   const bin = path.join(root, "target", "release", exe("otterm-bench"));
+  // Measure the PTY the app ships: the bundled ConPTY on Windows (decision M3), when fetched.
+  const conpty = path.join(
+    root,
+    "crates",
+    "otterm-app",
+    "resources",
+    "windows",
+    process.arch === "arm64" ? "arm64" : "x64",
+  );
+  if (process.platform === "win32" && fs.existsSync(conpty)) {
+    for (const f of ["conpty.dll", "OpenConsole.exe"])
+      fs.copyFileSync(path.join(conpty, f), path.join(path.dirname(bin), f));
+  }
   const benches = [
     ["pty-throughput", ...(quick ? ["--mib", "10", "--runs", "2"] : [])],
     ["pty-roundtrip", ...(quick ? ["--samples", "100"] : [])],

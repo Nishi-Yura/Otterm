@@ -41,6 +41,7 @@ M0（骨組み）に着手。仕様書で決めた型とデータは配置済み
 | [mods/dictionary-core/](mods/dictionary-core/) | 同梱のコマンド辞書（164 コマンド）と危険ルール |
 | [crates/otterm-config/](crates/otterm-config/) | 設定の Rust 構造体（`config.toml` / `workspace.toml`） |
 | [tests/dictionary/](tests/dictionary/) | 辞書の検証スクリプト |
+| [scripts/](scripts/) | 開発用スクリプト（Windows で同梱する ConPTY の取得など） |
 | [tests/bench/](tests/bench/) | ベンチマーク（`just bench`）。結果は [docs/bench/](docs/bench/baseline.md) |
 
 開発には Rust（stable）、Node.js 22 以上、pnpm、[just](https://github.com/casey/just) が要る。`just setup` のあと `just dev` でアプリが起動し、`just check` で CI と同じ検査が走る。Linux では WebKitGTK などの開発パッケージも要る（[Tauri の前提条件](https://v2.tauri.app/start/prerequisites/)）。

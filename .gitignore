@@ -36,3 +36,6 @@ crates/otterm-app/gen/
 
 # Benchmark output (baselines are committed under docs/bench/)
 tests/bench/results/
+
+# Bundled ConPTY binaries, fetched by scripts/fetch-conpty.js
+crates/otterm-app/resources/windows/

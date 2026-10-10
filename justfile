@@ -8,9 +8,10 @@ export TURBO_TELEMETRY_DISABLED := "1"
 default:
     @just --list
 
-# Install JS dependencies.
+# Install JS dependencies and, on Windows, the bundled ConPTY (decision M3).
 setup:
     pnpm install --frozen-lockfile
+    node scripts/fetch-conpty.js
 
 # Everything CI runs. The UI is built first because the app embeds packages/ui/dist at compile time.
 check: fmt-check build-ui lint typecheck test validate
