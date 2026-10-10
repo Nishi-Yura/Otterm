@@ -133,8 +133,8 @@
 
 仕様書のレビュー、判断一覧 A〜L の決定、`@otterm/api` の型定義ドラフトは完了した。
 
-M0 の進み具合（2026-10-11）: モノレポ初期化、型とデータの配置（`packages/api`、`mods/dictionary-core`、`crates/otterm-config`、`packages/ui/locales`）、3 OS の CI（fmt、clippy、Biome、型検査、テスト、辞書検証）は済み。
+M0 の進み具合（2026-10-11）: モノレポ初期化、型とデータの配置（`packages/api`、`mods/dictionary-core`、`crates/otterm-config`、`packages/ui/locales`）、3 OS の CI（fmt、clippy、Biome、型検査、テスト、辞書検証）は済み。Tauri 2 + portable-pty の最小起動（`otterm-pty`、`otterm-session` の `SessionManager` trait、`otterm-app`、`packages/ui`）も済み。Windows では pwsh を起動して `ls` の出力が出ることを確認した。ConPTY は起動時のカーソル位置問い合わせ（DSR）に応答するまで出力を止めるため、M0 では UI が仮に応答している（M1 で `otterm-vt` に移す）
 
-1. Tauri 2 + portable-pty の最小起動
+1. macOS / Linux での起動確認
 2. グリッド差分 IPC のベンチ、他ターミナルの基準値取り、レンダラ判定
 3. 商標調査（判断 A3）と libghostty の確認

@@ -1,0 +1,16 @@
+[package]
+name = "otterm-session"
+description = "Session management behind the SessionManager boundary (decision C14)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+otterm-pty.workspace = true
+
+[lints]
+workspace = true

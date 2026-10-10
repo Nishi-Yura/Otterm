@@ -15,6 +15,12 @@ serde = { version = "1", features = ["derive"] }
 schemars = "1"
 toml = "0.9"
 serde_json = "1"
+anyhow = "1"
+portable-pty = "0.9"
+tauri = "2"
+tauri-build = "2"
+otterm-pty = { path = "crates/otterm-pty" }
+otterm-session = { path = "crates/otterm-session" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

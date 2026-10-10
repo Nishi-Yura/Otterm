@@ -42,7 +42,7 @@ M0（骨組み）に着手。仕様書で決めた型とデータは配置済み
 | [crates/otterm-config/](crates/otterm-config/) | 設定の Rust 構造体（`config.toml` / `workspace.toml`） |
 | [tests/dictionary/](tests/dictionary/) | 辞書の検証スクリプト |
 
-開発には Rust（stable）、Node.js 22 以上、pnpm、[just](https://github.com/casey/just) が要る。`just setup` のあと `just check` で CI と同じ検査が走る。
+開発には Rust（stable）、Node.js 22 以上、pnpm、[just](https://github.com/casey/just) が要る。`just setup` のあと `just dev` でアプリが起動し、`just check` で CI と同じ検査が走る。Linux では WebKitGTK などの開発パッケージも要る（[Tauri の前提条件](https://v2.tauri.app/start/prerequisites/)）。
 
 ## ライセンスと開発方針
 

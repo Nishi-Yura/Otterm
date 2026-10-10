@@ -30,3 +30,6 @@ src-tauri/gen/
 assets/mascot/src/*.fig
 assets/mascot/src/*.ai
 assets/mascot/src/*.psd
+
+# Tauri generated schemas
+crates/otterm-app/gen/

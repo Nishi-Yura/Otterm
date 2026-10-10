@@ -12,8 +12,15 @@ default:
 setup:
     pnpm install --frozen-lockfile
 
-# Everything CI runs.
-check: fmt-check lint typecheck test validate
+# Everything CI runs. The UI is built first because the app embeds packages/ui/dist at compile time.
+check: fmt-check build-ui lint typecheck test validate
+
+# Run the app with hot reload.
+dev:
+    pnpm tauri dev
+
+build-ui:
+    pnpm --filter @otterm/ui build
 
 fmt:
     cargo fmt --all

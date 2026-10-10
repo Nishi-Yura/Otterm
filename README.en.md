@@ -17,7 +17,7 @@ The name is otter + term. Sea otters crack shells open with a stone on their bel
 
 ## Status
 
-Milestone M0 (skeleton) has started. The types and data defined during the spec phase are in place and checked by CI; the terminal itself does not run yet. Run `just setup`, then `just check` (needs Rust stable, Node.js 22+, pnpm and [just](https://github.com/casey/just)).
+Milestone M0 (skeleton) has started. The types and data defined during the spec phase are in place and checked by CI; the terminal itself does not run yet. Run `just setup`, then `just dev` to start the app or `just check` (needs Rust stable, Node.js 22+, pnpm and [just](https://github.com/casey/just)).
 
 The Japanese specification in [`docs/`](docs/) is the source of truth; English translations will follow (overview first, the rest by milestone M3).
 

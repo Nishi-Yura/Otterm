@@ -1,0 +1,47 @@
+:root {
+  --bg: #1b1d23;
+  --fg: #d8dee9;
+  --muted: #7b8394;
+  --cursor: #88c0d0;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+}
+
+.screen {
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  overflow-y: auto;
+  color: var(--fg);
+  font:
+    14px / 1.35 "Cascadia Mono",
+    "SF Mono",
+    Menlo,
+    "DejaVu Sans Mono",
+    monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  outline: none;
+}
+
+.cursor {
+  background: var(--cursor);
+}
+
+.screen:not(:focus) .cursor {
+  background: transparent;
+  outline: 1px solid var(--cursor);
+}
+
+.exited {
+  margin-top: 8px;
+  color: var(--muted);
+}
