@@ -11,6 +11,8 @@ pub enum Style {
     Cmd,
     /// sh, bash, zsh, fish and anything else: '...' with ' written as '\''.
     Posix,
+    /// A shell inside WSL: like Posix, with C:\x written as /mnt/c/x (docs/03, decision J2).
+    Wsl,
 }
 
 impl Style {
@@ -20,6 +22,7 @@ impl Style {
         match name.as_str() {
             "pwsh" | "powershell" => Style::PowerShell,
             "cmd" => Style::Cmd,
+            "wsl" => Style::Wsl,
             _ => Style::Posix,
         }
     }
@@ -29,7 +32,7 @@ impl Style {
 /// a comma builds an array in PowerShell.
 fn plain(path: &str, style: Style) -> bool {
     let extra = match style {
-        Style::Posix => "/:+@",
+        Style::Posix | Style::Wsl => "/:+@",
         Style::PowerShell | Style::Cmd => "/\\:+@",
     };
     !path.is_empty() && path.chars().all(|c| c.is_alphanumeric() || "_-.".contains(c) || extra.contains(c))
@@ -61,8 +64,18 @@ pub fn quote(path: &str, style: Style) -> Option<String> {
         }
         Style::Cmd if path.contains(['%', '!']) => return None,
         Style::Cmd => format!("\"{path}\""),
-        Style::Posix => format!("'{}'", path.replace('\'', "'\\''")),
+        Style::Posix | Style::Wsl => format!("'{}'", path.replace('\'', "'\\''")),
     })
+}
+
+/// A Windows path as WSL sees it: C:\Users\me → /mnt/c/Users/me. Other paths stay as they are.
+fn wsl_path(path: &str) -> String {
+    let b = path.as_bytes();
+    if b.len() >= 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && (b[2] == b'\\' || b[2] == b'/') {
+        let drive = (b[0] as char).to_ascii_lowercase();
+        return format!("/mnt/{drive}/{}", path[3..].replace('\\', "/"));
+    }
+    path.to_string()
 }
 
 /// Dropped paths as one line for the shell: quoted, separated by spaces, with a trailing space so
@@ -72,7 +85,8 @@ pub fn dropped(paths: &[String], style: Style) -> (String, Vec<String>) {
     let mut out = Vec::new();
     let mut refused = Vec::new();
     for p in paths.iter().filter(|p| !p.is_empty()) {
-        match quote(p, style) {
+        let converted = if style == Style::Wsl { wsl_path(p) } else { p.clone() };
+        match quote(&converted, style) {
             Some(q) => out.push(q),
             None => refused.push(p.clone()),
         }
@@ -142,6 +156,14 @@ mod tests {
         assert_eq!(quote(r"C:\wow!.txt", Style::Cmd), None);
         assert_eq!(q(r"C:\a%b.txt", Style::PowerShell), r"'C:\a%b.txt'");
         assert_eq!(quote("/tmp/a\nrm -rf x", Style::Posix), None);
+    }
+
+    #[test]
+    fn wsl_gets_mount_paths() {
+        assert_eq!(Style::for_shell(r"C:\Windows\System32\wsl.exe"), Style::Wsl);
+        let paths = vec![r"C:\Users\me\My Notes.txt".to_string(), r"D:\a.txt".to_string()];
+        assert_eq!(dropped(&paths, Style::Wsl).0, "'/mnt/c/Users/me/My Notes.txt' /mnt/d/a.txt ");
+        assert_eq!(wsl_path(r"\\wsl$\Ubuntu\home"), r"\\wsl$\Ubuntu\home");
     }
 
     #[test]
