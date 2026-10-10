@@ -48,6 +48,9 @@ pub struct Modes {
     pub alt_screen: bool,
     /// 2026: the application is mid-frame; renderers may hold the previous frame.
     pub synchronized_output: bool,
+    /// Kitty keyboard protocol flags the application turned on (decision I3); 0 is xterm encoding.
+    /// Only the flags in [`KITTY_SUPPORTED`] are ever set.
+    pub kitty_keyboard: u8,
     autowrap: bool,
     origin: bool,
     insert: bool,
@@ -75,6 +78,7 @@ impl Default for Modes {
             cursor_shape: CursorShape::Block,
             alt_screen: false,
             synchronized_output: false,
+            kitty_keyboard: 0,
             autowrap: true,
             origin: false,
             insert: false,
@@ -82,6 +86,13 @@ impl Default for Modes {
         }
     }
 }
+
+/// Kitty keyboard flags otterm implements: 1 (disambiguate escape codes) and 8 (report all keys
+/// as escape codes). Event types (2), alternate keys (4) and associated text (16) are not sent, and
+/// the query answers with this subset so applications know.
+pub const KITTY_SUPPORTED: u8 = 1 | 8;
+/// Entries kept per screen; pushing more drops the oldest (as the protocol allows).
+const KITTY_STACK_LIMIT: usize = 16;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Cursor {
@@ -153,6 +164,10 @@ pub struct Terminal {
     ambiguous_wide: bool,
     /// The user's cursor style, restored by DECSCUSR 0 and RIS.
     default_cursor: (CursorShape, bool),
+    /// Kitty keyboard flag stacks for the primary and the alternate screen.
+    kitty: [Vec<u8>; 2],
+    /// The user allows the Kitty keyboard protocol (`terminal.kitty_keyboard`).
+    kitty_enabled: bool,
     /// Last printed character, for REP.
     last_char: Option<char>,
     dirty: Vec<bool>,
@@ -187,6 +202,8 @@ impl Terminal {
             active_charset: 0,
             ambiguous_wide: false,
             default_cursor: (CursorShape::Block, true),
+            kitty: [Vec::new(), Vec::new()],
+            kitty_enabled: true,
             last_char: None,
             dirty: vec![true; rows],
             full_damage: true,
@@ -299,6 +316,16 @@ impl Terminal {
         self.history_base += self.scrollback.len() as u64;
         self.scrollback.clear();
         self.full_damage = true;
+    }
+
+    /// Whether applications may turn on the Kitty keyboard protocol. When off, its requests are
+    /// ignored and its query gets no answer, so applications fall back to xterm keys.
+    pub fn set_kitty_keyboard_enabled(&mut self, enabled: bool) {
+        self.kitty_enabled = enabled;
+        if !enabled {
+            self.kitty = [Vec::new(), Vec::new()];
+            self.modes.kitty_keyboard = 0;
+        }
     }
 
     /// The cursor style used until an application asks for another (and after it asks for the
@@ -674,7 +701,61 @@ impl Terminal {
                 self.restore_cursor();
             }
         }
+        self.update_kitty_mode();
         self.full_damage = true;
+    }
+
+    // --- Kitty keyboard protocol (decision I3) --------------------------------
+
+    fn kitty_stack(&mut self) -> &mut Vec<u8> {
+        &mut self.kitty[self.modes.alt_screen as usize]
+    }
+
+    fn update_kitty_mode(&mut self) {
+        self.modes.kitty_keyboard = self.kitty[self.modes.alt_screen as usize].last().copied().unwrap_or(0);
+    }
+
+    /// `CSI > flags u`, `CSI < n u`, `CSI = flags ; mode u`, `CSI ? u`.
+    fn kitty_keyboard(&mut self, marker: u8, params: &Params) {
+        if !self.kitty_enabled {
+            return;
+        }
+        let raw = |i: usize| params.iter().nth(i).map_or(0, |p| p[0]);
+        match marker {
+            b'>' => {
+                let stack = self.kitty_stack();
+                if stack.len() == KITTY_STACK_LIMIT {
+                    stack.remove(0);
+                }
+                stack.push(raw(0) as u8 & KITTY_SUPPORTED);
+            }
+            b'<' => {
+                let n = raw(0).max(1) as usize;
+                let stack = self.kitty_stack();
+                stack.truncate(stack.len().saturating_sub(n));
+            }
+            b'=' => {
+                let flags = raw(0) as u8 & KITTY_SUPPORTED;
+                let mode = raw(1).max(1);
+                let stack = self.kitty_stack();
+                if stack.is_empty() {
+                    stack.push(0);
+                }
+                let top = stack.last_mut().expect("not empty");
+                *top = match mode {
+                    1 => flags,
+                    2 => *top | flags,
+                    3 => *top & !flags,
+                    _ => *top,
+                };
+            }
+            b'?' => {
+                let flags = self.modes.kitty_keyboard;
+                self.responses.extend_from_slice(format!("\x1b[?{flags}u").as_bytes());
+            }
+            _ => {}
+        }
+        self.update_kitty_mode();
     }
 
     fn save_cursor(&mut self) {
@@ -705,8 +786,10 @@ impl Terminal {
         let ambiguous = self.ambiguous_wide;
         let base = self.history_base + self.scrollback.len() as u64;
         let (shape, blink) = self.default_cursor;
+        let kitty_enabled = self.kitty_enabled;
         *self = Terminal::new(cols, rows);
         self.set_default_cursor(shape, blink);
+        self.kitty_enabled = kitty_enabled;
         self.history_base = base;
         self.scrollback_limit = limit;
         self.ambiguous_wide = ambiguous;
@@ -1140,6 +1223,7 @@ impl Perform for Terminal {
             }
             ('s', []) => self.save_cursor(),
             ('u', []) => self.restore_cursor(),
+            ('u', [marker @ (b'>' | b'<' | b'=' | b'?')]) => self.kitty_keyboard(*marker, params),
             ('q', [b' ']) => {
                 let (shape, blink) = match arg(params, 0, 0) {
                     0 => self.default_cursor,

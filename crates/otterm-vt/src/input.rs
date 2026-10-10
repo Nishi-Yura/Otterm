@@ -26,6 +26,11 @@ impl Key {
 
 /// Bytes for a key press, or `None` if the terminal does not handle this key (let the UI have it).
 pub fn encode_key(k: &Key, modes: &Modes) -> Option<Vec<u8>> {
+    if modes.kitty_keyboard != 0
+        && let Some(bytes) = kitty_key(k, modes.kitty_keyboard)
+    {
+        return Some(bytes);
+    }
     let m = k.modifier();
     let csi_mod = |final_byte: char| -> Vec<u8> {
         // Cursor keys and Home/End: `ESC [ 1 ; m X` with modifiers, else SS3 (app mode) or CSI.
@@ -94,6 +99,38 @@ pub fn encode_key(k: &Key, modes: &Modes) -> Option<Vec<u8>> {
         }
     };
     Some(bytes)
+}
+
+/// Kitty keyboard protocol encoding (decision I3) for the keys it changes; `None` leaves the key
+/// to the xterm encoding (cursor, editing and function keys keep their forms).
+///
+/// - Flag 1: Escape, and text keys with Ctrl or Alt, become `CSI code ; mods u`, so Ctrl+Shift+a
+///   and Alt+[ can be told apart from other keys. Enter, Tab and Backspace stay as they are unless
+///   modified, so a shell still works if a program exits without turning the protocol off.
+/// - Flag 8: every key is an escape code, plain text included.
+fn kitty_key(k: &Key, flags: u8) -> Option<Vec<u8>> {
+    let all = flags & 8 != 0;
+    let m = k.modifier();
+    let csi_u = |code: u32| -> Vec<u8> {
+        if m > 1 { format!("\x1b[{code};{m}u").into_bytes() } else { format!("\x1b[{code}u").into_bytes() }
+    };
+    let code = match k.key.as_str() {
+        "Escape" => return Some(csi_u(27)),
+        "Enter" => 13,
+        "Tab" => 9,
+        "Backspace" => 127,
+        key => {
+            let mut chars = key.chars();
+            let (Some(c), None) = (chars.next(), chars.next()) else { return None };
+            // Keys are reported by their unshifted code; for letters that is the lower case.
+            let base = if c.is_ascii_uppercase() { c.to_ascii_lowercase() } else { c };
+            if all || k.ctrl || k.alt {
+                return Some(csi_u(base as u32));
+            }
+            return None;
+        }
+    };
+    (all || m > 1).then(|| csi_u(code))
 }
 
 /// The C0 byte for Ctrl+`c`, as xterm sends it.
@@ -203,6 +240,54 @@ pub fn encode_mouse(m: &Mouse, modes: &Modes) -> Option<Vec<u8>> {
 mod tests {
     use super::*;
     use crate::Terminal;
+
+    #[test]
+    fn kitty_disambiguate_encodes_modified_text_and_escape() {
+        let m = modes("\x1b[>1u");
+        assert_eq!(m.kitty_keyboard, 1);
+        assert_eq!(encode_key(&key("Escape", false, false, false), &m).unwrap(), b"\x1b[27u");
+        assert_eq!(encode_key(&key("a", true, false, false), &m).unwrap(), b"\x1b[97;5u");
+        assert_eq!(encode_key(&key("A", true, false, true), &m).unwrap(), b"\x1b[97;6u", "Ctrl+Shift+A");
+        assert_eq!(encode_key(&key("[", false, true, false), &m).unwrap(), b"\x1b[91;3u", "Alt+[");
+        // Plain text, Enter, Tab and Backspace are unchanged; modified Enter is not.
+        assert_eq!(encode_key(&key("a", false, false, false), &m).unwrap(), b"a");
+        assert_eq!(encode_key(&key("A", false, false, true), &m).unwrap(), b"A");
+        assert_eq!(encode_key(&key("Enter", false, false, false), &m).unwrap(), b"\r");
+        assert_eq!(encode_key(&key("Enter", false, false, true), &m).unwrap(), b"\x1b[13;2u");
+        assert_eq!(encode_key(&key("Backspace", false, false, false), &m).unwrap(), b"\x7f");
+        // Cursor keys keep the xterm form.
+        assert_eq!(encode_key(&key("ArrowUp", true, false, false), &m).unwrap(), b"\x1b[1;5A");
+    }
+
+    #[test]
+    fn kitty_all_keys_and_the_stack() {
+        let mut t = Terminal::new(10, 2);
+        t.advance(b"\x1b[>1u\x1b[>9u");
+        assert_eq!(t.modes().kitty_keyboard, 9);
+        assert_eq!(encode_key(&key("a", false, false, false), &t.modes()).unwrap(), b"\x1b[97u");
+        assert_eq!(encode_key(&key("Enter", false, false, false), &t.modes()).unwrap(), b"\x1b[13u");
+        // Query answers with the current flags; unsupported flags (2) are dropped.
+        t.advance(b"\x1b[=3;2u\x1b[?u");
+        assert_eq!(t.take_responses(), b"\x1b[?9u");
+        t.advance(b"\x1b[<u");
+        assert_eq!(t.modes().kitty_keyboard, 1, "pop returns to the previous entry");
+        // The alternate screen has its own stack.
+        t.advance(b"\x1b[?1049h");
+        assert_eq!(t.modes().kitty_keyboard, 0);
+        t.advance(b"\x1b[>1u\x1b[?1049l");
+        assert_eq!(t.modes().kitty_keyboard, 1);
+        t.advance(b"\x1b[<5u");
+        assert_eq!(t.modes().kitty_keyboard, 0, "popping past the bottom empties the stack");
+    }
+
+    #[test]
+    fn kitty_can_be_turned_off() {
+        let mut t = Terminal::new(10, 2);
+        t.set_kitty_keyboard_enabled(false);
+        t.advance(b"\x1b[>1u\x1b[?u");
+        assert_eq!(t.modes().kitty_keyboard, 0);
+        assert!(t.take_responses().is_empty(), "no answer, so the application uses xterm keys");
+    }
 
     fn mouse(button: MouseButton, action: MouseAction, row: u16, col: u16) -> Mouse {
         Mouse { button, action, row, col, shift: false, alt: false, ctrl: false }

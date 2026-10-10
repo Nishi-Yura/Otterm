@@ -61,11 +61,19 @@ pub struct TerminalOptions {
     /// Cursor style until an application sets one.
     pub cursor_shape: CursorShape,
     pub cursor_blink: bool,
+    /// Applications may turn on the Kitty keyboard protocol (decision I3).
+    pub kitty_keyboard: bool,
 }
 
 impl Default for TerminalOptions {
     fn default() -> Self {
-        Self { scrollback: 10_000, ambiguous_wide: false, cursor_shape: CursorShape::Block, cursor_blink: true }
+        Self {
+            scrollback: 10_000,
+            ambiguous_wide: false,
+            cursor_shape: CursorShape::Block,
+            cursor_blink: true,
+            kitty_keyboard: true,
+        }
     }
 }
 
@@ -237,6 +245,7 @@ impl SessionManager for LocalSessionManager {
         term.set_scrollback_limit(options.scrollback);
         term.set_ambiguous_wide(options.ambiguous_wide);
         term.set_default_cursor(options.cursor_shape, options.cursor_blink);
+        term.set_kitty_keyboard_enabled(options.kitty_keyboard);
         let session = Arc::new(Session {
             pty: Mutex::new(Some(pty)),
             term: Mutex::new(term),

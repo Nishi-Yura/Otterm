@@ -13,4 +13,4 @@ mod term;
 
 pub use cell::{Attrs, Cell, Color, Row, flags};
 pub use input::{Key, Mouse, MouseAction, MouseButton, encode_key, encode_mouse, encode_paste};
-pub use term::{Cursor, CursorShape, Damage, Event, Modes, MouseMode, Terminal};
+pub use term::{Cursor, CursorShape, Damage, Event, KITTY_SUPPORTED, Modes, MouseMode, Terminal};

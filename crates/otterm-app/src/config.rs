@@ -151,6 +151,7 @@ pub fn terminal_options(c: &Config) -> otterm_session::TerminalOptions {
             CursorStyle::Bar => otterm_session::CursorShape::Bar,
         },
         cursor_blink: c.terminal.cursor.blink,
+        kitty_keyboard: c.terminal.kitty_keyboard,
     }
 }
 
