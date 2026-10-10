@@ -264,3 +264,37 @@ echo-off-notice = パスワードの入力中です。入力は表示されず�
 
 memory-warning = メモリを { $gb } GB 使っています。大きなタブ: { $tab }
 mod-overhead-warning = mod が入力を遅くしています。開発者モードで確認できます。
+
+## ターミナル本体
+
+terminal-label = ターミナル
+terminal-input-label = ターミナルへの入力
+process-exited = { $code ->
+    [none] プロセスが終了しました
+   *[other] プロセスが終了しました（終了コード { $code }）
+}
+start-failed = シェルを起動できませんでした: { $error }
+config-ignored = config.toml の一部を無視しました: { $keys }
+config-unreadable = 設定を読み込めませんでした: { $error }
+
+## 検索
+
+search-label = ターミナル内を検索
+search-placeholder = 検索
+search-match-case = 大文字と小文字を区別
+search-whole-word = 単語単位
+search-regex = 正規表現
+search-invalid = 式が正しくありません
+search-older = 前へ（古い方、Enter）
+search-newer = 次へ（新しい方、Shift+Enter）
+search-close = 閉じる（Esc）
+
+## 右クリックメニュー
+
+menu-copy = コピー
+menu-paste = 貼り付け
+menu-select-all = すべて選択
+menu-clear-scrollback = スクロールバックを消去
+menu-search = 検索
+menu-open-link = リンクを開く
+menu-copy-link = リンクをコピー

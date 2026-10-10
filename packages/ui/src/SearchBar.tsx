@@ -1,4 +1,5 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
+import { t } from "./i18n";
 import type { SearchOptions } from "./session";
 
 /** Delay between typing and searching, so each keystroke does not search the whole history. */
@@ -45,7 +46,7 @@ export function SearchBar(props: SearchBarProps) {
       } catch (e) {
         setCount(0);
         setIndex(0);
-        setError(String(e));
+        setError(`${t("search-invalid")}: ${String(e)}`);
       }
     }, SEARCH_DELAY_MS);
   };
@@ -92,8 +93,8 @@ export function SearchBar(props: SearchBarProps) {
         ref={input}
         class="search-input"
         classList={{ invalid: error() !== undefined }}
-        aria-label="Search the terminal"
-        placeholder="Search"
+        aria-label={t("search-label")}
+        placeholder={t("search-placeholder")}
         spellcheck={false}
         value={query()}
         onInput={(e) => {
@@ -102,19 +103,19 @@ export function SearchBar(props: SearchBarProps) {
         }}
         onKeyDown={onKeyDown}
       />
-      <Toggle key="caseSensitive" label="Aa" title="Match case" />
-      <Toggle key="wholeWord" label="ab" title="Whole word" />
-      <Toggle key="regex" label=".*" title="Regular expression" />
-      <span class="search-count" title={error()}>
-        {error() ? "invalid" : query() ? `${count() === 0 ? 0 : index()}/${count()}` : ""}
+      <Toggle key="caseSensitive" label="Aa" title={t("search-match-case")} />
+      <Toggle key="wholeWord" label="ab" title={t("search-whole-word")} />
+      <Toggle key="regex" label=".*" title={t("search-regex")} />
+      <span class="search-count" title={error()} data-state={error() ? "invalid" : undefined}>
+        {error() ? "!" : query() ? `${count() === 0 ? 0 : index()}/${count()}` : ""}
       </span>
-      <button type="button" class="search-step" title="Older (Enter)" onClick={() => step(-1)}>
+      <button type="button" class="search-step" title={t("search-older")} onClick={() => step(-1)}>
         ↑
       </button>
-      <button type="button" class="search-step" title="Newer (Shift+Enter)" onClick={() => step(1)}>
+      <button type="button" class="search-step" title={t("search-newer")} onClick={() => step(1)}>
         ↓
       </button>
-      <button type="button" class="search-step" title="Close (Esc)" onClick={() => props.close()}>
+      <button type="button" class="search-step" title={t("search-close")} onClick={() => props.close()}>
         ×
       </button>
     </search>

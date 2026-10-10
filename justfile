@@ -44,6 +44,7 @@ test:
 bench *ARGS:
     node tests/bench/run.js {{ARGS}}
 
-# Validate the command dictionary against its schema.
+# Validate the command dictionary against its schema and the UI translations against each other.
 validate:
     node tests/dictionary/validate-dictionary.js
+    node tests/i18n/check-locales.mjs

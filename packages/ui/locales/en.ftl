@@ -264,3 +264,37 @@ echo-off-notice = You're typing a password. It isn't shown or recorded.
 
 memory-warning = Using { $gb } GB of memory. Largest tab: { $tab }
 mod-overhead-warning = A mod is slowing down typing. Check Developer mode.
+
+## Terminal
+
+terminal-label = Terminal
+terminal-input-label = Terminal input
+process-exited = { $code ->
+    [none] The process exited
+   *[other] The process exited with code { $code }
+}
+start-failed = Could not start the shell: { $error }
+config-ignored = Ignored part of config.toml: { $keys }
+config-unreadable = Could not read the configuration: { $error }
+
+## Search
+
+search-label = Search the terminal
+search-placeholder = Search
+search-match-case = Match case
+search-whole-word = Whole word
+search-regex = Regular expression
+search-invalid = Invalid pattern
+search-older = Older (Enter)
+search-newer = Newer (Shift+Enter)
+search-close = Close (Esc)
+
+## Context menu
+
+menu-copy = Copy
+menu-paste = Paste
+menu-select-all = Select all
+menu-clear-scrollback = Clear scrollback
+menu-search = Find
+menu-open-link = Open link
+menu-copy-link = Copy link

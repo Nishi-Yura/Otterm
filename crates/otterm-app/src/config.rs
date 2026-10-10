@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, SystemTime};
 
-use otterm_config::{AmbiguousWidth, Auto, Config, CursorStyle, Theme, Warning};
+use otterm_config::{AmbiguousWidth, Auto, Config, CursorStyle, Language, Theme, Warning};
 use serde::Serialize;
 
 /// How often the config file is checked for changes.
@@ -27,6 +27,8 @@ struct Loaded {
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UiConfig {
+    /// `ja`, `en` or `auto` (the UI follows the OS language).
+    pub language: Language,
     pub font: UiFont,
     pub theme: Theme,
     pub cursor_style: CursorStyle,
@@ -81,6 +83,7 @@ impl ConfigState {
             });
         }
         UiConfig {
+            language: c.general.language,
             font: UiFont {
                 family: font_family(c),
                 size: c.font.size.clamp(6.0, 72.0),

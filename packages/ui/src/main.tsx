@@ -2,6 +2,7 @@ import { createSignal, onCleanup, onMount } from "solid-js";
 import { render } from "solid-js/web";
 import { benchMode, runIpcBench } from "./bench";
 import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
+import { setLanguage, t } from "./i18n";
 import { isCopyShortcut, isSearchShortcut, scrollKey, terminalKey, zoomKey } from "./keys";
 import { attachPointer } from "./pointer";
 import { SearchBar } from "./SearchBar";
@@ -66,6 +67,7 @@ function Terminal() {
     const fit = () => r.gridSize(viewport.clientWidth, viewport.clientHeight);
 
     const applyConfig = (c: UiConfig) => {
+      setLanguage(c.language);
       applyThemeCss(c.theme);
       r.setTheme(themeFromConfig(c.theme.terminal));
       baseFont = c.font;
@@ -74,7 +76,7 @@ function Terminal() {
       copyOnSelect = c.copyOnSelect;
       if (c.warnings.length > 0) {
         const keys = c.warnings.map((w) => (w.key ? `${w.key}: ${w.message}` : w.message)).join("; ");
-        showNotice(`config.toml: ignored ${keys}`);
+        showNotice(t("config-ignored", { keys }));
       }
     };
     try {
@@ -84,7 +86,7 @@ function Terminal() {
         refit?.();
       });
     } catch (e) {
-      showNotice(`could not read the configuration: ${String(e)}`);
+      showNotice(t("config-unreadable", { error: String(e) }));
     }
 
     try {
@@ -97,12 +99,12 @@ function Terminal() {
       const { cols, rows } = fit();
       session = await createSession(cols, rows, (e) => {
         if (e.kind === "title") document.title = e.title || "otterm";
-        if (e.kind === "exited") setStatus(`[process exited${e.code === null ? "" : ` with code ${e.code}`}]`);
+        if (e.kind === "exited") setStatus(t("process-exited", { code: e.code ?? "none" }));
       });
       // Frames sent before we knew the session id were dropped above; ask for the whole screen.
       await session.redraw();
     } catch (e) {
-      setStatus(`[failed to start: ${String(e)}]`);
+      setStatus(t("start-failed", { error: String(e) }));
       return;
     }
 
@@ -299,7 +301,7 @@ function Terminal() {
       ref={host}
       class="terminal"
       role="application"
-      aria-label="Terminal"
+      aria-label={t("terminal-label")}
       onMouseDown={() => setTimeout(() => input.focus())}
     >
       <div ref={viewport} class="viewport">
@@ -307,7 +309,7 @@ function Terminal() {
         <textarea
           ref={input}
           class="input"
-          aria-label="Terminal input"
+          aria-label={t("terminal-input-label")}
           autocapitalize="off"
           autocomplete="off"
           spellcheck={false}

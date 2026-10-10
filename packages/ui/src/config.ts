@@ -3,6 +3,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 /** Mirrors `UiConfig` in crates/otterm-app/src/config.rs. */
 export interface UiConfig {
+  language: "auto" | "ja" | "en";
   font: {
     /** CSS font-family list with the fallbacks already appended. */
     family: string;

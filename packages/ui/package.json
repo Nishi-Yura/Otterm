@@ -10,6 +10,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@fluent/bundle": "0.19.1",
     "@tauri-apps/api": "^2.12.2",
     "solid-js": "^1.9.17"
   },
