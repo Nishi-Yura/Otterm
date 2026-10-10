@@ -20,6 +20,7 @@ import {
   splitPane,
 } from "./layout";
 import { PromptBar, type PromptProps } from "./PromptBar";
+import { folderName } from "./paths";
 import type { Frame } from "./screen/protocol";
 import { connectScreen } from "./session";
 import { type ScreenHub, TerminalView } from "./TerminalView";
@@ -59,6 +60,8 @@ export function App() {
   /** Tabs whose program rang the bell while they were in the background. */
   const [rang, setRang] = createSignal<Set<number>>(new Set());
   const cwds = new Map<number, string>();
+  /** Folder name of each pane, from OSC 7, for tab titles when the shell sets none. */
+  const [folders, setFolders] = createSignal<Record<number, string>>({});
   /** Session id of each pane, once started. */
   const sessionOf = new Map<number, number>();
   const [confirm, setConfirm] = createSignal<PromptProps>();
@@ -378,7 +381,9 @@ export function App() {
   };
   const paneActive = (p: Pane) => paneVisible(p) && currentTab()?.active === p.id;
 
-  const tabTitle = (tab: Tab) => titles()[tab.active] || t("tab-untitled");
+  /** Decision I10: the program's title (OSC 0/2) if it set one, else the folder name. */
+  const paneTitle = (pane: number) => titles()[pane] || folders()[pane] || "";
+  const tabTitle = (tab: Tab) => paneTitle(tab.active) || t("tab-untitled");
 
   // Looking at a tab clears its bell marker.
   createEffect(() => {
@@ -390,7 +395,7 @@ export function App() {
   createEffect(() => {
     const tab = currentTab();
     if (!tab || !ready()) return;
-    const title = titles()[tab.active] ? `${titles()[tab.active]} — otterm` : "otterm";
+    const title = paneTitle(tab.active) ? `${paneTitle(tab.active)} — otterm` : "otterm";
     document.title = title;
     void getCurrentWindow()
       .setTitle(title)
@@ -487,7 +492,10 @@ export function App() {
                   active={() => paneActive(p)}
                   cwd={p.cwd}
                   onTitle={(title) => setTitles({ ...titles(), [p.id]: title })}
-                  onCwd={(url) => cwds.set(p.id, url)}
+                  onCwd={(url) => {
+                    cwds.set(p.id, url);
+                    setFolders({ ...folders(), [p.id]: folderName(url) });
+                  }}
                   onExit={() => closePane(p.id)}
                   onSession={(id) => sessionOf.set(p.id, id)}
                   onBell={() => {
