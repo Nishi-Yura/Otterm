@@ -1,6 +1,6 @@
 // Runs otterm's benchmarks and writes one combined result file.
 //
-//   node tests/bench/run.js [--suite pty,ipc] [--quick] [--out tests/bench/results/latest.json]
+//   node tests/bench/run.js [--suite pty,ipc,typing] [--quick] [--out tests/bench/results/latest.json]
 //
 // Result format: tests/bench/README.md. Compare two files with tests/bench/compare.js.
 const { execFileSync, execSync, spawnSync } = require("node:child_process");
@@ -15,7 +15,7 @@ const value = (name, def) => {
   const i = args.indexOf(name);
   return i >= 0 ? args[i + 1] : def;
 };
-const suites = value("--suite", "pty,ipc").split(",");
+const suites = value("--suite", "pty,ipc,typing").split(",");
 const quick = flag("--quick");
 const outFile = path.resolve(root, value("--out", "tests/bench/results/latest.json"));
 const exe = (name) => (process.platform === "win32" ? `${name}.exe` : name);
@@ -32,9 +32,12 @@ function run(cmd, cmdArgs, opts = {}) {
 const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
 const results = [];
 
-if (suites.includes("pty")) {
+/** Build otterm-bench (release) next to the bundled ConPTY; returns its path. */
+let benchBin;
+function buildBenchBin() {
+  if (benchBin) return benchBin;
   run("cargo", ["build", "--release", "-p", "otterm-bench"]);
-  const bin = path.join(root, "target", "release", exe("otterm-bench"));
+  benchBin = path.join(root, "target", "release", exe("otterm-bench"));
   // Measure the PTY the app ships: the bundled ConPTY on Windows (decision M3), when fetched.
   const conpty = path.join(
     root,
@@ -46,8 +49,43 @@ if (suites.includes("pty")) {
   );
   if (process.platform === "win32" && fs.existsSync(conpty)) {
     for (const f of ["conpty.dll", "OpenConsole.exe"])
-      fs.copyFileSync(path.join(conpty, f), path.join(path.dirname(bin), f));
+      fs.copyFileSync(path.join(conpty, f), path.join(path.dirname(benchBin), f));
   }
+  return benchBin;
+}
+
+/** Build the app with the bench commands into target/bench; returns the executable. */
+let benchApp;
+function buildBenchApp() {
+  if (benchApp) return benchApp;
+  // A separate target dir keeps the bench build (with the bench commands) apart from normal builds.
+  const targetDir = path.join(root, "target", "bench");
+  run("pnpm", ["--filter", "@otterm/ui", "build"]);
+  run("cargo", ["build", "--release", "-p", "otterm-app", "--features", "bench"], {
+    env: { ...process.env, CARGO_TARGET_DIR: targetDir },
+  });
+  benchApp = path.join(targetDir, "release", exe("otterm"));
+  return benchApp;
+}
+
+/** Run the bench app in one mode; it writes its result to OTTERM_BENCH_OUT and exits. */
+function runApp(mode, env = {}) {
+  const out = path.join(tmp, `${mode}.json`);
+  console.error(`$ otterm (OTTERM_BENCH=${mode})`);
+  const r = spawnSync(buildBenchApp(), [], {
+    cwd: root,
+    stdio: "inherit",
+    timeout: 300_000,
+    env: { ...process.env, ...env, OTTERM_BENCH: mode, OTTERM_BENCH_OUT: out },
+  });
+  if (r.error || !fs.existsSync(out)) throw new Error(`${mode} bench did not finish: ${r.error ?? `exit ${r.status}`}`);
+  const result = readJson(out);
+  if (result.error) throw new Error(`${mode} bench failed: ${result.error}`);
+  return result;
+}
+
+if (suites.includes("pty")) {
+  const bin = buildBenchBin();
   const benches = [
     ["pty-throughput", ...(quick ? ["--mib", "10", "--runs", "2"] : [])],
     ["pty-roundtrip", ...(quick ? ["--samples", "100"] : [])],
@@ -60,26 +98,10 @@ if (suites.includes("pty")) {
   }
 }
 
-if (suites.includes("ipc")) {
-  // A separate target dir keeps the bench build (with the bench commands) apart from normal builds.
-  const targetDir = path.join(root, "target", "bench");
-  run("pnpm", ["--filter", "@otterm/ui", "build"]);
-  run("cargo", ["build", "--release", "-p", "otterm-app", "--features", "bench"], {
-    env: { ...process.env, CARGO_TARGET_DIR: targetDir },
-  });
-  const out = path.join(tmp, "ipc.json");
-  console.error("$ otterm (OTTERM_BENCH=ipc)");
-  const r = spawnSync(path.join(targetDir, "release", exe("otterm")), [], {
-    cwd: root,
-    stdio: "inherit",
-    timeout: 300_000,
-    env: { ...process.env, OTTERM_BENCH: "ipc", OTTERM_BENCH_OUT: out },
-  });
-  if (r.error || !fs.existsSync(out)) throw new Error(`ipc bench did not finish: ${r.error ?? `exit ${r.status}`}`);
-  const ipc = readJson(out);
-  if (ipc.error) throw new Error(`ipc bench failed: ${ipc.error}`);
-  results.push(ipc);
-}
+if (suites.includes("ipc")) results.push(runApp("ipc"));
+
+// The app types into `otterm-bench pong`, so the echo comes from the PTY, not a shell.
+if (suites.includes("typing")) results.push(runApp("typing", { OTTERM_BENCH_CHILD: buildBenchBin() }));
 
 let commit = "unknown";
 try {

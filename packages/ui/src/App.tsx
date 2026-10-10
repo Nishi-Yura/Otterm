@@ -1,6 +1,6 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
-import { benchMode, runIpcBench } from "./bench";
+import { benchMode, runIpcBench, runTypingBench, setExposeInternals } from "./bench";
 import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
 import { setLanguage, t } from "./i18n";
 import { type AppAction, appAction, platform } from "./keys";
@@ -85,11 +85,13 @@ export function App() {
   };
 
   onMount(async () => {
-    if ((await benchMode()) === "ipc") {
+    const mode = await benchMode();
+    if (mode === "ipc") {
       setBench("ipc bench running…");
       await runIpcBench(setBench);
       return;
     }
+    if (mode) setExposeInternals(true);
     try {
       applyConfig(await loadConfig());
       unlistenConfig = await onConfigChanged(applyConfig);
@@ -104,6 +106,9 @@ export function App() {
     }
     newTab();
     setReady(true);
+    if (mode === "typing") {
+      runTypingBench(setBench).catch((e) => setBench(`typing bench failed: ${String(e)}`));
+    }
   });
 
   onCleanup(() => {

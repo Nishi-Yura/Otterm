@@ -1,6 +1,12 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
+import { createSignal } from "solid-js";
+import type { CanvasRenderer } from "./screen/canvasRenderer";
+import type { ScreenModel } from "./screen/model";
 
-/** `"ipc"` in a bench build started with OTTERM_BENCH=ipc; null otherwise (normal builds lack the command). */
+/** Bench builds expose the active pane on `window.__otterm` (dev builds always do). */
+export const [exposeInternals, setExposeInternals] = createSignal(false);
+
+/** `"ipc"` or `"typing"` in a bench build started with OTTERM_BENCH; null otherwise (normal builds lack the command). */
 export async function benchMode(): Promise<string | null> {
   try {
     return await invoke<string | null>("bench_mode");
@@ -34,4 +40,68 @@ export async function runIpcBench(log: (line: string) => void): Promise<void> {
     ack.setFloat64(4, receivedAt, true);
     ws.send(ack.buffer);
   };
+}
+
+/** Keystrokes measured, after the warm-up ones. */
+const TYPING_SAMPLES = 1000;
+const TYPING_WARMUP = 50;
+/** Pause between keystrokes, so each one is measured on an idle terminal. */
+const TYPING_GAP_MS = 20;
+/** Characters per line before Enter (not measured) starts a new one. */
+const LINE_LENGTH = 60;
+
+interface Exposed {
+  model: ScreenModel;
+  renderer: CanvasRenderer;
+  input: HTMLTextAreaElement;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * docs/09 §4.1 `typing-latency`: dispatch a keydown on the active terminal's input (the same path
+ * a real key takes from there on) and time it until the draw that shows the character ends.
+ * The child (`otterm-bench pong`, set up by Rust) only reads, so the PTY echoes the key.
+ */
+export async function runTypingBench(log: (line: string) => void): Promise<void> {
+  const exposed = () => (window as unknown as { __otterm?: Exposed }).__otterm;
+  for (let i = 0; i < 200 && !exposed()?.renderer; i++) await sleep(50);
+  const pane = exposed();
+  if (!pane) throw new Error("no terminal to type into");
+  const { model, renderer, input } = pane;
+  await sleep(1000);
+
+  const key = (k: string) =>
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }));
+  /** Resolves with the time of the first draw after which `done()` holds. */
+  const drawn = (done: () => boolean) =>
+    new Promise<number>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("no echo within 2 s")), 2000);
+      renderer.afterDraw = () => {
+        if (!done()) return;
+        clearTimeout(timeout);
+        renderer.afterDraw = undefined;
+        resolve(performance.now());
+      };
+    });
+
+  const samples: number[] = [];
+  for (let i = 0; i < TYPING_WARMUP + TYPING_SAMPLES; i++) {
+    if (i > 0 && i % LINE_LENGTH === 0) {
+      const row = model.cursorRow;
+      const next = drawn(() => model.cursorCol === 0 && model.cursorRow !== row);
+      key("Enter");
+      await next.catch(() => undefined);
+    }
+    const ch = String.fromCharCode(97 + (i % 26));
+    const { cursorRow: row, cursorCol: col } = model;
+    const echoed = drawn(() => model.lines[row]?.codepoints[col] === ch.charCodeAt(0));
+    const start = performance.now();
+    key(ch);
+    const end = await echoed;
+    if (i >= TYPING_WARMUP) samples.push(end - start);
+    if (i % 100 === 0) log(`typing bench: ${i}/${TYPING_WARMUP + TYPING_SAMPLES}`);
+    await sleep(TYPING_GAP_MS);
+  }
+  await invoke("bench_typing_done", { samples, warmup: TYPING_WARMUP, gapMs: TYPING_GAP_MS });
 }

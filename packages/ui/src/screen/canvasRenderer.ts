@@ -44,6 +44,8 @@ export class CanvasRenderer {
   link: Link | undefined;
   /** Called after each draw, e.g. to move the IME anchor to the cursor. */
   onDraw: (() => void) | undefined;
+  /** Also called after each draw; for measurements (the typing bench). */
+  afterDraw: (() => void) | undefined;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -148,6 +150,7 @@ export class CanvasRenderer {
     this.model.dirty.clear();
     this.drawCursor();
     this.onDraw?.();
+    this.afterDraw?.();
   }
 
   /** The cursor cell in CSS pixels, relative to the canvas. */

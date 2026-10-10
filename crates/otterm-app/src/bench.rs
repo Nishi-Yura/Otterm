@@ -1,6 +1,10 @@
-//! IPC benchmark (feature `bench`): how long a binary payload takes from Rust to JS, the way grid
-//! diffs will travel (stage 4 in docs/09 §2). Compares Tauri's raw-payload channel with a local
-//! WebSocket (decision C13). Started with `OTTERM_BENCH=ipc`; driven by tests/bench/run.js.
+//! Benchmarks inside the app (feature `bench`), driven by tests/bench/run.js:
+//!
+//! - `OTTERM_BENCH=ipc`: how long a binary payload takes from Rust to JS, the way grid diffs
+//!   travel (stage 4 in docs/09 §2). Compares Tauri's raw-payload channel with a local WebSocket
+//!   (decision C13).
+//! - `OTTERM_BENCH=typing`: keystroke to drawn frame (docs/09 §4.1 `typing-latency`). The UI
+//!   measures it; see `packages/ui/src/bench.ts`.
 //!
 //! Payload layout: `seq: u32 LE`, `sent_at: f64 LE` (Unix epoch ms), then filler.
 //! JS answers each payload with `seq` and its own receive time on the same clock.
@@ -43,6 +47,51 @@ pub fn mode() -> Option<String> {
 #[tauri::command]
 pub fn bench_mode() -> Option<String> {
     mode()
+}
+
+/// The program the typing bench types into: `otterm-bench pong` (path in `OTTERM_BENCH_CHILD`).
+/// It only blocks reading lines, so the echo comes from the PTY's line discipline (cooked mode),
+/// the same as a shell waiting at its prompt but without the shell's own work.
+pub fn typing_child() -> Option<(String, Vec<String>)> {
+    if mode().as_deref() != Some("typing") {
+        return None;
+    }
+    std::env::var("OTTERM_BENCH_CHILD").ok().map(|p| (p, vec!["pong".to_owned()]))
+}
+
+/// The UI's typing measurements (ms per keystroke, warm-up excluded). Writes the report and exits.
+#[tauri::command]
+pub fn bench_typing_done(app: AppHandle, samples: Vec<f64>, warmup: usize, gap_ms: f64) {
+    let mut sorted = samples.clone();
+    sorted.sort_by(f64::total_cmp);
+    let metric = |q: f64| json!({ "value": round3(percentile(&sorted, q)), "unit": "ms", "better": "lower" });
+    let mean = if sorted.is_empty() { f64::NAN } else { sorted.iter().sum::<f64>() / sorted.len() as f64 };
+    let report = json!({
+        "suite": "typing",
+        "bench": "typing-latency",
+        "platform": format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH),
+        "params": {
+            "samples": samples.len(),
+            "warmup": warmup,
+            "gapMs": gap_ms,
+            "child": "otterm-bench pong (echo by the PTY line discipline)",
+            "from": "keydown dispatched on the terminal's input element",
+            "to": "end of the Canvas draw that shows the character (inside requestAnimationFrame; the compositor adds up to one more frame)",
+        },
+        "metrics": {
+            "keystroke_to_draw.p50": metric(0.5),
+            "keystroke_to_draw.p99": metric(0.99),
+            "keystroke_to_draw.max": metric(1.0),
+            "keystroke_to_draw.mean": { "value": round3(mean), "unit": "ms", "better": "lower" },
+        },
+        "samples": samples.iter().map(|v| round3(*v)).collect::<Vec<_>>(),
+    });
+    let text = serde_json::to_string_pretty(&report).unwrap();
+    match std::env::var("OTTERM_BENCH_OUT") {
+        Ok(path) => std::fs::write(path, text + "\n").expect("write OTTERM_BENCH_OUT"),
+        Err(_) => println!("{text}"),
+    }
+    app.exit(0);
 }
 
 #[tauri::command]

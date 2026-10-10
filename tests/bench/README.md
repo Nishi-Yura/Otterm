@@ -18,7 +18,9 @@ node tests/bench/compare.js old.json new.json --threshold 10
 | `pty` | `pty-roundtrip` | Write `ping N` to the PTY until `pong N` is read back. Stages 2–3 of 09 §2, without VT parsing | `crates/otterm-bench` |
 | `ipc` | `ipc-transfer` | Rust → WebView transfer of grid-diff-sized payloads (64 B, 2 KiB, 96 KiB, 1 MiB) over Tauri's raw channel and a local WebSocket. Stage 4 of 09 §2, decision C13 | `crates/otterm-app/src/bench.rs` (feature `bench`), `packages/ui/src/bench.ts` |
 
-Not yet possible, waiting for the VT grid and renderer (M1): `typing-latency`, `startup` (to the first drawn prompt), `memory`, `mod-overhead`, `resize`.
+| `typing` | `typing-latency` | Keystroke to drawn frame: a keydown dispatched on the terminal's input element, until the Canvas draw that shows the echoed character ends (inside `requestAnimationFrame`; the compositor adds up to one more frame). The child is `otterm-bench pong`, which only reads, so the PTY's line discipline echoes (no shell work in the number). 1,000 keystrokes after 50 warm-up ones, 20 ms apart | `packages/ui/src/bench.ts`, `crates/otterm-app/src/bench.rs` |
+
+Not yet possible: `startup` (to the first drawn prompt), `memory`, `mod-overhead`, `resize`.
 
 ### Notes
 

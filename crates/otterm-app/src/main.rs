@@ -83,6 +83,11 @@ fn session_create(
     if let Some(dir) = cwd.as_deref().and_then(local_path).filter(|d| d.is_dir()) {
         opts.cwd = Some(dir);
     }
+    #[cfg(feature = "bench")]
+    if let Some((program, args)) = bench::typing_child() {
+        opts.program = Some(program);
+        opts.args = args;
+    }
     let screen = std::sync::Arc::clone(&state.screen);
     state
         .sessions
@@ -386,6 +391,7 @@ fn main() {
             bench::bench_mode,
             bench::bench_ipc_start,
             bench::bench_ipc_ack,
+            bench::bench_typing_done,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run otterm");

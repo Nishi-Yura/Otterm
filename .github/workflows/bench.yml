@@ -51,12 +51,12 @@ jobs:
       - run: node scripts/fetch-conpty.js
 
       # Shared runners are noisy and have no GPU: compare transports within a run, not across runs.
-      - name: IPC bench
+      - name: IPC and typing bench
         if: runner.os != 'Linux'
-        run: node tests/bench/run.js --suite ipc
-      - name: IPC bench (Xvfb)
+        run: node tests/bench/run.js --suite ipc,typing
+      - name: IPC and typing bench (Xvfb)
         if: runner.os == 'Linux'
-        run: xvfb-run -a node tests/bench/run.js --suite ipc
+        run: xvfb-run -a node tests/bench/run.js --suite ipc,typing
 
       - uses: actions/upload-artifact@v4
         if: always()

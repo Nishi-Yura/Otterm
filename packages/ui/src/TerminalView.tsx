@@ -1,4 +1,5 @@
 import { createEffect, createSignal, on, onCleanup, onMount } from "solid-js";
+import { exposeInternals } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
 import type { UiConfig } from "./config";
 import { t } from "./i18n";
@@ -79,9 +80,22 @@ export function TerminalView(props: TerminalViewProps) {
   const highlights = new Highlights();
   let focusSearch: (() => void) | undefined;
 
-  // Dev builds expose the active pane for automated checks (screen text, cursor).
+  // Dev and bench builds expose the active pane for automated checks (screen text, cursor, draws).
   createEffect(() => {
-    if (import.meta.env.DEV && props.active()) Object.assign(window, { __otterm: { model, selection } });
+    if ((import.meta.env.DEV || exposeInternals()) && props.active()) {
+      // Getters: the renderer and the input exist only once the view has mounted.
+      const exposed = {
+        model,
+        selection,
+        get renderer() {
+          return renderer;
+        },
+        get input() {
+          return input;
+        },
+      };
+      Object.assign(window, { __otterm: exposed });
+    }
   });
 
   const applyConfig = (c: UiConfig) => {

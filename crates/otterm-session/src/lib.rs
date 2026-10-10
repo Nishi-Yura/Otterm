@@ -25,7 +25,10 @@ pub type SessionId = u64;
 /// Most search matches returned at once.
 const MAX_MATCHES: usize = 10_000;
 
-/// Minimum time between two frames of one session: output within a frame is coalesced (docs/09 §3.2).
+/// Pacing of one session's frames: output within a frame is coalesced (docs/09 §3.2). A frame may
+/// follow the previous one sooner only when that one ended a quiet period, so a keystroke echoed
+/// right after some output is not held back, while a flood still gets at most two frames per
+/// interval.
 const FRAME_INTERVAL: Duration = Duration::from_millis(16);
 /// How long a frame may be held while the application has synchronized output (DECSET 2026) on.
 const SYNC_TIMEOUT: Duration = Duration::from_millis(150);
@@ -428,12 +431,16 @@ fn apply_output(session: &Session, sink: &EventSink, bytes: &[u8]) {
 /// Turn screen changes into at most one frame per [`FRAME_INTERVAL`].
 fn frame_loop(id: SessionId, session: &Session, sink: &EventSink) {
     let mut last_frame = Instant::now() - FRAME_INTERVAL;
+    // Time between the last two frames; a long one means the last frame ended a quiet period.
+    let mut last_gap = FRAME_INTERVAL;
     let mut last = FrameState::default();
     let mut sync_since: Option<Instant> = None;
     while session.frame.wait() {
-        let wait = FRAME_INTERVAL.saturating_sub(last_frame.elapsed());
-        if !wait.is_zero() {
-            thread::sleep(wait);
+        if last_gap < FRAME_INTERVAL {
+            let wait = FRAME_INTERVAL.saturating_sub(last_frame.elapsed());
+            if !wait.is_zero() {
+                thread::sleep(wait);
+            }
         }
         let mut out = Vec::new();
         {
@@ -452,8 +459,9 @@ fn frame_loop(id: SessionId, session: &Session, sink: &EventSink) {
             let offset = session.view_offset(&term);
             otterm_vt::diff::encode_frame(&mut term, id as u32, offset, &mut last, &mut out);
         }
-        last_frame = Instant::now();
         if !out.is_empty() {
+            last_gap = last_frame.elapsed();
+            last_frame = Instant::now();
             sink(SessionEvent::Frame(out));
         }
     }
