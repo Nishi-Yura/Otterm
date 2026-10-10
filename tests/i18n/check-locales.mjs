@@ -1,9 +1,9 @@
 // Checks packages/ui/locales/*.ftl: every file parses without errors and defines the same message
 // ids as the Japanese source (decision C7). Run: node tests/i18n/check-locales.mjs
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const require = createRequire(path.join(root, "packages/ui/package.json"));
