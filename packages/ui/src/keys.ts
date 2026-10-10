@@ -20,6 +20,8 @@ export const platform = /Mac/.test(navigator.userAgent)
 
 /** The paste shortcut (decision B4): Ctrl+V on Windows, Cmd+V on macOS, Ctrl+Shift+V on Linux. */
 export function isPasteShortcut(e: KeyboardEvent): boolean {
+  // Shift+Insert, the old CUA paste key, everywhere but macOS.
+  if (platform !== "macos" && e.key === "Insert" && e.shiftKey && !e.ctrlKey && !e.altKey) return true;
   const v = e.key.toLowerCase() === "v";
   if (platform === "macos") return v && e.metaKey && !e.ctrlKey;
   if (platform === "windows") return v && e.ctrlKey && !e.altKey;
@@ -31,6 +33,8 @@ export function isPasteShortcut(e: KeyboardEvent): boolean {
  * Windows also Ctrl+C while there is a selection (without one, Ctrl+C stays SIGINT).
  */
 export function isCopyShortcut(e: KeyboardEvent, hasSelection: boolean): boolean {
+  // Ctrl+Insert, the old CUA copy key, everywhere but macOS (only with a selection).
+  if (platform !== "macos" && e.key === "Insert" && e.ctrlKey && !e.shiftKey && !e.altKey) return hasSelection;
   if (e.key.toLowerCase() !== "c" || e.altKey) return false;
   if (platform === "macos") return e.metaKey && !e.ctrlKey;
   if (e.ctrlKey && e.shiftKey) return true;

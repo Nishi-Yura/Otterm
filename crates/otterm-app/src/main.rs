@@ -103,7 +103,10 @@ fn session_create(
         opts.args = shell::integration_args(&program);
         opts.program = Some(program);
     }
-    if let Some(dir) = cwd.as_deref().and_then(local_path).filter(|d| d.is_dir()) {
+    // The folder of the pane this one came from, unless the profile names its own.
+    if opts.cwd.is_none()
+        && let Some(dir) = cwd.as_deref().and_then(local_path).filter(|d| d.is_dir())
+    {
         opts.cwd = Some(dir);
     }
     // `otterm <path>` / `otterm -e <command>` apply to the first tab.

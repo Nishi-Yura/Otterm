@@ -18,8 +18,9 @@ pub struct MenuEntry {
 /// Configured profiles (not hidden), then detected ones, without duplicate ids.
 pub fn all(config: &Config) -> Vec<Profile> {
     let mut list: Vec<Profile> = config.profiles.iter().filter(|p| !p.hidden).cloned().collect();
+    // A configured profile, hidden or not, takes the place of a detected one with its id.
     for p in detected() {
-        if !list.iter().any(|q| q.id == p.id) {
+        if !config.profiles.iter().any(|q| q.id == p.id) {
             list.push(p);
         }
     }
@@ -87,9 +88,12 @@ mod tests {
             ..Profile::default()
         });
         c.profiles.push(Profile { id: "gone".into(), hidden: true, ..Profile::default() });
+        // Hiding a profile with a detected shell's id hides that shell too.
+        c.profiles.push(Profile { id: "pwsh".into(), hidden: true, ..Profile::default() });
         let list = all(&c);
         assert_eq!(list[0].name, "My cmd");
         assert_eq!(list.iter().filter(|p| p.id == "cmd").count(), 1);
         assert!(list.iter().all(|p| p.id != "gone"), "hidden profiles stay out of the menu");
+        assert!(list.iter().all(|p| p.id != "pwsh"), "a hidden id hides the detected shell");
     }
 }

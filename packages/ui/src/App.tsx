@@ -50,6 +50,8 @@ interface Pane {
   cwd?: string;
   /** Profile it runs (from the new-tab menu). */
   profile?: string;
+  /** When it was created (ms), to tell a shell that dies at once from one that ran. */
+  started?: number;
 }
 
 /** The window: a tab bar and, per tab, panes laid out by a split tree (docs/03 §3). */
@@ -200,7 +202,7 @@ export function App() {
     batch(() => {
       setTabs(next);
       setActiveTab(tabId);
-      setPanes([...panes(), { id: paneId, tab: tabId, cwd, profile }]);
+      setPanes([...panes(), { id: paneId, tab: tabId, cwd, profile, started: Date.now() }]);
     });
   };
 
@@ -256,7 +258,7 @@ export function App() {
         active: paneId,
         zoomed: undefined,
       }));
-      setPanes([...panes(), { id: paneId, tab: tab.id, cwd: cwds.get(tab.active) }]);
+      setPanes([...panes(), { id: paneId, tab: tab.id, cwd: cwds.get(tab.active), started: Date.now() }]);
     });
   };
 
@@ -265,8 +267,10 @@ export function App() {
     const behavior = config()?.closeBehavior ?? "close";
     if (behavior === "keep") return; // The pane shows the exit message until it is closed.
     if (behavior === "close") return closePane(paneId);
-    // restart: a new pane (and shell) takes the old one's place and folder.
+    // restart: a new pane (and shell) takes the old one's place and folder. A shell that exits
+    // within two seconds would restart forever; it stays as "keep" with its message instead.
     const old = panes().find((p) => p.id === paneId);
+    if (old && Date.now() - (old.started ?? 0) < 2000) return;
     const tab = tabs().find((x) => leaves(x.root).includes(paneId));
     if (!old || !tab) return;
     const fresh = nextId++;
@@ -277,7 +281,14 @@ export function App() {
         active: x.active === paneId ? fresh : x.active,
         zoomed: x.zoomed === paneId ? fresh : x.zoomed,
       }));
-      setPanes(panes().map((p) => (p.id === paneId ? { ...old, id: fresh, cwd: cwds.get(paneId) ?? old.cwd } : p)));
+      setPanes(
+        panes().map((p) =>
+          p.id === paneId ? { ...old, id: fresh, cwd: cwds.get(paneId) ?? old.cwd, started: Date.now() } : p,
+        ),
+      );
+      // The tab keeps its title until the new shell sets one.
+      setTitles({ ...titles(), [fresh]: titles()[paneId] ?? "" });
+      setFolders({ ...folders(), [fresh]: folders()[paneId] ?? "" });
     });
     cwds.delete(paneId);
     sessionOf.delete(paneId);
@@ -434,6 +445,8 @@ export function App() {
     const startX = e.clientX;
     let dragging = false;
     const move = (ev: MouseEvent) => {
+      // Released outside the window: the mouseup never came.
+      if (ev.buttons === 0) return up();
       if (!dragging && Math.abs(ev.clientX - startX) < 6) return;
       dragging = true;
       const els = [...document.querySelectorAll<HTMLElement>(".tabbar .tab")];

@@ -265,7 +265,10 @@ impl SessionManager for LocalSessionManager {
         term.set_ambiguous_wide(options.ambiguous_wide);
         term.set_default_cursor(options.cursor_shape, options.cursor_blink);
         term.set_kitty_keyboard_enabled(options.kitty_keyboard);
-        let [fg, bg, cursor] = *self.colors.lock().unwrap();
+        // Read under the colors lock that set_default_colors takes first, so a theme change
+        // cannot slip between reading the colors and this session becoming visible to it.
+        let colors_guard = self.colors.lock().unwrap();
+        let [fg, bg, cursor] = *colors_guard;
         term.set_default_colors(fg, bg, cursor);
         let session = Arc::new(Session {
             pty: Mutex::new(Some(pty)),
@@ -275,6 +278,7 @@ impl SessionManager for LocalSessionManager {
             pid: child.pid(),
         });
         self.sessions.lock().unwrap().insert(id, Arc::clone(&session));
+        drop(colors_guard);
         let sink: Arc<EventSink> = Arc::new(sink);
         let mode = self.mode;
 
