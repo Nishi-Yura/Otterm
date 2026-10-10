@@ -258,6 +258,62 @@ async fn session_running(state: State<'_, AppState>, id: SessionId) -> CmdResult
     state.sessions.running_program(id).map_err(err)
 }
 
+/// Open config.toml in an editor, creating it from a commented template first if it is missing.
+/// Returns its path.
+#[tauri::command]
+fn config_open(state: State<'_, AppState>) -> CmdResult<String> {
+    let path = state.config.path().ok_or("no configuration folder")?;
+    if !path.exists() {
+        if let Some(dir) = path.parent() {
+            std::fs::create_dir_all(dir).map_err(err)?;
+        }
+        std::fs::write(&path, include_str!("config_template.toml")).map_err(err)?;
+    }
+    open_in_editor(&path).map_err(err)?;
+    Ok(path.display().to_string())
+}
+
+/// VS Code when it is on PATH (docs/06 `open.editor`, auto-detect), else the platform's text
+/// editor. The path is one argument, never parsed by a shell.
+fn open_in_editor(path: &std::path::Path) -> std::io::Result<()> {
+    // UI tests record it instead (see open_url).
+    if let Some(log) = std::env::var_os("OTTERM_TEST_OPEN_LOG") {
+        use std::io::Write;
+        let mut f = std::fs::OpenOptions::new().create(true).append(true).open(log)?;
+        return writeln!(f, "editor {}", path.display());
+    }
+    let find = |exe: &str| {
+        std::env::var_os("PATH").and_then(|p| std::env::split_paths(&p).map(|d| d.join(exe)).find(|f| f.is_file()))
+    };
+    let on_path = |exe: &str| find(exe).is_some();
+    let mut cmd = if cfg!(windows) {
+        if let Some(code) = find("code.cmd") {
+            // Run the batch file itself: the standard library then quotes the argument for cmd
+            // safely (and refuses one it cannot).
+            let mut c = std::process::Command::new(code);
+            c.arg(path);
+            c
+        } else {
+            let mut c = std::process::Command::new("notepad.exe");
+            c.arg(path);
+            c
+        }
+    } else if on_path("code") {
+        let mut c = std::process::Command::new("code");
+        c.arg(path);
+        c
+    } else if cfg!(target_os = "macos") {
+        let mut c = std::process::Command::new("open");
+        c.arg("-t").arg(path);
+        c
+    } else {
+        let mut c = std::process::Command::new("xdg-open");
+        c.arg(path);
+        c
+    };
+    cmd.spawn().map(drop)
+}
+
 #[tauri::command]
 fn session_reset_modes(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.reset_modes(id).map_err(err)
@@ -411,6 +467,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             screen_endpoint,
             config_get,
+            config_open,
             session_create,
             session_write,
             session_key,
@@ -454,6 +511,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             screen_endpoint,
             config_get,
+            config_open,
             session_create,
             session_write,
             session_key,
@@ -485,6 +543,12 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_config_template_reads_without_warnings() {
+        let (_, warnings) = otterm_config::parse(include_str!("config_template.toml"));
+        assert!(warnings.is_empty(), "{warnings:?}");
+    }
 
     #[test]
     fn osc52_base64_decodes() {

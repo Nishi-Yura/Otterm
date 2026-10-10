@@ -1,0 +1,46 @@
+# otterm の設定ファイル / otterm configuration
+#
+# 保存すると開いている otterm にすぐ反映されます。書き間違えたキーは無視され、画面に表示されます。
+# Changes apply as soon as you save. Keys that cannot be read are ignored and listed on screen.
+# All settings: docs/06-config-keybind.md
+
+[general]
+# language = "auto"            # auto | ja | en
+# confirm_close_running = true # 実行中のプログラムがあるタブを閉じる前に確認する
+
+[appearance]
+# theme = "otterm Dark"
+# 同梱テーマ / bundled: otterm Dark, otterm Light, High Contrast, Catppuccin Mocha,
+# Catppuccin Latte, Dracula, Nord, Tokyo Night, One Dark, Solarized Dark, Solarized Light,
+# Gruvbox Dark, Gruvbox Light. 自作テーマは themes/*.toml に置く / own themes go in themes/*.toml
+
+[font]
+# family = ["Cascadia Mono"]   # 空なら OS の既定 / empty: the platform default
+# size = 14
+# line_height = 1.2
+
+[terminal]
+# scrollback = 10000
+# cursor.style = "block"       # block | underline | bar
+# cursor.blink = true
+# bell = "visual"              # none | visual | sound | both
+# copy_on_select = false
+# osc52_clipboard = "ask"      # allow | deny | ask
+# kitty_keyboard = true
+
+# [shell]
+# default_profile = "pwsh"
+#
+# [[profiles]]
+# id = "pwsh"
+# name = "PowerShell 7"
+# command = "pwsh.exe"
+# args = ["-NoLogo"]
+
+[keybindings]
+# alt_screen_passthrough = true # vim などの間は Ctrl+Shift / Cmd 以外をアプリに渡す
+
+[keybindings.bindings]
+# "tab.new" = "ctrl+shift+t"
+# "pane.split.vertical" = ["ctrl+shift+d"]
+# "pane.zoom" = []             # 空の配列で割り当てを外す / an empty list unbinds

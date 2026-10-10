@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { createEffect, createSignal, For, on, onCleanup, onMount, Show } from "solid-js";
 import { exposeInternals, startupMark } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
@@ -477,6 +478,10 @@ export function TerminalView(props: TerminalViewProps) {
       { label: t("menu-search"), hint: shortcut("F", platform !== "macos"), action: () => setSearching(true) },
       { label: t("menu-clear-scrollback"), action: () => void session?.clearScrollback() },
       { label: t("menu-reset-modes"), action: () => void session?.resetModes() },
+      {
+        label: t("menu-open-config"),
+        action: () => void invoke("config_open").catch((e) => props.notify(String(e))),
+      },
     ];
     if (link) {
       items.unshift(

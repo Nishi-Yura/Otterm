@@ -1,0 +1,309 @@
+{
+  "date": "2026-10-10T22:09:20.136Z",
+  "commit": "0414273",
+  "platform": "darwin-arm64",
+  "machine": {
+    "cpu": "Apple M2 Pro (Virtual)",
+    "cores": 5,
+    "memoryGiB": 14
+  },
+  "quick": false,
+  "results": [
+    {
+      "bench": "ipc-transfer",
+      "metrics": {
+        "tauri.burst.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.073
+        },
+        "tauri.burst.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 2.313
+        },
+        "tauri.burst.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.222
+        },
+        "tauri.burst.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 2.239
+        },
+        "tauri.cell.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.005
+        },
+        "tauri.cell.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.515
+        },
+        "tauri.cell.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.372
+        },
+        "tauri.cell.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.587
+        },
+        "tauri.line.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.793
+        },
+        "tauri.line.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.947
+        },
+        "tauri.line.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.768
+        },
+        "tauri.line.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.894
+        },
+        "tauri.screen.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.929
+        },
+        "tauri.screen.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.618
+        },
+        "tauri.screen.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.861
+        },
+        "tauri.screen.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.758
+        },
+        "websocket.burst.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.036
+        },
+        "websocket.burst.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 2.148
+        },
+        "websocket.burst.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.074
+        },
+        "websocket.burst.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 2.268
+        },
+        "websocket.cell.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.302
+        },
+        "websocket.cell.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.912
+        },
+        "websocket.cell.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.311
+        },
+        "websocket.cell.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.74
+        },
+        "websocket.line.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.542
+        },
+        "websocket.line.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.05
+        },
+        "websocket.line.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.275
+        },
+        "websocket.line.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.361
+        },
+        "websocket.screen.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.091
+        },
+        "websocket.screen.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.689
+        },
+        "websocket.screen.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.414
+        },
+        "websocket.screen.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.081
+        }
+      },
+      "params": {
+        "clocks": [
+          {
+            "offset_ms": -0.797,
+            "round": "tauri.cell",
+            "uncertainty_ms": 0.084
+          },
+          {
+            "offset_ms": -1.226,
+            "round": "websocket.cell",
+            "uncertainty_ms": 0.092
+          },
+          {
+            "offset_ms": -1.584,
+            "round": "tauri.line",
+            "uncertainty_ms": 0.092
+          },
+          {
+            "offset_ms": -0.941,
+            "round": "websocket.line",
+            "uncertainty_ms": 0.095
+          },
+          {
+            "offset_ms": -1.073,
+            "round": "tauri.screen",
+            "uncertainty_ms": 0.096
+          },
+          {
+            "offset_ms": -0.849,
+            "round": "websocket.screen",
+            "uncertainty_ms": 0.098
+          },
+          {
+            "offset_ms": -1.414,
+            "round": "tauri.burst",
+            "uncertainty_ms": 0.095
+          },
+          {
+            "offset_ms": -0.755,
+            "round": "websocket.burst",
+            "uncertainty_ms": 0.092
+          }
+        ],
+        "iterations": 500,
+        "sizes": [
+          {
+            "bytes": 64,
+            "name": "cell"
+          },
+          {
+            "bytes": 2048,
+            "name": "line"
+          },
+          {
+            "bytes": 98304,
+            "name": "screen"
+          },
+          {
+            "bytes": 1048576,
+            "name": "burst"
+          }
+        ],
+        "warmup": 20
+      },
+      "platform": "macos-aarch64",
+      "suite": "ipc"
+    },
+    {
+      "bench": "typing-latency",
+      "metrics": {
+        "keystroke_to_draw.max": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 21
+        },
+        "keystroke_to_draw.mean": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 3.668
+        },
+        "keystroke_to_draw.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 4
+        },
+        "keystroke_to_draw.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 13
+        }
+      },
+      "params": {
+        "child": "otterm-bench pong (echo by the PTY line discipline)",
+        "from": "keydown dispatched on the terminal's input element",
+        "gapMs": 20,
+        "samples": 1000,
+        "to": "end of the Canvas draw that shows the character (inside requestAnimationFrame; the compositor adds up to one more frame)",
+        "warmup": 50
+      },
+      "platform": "macos-aarch64",
+      "samples": [
+        5, 4, 5, 4, 3, 5, 5, 4, 4, 4, 17, 2, 2, 2, 2, 3, 3, 4, 3, 4, 4, 3, 2, 4, 3, 4, 3, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4,
+        4, 4, 4, 4, 3, 4, 3, 5, 4, 4, 5, 4, 4, 4, 1, 2, 2, 3, 3, 4, 4, 5, 4, 4, 4, 4, 4, 3, 5, 7, 3, 4, 4, 8, 3, 4, 4,
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 4, 4, 4, 4, 4, 4, 5, 4, 4, 4, 3, 3, 4, 4, 4, 4,
+        3, 4, 4, 4, 5, 4, 5, 5, 4, 5, 4, 4, 4, 4, 4, 4, 4, 5, 5, 10, 3, 3, 4, 4, 4, 3, 3, 3, 3, 4, 3, 4, 4, 3, 2, 2, 2,
+        2, 2, 1, 6, 1, 2, 2, 2, 1, 2, 2, 2, 1, 3, 2, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 1, 1, 2, 2, 1, 2, 1, 1, 1, 2, 2, 2,
+        2, 3, 3, 4, 4, 20, 4, 4, 3, 3, 4, 3, 4, 4, 4, 4, 4, 3, 3, 4, 4, 3, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4, 7, 4, 3, 5, 2,
+        3, 3, 4, 4, 4, 5, 4, 5, 4, 5, 5, 3, 4, 3, 2, 1, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 15, 12, 1, 3, 2, 4, 3, 3, 5,
+        3, 4, 4, 3, 4, 3, 4, 4, 4, 4, 3, 4, 4, 3, 4, 4, 2, 4, 4, 5, 3, 2, 2, 4, 2, 3, 4, 4, 3, 3, 4, 3, 4, 5, 4, 4, 4,
+        5, 4, 4, 4, 4, 4, 3, 4, 4, 4, 4, 5, 4, 4, 10, 4, 3, 4, 4, 5, 4, 1, 1, 1, 2, 3, 3, 4, 2, 2, 4, 4, 4, 4, 4, 3, 3,
+        5, 5, 4, 4, 4, 4, 4, 4, 4, 2, 2, 3, 4, 4, 5, 3, 4, 4, 3, 4, 3, 6, 3, 4, 5, 4, 3, 3, 4, 3, 4, 4, 4, 4, 4, 4, 4,
+        10, 3, 4, 4, 3, 6, 4, 3, 3, 3, 3, 4, 4, 4, 4, 3, 4, 4, 4, 4, 4, 4, 3, 4, 3, 4, 4, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4,
+        3, 4, 5, 4, 5, 4, 4, 4, 3, 3, 3, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 3, 14, 4, 3, 4, 3, 4, 4, 4, 4, 4, 3, 4, 4, 4,
+        4, 4, 4, 4, 7, 3, 3, 9, 3, 3, 4, 4, 4, 4, 4, 4, 3, 4, 3, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 4,
+        4, 4, 2, 5, 4, 3, 3, 3, 5, 10, 3, 4, 4, 3, 5, 4, 4, 4, 4, 4, 4, 4, 3, 2, 3, 4, 3, 4, 3, 3, 4, 4, 5, 4, 3, 4, 4,
+        4, 4, 4, 2, 3, 4, 4, 4, 4, 4, 4, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 4, 3, 4, 4, 4, 4, 4, 4, 11, 9, 4, 3, 3,
+        1, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 2, 1, 1, 2, 1, 2, 2, 2, 1, 1, 2, 1, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2,
+        1, 2, 3, 4, 2, 4, 2, 4, 4, 5, 3, 4, 4, 4, 4, 5, 4, 4, 10, 4, 4, 5, 5, 5, 7, 4, 4, 6, 5, 4, 4, 5, 4, 7, 4, 2, 3,
+        3, 5, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 5, 4, 3, 3, 4, 4, 15, 4, 4, 4, 4, 4, 4, 4, 4, 5, 4, 4, 4, 4, 4,
+        3, 4, 4, 6, 14, 4, 4, 4, 3, 3, 2, 4, 3, 3, 3, 2, 3, 2, 4, 4, 2, 4, 3, 4, 4, 4, 3, 4, 4, 3, 3, 3, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 4, 5, 4, 4, 4, 5, 4, 3, 3, 4, 4, 3, 3, 4, 4, 21, 3, 3, 2, 3, 4, 4, 3, 1, 4,
+        3, 3, 2, 2, 2, 3, 4, 3, 3, 2, 4, 13, 4, 4, 4, 4, 4, 4, 3, 4, 3, 3, 4, 3, 4, 4, 4, 5, 4, 4, 4, 3, 4, 4, 3, 3, 4,
+        5, 4, 5, 3, 5, 4, 4, 4, 2, 2, 4, 3, 4, 14, 4, 4, 3, 4, 4, 4, 4, 3, 4, 3, 4, 4, 3, 3, 4, 4, 3, 2, 4, 4, 3, 3, 4,
+        4, 3, 3, 4, 4, 4, 3, 4, 3, 4, 4, 4, 5, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 4, 4, 4, 4, 4, 3, 3, 3, 3, 4, 11,
+        10, 3, 3, 4, 3, 4, 4, 4, 4, 2, 4, 2, 3, 4, 4, 4, 4, 3, 3, 4, 3, 4, 4, 4, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 3,
+        4, 4, 4, 4, 3, 2, 4, 5, 4, 4, 3, 5, 6, 5, 4, 3, 3, 4, 4, 2, 4, 4, 13, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 3, 4, 3, 6,
+        4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 4, 3, 5, 3, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 16, 4, 4, 4, 5, 4, 4, 4, 3, 1, 2,
+        2, 1, 2, 1, 1, 2, 1, 2, 16, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 2, 2, 1, 2, 2, 1, 2, 2, 2, 2, 1, 1, 2, 2, 1, 2, 1, 1,
+        3
+      ],
+      "suite": "typing"
+    }
+  ]
+}

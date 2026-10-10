@@ -297,6 +297,7 @@ menu-paste = 貼り付け
 menu-select-all = すべて選択
 menu-clear-scrollback = スクロールバックを消去
 menu-reset-modes = 端末の状態をリセット
+menu-open-config = 設定ファイルを開く
 menu-search = 検索
 menu-open-link = リンクを開く
 menu-copy-link = リンクをコピー

@@ -77,6 +77,11 @@ impl ConfigState {
         Self { loaded: Mutex::new(read(path.as_ref())), path }
     }
 
+    /// Where config.toml is (it may not exist yet).
+    pub fn path(&self) -> Option<PathBuf> {
+        self.path.clone()
+    }
+
     pub fn config(&self) -> Config {
         self.loaded.lock().unwrap().config.clone()
     }

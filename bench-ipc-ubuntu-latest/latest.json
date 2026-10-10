@@ -1,0 +1,317 @@
+{
+  "date": "2026-10-10T22:12:00.794Z",
+  "commit": "0414273",
+  "platform": "linux-x64",
+  "machine": {
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "cores": 2,
+    "memoryGiB": 8
+  },
+  "quick": false,
+  "results": [
+    {
+      "bench": "ipc-transfer",
+      "metrics": {
+        "tauri.burst.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 5.257
+        },
+        "tauri.burst.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 7.154
+        },
+        "tauri.burst.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 5.837
+        },
+        "tauri.burst.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 7.679
+        },
+        "tauri.cell.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.511
+        },
+        "tauri.cell.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.806
+        },
+        "tauri.cell.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.456
+        },
+        "tauri.cell.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 2.027
+        },
+        "tauri.line.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.523
+        },
+        "tauri.line.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.278
+        },
+        "tauri.line.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.752
+        },
+        "tauri.line.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.407
+        },
+        "tauri.screen.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.153
+        },
+        "tauri.screen.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 2.554
+        },
+        "tauri.screen.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 1.318
+        },
+        "tauri.screen.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 2.703
+        },
+        "websocket.burst.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 2.343
+        },
+        "websocket.burst.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 3.042
+        },
+        "websocket.burst.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 2.424
+        },
+        "websocket.burst.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 3.788
+        },
+        "websocket.cell.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": -0.083
+        },
+        "websocket.cell.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.403
+        },
+        "websocket.cell.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.122
+        },
+        "websocket.cell.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.195
+        },
+        "websocket.line.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.265
+        },
+        "websocket.line.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.743
+        },
+        "websocket.line.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.114
+        },
+        "websocket.line.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.165
+        },
+        "websocket.screen.one_way.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.249
+        },
+        "websocket.screen.one_way.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.745
+        },
+        "websocket.screen.round_trip.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.407
+        },
+        "websocket.screen.round_trip.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 0.631
+        }
+      },
+      "params": {
+        "clocks": [
+          {
+            "offset_ms": -0.834,
+            "round": "tauri.cell",
+            "uncertainty_ms": 0.046
+          },
+          {
+            "offset_ms": -0.433,
+            "round": "websocket.cell",
+            "uncertainty_ms": 0.048
+          },
+          {
+            "offset_ms": -0.496,
+            "round": "tauri.line",
+            "uncertainty_ms": 0.047
+          },
+          {
+            "offset_ms": -0.779,
+            "round": "websocket.line",
+            "uncertainty_ms": 0.048
+          },
+          {
+            "offset_ms": -0.597,
+            "round": "tauri.screen",
+            "uncertainty_ms": 0.049
+          },
+          {
+            "offset_ms": -0.475,
+            "round": "websocket.screen",
+            "uncertainty_ms": 0.049
+          },
+          {
+            "offset_ms": -0.08,
+            "round": "tauri.burst",
+            "uncertainty_ms": 0.045
+          },
+          {
+            "offset_ms": -0.588,
+            "round": "websocket.burst",
+            "uncertainty_ms": 0.048
+          }
+        ],
+        "iterations": 500,
+        "sizes": [
+          {
+            "bytes": 64,
+            "name": "cell"
+          },
+          {
+            "bytes": 2048,
+            "name": "line"
+          },
+          {
+            "bytes": 98304,
+            "name": "screen"
+          },
+          {
+            "bytes": 1048576,
+            "name": "burst"
+          }
+        ],
+        "warmup": 20
+      },
+      "platform": "linux-x86_64",
+      "suite": "ipc"
+    },
+    {
+      "bench": "typing-latency",
+      "metrics": {
+        "keystroke_to_draw.max": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 16
+        },
+        "keystroke_to_draw.mean": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 12.169
+        },
+        "keystroke_to_draw.p50": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 12
+        },
+        "keystroke_to_draw.p99": {
+          "better": "lower",
+          "unit": "ms",
+          "value": 16
+        }
+      },
+      "params": {
+        "child": "otterm-bench pong (echo by the PTY line discipline)",
+        "from": "keydown dispatched on the terminal's input element",
+        "gapMs": 20,
+        "samples": 1000,
+        "to": "end of the Canvas draw that shows the character (inside requestAnimationFrame; the compositor adds up to one more frame)",
+        "warmup": 50
+      },
+      "platform": "linux-x86_64",
+      "samples": [
+        12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 15, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12,
+        12, 12, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 16, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13,
+        12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12,
+        12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 16, 12, 12, 12, 12, 12, 12, 12, 13, 12,
+        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12,
+        12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 16, 12, 12, 13, 12, 12,
+        12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12,
+        12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 16, 12,
+        13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12,
+        12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12,
+        12, 12, 16, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12,
+        12, 12, 12, 12, 12, 12, 16, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12,
+        12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12,
+        13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 16, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13,
+        12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12,
+        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 16, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12,
+        12, 12, 12, 12, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12,
+        12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 16, 12, 12, 12, 12, 12, 13, 12, 12, 12,
+        12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12,
+        12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 16, 12, 12, 12, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13,
+        12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 15, 13,
+        12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12,
+        12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12,
+        12, 12, 16, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 13,
+        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+        12, 12, 12, 12, 13, 12, 16, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+        12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 16, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12,
+        12, 12, 13, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 16, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 11,
+        12, 12, 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 16, 12, 13, 12, 12, 12, 12, 12, 12, 13,
+        12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
+      ],
+      "suite": "typing"
+    }
+  ]
+}
