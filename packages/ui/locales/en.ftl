@@ -296,6 +296,7 @@ menu-copy = Copy
 menu-paste = Paste
 menu-select-all = Select all
 menu-clear-scrollback = Clear scrollback
+menu-reset-modes = Reset terminal state
 menu-search = Find
 menu-open-link = Open link
 menu-copy-link = Copy link

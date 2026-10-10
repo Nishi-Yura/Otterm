@@ -323,6 +323,22 @@ impl Terminal {
         self.ambiguous_wide = wide;
     }
 
+    /// Undo what a program that crashed may have left on: the alternate screen, mouse reporting,
+    /// bracketed paste, application keys, Kitty keyboard flags, a hidden cursor, a scroll region,
+    /// colors. The text stays (unlike RIS). For the context menu's "reset terminal state".
+    pub fn reset_modes(&mut self) {
+        self.switch_screen(false, false, false);
+        let (shape, blink) = self.default_cursor;
+        self.modes = Modes { cursor_shape: shape, cursor_blink: blink, ..Modes::default() };
+        self.kitty = [Vec::new(), Vec::new()];
+        self.pen = Attrs::default();
+        self.scroll_top = 0;
+        self.scroll_bottom = self.rows - 1;
+        self.charsets = [Charset::Ascii; 2];
+        self.active_charset = 0;
+        self.full_damage = true;
+    }
+
     /// Drop the scrollback (the context menu's "clear scrollback"; ED 3 does the same).
     pub fn clear_scrollback(&mut self) {
         self.history_base += self.scrollback.len() as u64;

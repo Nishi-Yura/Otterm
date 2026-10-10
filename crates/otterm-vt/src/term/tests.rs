@@ -338,6 +338,17 @@ fn osc8_links_mark_their_cells_and_survive_sgr_reset() {
 }
 
 #[test]
+fn reset_modes_recovers_from_a_crashed_program_and_keeps_text() {
+    let mut t = Terminal::new(10, 3);
+    t.advance(b"keep\r\n\x1b[?1049h\x1b[?1000h\x1b[?2004h\x1b[?25l\x1b[>1u\x1b[2;3r\x1b[31m");
+    t.reset_modes();
+    let m = t.modes();
+    assert!(!m.alt_screen && m.cursor_visible && !m.bracketed_paste);
+    assert_eq!((m.mouse, m.kitty_keyboard), (MouseMode::Off, 0));
+    assert_eq!(t.screen_text()[0], "keep");
+}
+
+#[test]
 fn decscusr_zero_restores_the_configured_cursor() {
     let mut t = Terminal::new(10, 2);
     t.set_default_cursor(CursorShape::Bar, false);

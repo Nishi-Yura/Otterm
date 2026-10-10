@@ -1,4 +1,4 @@
-import { createEffect, createSignal, on, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createSignal, For, on, onCleanup, onMount, Show } from "solid-js";
 import { exposeInternals, startupMark } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
 import type { UiConfig } from "./config";
@@ -57,8 +57,10 @@ export function TerminalView(props: TerminalViewProps) {
   /** IME composition in progress (shown at the cursor, not sent to the shell until committed). */
   const [preedit, setPreedit] = createSignal<string>();
   const [anchor, setAnchor] = createSignal({ x: 0, y: 0, height: 0 });
-  /** Scrollbar thumb as fractions of the view height; shown while the view is scrolled up. */
-  const [thumb, setThumb] = createSignal<{ top: number; height: number }>();
+  /** Scrollbar thumb as fractions of the track; none without scrollback. */
+  const [bar, setBar] = createSignal<{ top: number; height: number; scrolled: boolean }>();
+  /** Search matches as fractions of the track (docs/03 §4: hits shown on the scrollbar). */
+  const [markers, setMarkers] = createSignal<number[]>([]);
   const [font, setFont] = createSignal<FontConfig>(DEFAULT_FONT);
   const [searching, setSearching] = createSignal(false);
   const [menu, setMenu] = createSignal<{ x: number; y: number; items: MenuItem[] }>();
@@ -84,6 +86,7 @@ export function TerminalView(props: TerminalViewProps) {
   let zoom = 0;
   let copyOnSelect = false;
   const model = new ScreenModel();
+  const viewportId = `viewport-${++viewCount}`;
   const selection = new Selection();
   const highlights = new Highlights();
   let focusSearch: (() => void) | undefined;
@@ -254,9 +257,54 @@ export function TerminalView(props: TerminalViewProps) {
   };
 
   const updateThumb = () => {
-    if (model.offset === 0) return setThumb(undefined);
+    if (model.scrollback === 0) {
+      setBar(undefined);
+      return;
+    }
     const total = model.scrollback + model.rows;
-    setThumb({ top: (model.scrollback - model.offset) / total, height: model.rows / total });
+    const top = (model.scrollback - model.offset) / total;
+    const old = bar();
+    if (old && old.top === top && old.height === model.rows / total) return;
+    setBar({ top, height: model.rows / total, scrolled: model.offset > 0 });
+    updateMarkers();
+  };
+
+  const updateMarkers = () => {
+    if (highlights.matches.length === 0) {
+      if (markers().length > 0) setMarkers([]);
+      return;
+    }
+    const first = model.topLine - (model.scrollback - model.offset);
+    const total = model.scrollback + model.rows;
+    // One marker per half percent of the track is as fine as the eye can tell.
+    const at = new Set(highlights.matches.map((m) => Math.round(((m[0] - first) / total) * 200) / 200));
+    setMarkers([...at].filter((f) => f >= 0 && f <= 1));
+  };
+
+  /** Click or drag on the scrollbar: center the view on that point of the history. */
+  const onTrackDown = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const track = e.currentTarget as HTMLElement;
+    const rect = track.getBoundingClientRect();
+    // Offsets already asked for; frames confirming them may still be on their way.
+    let requested = model.offset;
+    const go = (y: number) => {
+      const total = model.scrollback + model.rows;
+      const top = Math.round(((y - rect.top) / rect.height) * total - model.rows / 2);
+      const offset = Math.min(model.scrollback, Math.max(0, model.scrollback - top));
+      if (offset !== requested) void session?.scroll(offset - requested);
+      requested = offset;
+    };
+    go(e.clientY);
+    const move = (ev: MouseEvent) => go(ev.clientY);
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      input.focus();
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
   };
 
   const clearSelection = () => {
@@ -425,6 +473,7 @@ export function TerminalView(props: TerminalViewProps) {
       { label: t("menu-select-all"), action: selectAll },
       { label: t("menu-search"), hint: shortcut("F", platform !== "macos"), action: () => setSearching(true) },
       { label: t("menu-clear-scrollback"), action: () => void session?.clearScrollback() },
+      { label: t("menu-reset-modes"), action: () => void session?.resetModes() },
     ];
     if (link) {
       items.unshift(
@@ -489,6 +538,7 @@ export function TerminalView(props: TerminalViewProps) {
     if (seq !== searchSeq) return highlights.matches.length;
     // Start at the newest match, nearest the prompt.
     highlights.set(matches, matches.length - 1);
+    updateMarkers();
     revealCurrent();
     return matches.length;
   };
@@ -510,6 +560,7 @@ export function TerminalView(props: TerminalViewProps) {
   const closeSearch = () => {
     setSearching(false);
     highlights.clear();
+    updateMarkers();
     renderer?.invalidate();
     input.focus();
   };
@@ -558,7 +609,7 @@ export function TerminalView(props: TerminalViewProps) {
         setTimeout(() => input.focus());
       }}
     >
-      <div ref={viewport} class="viewport">
+      <div ref={viewport} id={viewportId} class="viewport">
         <canvas ref={canvas} />
         <textarea
           ref={input}
@@ -599,12 +650,25 @@ export function TerminalView(props: TerminalViewProps) {
           }}
         />
       )}
-      {thumb() && (
-        <div
-          class="scrollbar"
-          style={{ top: `${(thumb()?.top ?? 0) * 100}%`, height: `${(thumb()?.height ?? 0) * 100}%` }}
-        />
-      )}
+      <Show when={bar()}>
+        {(b) => (
+          <div
+            class="scrolltrack"
+            classList={{ shown: b().scrolled || markers().length > 0 }}
+            role="scrollbar"
+            aria-controls={viewportId}
+            aria-orientation="vertical"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(b().top * 100)}
+            tabIndex={-1}
+            onMouseDown={onTrackDown}
+          >
+            <For each={markers()}>{(f) => <div class="scrollmark" style={{ top: `${f * 100}%` }} />}</For>
+            <div class="scrollthumb" style={{ top: `${b().top * 100}%`, height: `${b().height * 100}%` }} />
+          </div>
+        )}
+      </Show>
       <Show when={prompt()} keyed>
         {(p) => <PromptBar {...p} />}
       </Show>
@@ -618,6 +682,8 @@ function sameLink(a: Link | undefined, b: Link | undefined): boolean {
 }
 
 let audio: AudioContext | undefined;
+/** Numbers views for element ids. */
+let viewCount = 0;
 
 /** A short, quiet tone for the audible bell. */
 function beep(): void {

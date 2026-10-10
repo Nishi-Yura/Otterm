@@ -250,6 +250,11 @@ fn with_clipboard<T>(mut f: impl FnMut(&mut arboard::Clipboard) -> Result<T, arb
     Err(last.map(err).unwrap_or_default())
 }
 
+#[tauri::command]
+fn session_reset_modes(state: State<'_, AppState>, id: SessionId) -> CmdResult {
+    state.sessions.reset_modes(id).map_err(err)
+}
+
 /// Clipboard text, read in Rust: the WebView would ask the user for permission on every read.
 #[tauri::command]
 async fn clipboard_read() -> CmdResult<String> {
@@ -397,6 +402,7 @@ fn main() {
             session_search,
             session_reveal,
             session_clear_scrollback,
+            session_reset_modes,
             clipboard_read,
             clipboard_write,
             open_url,
@@ -434,6 +440,7 @@ fn main() {
             session_search,
             session_reveal,
             session_clear_scrollback,
+            session_reset_modes,
             clipboard_read,
             clipboard_write,
             open_url,

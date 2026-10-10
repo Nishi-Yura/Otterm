@@ -31,6 +31,8 @@ export interface Session {
   /** Scroll so that a line is in view. */
   reveal(line: number): Promise<void>;
   clearScrollback(): Promise<void>;
+  /** Turn off modes a crashed program left on (alternate screen, mouse, Kitty keys, …). */
+  resetModes(): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -87,6 +89,7 @@ export async function createSession(
     search: (query, opts) => invoke("session_search", { id, query, ...opts }),
     reveal: (line) => invoke("session_reveal", { id, line }),
     clearScrollback: () => invoke("session_clear_scrollback", { id }),
+    resetModes: () => invoke("session_reset_modes", { id }),
     close: () => invoke("session_close", { id }),
   };
 }

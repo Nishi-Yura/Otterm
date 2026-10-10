@@ -109,6 +109,8 @@ pub trait SessionManager: Send + Sync {
     fn reveal(&self, id: SessionId, line: u64) -> Result<()>;
     /// Drop the scrollback.
     fn clear_scrollback(&self, id: SessionId) -> Result<()>;
+    /// Turn off modes a crashed program left on; the text stays.
+    fn reset_modes(&self, id: SessionId) -> Result<()>;
     /// Kill the process. [`SessionEvent::Exited`] follows.
     fn close(&self, id: SessionId) -> Result<()>;
 }
@@ -406,6 +408,13 @@ impl SessionManager for LocalSessionManager {
         let session = self.get(id)?;
         session.term.lock().unwrap().clear_scrollback();
         *session.view_top.lock().unwrap() = None;
+        session.frame.notify(false);
+        Ok(())
+    }
+
+    fn reset_modes(&self, id: SessionId) -> Result<()> {
+        let session = self.get(id)?;
+        session.term.lock().unwrap().reset_modes();
         session.frame.notify(false);
         Ok(())
     }
