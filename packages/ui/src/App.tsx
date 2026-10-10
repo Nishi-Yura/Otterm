@@ -85,10 +85,25 @@ export function App() {
     noticeTimer = setTimeout(() => setNotice(undefined), NOTICE_MS);
   };
 
-  const applyConfig = (c: UiConfig) => {
-    setLanguage(c.language);
+  /** The configuration as loaded; `config()` is it with the theme for the OS mode filled in. */
+  let loaded: UiConfig | undefined;
+  const lightMode = window.matchMedia("(prefers-color-scheme: light)");
+
+  /** Pick `theme` or `themeLight` for the OS appearance (appearance.follow_system). */
+  const applyTheme = () => {
+    if (!loaded) return;
+    const light = loaded.followSystem && lightMode.matches && loaded.themeLight;
+    const c = light ? { ...loaded, theme: loaded.themeLight as UiConfig["theme"] } : loaded;
     applyThemeCss(c.theme);
     setConfig(c);
+  };
+  lightMode.addEventListener("change", applyTheme);
+  onCleanup(() => lightMode.removeEventListener("change", applyTheme));
+
+  const applyConfig = (c: UiConfig) => {
+    setLanguage(c.language);
+    loaded = c;
+    applyTheme();
     keymap = new Keymap(c.keybindings);
     const warnings = [
       ...c.warnings.map((w) => (w.key ? `${w.key}: ${w.message}` : w.message)),

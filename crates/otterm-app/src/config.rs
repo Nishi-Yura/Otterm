@@ -33,6 +33,9 @@ pub struct UiConfig {
     pub language: Language,
     pub font: UiFont,
     pub theme: Theme,
+    /// Used instead of `theme` while the OS is in light mode, when `follow_system` is on.
+    pub theme_light: Option<Theme>,
+    pub follow_system: bool,
     pub cursor_style: CursorStyle,
     pub cursor_blink: bool,
     pub copy_on_select: bool,
@@ -97,6 +100,13 @@ impl ConfigState {
             .expect("the default theme is bundled");
         let mut warnings: Vec<UiWarning> =
             l.warnings.iter().map(|w| UiWarning { key: w.key.clone(), message: w.message.clone() }).collect();
+        let theme_light = otterm_config::find_theme(&l.themes, &c.appearance.theme_light).cloned();
+        if c.appearance.follow_system && theme_light.is_none() {
+            warnings.push(UiWarning {
+                key: "appearance.theme_light".into(),
+                message: format!("no theme named \"{}\"", c.appearance.theme_light),
+            });
+        }
         if otterm_config::find_theme(&l.themes, &c.appearance.theme).is_none() {
             warnings.push(UiWarning {
                 key: "appearance.theme".into(),
@@ -113,6 +123,8 @@ impl ConfigState {
                 weight_bold: c.font.weight_bold,
             },
             theme,
+            theme_light,
+            follow_system: c.appearance.follow_system,
             cursor_style: c.terminal.cursor.style,
             cursor_blink: c.terminal.cursor.blink,
             copy_on_select: c.terminal.copy_on_select,

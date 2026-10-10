@@ -25,6 +25,9 @@ export interface UiConfig {
     };
     ui: Record<string, string>;
   };
+  /** The light-mode theme, used while the OS is light and `followSystem` is on. */
+  themeLight: UiConfig["theme"] | null;
+  followSystem: boolean;
   cursorStyle: "block" | "underline" | "bar";
   cursorBlink: boolean;
   copyOnSelect: boolean;
