@@ -8,6 +8,7 @@
 mod config;
 mod launch;
 mod profiles;
+mod quote;
 mod screen;
 mod shell;
 mod window_state;
@@ -34,6 +35,8 @@ struct AppState {
     first: std::sync::Mutex<Option<FirstTab>>,
     /// Command-line arguments that were not understood.
     unknown_args: Vec<String>,
+    /// The shell each session started, to quote dropped paths for it.
+    shells: std::sync::Mutex<std::collections::HashMap<SessionId, String>>,
 }
 
 type CmdResult<T = ()> = Result<T, String>;
@@ -124,8 +127,9 @@ fn session_create(
         opts.program = Some(program);
         opts.args = args;
     }
+    let shell = opts.program.clone().unwrap_or_else(otterm_session::default_shell);
     let screen = std::sync::Arc::clone(&state.screen);
-    state
+    let id = state
         .sessions
         .create(
             opts,
@@ -149,7 +153,20 @@ fn session_create(
                 };
             }),
         )
-        .map_err(err)
+        .map_err(err)?;
+    state.shells.lock().unwrap().insert(id, shell);
+    Ok(id)
+}
+
+/// Files dropped on a pane: their paths, quoted for the pane's shell, typed at the prompt.
+#[tauri::command]
+fn session_drop_paths(state: State<'_, AppState>, id: SessionId, paths: Vec<String>) -> CmdResult {
+    let shell = state.shells.lock().unwrap().get(&id).cloned().unwrap_or_default();
+    let text = quote::dropped(&paths, quote::Style::for_shell(&shell));
+    if text.is_empty() {
+        return Ok(());
+    }
+    state.sessions.paste(id, &text).map_err(err)
 }
 
 #[tauri::command]
@@ -393,6 +410,7 @@ fn open_url(url: String) -> CmdResult {
 
 #[tauri::command]
 fn session_close(state: State<'_, AppState>, id: SessionId) -> CmdResult {
+    state.shells.lock().unwrap().remove(&id);
     state.sessions.close(id).map_err(err)
 }
 
@@ -475,6 +493,7 @@ fn app_state() -> AppState {
         config: Box::leak(Box::new(ConfigState::load(launch.config))),
         first: std::sync::Mutex::new(Some((launch.cwd, launch.command))),
         unknown_args: launch.unknown,
+        shells: Default::default(),
     }
 }
 
@@ -564,6 +583,7 @@ fn main() {
             session_write,
             session_key,
             session_paste,
+            session_drop_paths,
             session_resize,
             session_redraw,
             session_scroll,
@@ -618,6 +638,7 @@ fn main() {
             session_write,
             session_key,
             session_paste,
+            session_drop_paths,
             session_resize,
             session_redraw,
             session_scroll,

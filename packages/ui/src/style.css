@@ -129,6 +129,17 @@ body,
   display: none;
 }
 
+/* A file is being dragged over this pane. */
+.pane.drop-target::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  outline: 2px dashed var(--fg);
+  opacity: 0.5;
+  outline-offset: -4px;
+}
+
 /* Between two panes; drag to resize. */
 .divider {
   position: absolute;

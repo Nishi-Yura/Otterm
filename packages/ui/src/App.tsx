@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInternals, startupMark } from "./bench";
@@ -181,9 +182,36 @@ export function App() {
       unlistenClose = f;
     });
 
+  // Files dropped on a pane: their quoted paths go to its shell (FR-FILE-03).
+  const [dropTarget, setDropTarget] = createSignal<number>();
+  const paneAt = (x: number, y: number) => {
+    // The position is in physical pixels.
+    const el = document.elementFromPoint(x / devicePixelRatio, y / devicePixelRatio)?.closest<HTMLElement>(".pane");
+    const id = Number(el?.dataset.pane);
+    return panes().find((p) => p.id === id);
+  };
+  let unlistenDrop: (() => void) | undefined;
+  void getCurrentWebview()
+    .onDragDropEvent((event) => {
+      const e = event.payload;
+      if (e.type === "leave") return setDropTarget(undefined);
+      const pane = paneAt(e.position.x, e.position.y);
+      if (e.type !== "drop") return setDropTarget(pane?.id);
+      setDropTarget(undefined);
+      const session = pane && sessionOf.get(pane.id);
+      if (!pane || session === undefined || e.paths.length === 0) return;
+      setActiveTab(pane.tab);
+      activatePane(pane.id);
+      void invoke("session_drop_paths", { id: session, paths: e.paths }).catch(() => {});
+    })
+    .then((f) => {
+      unlistenDrop = f;
+    });
+
   onCleanup(() => {
     unlistenConfig?.();
     unlistenClose?.();
+    unlistenDrop?.();
     clearTimeout(noticeTimer);
     ws?.close();
   });
@@ -610,7 +638,8 @@ export function App() {
             return (
               <div
                 class="pane"
-                classList={{ hidden: !paneVisible(p) }}
+                classList={{ hidden: !paneVisible(p), "drop-target": dropTarget() === p.id }}
+                data-pane={p.id}
                 style={{
                   left: pct(rect()?.x ?? 0),
                   top: pct(rect()?.y ?? 0),
