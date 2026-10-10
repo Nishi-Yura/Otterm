@@ -276,6 +276,7 @@ process-exited = { $code ->
 start-failed = シェルを起動できませんでした: { $error }
 config-ignored = config.toml の一部を無視しました: { $keys }
 config-unreadable = 設定を読み込めませんでした: { $error }
+copy-failed = クリップボードにコピーできませんでした: { $error }
 
 ## 検索
 

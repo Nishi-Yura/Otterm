@@ -8,8 +8,11 @@ export interface Link {
   end: { row: number; col: number };
 }
 
-/** http(s) URLs. Trailing punctuation that usually ends a sentence is trimmed afterwards. */
-const URL_RE = /\bhttps?:\/\/[^\s<>"'`{}|\\^]+/g;
+/**
+ * http(s) URLs, ASCII only: in Japanese output a link is usually followed directly by text such as
+ * 「を参照」 with no space. Trailing punctuation that usually ends a sentence is trimmed afterwards.
+ */
+const URL_RE = /\bhttps?:\/\/[!#-;=?-[\]_a-z~]+/gi;
 const TRAILING = /[.,;:!?)\]}'"]+$/;
 
 /**

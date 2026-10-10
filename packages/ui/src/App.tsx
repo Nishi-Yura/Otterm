@@ -140,6 +140,12 @@ export function App() {
     if (!tab) return;
     const ids = new Set(leaves(tab.root));
     setPanes(panes().filter((p) => !ids.has(p.id)));
+    const keep = { ...titles() };
+    for (const id of ids) {
+      delete keep[id];
+      cwds.delete(id);
+    }
+    setTitles(keep);
     const index = tabs().findIndex((x) => x.id === tabId);
     const rest = tabs().filter((x) => x.id !== tabId);
     setTabs(rest);

@@ -112,7 +112,10 @@ export function neighbor(node: PaneNode, from: number, dir: Direction): number |
   return best?.id;
 }
 
-/** Grow (`amount` > 0) or shrink pane `target` along an axis by moving the nearest divider. */
+/**
+ * Move the divider nearest to pane `target` on the arrow's axis by `amount`, in the arrow's
+ * direction (as in Windows Terminal): Alt+Shift+Right moves it right whichever side `target` is on.
+ */
 export function resizePane(node: PaneNode, target: number, dir: Direction, amount: number): PaneNode {
   const axis = dir === "left" || dir === "right" ? "row" : "column";
   // The deepest split on the axis that contains the target decides.

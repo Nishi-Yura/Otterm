@@ -53,6 +53,8 @@ export class Selection {
   range(model: ScreenModel): { start: Point; end: Point } | undefined {
     if (!this.anchor || !this.head) return undefined;
     let [start, end] = before(this.head, this.anchor) ? [this.head, this.anchor] : [this.anchor, this.head];
+    // A press on the right half of a wide character selects the whole character.
+    start = { line: start.line, col: leadingCell(model, start) };
     if (this.mode === "word") {
       start = { line: start.line, col: wordEdge(model, start, -1, this.separators) };
       end = { line: end.line, col: wordEdge(model, end, 1, this.separators) };
@@ -66,7 +68,7 @@ export class Selection {
   /** A plain click without a drag selects nothing. */
   get empty(): boolean {
     return (
-      this.mode === "char" &&
+      (this.mode === "char" || this.mode === "block") &&
       this.anchor !== undefined &&
       this.head !== undefined &&
       this.anchor.line === this.head.line &&
@@ -88,6 +90,13 @@ export class Selection {
     const to = line === r.end.line ? r.end.col + 1 : model.cols;
     return [from, to];
   }
+}
+
+/** The column of the character covering `p`: one to the left on a wide character's spacer. */
+function leadingCell(model: ScreenModel, p: Point): number {
+  const row = model.rowOf(p.line);
+  const flags = row >= 0 ? (model.lines[row]?.attrs[p.col]?.flags ?? 0) : 0;
+  return flags & Flags.WIDE_SPACER && p.col > 0 ? p.col - 1 : p.col;
 }
 
 /** Column of the first (`dir` -1) or last (`dir` 1) cell of the word at `p`, within the visible line. */

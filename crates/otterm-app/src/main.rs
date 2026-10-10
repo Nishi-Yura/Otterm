@@ -231,15 +231,30 @@ fn session_clear_scrollback(state: State<'_, AppState>, id: SessionId) -> CmdRes
     state.sessions.clear_scrollback(id).map_err(err)
 }
 
+/// Run a clipboard operation, retrying for a moment: on Windows the clipboard is unavailable while
+/// another program has it open, which clipboard managers and remote desktop do often.
+fn with_clipboard<T>(mut f: impl FnMut(&mut arboard::Clipboard) -> Result<T, arboard::Error>) -> CmdResult<T> {
+    let mut last = None;
+    for _ in 0..20 {
+        match arboard::Clipboard::new().and_then(|mut c| f(&mut c)) {
+            Ok(v) => return Ok(v),
+            Err(e @ arboard::Error::ContentNotAvailable) => return Err(err(e)),
+            Err(e) => last = Some(e),
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    Err(last.map(err).unwrap_or_default())
+}
+
 /// Clipboard text, read in Rust: the WebView would ask the user for permission on every read.
 #[tauri::command]
-fn clipboard_read() -> CmdResult<String> {
-    arboard::Clipboard::new().and_then(|mut c| c.get_text()).map_err(err)
+async fn clipboard_read() -> CmdResult<String> {
+    with_clipboard(|c| c.get_text())
 }
 
 #[tauri::command]
-fn clipboard_write(text: String) -> CmdResult {
-    arboard::Clipboard::new().and_then(|mut c| c.set_text(text)).map_err(err)
+async fn clipboard_write(text: String) -> CmdResult {
+    with_clipboard(|c| c.set_text(text.as_str()))
 }
 
 /// Open a web link in the default browser (decision I2: Ctrl+click). Only http and https, so a

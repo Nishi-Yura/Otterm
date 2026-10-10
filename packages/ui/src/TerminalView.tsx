@@ -144,6 +144,8 @@ export function TerminalView(props: TerminalViewProps) {
       });
       // Frames sent before the subscription were dropped; ask for the whole screen.
       await session.redraw();
+      // The pane may have been closed while we waited; its cleanup has already run.
+      if (closed) return;
     } catch (e) {
       setStatus(t("start-failed", { error: String(e) }));
       return;
@@ -266,7 +268,7 @@ export function TerminalView(props: TerminalViewProps) {
     } else {
       text = await session.text(range.start.line, range.start.col, range.end.line, range.end.col);
     }
-    await clipboard.write(text);
+    await clipboard.write(text).catch((e) => props.notify(t("copy-failed", { error: String(e) })));
   };
 
   const pasteClipboard = async () => {
@@ -334,7 +336,8 @@ export function TerminalView(props: TerminalViewProps) {
     const z = zoomKey(e);
     if (z !== undefined) {
       e.preventDefault();
-      zoom = z === 0 ? 0 : zoom + z;
+      // Keep zoom inside the size limits so the opposite key works at once.
+      zoom = z === 0 ? 0 : Math.min(72 - baseFont.size, Math.max(6 - baseFont.size, zoom + z));
       applyFont();
       refit?.();
       return;
@@ -358,9 +361,13 @@ export function TerminalView(props: TerminalViewProps) {
     void session.key(key);
   };
 
+  let searchSeq = 0;
   const runSearch = async (query: string, opts: SearchOptions) => {
     if (!session) return 0;
+    const seq = ++searchSeq;
     const matches = query ? await session.search(query, opts) : [];
+    // A later search has started; its answer will set the highlights.
+    if (seq !== searchSeq) return highlights.matches.length;
     // Start at the newest match, nearest the prompt.
     highlights.set(matches, matches.length - 1);
     revealCurrent();
@@ -391,7 +398,13 @@ export function TerminalView(props: TerminalViewProps) {
   // Text that did not come as a key press: committed IME compositions, some input methods.
   const onCompositionStart = () => setPreedit("");
   const onCompositionUpdate = (e: CompositionEvent) => setPreedit(e.data);
+  /** Text just committed by the IME; WebKit can repeat it in a following input event. */
+  let committed: string | undefined;
   const onCompositionEnd = (e: CompositionEvent) => {
+    committed = e.data;
+    setTimeout(() => {
+      committed = undefined;
+    });
     setPreedit(undefined);
     if (e.data && session) void session.write(e.data);
     input.value = "";
@@ -399,6 +412,10 @@ export function TerminalView(props: TerminalViewProps) {
   const onInput = (e: Event) => {
     const ev = e as InputEvent;
     if (ev.isComposing || preedit() !== undefined) return;
+    if (committed !== undefined && ev.data === committed) {
+      input.value = "";
+      return;
+    }
     if (ev.data && session) void session.write(ev.data);
     input.value = "";
   };
