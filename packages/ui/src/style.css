@@ -52,6 +52,42 @@ body,
   cursor: default;
 }
 
+/* appearance.tabbar.position */
+.app.tabbar-bottom {
+  flex-direction: column-reverse;
+}
+
+.app.tabbar-bottom .tab {
+  margin: 0 0 4px;
+  border-radius: 0 0 6px 6px;
+  box-shadow: inset 0 -2px 0 var(--tab-accent, transparent);
+}
+
+.app.tabbar-left {
+  flex-direction: row;
+}
+
+.app.tabbar-left .tabbar {
+  flex-direction: column;
+  width: 180px;
+  height: auto;
+  padding: 6px 0;
+  overflow: hidden auto;
+}
+
+.app.tabbar-left .tab {
+  flex: none;
+  height: 30px;
+  min-width: 0;
+  margin: 0 0 0 4px;
+  border-radius: 6px 0 0 6px;
+  box-shadow: inset 2px 0 0 var(--tab-accent, transparent);
+}
+
+.app.tabbar-hidden .tabbar {
+  display: none;
+}
+
 .tab[aria-selected="true"] {
   background: var(--bg);
   color: var(--fg);

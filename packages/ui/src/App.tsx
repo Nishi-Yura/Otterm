@@ -481,12 +481,15 @@ export function App() {
 
   /** Drag a tab sideways to reorder (docs/03 §3.2). Starts after a few pixels, so a click selects. */
   const dragTab = (tabId: number, e: MouseEvent) => {
-    const startX = e.clientX;
+    // Tabs run down the side when the bar is on the left.
+    const vertical = config()?.tabbar === "left";
+    const along = (ev: MouseEvent) => (vertical ? ev.clientY : ev.clientX);
+    const start = along(e);
     let dragging = false;
     const move = (ev: MouseEvent) => {
       // Released outside the window: the mouseup never came.
       if (ev.buttons === 0) return up();
-      if (!dragging && Math.abs(ev.clientX - startX) < 6) return;
+      if (!dragging && Math.abs(along(ev) - start) < 6) return;
       dragging = true;
       const els = [...document.querySelectorAll<HTMLElement>(".tabbar .tab")];
       const list = tabs();
@@ -494,7 +497,7 @@ export function App() {
       // The slot whose middle the pointer has passed.
       let to = els.findIndex((el) => {
         const r = el.getBoundingClientRect();
-        return ev.clientX < r.left + r.width / 2;
+        return vertical ? ev.clientY < r.top + r.height / 2 : ev.clientX < r.left + r.width / 2;
       });
       if (to === -1) to = list.length - 1;
       else if (to > from) to -= 1;
@@ -571,7 +574,14 @@ export function App() {
   const newTabHint = platform === "macos" ? "⌘T" : "Ctrl+Shift+T";
 
   return (
-    <div class="app">
+    <div
+      class="app"
+      classList={{
+        "tabbar-bottom": config()?.tabbar === "bottom",
+        "tabbar-left": config()?.tabbar === "left",
+        "tabbar-hidden": config()?.tabbar === "hidden-when-single" && tabs().length === 1,
+      }}
+    >
       <Show when={bench()}>
         <div class="status">{bench()}</div>
       </Show>

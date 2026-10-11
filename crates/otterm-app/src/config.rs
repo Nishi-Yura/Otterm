@@ -6,7 +6,8 @@ use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, SystemTime};
 
 use otterm_config::{
-    AmbiguousWidth, Auto, Bell, Config, CursorStyle, Effective, Language, Permission, RightClick, Theme, Warning,
+    AmbiguousWidth, Auto, Bell, Config, CursorStyle, Effective, Language, Permission, RightClick, TabbarPosition,
+    Theme, Warning,
 };
 use serde::Serialize;
 
@@ -42,6 +43,8 @@ pub struct UiConfig {
     pub profile_colors: std::collections::BTreeMap<String, String>,
     /// The profile a new tab runs when none is picked (`shell.default_profile`).
     pub default_profile: String,
+    /// Where the tab bar is: top, bottom, left, or hidden-when-single.
+    pub tabbar: TabbarPosition,
     pub cursor_style: CursorStyle,
     pub cursor_blink: bool,
     pub copy_on_select: bool,
@@ -143,6 +146,7 @@ impl ConfigState {
                 .filter_map(|p| Some((p.id.clone(), p.color.clone().filter(|c| is_hex_color(c))?)))
                 .collect(),
             default_profile: c.shell.default_profile.clone(),
+            tabbar: c.appearance.tabbar.position,
             cursor_style: c.terminal.cursor.style,
             cursor_blink: c.terminal.cursor.blink,
             copy_on_select: c.terminal.copy_on_select,

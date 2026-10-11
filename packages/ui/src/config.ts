@@ -35,6 +35,8 @@ export interface UiConfig {
   profileColors: Record<string, string>;
   /** The profile new tabs run when none is picked; empty for the platform shell. */
   defaultProfile: string;
+  /** `appearance.tabbar.position`. */
+  tabbar: "top" | "bottom" | "left" | "hidden-when-single";
   cursorStyle: "block" | "underline" | "bar";
   cursorBlink: boolean;
   copyOnSelect: boolean;
