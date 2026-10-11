@@ -77,6 +77,8 @@ pub struct UiConfig {
 pub struct UiFont {
     /// A CSS `font-family` list: the configured fonts, then CJK, Nerd Font and emoji fallbacks.
     pub family: String,
+    /// The same families as names, in fallback order, for the Rust rasterizer (decision C4).
+    pub families: Vec<String>,
     pub size: f32,
     pub line_height: f32,
     /// CSS pixels between cells (FR-LOOK-02).
@@ -134,6 +136,7 @@ impl ConfigState {
             language: c.general.language,
             font: UiFont {
                 family: font_family(c),
+                families: font_names(c),
                 size: c.font.size.clamp(6.0, 72.0),
                 line_height: c.font.line_height.clamp(0.8, 2.0),
                 letter_spacing: c.font.letter_spacing.clamp(-2.0, 4.0),
@@ -248,6 +251,13 @@ pub fn default_profile(c: &Config) -> Option<&otterm_config::Profile> {
 }
 
 fn font_family(c: &Config) -> String {
+    let mut css: Vec<String> = font_names(c).iter().map(|n| format!("\"{}\"", n.replace('"', ""))).collect();
+    css.push("monospace".into());
+    css.join(", ")
+}
+
+/// The configured families and their fallbacks, in order, without repeats.
+fn font_names(c: &Config) -> Vec<String> {
     let mut names: Vec<String> = Vec::new();
     if c.font.family.is_empty() {
         names.extend(platform_fonts().iter().map(|s| (*s).to_owned()));
@@ -266,13 +276,7 @@ fn font_family(c: &Config) -> String {
         Auto::Auto(_) => names.push(emoji_font().into()),
     }
     let mut seen = std::collections::HashSet::new();
-    let mut css: Vec<String> = names
-        .into_iter()
-        .filter(|n| seen.insert(n.to_lowercase()))
-        .map(|n| format!("\"{}\"", n.replace('"', "")))
-        .collect();
-    css.push("monospace".into());
-    css.join(", ")
+    names.into_iter().filter(|n| seen.insert(n.to_lowercase())).collect()
 }
 
 fn platform_fonts() -> &'static [&'static str] {
@@ -307,7 +311,7 @@ fn emoji_font() -> &'static str {
 }
 
 /// Installed Nerd Font families, best first: symbol-only and "Mono" variants keep icons one cell
-/// wide. Scanning the system fonts takes a moment, so it starts early ([`warm_up`]) and is cached.
+/// wide. Loading the system fonts takes a moment, so it starts early ([`warm_up`]) and is cached.
 fn nerd_fonts() -> &'static [String] {
     static FONTS: OnceLock<Vec<String>> = OnceLock::new();
     FONTS.get_or_init(scan_nerd_fonts)
@@ -321,8 +325,7 @@ pub fn warm_up() {
 }
 
 fn scan_nerd_fonts() -> Vec<String> {
-    let mut db = fontdb::Database::new();
-    db.load_system_fonts();
+    let db = crate::text::db();
     let mut families: Vec<String> =
         db.faces().flat_map(|f| f.families.iter().map(|(name, _)| name.clone())).filter(|n| is_nerd_font(n)).collect();
     families.sort_by_key(|n| (nerd_rank(n), n.clone()));

@@ -3,9 +3,12 @@ import type { Link } from "./links";
 import type { Theme } from "./palette";
 import { Flags } from "./protocol";
 import type { Selection } from "./selection";
+import type { TextMetrics } from "./text";
 
 export interface FontConfig {
   family: string;
+  /** The same families as names, in fallback order, for the Rust rasterizer (decision C4). */
+  families: string[];
   /** CSS pixels (decision I9). */
   size: number;
   lineHeight: number;
@@ -18,6 +21,7 @@ export interface FontConfig {
 /** Used until the configuration arrives. */
 export const DEFAULT_FONT: FontConfig = {
   family: '"Cascadia Mono", "SF Mono", Menlo, "DejaVu Sans Mono", "BIZ UDGothic", "Noto Sans Mono CJK JP", monospace',
+  families: ["Cascadia Mono", "SF Mono", "Menlo", "DejaVu Sans Mono", "BIZ UDGothic", "Noto Sans Mono CJK JP"],
   size: 14,
   lineHeight: 1.2,
   letterSpacing: 0,
@@ -47,8 +51,11 @@ export interface Renderer {
   onDraw: (() => void) | undefined;
   /** Also called after each draw; for measurements (the typing bench). */
   afterDraw: (() => void) | undefined;
-  /** Change the font; the caller refits the grid since the cell size changes. */
-  setFont(font: FontConfig): void;
+  /** Change the font; the caller refits the grid since the cell size changes. `text` is the
+   * font's metrics from Rust, for backends that draw Rust's glyphs. */
+  setFont(font: FontConfig, text?: TextMetrics): void;
+  /** Set by the view: the display scale changed, so the font's metrics are needed again. */
+  onRemeasure: (() => void) | undefined;
   setTheme(theme: Theme): void;
   /** Recompute the cell size for the current font and display scale. */
   measure(): void;
@@ -80,6 +87,19 @@ export function cssFont(font: FontConfig, flags: number, dpr: number): string {
   const weight = flags & Flags.BOLD ? font.weightBold : font.weight;
   const style = flags & Flags.ITALIC ? "italic " : "";
   return `${style}${weight} ${font.size * dpr}px ${font.family}`;
+}
+
+/** Cell metrics from Rust's font metrics (decision C4); same rounding as [`measureFont`]. */
+export function metricsFromText(font: FontConfig, text: TextMetrics, dpr: number): Metrics {
+  const spacing = font.letterSpacing * dpr;
+  const cellWidth = Math.max(1, Math.round(text.advance + spacing));
+  const cellHeight = Math.max(1, Math.round(font.size * font.lineHeight * dpr));
+  return {
+    cellWidth,
+    cellHeight,
+    baseline: Math.round((cellHeight - (text.ascent + text.descent)) / 2 + text.ascent),
+    glyphOffset: spacing === 0 ? 0 : Math.round((cellWidth - text.advance) / 2),
+  };
 }
 
 /** Cells are whole device pixels so glyphs stay sharp (docs/03 §2.3). */

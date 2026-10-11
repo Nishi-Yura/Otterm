@@ -12,6 +12,7 @@ mod profiles;
 mod quote;
 mod screen;
 mod shell;
+mod text;
 mod window_state;
 
 use otterm_session::{
@@ -67,6 +68,19 @@ struct ScreenEndpoint {
 #[tauri::command]
 fn screen_endpoint(state: State<'_, AppState>) -> ScreenEndpoint {
     ScreenEndpoint { port: state.screen.port(), token: state.screen.token().to_owned() }
+}
+
+/// Grid metrics of a font list at a pixel size (decision C4). Async: the first call loads the
+/// system fonts.
+#[tauri::command]
+async fn text_metrics(req: text::MetricsRequest) -> CmdResult<text::Metrics> {
+    text::metrics(&req)
+}
+
+/// Bitmaps for grapheme clusters, for the renderer's glyph atlas (format in `text::glyphs`).
+#[tauri::command]
+async fn text_glyphs(req: text::GlyphRequest) -> CmdResult<tauri::ipc::Response> {
+    text::glyphs(&req).map(tauri::ipc::Response::new)
 }
 
 /// The configuration as the UI uses it. Changes arrive later as `config-changed` events.
@@ -631,6 +645,8 @@ fn main() {
         .on_window_event(remember_window)
         .invoke_handler(tauri::generate_handler![
             screen_endpoint,
+            text_metrics,
+            text_glyphs,
             config_get,
             config_open,
             launch_problems,
@@ -688,6 +704,8 @@ fn main() {
         .on_window_event(remember_window)
         .invoke_handler(tauri::generate_handler![
             screen_endpoint,
+            text_metrics,
+            text_glyphs,
             config_get,
             config_open,
             launch_problems,

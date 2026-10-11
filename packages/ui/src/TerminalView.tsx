@@ -17,6 +17,7 @@ import { themeFromConfig } from "./screen/palette";
 import type { Frame } from "./screen/protocol";
 import { DEFAULT_FONT, type FontConfig, type Renderer } from "./screen/renderer";
 import { Selection } from "./screen/selection";
+import { textMetrics } from "./screen/text";
 import { WebGLRenderer } from "./screen/webglRenderer";
 import {
   clipboard,
@@ -165,10 +166,11 @@ export function TerminalView(props: TerminalViewProps) {
     if (renderer) renderer.minimumContrast = c.minimumContrast;
     renderer?.setTheme(themeFromConfig(c.theme.terminal));
     baseFont = c.font;
-    applyFont();
+    const ready = applyFont();
     selection.setWordSeparators(c.wordSeparators);
     copyOnSelect = c.copyOnSelect;
     host.style.padding = `${c.padding}px`;
+    return ready;
   };
 
   onMount(async () => {
@@ -176,8 +178,11 @@ export function TerminalView(props: TerminalViewProps) {
     renderer = r;
     r.selection = selection;
     r.highlights = highlights;
+    r.onRemeasure = () => void applyFont();
     const config = props.config();
-    if (config) applyConfig(config);
+    // The grid size the session starts with comes from the font's metrics.
+    if (config) await applyConfig(config);
+    if (closed) return;
     const fit = () => r.gridSize(viewport.clientWidth, viewport.clientHeight);
 
     // The size the session starts with; later fits compare against it.
@@ -299,7 +304,7 @@ export function TerminalView(props: TerminalViewProps) {
   createEffect(
     on(props.config, (c) => {
       if (!c || !renderer) return;
-      applyConfig(c);
+      void applyConfig(c);
       refit?.();
     }),
   );
@@ -333,13 +338,28 @@ export function TerminalView(props: TerminalViewProps) {
     setAnchor(r);
   };
 
-  const applyFont = () => {
+  let fontRequest = 0;
+  const applyFont = async () => {
     const size = Math.min(72, Math.max(6, baseFont.size + zoom));
     // Canvas text does not make the browser fetch a web font; ask for the symbols font here.
-    void document.fonts.load(`${size}px "Symbols Nerd Font Mono"`, "\ue0b0").catch(() => {});
-    renderer?.setFont({ ...baseFont, size });
+    void document.fonts.load(`${size}px "Symbols Nerd Font Mono"`, "").catch(() => {});
+    const font = { ...baseFont, size };
+    // The WebGL renderer draws glyphs Rust rasterizes, so the grid follows Rust's metrics.
+    let metrics: Awaited<ReturnType<typeof textMetrics>> | undefined;
+    const request = ++fontRequest;
+    if (renderer instanceof WebGLRenderer) {
+      try {
+        metrics = await textMetrics(font.families, size * (window.devicePixelRatio || 1));
+      } catch (e) {
+        console.warn("font metrics from Rust unavailable:", e);
+      }
+      // A newer font change (zoom) happened while waiting.
+      if (request !== fontRequest || closed) return;
+    }
+    renderer?.setFont(font, metrics);
     setFont(renderer?.currentFont ?? baseFont);
     updateHeaders();
+    refit?.();
   };
 
   const updateHeaders = () => {
@@ -618,7 +638,7 @@ export function TerminalView(props: TerminalViewProps) {
       e.preventDefault();
       // Keep zoom inside the size limits so the opposite key works at once.
       zoom = z === 0 ? 0 : Math.min(72 - baseFont.size, Math.max(6 - baseFont.size, zoom + z));
-      applyFont();
+      void applyFont();
       refit?.();
       return;
     }

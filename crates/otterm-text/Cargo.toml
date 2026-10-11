@@ -1,0 +1,17 @@
+[package]
+name = "otterm-text"
+description = "Font fallback, shaping and glyph rasterization for otterm (decisions C3, C4)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+fontdb.workspace = true
+rustybuzz.workspace = true
+swash.workspace = true
+
+[lints]
+workspace = true

@@ -25,10 +25,14 @@ unicode-width = "0.2"
 vte = "0.15"
 regex = "1"
 sysinfo = { version = "0.39", default-features = false, features = ["system"] }
+fontdb = "0.24"
+rustybuzz = "0.20"
+swash = "0.2"
 otterm-vt = { path = "crates/otterm-vt" }
 otterm-pty = { path = "crates/otterm-pty" }
 otterm-session = { path = "crates/otterm-session" }
 otterm-config = { path = "crates/otterm-config" }
+otterm-text = { path = "crates/otterm-text" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

@@ -33,6 +33,7 @@ export class CanvasRenderer implements Renderer {
   onDraw: (() => void) | undefined;
   /** Also called after each draw; for measurements (the typing bench). */
   afterDraw: (() => void) | undefined;
+  onRemeasure: (() => void) | undefined;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,

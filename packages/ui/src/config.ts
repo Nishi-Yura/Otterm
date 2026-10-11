@@ -7,6 +7,8 @@ export interface UiConfig {
   font: {
     /** CSS font-family list with the fallbacks already appended. */
     family: string;
+    /** The same families as names, in fallback order (for the Rust rasterizer). */
+    families: string[];
     size: number;
     lineHeight: number;
     letterSpacing: number;

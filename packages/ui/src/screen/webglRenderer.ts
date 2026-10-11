@@ -11,10 +11,12 @@ import {
   inLink,
   type Metrics,
   measureFont,
+  metricsFromText,
   type Renderer,
   searchColors,
 } from "./renderer";
 import type { Selection } from "./selection";
+import type { TextMetrics } from "./text";
 
 /** Floats per glyph instance: x, y, w, h (pixels), u, v, uw, vh (texels), color (RGBA8), mode. */
 const GLYPH_STRIDE = 10;
@@ -74,9 +76,9 @@ void main() {
 
 /**
  * Atlas texels are premultiplied. Plain glyphs are white coverage tinted with the text color.
- * Blending coverage straight in sRGB makes dark text on a light background look bold and light
- * text on a dark one thin; the coverage curve bends with the text's lightness to match the weight
- * Canvas 2D draws (it corrects the same way for text it knows the background of).
+ * Blending linear coverage straight in sRGB makes dark text on a light background look heavier
+ * than light text on a dark one; the coverage curve bends with the text's lightness so both read
+ * at the weight the font was designed for.
  */
 const GLYPH_FS = `#version 300 es
 precision mediump float;
@@ -95,8 +97,8 @@ void main() {
 }`;
 
 /** Coverage exponents for black and for white text (see GLYPH_FS). */
-const GAMMA_DARK = 1.8;
-const GAMMA_LIGHT = 0.85;
+const GAMMA_DARK = 1.25;
+const GAMMA_LIGHT = 0.9;
 
 /** A growable instance list: floats, with colors stored as RGBA8 in float slots. */
 class Instances {
@@ -175,6 +177,9 @@ export class WebGLRenderer implements Renderer {
   link: Link | undefined;
   onDraw: (() => void) | undefined;
   afterDraw: (() => void) | undefined;
+  onRemeasure: (() => void) | undefined;
+  /** Rust's metrics for the current font and scale; Canvas 2D measurements until they arrive. */
+  private text: TextMetrics | undefined;
 
   private bgProgram!: Program;
   private rectProgram!: Program;
@@ -248,6 +253,7 @@ export class WebGLRenderer implements Renderer {
     if (!texture) throw new Error("no texture");
     this.texture = texture;
     this.atlas = new GlyphAtlas(gl, texture, this.font, this.metrics, this.dpr);
+    this.atlas.onReady = () => this.invalidate();
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   }
@@ -310,8 +316,9 @@ export class WebGLRenderer implements Renderer {
     return this.font;
   }
 
-  setFont(font: FontConfig): void {
+  setFont(font: FontConfig, text?: TextMetrics): void {
     this.font = font;
+    this.text = text;
     this.measure();
     this.invalidate();
   }
@@ -322,9 +329,17 @@ export class WebGLRenderer implements Renderer {
   }
 
   measure(): void {
-    this.dpr = window.devicePixelRatio || 1;
-    this.metrics = measureFont(this.measureCtx, this.font, this.dpr);
-    if (!this.lost) this.atlas.reset(this.font, this.metrics, this.dpr);
+    const dpr = window.devicePixelRatio || 1;
+    if (dpr !== this.dpr && this.text) {
+      // Rust's metrics are for the old scale; ask for new ones (setFont follows).
+      this.text = undefined;
+      this.onRemeasure?.();
+    }
+    this.dpr = dpr;
+    this.metrics = this.text
+      ? metricsFromText(this.font, this.text, dpr)
+      : measureFont(this.measureCtx, this.font, dpr);
+    if (!this.lost) this.atlas.reset(this.font, this.metrics, dpr);
     this.rows = [];
   }
 
@@ -469,7 +484,7 @@ export class WebGLRenderer implements Renderer {
       const cp = line.codepoints[col] ?? 32;
       if (cp !== 32 && !(attr.flags & Flags.HIDDEN)) {
         const text = String.fromCodePoint(cp) + (line.extras.get(col) ?? "");
-        const g = this.atlas.get(text, attr.flags & (Flags.BOLD | Flags.ITALIC), span === 2);
+        const g = this.atlas.get(text, attr.flags & (Flags.BOLD | Flags.ITALIC));
         if (g.w > 0) {
           const color = this.rgba(readable(fg, bg, this.minimumContrast), attr.flags & Flags.DIM ? 153 : 255);
           this.pushGlyph(cache.glyphs, x + g.x, y + g.y, g.w, g.h, g.u, g.v, color, g.color);
