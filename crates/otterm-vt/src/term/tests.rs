@@ -585,3 +585,63 @@ fn vttest_answers_cursor_position_in_origin_mode() {
     let mut t = term(10, 5, "\x1b[2;4r\x1b[?6h\x1b[2;3H\x1b[6n");
     assert_eq!(t.take_responses(), b"\x1b[2;3R");
 }
+
+// Grapheme clusters as ConPTY counts them (issue #7). Measured with the bundled OpenConsole:
+// after "A" the cursor is at column 3 for each of these clusters.
+
+#[test]
+fn zwj_sequences_are_one_wide_character() {
+    let t = term(10, 1, "A\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}B");
+    assert_eq!(t.cursor().col, 4);
+    assert_eq!(cell(&t, 0, 3).ch, 'B');
+    assert_eq!(t.screen()[0].extra_at(1), Some("\u{200D}\u{1F469}\u{200D}\u{1F467}"));
+}
+
+#[test]
+fn skin_tones_join_their_emoji() {
+    let t = term(10, 1, "A\u{1F44B}\u{1F3FD}B");
+    assert_eq!(cell(&t, 0, 3).ch, 'B');
+    assert_eq!(t.screen()[0].extra_at(1), Some("\u{1F3FD}"));
+    // A lone skin tone is still a character of its own.
+    let t = term(10, 1, "A\u{1F3FD}B");
+    assert_eq!(cell(&t, 0, 3).ch, 'B');
+}
+
+#[test]
+fn a_flag_is_one_character_two_cells_wide() {
+    let t = term(10, 1, "A\u{1F1EF}\u{1F1F5}B");
+    assert_eq!(cell(&t, 0, 3).ch, 'B');
+    assert!(cell(&t, 0, 1).attrs.has(flags::WIDE));
+    assert!(cell(&t, 0, 2).is_spacer());
+    assert_eq!(t.screen()[0].extra_at(1), Some("\u{1F1F5}"));
+    // A third indicator starts the next flag.
+    let t = term(10, 1, "\u{1F1EF}\u{1F1F5}\u{1F1FA}\u{1F1F8}x");
+    assert_eq!(cell(&t, 0, 4).ch, 'x');
+}
+
+#[test]
+fn vs16_makes_a_narrow_character_wide() {
+    let t = term(10, 1, "A\u{2764}B");
+    assert_eq!(cell(&t, 0, 2).ch, 'B', "a plain heart stays one cell");
+    let t = term(10, 1, "A\u{2764}\u{FE0F}B");
+    assert_eq!(cell(&t, 0, 3).ch, 'B');
+    let t = term(10, 1, "A1\u{FE0F}\u{20E3}B");
+    assert_eq!(cell(&t, 0, 3).ch, 'B', "keycap");
+    // VS15 does not narrow a wide emoji.
+    let t = term(10, 1, "A\u{1F600}\u{FE0E}B");
+    assert_eq!(cell(&t, 0, 3).ch, 'B');
+}
+
+#[test]
+fn a_cluster_at_the_line_end_stays_where_it_is() {
+    // The first indicator fills the last column; the second joins it without wrapping.
+    let t = term(3, 2, "AB\u{1F1EF}\u{1F1F5}x");
+    assert_eq!(t.screen()[0].extra_at(2), Some("\u{1F1F5}"));
+    assert_eq!(text(&t)[1], "x");
+}
+
+#[test]
+fn grapheme_clustering_is_reported_as_always_on() {
+    let mut t = term(10, 1, "\x1b[?2027$p");
+    assert_eq!(t.take_responses(), b"\x1b[?2027;3$y");
+}

@@ -655,6 +655,9 @@ impl Terminal {
 
     fn print_char(&mut self, c: char) {
         let c = if self.charsets[self.active_charset] == Charset::DecGraphics { dec_graphics(c) } else { c };
+        if self.join_cluster(c) {
+            return;
+        }
         let width = self.char_width(c);
 
         if width == 0 {
@@ -724,6 +727,70 @@ impl Terminal {
             self.cursor.pending_wrap = self.modes.autowrap;
         } else {
             self.cursor.col = col + width;
+        }
+    }
+
+    /// The cell holding the character before the cursor (the left half if it is wide), if any.
+    fn previous_cell(&self) -> Option<(usize, usize)> {
+        let (row, mut col) = (self.cursor.row, self.cursor.col);
+        if !self.cursor.pending_wrap {
+            col = col.checked_sub(1)?;
+        }
+        let r = &self.screen()[row];
+        if r.cells[col].is_spacer() && col > 0 {
+            col -= 1;
+        }
+        Some((row, col))
+    }
+
+    /// Grapheme clusters counted the way ConPTY counts them (issue #7): a ZWJ sequence, an emoji
+    /// with a skin tone, a pair of regional indicators (a flag) and a character followed by VS16
+    /// are each one character, two cells wide. Returns true when `c` joined the previous cell.
+    fn join_cluster(&mut self, c: char) -> bool {
+        let is_ri = |ch: char| ('\u{1F1E6}'..='\u{1F1FF}').contains(&ch);
+        let modifier = ('\u{1F3FB}'..='\u{1F3FF}').contains(&c);
+        let vs16 = c == '\u{FE0F}';
+        let Some((row, col)) = self.previous_cell() else { return false };
+        let cell = self.screen()[row].cells[col];
+        let extra = self.screen()[row].extra_at(col).unwrap_or("");
+        let wide = cell.attrs.has(flags::WIDE);
+        let after_zwj = extra.ends_with('\u{200D}');
+        // The cell right after the previous one is where the cursor is: it can become the spacer.
+        let adjacent = !self.cursor.pending_wrap && self.cursor.col == col + 1;
+        if after_zwj || (modifier && wide) {
+            self.append_combining(c);
+            return true;
+        }
+        let widen = (vs16 && !wide) || (is_ri(c) && is_ri(cell.ch) && extra.is_empty() && !wide);
+        if !widen {
+            return false;
+        }
+        if adjacent {
+            self.widen_previous(row, col);
+        }
+        self.append_combining(c);
+        true
+    }
+
+    /// Make the narrow character at `col` two cells wide, taking the cell at the cursor.
+    fn widen_previous(&mut self, row: usize, col: usize) {
+        let spacer = col + 1;
+        if spacer >= self.cols {
+            return;
+        }
+        self.erase_cells(row, spacer, spacer + 1);
+        let r = &mut self.grid()[row];
+        let attrs = r.cells[col].attrs;
+        r.cells[col].attrs.flags |= flags::WIDE;
+        r.cells[spacer] =
+            Cell { ch: ' ', attrs: Attrs { flags: (attrs.flags & !flags::LAYOUT) | flags::WIDE_SPACER, ..attrs } };
+        r.touch_to(spacer + 1);
+        self.touch(row);
+        if spacer + 1 >= self.cols {
+            self.cursor.col = self.cols - 1;
+            self.cursor.pending_wrap = self.modes.autowrap;
+        } else {
+            self.cursor.col = spacer + 1;
         }
     }
 
@@ -1293,6 +1360,8 @@ impl Perform for Terminal {
             ('p', [b'?', b'$']) => {
                 let mode = arg(params, 0, 0);
                 let state = match self.private_mode(mode) {
+                    // Grapheme clustering is always on, as in ConPTY (issue #7): "permanently set".
+                    _ if mode == 2027 => 3,
                     Some(true) => 1,
                     Some(false) => 2,
                     None => 0,

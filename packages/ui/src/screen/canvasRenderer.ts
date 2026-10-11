@@ -188,8 +188,6 @@ export class CanvasRenderer {
     const found = this.highlights?.colsOn(lineNo, this.model.cols) ?? [];
     const findColors = searchColors(theme.background);
 
-    /** A cell already drawn as the second half of a flag. */
-    let skip = -1;
     for (let col = 0; col < this.model.cols; col++) {
       const attr = line.attrs[col] ?? DEFAULT_ATTR;
       if (attr.flags & Flags.WIDE_SPACER) continue;
@@ -212,15 +210,9 @@ export class CanvasRenderer {
       }
 
       const cp = line.codepoints[col] ?? 32;
-      // The second half of a flag was drawn with the first; its decorations below still are not.
-      if (cp !== 32 && !(attr.flags & Flags.HIDDEN) && skip !== col) {
-        let text = String.fromCodePoint(cp) + (line.extras.get(col) ?? "");
-        // A flag is two regional indicators in two cells; drawn together they make one glyph
-        // across both (issue #7).
-        if (isRegionalIndicator(cp) && pairedWithNext(line.codepoints, col)) {
-          text += String.fromCodePoint(line.codepoints[col + 1] ?? 32) + (line.extras.get(col + 1) ?? "");
-          skip = col + 1;
-        }
+      // A whole grapheme cluster (an emoji sequence or a flag) is one cell; otterm-vt joins them.
+      if (cp !== 32 && !(attr.flags & Flags.HIDDEN)) {
+        const text = String.fromCodePoint(cp) + (line.extras.get(col) ?? "");
         ctx.font = this.fontFor(attr.flags);
         ctx.fillStyle = readable(fg, bg, this.minimumContrast);
         ctx.globalAlpha = attr.flags & Flags.DIM ? 0.6 : 1;
@@ -330,15 +322,4 @@ function searchColors(background: string): { match: string; current: string; cur
   return luma < 128
     ? { match: "#5a4a12", current: "#f0c674", currentText: "#1b1d23" }
     : { match: "#fff0a8", current: "#f5a623", currentText: "#000000" };
-}
-
-const isRegionalIndicator = (cp: number) => cp >= 0x1f1e6 && cp <= 0x1f1ff;
-
-/** Regional indicators pair from the left: the one at `col` starts a flag when an even number of
- * indicators come before it in the run. */
-function pairedWithNext(codepoints: Uint32Array, col: number): boolean {
-  if (!isRegionalIndicator(codepoints[col + 1] ?? 0)) return false;
-  let before = 0;
-  for (let c = col - 1; c >= 0 && isRegionalIndicator(codepoints[c] ?? 0); c--) before++;
-  return before % 2 === 0;
 }
