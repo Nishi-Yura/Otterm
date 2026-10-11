@@ -2,6 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { AssistBar, CompletionPopup, MultilineEditor, Palette, type PaletteEntry } from "./assist/AssistUi";
+import { wordAt } from "./assist/parse";
 import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInternals, startupMark } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
 import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
@@ -22,7 +24,16 @@ import {
   setRatio,
   splitPane,
 } from "./layout";
-import { type DialogRequest, type HostEnv, ModHost, type SessionSnapshot } from "./mods/host";
+import {
+  type BlockPayload,
+  type CompletionItem,
+  type DialogRequest,
+  type ErrorHint,
+  type Explanation,
+  type HostEnv,
+  ModHost,
+  type SessionSnapshot,
+} from "./mods/host";
 import { ModDialog, ModsPanel, Panels, PermissionDialog, StatusBar, type Toast, Toasts } from "./mods/ModUi";
 import type { ThemeInfo } from "./mods/protocol";
 import { PromptBar, type PromptProps } from "./PromptBar";
@@ -221,6 +232,39 @@ export function App() {
       }
     },
     runHostCommand(id, args) {
+      if (id === "otterm.open") {
+        const path = String(args?.path ?? "");
+        if (!path) return false;
+        const line =
+          args?.line === undefined
+            ? ""
+            : `:${String(args.line)}${args.col === undefined ? "" : `:${String(args.col)}`}`;
+        void invoke("path_open", { cwd: null, text: `${path}${line}` }).catch((e) => showNotice(String(e)));
+        return true;
+      }
+      if (id === "otterm.tab.new") {
+        newTab(args?.cwd === undefined ? undefined : String(args.cwd));
+        return true;
+      }
+      if (id === "otterm.palette.show") {
+        void openPalette();
+        return true;
+      }
+      if (id === "otterm.history.show") {
+        void openHistory();
+        return true;
+      }
+      if (id === "otterm.settings.open") {
+        void invoke("config_open").catch((e) => showNotice(String(e)));
+        return true;
+      }
+      if (id === "otterm.panel.hide") {
+        const target = String(args?.id ?? "");
+        const next = { ...shownPanel() };
+        for (const slot of Object.keys(next)) if (next[slot] === target) next[slot] = undefined;
+        setShownPanel(next);
+        return true;
+      }
       if (id === "otterm.panel.show") {
         const target = String(args?.id ?? "");
         const panel = host.panels().find((p) => p.id === target);
@@ -240,6 +284,260 @@ export function App() {
   const insertText = (text: string) => {
     const s = env.activeSession();
     if (s) void env.insert(s.id, text).catch((e) => showNotice(String(e)));
+  };
+
+  // --- input assist (docs/03 §8): what the user types, explanations, hints, completion -------
+  interface InputState {
+    line: string;
+    cursor: number;
+    active: boolean;
+  }
+  const inputs = new Map<number, InputState>();
+  const [inputState, setInputState] = createSignal<InputState>({ line: "", cursor: 0, active: false });
+  const [explanation, setExplanation] = createSignal<Explanation>();
+  const [hint, setHint] = createSignal<{ hint: ErrorHint; command: string }>();
+  const [completion, setCompletion] = createSignal<{ items: CompletionItem[]; selected: number }>();
+  const [palette, setPalette] = createSignal<{
+    title: string;
+    placeholder: string;
+    entries: PaletteEntry[];
+    empty: string;
+    bang?: boolean;
+  }>();
+  const [multiline, setMultiline] = createSignal<string>();
+  let explainTimer: ReturnType<typeof setTimeout> | undefined;
+  let explainSeq = 0;
+  const shellKindOf = (s: SessionSnapshot | undefined) => {
+    const shell =
+      (s?.shell ?? "")
+        .toLowerCase()
+        .replace(/\.exe$/, "")
+        .split(/[\\/]/)
+        .pop() ?? "";
+    return ["bash", "zsh", "fish", "pwsh", "powershell", "cmd"].includes(shell) ? shell : "other";
+  };
+  /** Re-explain the line after a pause in typing; danger-only mode shows only dangerous lines. */
+  const scheduleExplain = (st: InputState) => {
+    clearTimeout(explainTimer);
+    const mode = config()?.assist.explain ?? "always";
+    if (!st.active || st.line.trim() === "" || mode === "off") {
+      setExplanation(undefined);
+      return;
+    }
+    const seq = ++explainSeq;
+    explainTimer = setTimeout(async () => {
+      const s = env.activeSession();
+      const parsed = host.parse(st.line, s?.cwd ?? "", shellKindOf(s));
+      const x = await host.explain(parsed).catch(() => undefined);
+      if (seq !== explainSeq) return;
+      setExplanation(x && (mode === "always" || x.danger) ? x : undefined);
+    }, 80);
+  };
+  const onPaneInput = (pane: Pane, st: InputState) => {
+    inputs.set(pane.id, st);
+    if (currentTab()?.active !== pane.id) return;
+    setInputState(st);
+    const s = snapshot(pane);
+    if (s) host.emit("input-changed", { sessionId: String(s.id), line: st.line, cursor: st.cursor, exact: false });
+    scheduleExplain(st);
+    if (completion()) void refreshCompletion(st);
+    if (!st.active) setCompletion(undefined);
+  };
+  /** Ask the providers for items at the cursor (docs/03 §8.2). */
+  const refreshCompletion = async (st: InputState) => {
+    const s = env.activeSession();
+    if (!s || !st.active) return setCompletion(undefined);
+    const parsed = host.parse(st.line, s.cwd ?? "", shellKindOf(s));
+    const items = await host.complete(
+      { sessionId: String(s.id), line: st.line, cursor: st.cursor, exact: false },
+      parsed,
+    );
+    if (inputState() !== st && inputState().line !== st.line) return;
+    setCompletion(items.length > 0 ? { items, selected: 0 } : undefined);
+  };
+  /** Put a completion in place of the word under the cursor: delete it, then paste the text. */
+  const acceptCompletion = (item: CompletionItem) => {
+    const s = env.activeSession();
+    const st = inputState();
+    setCompletion(undefined);
+    if (!s) return;
+    const { word } = wordAt(st.line, st.cursor);
+    const text = item.insertText ?? item.label;
+    const erase = "\u007f".repeat([...word].length);
+    void invoke("session_write", { id: s.id, data: erase })
+      .then(() => env.insert(s.id, text))
+      .catch((e) => showNotice(String(e)));
+  };
+  /** Keys the assist UI takes before the terminal (completion navigation, Tab at level 3). */
+  const assistKey = (e: KeyboardEvent, st: InputState): boolean => {
+    const c = completion();
+    if (!c) return false;
+    const tabAccepts = (config()?.assist.completionKey ?? "ctrl-space") === "tab";
+    if (e.key === "Escape") {
+      setCompletion(undefined);
+      return true;
+    }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      const n = c.items.length;
+      setCompletion({ ...c, selected: (c.selected + (e.key === "ArrowDown" ? 1 : n - 1)) % n });
+      return true;
+    }
+    if (e.key === "Enter" || (e.key === "Tab" && tabAccepts)) {
+      const item = c.items[c.selected];
+      if (item) acceptCompletion(item);
+      return true;
+    }
+    if (e.key === "Tab") setCompletion(undefined);
+    if (!st.active) setCompletion(undefined);
+    return false;
+  };
+  /** Enter at the prompt: the mods' verdict (danger-guard), then the line runs or not. */
+  const beforeExecute = async (line: string): Promise<boolean> => {
+    setCompletion(undefined);
+    const s = env.activeSession();
+    if (!s || !(config()?.assist.dangerGuard ?? true)) return true;
+    const verdict = await host.beforeExecute(s, line).catch(() => ({ action: "run" as const }));
+    const replace = async (command: string) => {
+      await invoke("session_replace_line", { id: s.id, text: command }).catch((e) => showNotice(String(e)));
+      // The editor needs a moment to take the paste before Enter arrives.
+      await new Promise((r) => setTimeout(r, 60));
+    };
+    switch (verdict.action) {
+      case "run":
+        return true;
+      case "cancel":
+        return false;
+      case "replace":
+        await replace(verdict.command);
+        return true;
+      case "confirm":
+        return new Promise<boolean>((resolve) => {
+          const done = (answer: () => Promise<boolean> | boolean) => {
+            setConfirm(undefined);
+            refocus();
+            void Promise.resolve(answer()).then(resolve);
+          };
+          setConfirm({
+            title: verdict.title || t("danger-title-confirm"),
+            body: verdict.body,
+            preview: line,
+            buttons: [
+              { label: t("danger-run"), action: () => done(() => true) },
+              ...verdict.alternatives.map((a) => ({
+                label: a.label || t("danger-alternative-label", { command: a.command }),
+                action: () => done(() => replace(a.command).then(() => true)),
+              })),
+              { label: t("danger-cancel"), action: () => done(() => false) },
+            ],
+            // Enter alone picks the alternative when there is one, else cancels (never "run").
+            focus: verdict.alternatives.length > 0 ? 1 : verdict.alternatives.length + 1,
+            cancel: () => done(() => false),
+          });
+        });
+    }
+  };
+  /** A block failed: the error-hint providers get a look (docs/03 §8.4). */
+  const onBlockFailed = async (pane: Pane, line: number, exit: number, ms: number) => {
+    if (!(config()?.assist.errorHint ?? true) || exit === 130 || exit === 0) return;
+    const s = snapshot(pane);
+    if (!s) return;
+    const b = await invoke<{ command: string | null; output: string } | null>("session_block", {
+      id: s.id,
+      line,
+    }).catch(() => null);
+    if (!b?.command) return;
+    const block: BlockPayload = {
+      id: `${s.id}:${line}`,
+      sessionId: String(s.id),
+      command: b.command,
+      cwd: s.cwd ?? "",
+      startedAt: Date.now() - ms,
+      endedAt: Date.now(),
+      durationMs: ms,
+      exitCode: exit,
+      output: b.output.split("\n").slice(-2000).join("\n"),
+    };
+    const h = await host.errorHint(block).catch(() => undefined);
+    if (h && currentTab()?.active === pane.id) setHint({ hint: h, command: b.command });
+  };
+  /** The palette (docs/03 §7): otterm's own actions, profiles, and every mod command. */
+  const openPalette = async () => {
+    const list = await invoke<{ id: string; name: string; detected: boolean }[]>("profiles_list").catch(() => []);
+    const mine: PaletteEntry[] = [
+      { id: "tab.new", title: t("palette-cmd-new-tab"), run: () => run({ kind: "newTab" }) },
+      { id: "tab.close", title: t("palette-cmd-close-tab"), run: () => run({ kind: "closeTab" }) },
+      {
+        id: "pane.split.vertical",
+        title: t("palette-cmd-split-vertical"),
+        run: () => run({ kind: "split", dir: "row" }),
+      },
+      {
+        id: "pane.split.horizontal",
+        title: t("palette-cmd-split-horizontal"),
+        run: () => run({ kind: "split", dir: "column" }),
+      },
+      { id: "settings", title: t("palette-cmd-settings"), run: () => run({ kind: "settings" }) },
+      { id: "mods", title: t("palette-cmd-mods"), run: () => env.runHostCommand("otterm.mods.show", undefined) },
+      { id: "history", title: t("palette-cmd-history"), run: () => run({ kind: "history" }) },
+      ...[0, 1, 2, 3].map((level) => ({
+        id: `guide.${level}`,
+        title: t("palette-cmd-guide", { level }),
+        run: () =>
+          void invoke("config_set", { key: "general.guide_level", value: level }).catch((e) => showNotice(String(e))),
+      })),
+      ...list.map((p) => {
+        const key = `profile-${p.id}`;
+        const label = p.detected && t(key) !== key ? t(key) : p.name;
+        return {
+          id: `profile.${p.id}`,
+          title: t("palette-cmd-profile", { name: label }),
+          run: () => newTab(undefined, p.id, label),
+        };
+      }),
+    ];
+    const mods: PaletteEntry[] = host
+      .commandList()
+      .filter((c) => !c.hidden)
+      .map((c) => ({
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        hint: c.mod,
+        run: () => void host.runCommand(c.id),
+      }));
+    setPalette({
+      title: t("palette-title"),
+      placeholder: t("palette-placeholder"),
+      entries: [...mine, ...mods],
+      empty: t("palette-empty"),
+      bang: true,
+    });
+  };
+  /** otterm's history UI (docs/03 §8.5): newest first; picking a row types it at the prompt. */
+  const openHistory = async () => {
+    const runs = await invoke<
+      { id: number; started: number; ms: number; exit: number; command: string; cwd: string }[]
+    >("history_query", { query: { text: "", limit: 500 } }).catch(() => []);
+    const entries: PaletteEntry[] = runs.map((r) => ({
+      id: String(r.id),
+      title: r.command,
+      description: `${folderName(r.cwd.replaceAll("\\", "/"))} · ${new Date(r.started).toLocaleString()} · ${r.exit === 0 ? t("history-exit-ok") : t("history-exit-failed", { code: r.exit })}`,
+      run: () => insertText(r.command),
+    }));
+    setPalette({
+      title: t("history-title"),
+      placeholder: t("history-placeholder"),
+      entries,
+      empty: t("history-empty"),
+    });
+  };
+  const closePalette = () => {
+    setPalette(undefined);
+    refocus();
+  };
+  const cycleGuide = () => {
+    const next = ((config()?.guideLevel ?? 2) + 1) % 4;
+    void invoke("config_set", { key: "general.guide_level", value: next }).catch((e) => showNotice(String(e)));
   };
   const copyText = (text: string) => void invoke("clipboard_write", { text }).catch(() => {});
   /** Mods' right-click items for the terminal (docs/05 §5.2). */
@@ -285,8 +583,23 @@ export function App() {
     ];
     if (warnings.length > 0) showNotice(t("config-ignored", { keys: warnings.join("; ") }));
     // Enabled lists and mod settings live in config.toml too (docs/06 §2).
-    if (ready()) void host.refresh();
+    if (ready()) {
+      if (previous && previous.language !== c.language) host.restartAll();
+      else void host.refresh();
+      if (previous && previous.guideLevel !== c.guideLevel) host.setGuideLevel(c.guideLevel);
+      const watched: [string, unknown, unknown][] = [
+        ["general.guide_level", previous?.guideLevel, c.guideLevel],
+        ["general.language", previous?.language, c.language],
+        ["appearance.theme", previous?.theme.name, c.theme.name],
+        ["appearance.follow_system", previous?.followSystem, c.followSystem],
+        ["font.size", previous?.font.size, c.font.size],
+      ];
+      for (const [key, before, after] of watched) if (before !== after) host.hostSettingChanged(key, after);
+    }
+    previous = c;
   };
+  /** The configuration before the last change, to tell mods what moved. */
+  let previous: UiConfig | undefined;
 
   onMount(async () => {
     startupMark("page start", 0);
@@ -626,6 +939,29 @@ export function App() {
         void invoke("session_block_fold", { id, line: null, fold: null }).catch(() => {});
         break;
       }
+      case "palette":
+        void openPalette();
+        break;
+      case "history":
+        // Ctrl+R stays the shell's at guide level 0 (decision B5).
+        if ((config()?.assist.historyKey ?? "otterm") !== "otterm") return false;
+        void openHistory();
+        break;
+      case "completion": {
+        const st = inputState();
+        if (!st.active || !(config()?.assist.completion ?? true)) return false;
+        if (completion()) {
+          const c = completion();
+          if (c) setCompletion({ ...c, selected: (c.selected + 1) % c.items.length });
+        } else void refreshCompletion(st);
+        break;
+      }
+      case "multiline": {
+        const st = inputState();
+        if (!st.active || multiline() !== undefined) return false;
+        setMultiline(st.line);
+        break;
+      }
     }
     return true;
   };
@@ -903,9 +1239,16 @@ export function App() {
                         if (s) host.emit("title-changed", { sessionId: String(s.id), title });
                       }}
                       onRunning={(command) => setRunning({ ...running(), [p.id]: command })}
+                      onInput={(st) => onPaneInput(p, st)}
+                      beforeExecute={beforeExecute}
+                      assistKey={assistKey}
                       onBlock={(e) => {
                         integrated.add(p.id);
-                        if (e.kind === "end" && e.exit !== undefined) setLastExit({ ...lastExit(), [p.id]: e.exit });
+                        if (e.kind === "start" && currentTab()?.active === p.id) setHint(undefined);
+                        if (e.kind === "end" && e.exit !== undefined) {
+                          setLastExit({ ...lastExit(), [p.id]: e.exit });
+                          void onBlockFailed(p, e.line, e.exit, e.ms ?? 0);
+                        }
                         const s = snapshot(p);
                         if (s)
                           void host.emitBlock(
@@ -960,6 +1303,54 @@ export function App() {
               )}
             </For>
           </div>
+          <Show when={completion()} keyed>
+            {(c) => (
+              <CompletionPopup
+                items={c.items}
+                selected={c.selected}
+                x={16}
+                y={8}
+                onPick={acceptCompletion}
+                onHover={(i) => setCompletion({ ...c, selected: i })}
+              />
+            )}
+          </Show>
+          <Show when={multiline() !== undefined}>
+            <MultilineEditor
+              initial={multiline() ?? ""}
+              onClose={() => {
+                setMultiline(undefined);
+                refocus();
+              }}
+              onSend={(text) => {
+                setMultiline(undefined);
+                const s = env.activeSession();
+                if (s) {
+                  void invoke("session_replace_line", { id: s.id, text })
+                    .then(() => new Promise((r) => setTimeout(r, 60)))
+                    .then(() =>
+                      invoke("session_key", {
+                        id: s.id,
+                        input: { key: "Enter", ctrl: false, alt: false, shift: false },
+                      }),
+                    )
+                    .catch((e) => showNotice(String(e)));
+                }
+                refocus();
+              }}
+            />
+          </Show>
+          <AssistBar
+            explanation={explanation()}
+            hint={hint()?.hint}
+            hintCommand={hint()?.command}
+            onInsert={insertText}
+            onDismissHint={() => setHint(undefined)}
+            onHintAction={(h, i) => {
+              const a = h.actions?.[i];
+              if (a?.fn !== undefined) void host.invoke(h.mod, a.fn).catch(() => {});
+            }}
+          />
           <Panels
             host={host}
             slot="panel.bottom"
@@ -981,6 +1372,8 @@ export function App() {
               })()}
               insert={insertText}
               copy={copyText}
+              guideLevel={config()?.guideLevel ?? 2}
+              onGuideClick={cycleGuide}
               onModsClick={() => {
                 const open = shownPanel()["sidebar.right"] === MODS_PANEL;
                 setShownPanel({ ...shownPanel(), "sidebar.right": open ? undefined : MODS_PANEL });
@@ -1010,6 +1403,18 @@ export function App() {
           ]}
         />
       </div>
+      <Show when={palette()} keyed>
+        {(p) => (
+          <Palette
+            title={p.title}
+            placeholder={p.placeholder}
+            entries={p.entries}
+            emptyText={p.empty}
+            onClose={closePalette}
+            onBang={p.bang ? (cmd) => insertText(cmd) : undefined}
+          />
+        )}
+      </Show>
       <Toasts toasts={toasts()} dismiss={dismissToast} />
       <Show when={host.pendingGrants()[0]} keyed>
         {(entry) => (

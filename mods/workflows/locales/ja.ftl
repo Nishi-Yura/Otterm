@@ -1,0 +1,21 @@
+# この mod のメッセージ。コードからは ctx.i18n.t("<key>") で参照する。
+panel-title = ワークフロー
+open-file = 定義ファイルを開く
+cmd-open-file = ワークフローの定義ファイルを開く
+user-section = マイワークフロー
+user-empty = まだありません。定義ファイルに追加できます
+dialog-insert = 入力欄に入れる
+dialog-run = 実行
+dialog-cancel = キャンセル
+preview-label = 実行されるコマンド
+error-empty = 「{ $label }」を入力してください
+error-number = 「{ $label }」は数字で入力してください
+error-no-session = 入力先のターミナルがありません
+error-busy = 全画面のプログラムが動いているので実行しませんでした
+error-no-write = この環境では実行できません
+error-generic = 失敗しました: { $message }
+user-file-created = ワークフローの定義ファイルを作りました
+user-file-skipped = 読めなかった項目を { $count } 件飛ばしました
+example-name = 例: 作業フォルダを作る
+example-description = name と command があると、この一覧に出ます
+example-label = フォルダ名

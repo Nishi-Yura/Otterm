@@ -1,0 +1,46 @@
+[mod]
+id = "otterm.file-tree"
+name = "File Tree"
+version = "0.1.0"
+description = "サイドパネルのファイルツリー。シェルのフォルダに追従し、プレビューと基本操作を提供します。 / Sidebar file tree that follows the shell folder, with previews and basic file actions."
+author = "otterm"
+license = "Apache-2.0"
+kind = "extension"
+
+[compat]
+otterm = ">=1.0.0 <2.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+panel = "file-tree.panel"
+label = "ファイルツリー / File tree"
+
+[[adds]]
+panel = "file-tree.preview"
+label = "ファイルのプレビュー / File preview"
+
+[[adds]]
+command = "file-tree.toggle"
+label = "ファイルツリーの表示切替 / Toggle file tree"
+
+[[adds]]
+command = "file-tree.reveal-cwd"
+label = "シェルのフォルダをツリーに表示 / Reveal the shell folder"
+
+# cd is sent to the shell at guide level 2+ (decision B10); the user is told each time by the host.
+[permissions]
+fs.read = ["${home}/**", "${cwd}/**"]
+fs.write = ["${home}/**", "${cwd}/**"]
+terminal.read = true
+terminal.write = true
+clipboard = true
+events = ["cwd-changed"]
+
+[settings.schema]
+show_hidden = { type = "boolean", default = false, label = "隠しファイルを表示 / Show hidden files" }
+follow_cwd = { type = "boolean", default = true, label = "シェルのフォルダに追従 / Follow the shell folder" }
+cd_on_open = { type = "enum", default = "auto", label = "フォルダのダブルクリックで cd を送る / Send cd on folder double-click", values = [{ value = "auto", label = "ガイドレベルに従う / Follow guide level" }, { value = "always", label = "常に送る / Always" }, { value = "never", label = "送らない / Never" }] }

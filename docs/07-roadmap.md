@@ -72,6 +72,12 @@
 - オンボーディング、ガイドレベル、チュートリアル
 - コマンドパレット
 - **完了条件**: ターミナル未経験者 5 人にチュートリアルだけで「ファイルを作って Python を実行」まで到達してもらう
+- 進み具合（2026-10-11）:
+  - 済み（土台）: 入力行の取得（方式 B。`otterm-vt` が `133;B` の位置からカーソル行までを画面から読み、変わるたびに `Input` イベント。`exact: false`）、Enter の横取りと `before-execute`（mod ごとに 50 ms。cancel > confirm > replace。確認ダイアログは「そのまま実行／代替案／やめる」、代替案は入力行を書き換えてから実行。判断 B8）、`session_replace_line`（PSReadLine は Esc、readline / zle / fish は Ctrl+A Ctrl+K で消してから貼り付け）、assist API の実体（ホストにパーサ `assist/parse.ts`、危険ルールの評価（辞書の `danger` マークと `rules/*.json`、mod の `addRules`）、辞書の統合（`kind = "dictionary"` の mod の JSON を Rust が読む）、explain / completion / errorHint の各プロバイダ呼び出し）、同梱 mod の埋め込み（`build.rs` が `mods/*` を実行ファイルに入れ、起動時に `<データ>/bundled-mods/<id>/` へ書き出す。公式の同梱 mod は承認済み扱い。判断 M8）、実行記録（`history.sqlite`、判断 K1。秘密らしい引数の `[REDACTED]`、保持 90 日）、`ctx.fs.trash`、`ctx.settings.host.set / onChange`（公式 mod のみ）、ガイドレベル（ステータスバーの `Lv` をクリックで切替、`general.guide_level` を toml_edit で書く）
+  - 済み（UI）: 入力支援バー（説明と、失敗したブロックのエラー助言カード「入力欄に入れる」）、補完ポップアップ（`Ctrl+Space`、Lv3 は Tab で確定。判断 B3）、コマンドパレット（`Ctrl+Shift+P`。本体操作、プロファイル、mod のコマンド、ガイドレベル。`!` はシェルに入力）、履歴 UI（`Ctrl+R`、Lv1 以上。判断 B5。選択で入力欄へ）、複数行入力（`Shift+Enter`、クォートと括弧の閉じ忘れ表示、Ctrl+Enter でまとめて送信）
+  - 済み（同梱 mod、`mods/`）: `otterm.cmd-explain`、`otterm.danger-guard`（Windows 固有ルール含む、判断 G5）、`otterm.error-hint`（検出したパッケージマネージャで導入提案、判断 B11）、`otterm.completion`（サブコマンド・オプション・パス）、`otterm.file-tree`（ツリー、プレビュー、新規・名前変更・ゴミ箱、Lv2 以上でダブルクリックが `cd`。判断 B10）、`otterm.workflows`（同梱 4 セット、`${data}/workflows.json`）、`otterm.onboarding`（初回設定 8 段階と 6 章のチュートリアル。判断 B7、G3）
+  - 確認済み（Windows、pwsh）: 7 つの同梱 mod の起動（各 30〜90 ms）、`git push -f` の説明表示 → Enter で確認 → 「--force-with-lease で実行」で書き換えて実行 → 失敗の助言カード（`git init`）まで一続きで動く
+  - 残り: 方式 A（zsh の `7777;line`）と `exact` 表示、パスワード入力の検出（K2）、`--help` のキャッシュ（判断 B9）、履歴 UI の絞り込み（CWD、成功のみ、今日）とシェル履歴の統合、補完の履歴・PATH ソース、ファイルツリーの Git 装飾と WSL パス変換、プレビューの CSV / JSON / PDF、エディタ検出（判断 I16）の設定画面、パレットの `:` `?` `@` `#` プレフィックス、`otterm trash` CLI、未経験者 5 人での検証（完了条件）、macOS / Linux
 
 ### M4.5: コツメ（目安 3〜4 週、M4 と並行可）
 

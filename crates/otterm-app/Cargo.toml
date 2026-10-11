@@ -23,6 +23,9 @@ otterm-modhost.workspace = true
 getrandom.workspace = true
 semver.workspace = true
 ureq = { version = "3", default-features = false, features = ["rustls", "gzip"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
+trash = "5"
+toml_edit.workspace = true
 otterm-session.workspace = true
 otterm-text.workspace = true
 serde.workspace = true

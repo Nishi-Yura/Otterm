@@ -1,0 +1,259 @@
+/* Input assist (docs/03 §8): the bar under the terminal, completion popup, palette, editor. */
+
+.assist-bar {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 10px;
+  border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  background: var(--ot-assist-bg, color-mix(in srgb, var(--bg) 94%, #fff));
+  color: var(--fg);
+  font:
+    12.5px system-ui,
+    sans-serif;
+}
+
+.assist-explain {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+
+.assist-explain.danger {
+  color: var(--ot-danger, var(--ot-term-ansi-1, #e5484d));
+}
+
+.assist-danger-mark {
+  font-weight: 700;
+}
+
+.assist-card {
+  padding: 8px 10px;
+  border-left: 3px solid var(--ot-danger, var(--ot-term-ansi-1, #e5484d));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ot-danger, #e5484d) 8%, transparent);
+}
+
+.assist-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.assist-card-title {
+  font-weight: 600;
+}
+
+.assist-card-command {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assist-close {
+  margin-left: auto;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.assist-card-body {
+  margin-top: 4px;
+  white-space: pre-wrap;
+}
+
+.assist-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.assist-card-actions code {
+  font-family: var(--ot-prompt-font, monospace);
+}
+
+/* Completion popup, anchored at the prompt row. */
+.completion {
+  position: absolute;
+  z-index: 12;
+  max-width: min(560px, 90%);
+  max-height: 240px;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--fg) 15%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg) 90%, #808080);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.4);
+  color: var(--fg);
+  font:
+    12.5px system-ui,
+    sans-serif;
+  overflow: auto;
+}
+
+.completion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.completion-item.selected {
+  background: color-mix(in srgb, var(--ot-accent, #4f8cff) 30%, transparent);
+}
+
+.completion-kind {
+  width: 1em;
+  color: var(--muted);
+  text-align: center;
+}
+
+.completion-label {
+  font-family: var(--ot-prompt-font, monospace);
+}
+
+.completion-detail {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The command palette and the history (a palette with rows). */
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 10vh;
+  background: rgb(0 0 0 / 0.25);
+}
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, calc(100% - 32px));
+  max-height: 70vh;
+  border: 1px solid color-mix(in srgb, var(--fg) 15%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 92%, #fff);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.5);
+  color: var(--fg);
+  font:
+    13px system-ui,
+    sans-serif;
+  overflow: hidden;
+}
+
+.palette-input {
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+
+.palette-list {
+  flex: 1;
+  padding: 4px;
+  overflow: auto;
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.palette-item.selected {
+  background: color-mix(in srgb, var(--ot-accent, #4f8cff) 25%, transparent);
+}
+
+.palette-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.palette-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-desc,
+.palette-hint {
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.palette-empty {
+  padding: 12px;
+  color: var(--muted);
+}
+
+/* Multi-line editor (Shift+Enter). */
+.multiline {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 10px;
+  border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  background: color-mix(in srgb, var(--bg) 94%, #fff);
+  color: var(--fg);
+  font:
+    12.5px system-ui,
+    sans-serif;
+}
+
+.multiline-head,
+.multiline-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.multiline .muted,
+.multiline-problems {
+  color: var(--muted);
+}
+
+.multiline-problems:not(:empty) {
+  color: var(--ot-warning, var(--ot-term-ansi-3, #f0c674));
+}
+
+.multiline-area {
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px var(--ot-prompt-font, monospace);
+  resize: vertical;
+}
+
+.multiline-buttons {
+  display: flex;
+  gap: 6px;
+}

@@ -67,6 +67,10 @@ pub struct UiConfig {
     pub confirm_close_running: bool,
     /// What happens to a pane when its shell exits.
     pub close_behavior: otterm_config::CloseBehavior,
+    /// `general.guide_level`, 0 to 3 (docs/03 §11.2).
+    pub guide_level: u8,
+    /// `[assist]` with `auto` values resolved against the guide level.
+    pub assist: UiAssist,
     /// `appearance.statusbar.visible`.
     pub statusbar: bool,
     /// `[mods] developer_mode`: per-mod logs and timings in the mods panel (docs/05 §8.2).
@@ -93,6 +97,18 @@ pub struct UiFont {
     pub weight_bold: u16,
     /// `font.ligatures`: shape runs of cells together so the font can join `->` and the like.
     pub ligatures: bool,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UiAssist {
+    pub explain: otterm_config::Explain,
+    pub completion: bool,
+    pub completion_key: otterm_config::CompletionKey,
+    pub history_key: otterm_config::HistoryKey,
+    pub danger_guard: bool,
+    pub error_hint: bool,
+    pub learn_hints: bool,
 }
 
 #[derive(Clone, Serialize)]
@@ -188,6 +204,16 @@ impl ConfigState {
             bell: c.terminal.bell,
             confirm_close_running: c.general.confirm_close_running,
             close_behavior: c.terminal.close_behavior,
+            guide_level: c.general.guide_level.min(3),
+            assist: UiAssist {
+                explain: effective.explain,
+                completion: c.assist.completion,
+                completion_key: effective.completion_key,
+                history_key: effective.history_key,
+                danger_guard: c.assist.danger_guard,
+                error_hint: c.assist.error_hint,
+                learn_hints: effective.learn_hints,
+            },
             statusbar: c.appearance.statusbar.visible,
             developer_mode: c.mods.developer_mode,
             mods_dir: otterm_config::data_dir().map(|d| otterm_modhost::mods_dir(&d).display().to_string()),

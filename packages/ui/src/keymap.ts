@@ -28,6 +28,11 @@ function defaults(): Bindings {
     "block.collapse": [mac ? "cmd+shift+[" : "ctrl+shift+["],
     // Opens config.toml until there is a settings screen.
     settings: [mac ? "cmd+," : "ctrl+,"],
+    palette: [mac ? "cmd+shift+p" : "ctrl+shift+p"],
+    // Taken from the shell at guide level >= 1 only (decision B5); App checks before acting.
+    history: ["ctrl+r"],
+    "completion.trigger": ["ctrl+space"],
+    "multiline.open": ["shift+enter"],
   };
   for (let i = 1; i <= 9; i++) b[`tab.goto.${i}`] = [mac ? `cmd+${i}` : `ctrl+${i}`];
   for (const d of DIRS) {
@@ -41,6 +46,10 @@ function defaults(): Bindings {
 
 function action(id: string): AppAction | undefined {
   if (id === "settings") return { kind: "settings" };
+  if (id === "palette") return { kind: "palette" };
+  if (id === "history") return { kind: "history" };
+  if (id === "completion.trigger") return { kind: "completion" };
+  if (id === "multiline.open") return { kind: "multiline" };
   const [group, verb, arg] = id.split(".");
   const dir = DIRS.find((d) => d === arg);
   switch (`${group}.${verb}`) {
@@ -152,6 +161,8 @@ export function matches(c: Chord, e: KeyboardEvent): boolean {
   if (c.ctrl !== e.ctrlKey || c.shift !== e.shiftKey || c.alt !== e.altKey || c.meta !== e.metaKey) return false;
   const key = e.key.toLowerCase();
   if (key === c.key) return true;
+  // Chords write the space bar as "space"; the event says " ".
+  if (c.key === "space" && key === " ") return true;
   if (e.shiftKey && c.key in SHIFTED && e.key === SHIFTED[c.key]) return true;
   // A letter or digit key means what it says (Dvorak's "k" is not "t").
   if (/^[a-z0-9]$/.test(key)) return false;

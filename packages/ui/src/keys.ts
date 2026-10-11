@@ -64,6 +64,14 @@ export type AppAction =
   | { kind: "closePane" }
   | { kind: "fullscreen" }
   | { kind: "settings" }
+  /** The command palette (docs/03 §7). */
+  | { kind: "palette" }
+  /** otterm's history UI (docs/03 §8.5, decision B5). */
+  | { kind: "history" }
+  /** Open or step the completion popup (docs/03 §8.2). */
+  | { kind: "completion" }
+  /** The multi-line editor (docs/03 §8.6). */
+  | { kind: "multiline" }
   /** Scroll to the previous (-1) or next (1) block (docs/03 §6.3). */
   | { kind: "blockJump"; dir: -1 | 1 }
   /** Fold or show the output of the newest finished block. */

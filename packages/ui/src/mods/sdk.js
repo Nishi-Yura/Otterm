@@ -257,14 +257,27 @@
       }
     });
   };
+  /** Calls the handlers; returns their results (for before-execute the host waits for them). */
   const dispatch = (name, payload) => {
     const set = subs.get(name);
-    if (!set) return;
+    if (!set) return [];
     // An exception here is the mod's own: it reaches the glue, which reports a crash (docs/05 §4).
+    const out = [];
     for (const cb of [...set]) {
-      if (name.startsWith("custom:")) cb(payload.payload, payload.from);
-      else cb(payload);
+      if (name.startsWith("custom:")) out.push(cb(payload.payload, payload.from));
+      else out.push(cb(payload));
     }
+    return out;
+  };
+  /** A provider registration: the host calls `fn` with the provider's arguments. */
+  const provider = (kind, p, method, extra) => {
+    const reg = nextReg++;
+    const fn = ref((...args) => p[method](...args), true);
+    post({ t: "provider", kind, reg, fn: fn.$fn, ...extra });
+    return disposable(() => {
+      fns.delete(fn.$fn);
+      post({ t: "unprovide", reg });
+    });
   };
 
   // --- the context --------------------------------------------------------------------------------
@@ -276,7 +289,9 @@
     let theme = init.theme;
     const themeSubs = new Set();
     const guideLevel = signal(init.guideLevel ?? 2);
-    const full = (id) => (id.includes(".") ? id : `${init.modId}.${id}`);
+    const hostSubs = new Set();
+    // Namespaced already when it starts with this mod's id or looks like `<namespace>.<mod>.<name>`.
+    const full = (id) => (id.startsWith(`${init.modId}.`) || id.split(".").length >= 3 ? id : `${init.modId}.${id}`);
 
     const ctx = {
       modId: init.modId,
@@ -331,7 +346,14 @@
           settingSubs.add(cb);
           return disposable(() => settingSubs.delete(cb));
         },
-        host: { get: (key) => call("settings.host", key) },
+        host: {
+          get: (key) => call("settings.host", key),
+          set: (key, value) => call("settings.hostSet", key, value),
+          onChange(cb) {
+            hostSubs.add(cb);
+            return disposable(() => hostSubs.delete(cb));
+          },
+        },
       },
       storage: {
         get: (key) => call("storage.get", key),
@@ -363,17 +385,29 @@
         on: (name, cb) => on(`custom:${name}`, cb),
         onTitleChanged: (cb) => on("title-changed", cb),
       },
-      // Input assist arrives with M4 (docs/07): providers register but nothing calls them yet.
+      // Input assist (docs/03 §8): the host owns the parser, the rule set and the dictionary;
+      // providers are callbacks it invokes.
       assist: {
-        parse: () => Promise.reject(new Error("assist.parse is not available until M4")),
-        completions: { provide: () => later("assist", "assist providers do nothing until M4") },
-        explain: { provide: () => later("assist", "assist providers do nothing until M4") },
+        parse: (line, opts) => call("assist.parse", line, opts),
+        completions: { provide: (p) => provider("completion", p, "provide", { commands: p.commands }) },
+        explain: { provide: (p) => provider("explain", p, "provide", { commands: p.commands }) },
         danger: {
-          addRules: () => later("assist", "assist providers do nothing until M4"),
-          evaluate: () => Promise.resolve(undefined),
+          addRules(rules) {
+            const reg = nextReg++;
+            post({ t: "rules", reg, rules: ser(rules, "rules") });
+            return disposable(() => post({ t: "rules", reg, rules: null }));
+          },
+          evaluate: (parsed) => call("assist.evaluate", parsed),
         },
-        errorHints: { provide: () => later("assist", "assist providers do nothing until M4") },
-        dictionary: { add: () => noop(), lookup: () => Promise.resolve(undefined) },
+        errorHints: { provide: (p) => provider("errorHint", p, "provide", {}) },
+        dictionary: {
+          add(entries) {
+            const reg = nextReg++;
+            post({ t: "dictionary", reg, entries: ser(entries, "entries") });
+            return disposable(() => post({ t: "dictionary", reg, entries: null }));
+          },
+          lookup: (command) => call("assist.lookup", command),
+        },
         guideLevel,
       },
       links: { addDetector: () => later("links", "links.addDetector does nothing until M4") },
@@ -416,6 +450,7 @@
         watch: () => later("fs.watch", "fs.watch is not available yet"),
         resolve: (template, sessionId) => call("fs.resolve", template, sessionId),
       };
+      if (p.fsWrite.length > 0) ctx.fs.trash = (path) => call("fs.trash", path);
       if (p.fsWrite.length > 0) {
         Object.assign(ctx.fs, {
           writeText: (path, text) => call("fs.writeText", path, text),
@@ -460,6 +495,11 @@
     ctx.__theme = (t) => {
       theme = t;
       for (const cb of themeSubs) cb(t);
+    };
+    ctx.__guide = (level) => guideLevel.set(level);
+    ctx.__hostSetting = (key, value) => {
+      if (key === "general.guide_level") guideLevel.set(value);
+      for (const cb of hostSubs) cb({ key, value });
     };
     return ctx;
   };
@@ -546,8 +586,15 @@
         r === undefined ? undefined : JSON.stringify(ser(r, "result")),
       );
     },
+    /** Resolves to the handlers' (serialized) results as JSON. */
     dispatch(name, json) {
-      dispatch(name, JSON.parse(json));
+      return Promise.all(dispatch(name, JSON.parse(json))).then((r) => JSON.stringify(ser(r, "result")));
+    },
+    guide(level) {
+      ctx.__guide(level);
+    },
+    hostSetting(key, json) {
+      ctx.__hostSetting(key, JSON.parse(json));
     },
     setSignal(id, json) {
       signals.get(id)?.set(JSON.parse(json));

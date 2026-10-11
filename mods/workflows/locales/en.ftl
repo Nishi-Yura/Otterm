@@ -1,0 +1,21 @@
+# Messages for this mod. Code refers to them with ctx.i18n.t("<key>").
+panel-title = Workflows
+open-file = Open the definitions file
+cmd-open-file = Open workflow definitions
+user-section = My workflows
+user-empty = None yet. You can add them in the definitions file.
+dialog-insert = Insert into prompt
+dialog-run = Run
+dialog-cancel = Cancel
+preview-label = Command to run
+error-empty = Please fill in "{ $label }".
+error-number = "{ $label }" must be a number.
+error-no-session = There is no terminal to run in.
+error-busy = A full-screen program is running, so nothing was run.
+error-no-write = Running is not available here.
+error-generic = Failed: { $message }
+user-file-created = Created the workflow definitions file.
+user-file-skipped = Skipped { $count } entries that could not be read.
+example-name = Example: create a work folder
+example-description = Entries with a name and command show up in this list.
+example-label = Folder name

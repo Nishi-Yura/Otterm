@@ -7,6 +7,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { createSignal } from "solid-js";
+import { type ParsedCommand, parseCommand } from "../assist/parse";
+import { t } from "../i18n";
 import { matches, parseChord } from "../keymap";
 import type {
   HostToWorker,
@@ -29,6 +31,84 @@ const PONG_TIMEOUT_MS = 5000;
 const LOG_LIMIT = 200;
 /** Block output handed to mods is truncated to this many lines (`Block.output`). */
 const OUTPUT_LINES = 2000;
+/** How long before-execute waits for a mod (docs/09 §3.1). */
+const BEFORE_EXECUTE_MS = 50;
+/** How long a provider may take before its answer is dropped. */
+const PROVIDER_MS = 400;
+
+/** A danger rule as `DangerRule` in @otterm/api (plain data). */
+export interface DangerRule {
+  id: string;
+  level: "warn" | "confirm" | "block";
+  match:
+    | { command: string; subcommand?: string; anyOption?: string[]; allOptions?: string[]; argPattern?: string }
+    | { regex: string };
+  message: string | Record<string, string>;
+  alternatives?: { label: string | Record<string, string>; command: string }[];
+  platforms?: string[];
+}
+
+/** A dictionary entry (`DictionaryEntry`), kept as JSON. */
+export type DictionaryEntry = Record<string, unknown> & {
+  name: string;
+  aliases?: string[];
+  danger?: "warn" | "confirm" | "block";
+  dangerMessage?: unknown;
+  alternative?: { label: unknown; command: string };
+  subcommands?: DictionarySub[];
+  options?: DictionaryOption[];
+};
+interface DictionarySub {
+  name: string;
+  aliases?: string[];
+  summary?: unknown;
+  danger?: "warn" | "confirm" | "block";
+  dangerMessage?: unknown;
+  alternative?: { label: unknown; command: string };
+  options?: DictionaryOption[];
+}
+interface DictionaryOption {
+  flags: string[];
+  danger?: "warn" | "confirm" | "block";
+  dangerMessage?: unknown;
+  alternative?: { label: unknown; command: string };
+}
+
+export interface Explanation {
+  summary: string;
+  parts?: { range: [number, number]; text: string; danger?: string }[];
+  danger?: string;
+}
+export interface CompletionItem {
+  label: string;
+  insertText?: string;
+  detail?: string;
+  kind: string;
+  danger?: string;
+  recommended?: boolean;
+  sortText?: string;
+}
+export interface ErrorHint {
+  title: string;
+  body?: string;
+  fixCommand?: string;
+  actions?: { label: string; fn?: number; variant?: string }[];
+  allowAi?: boolean;
+  /** The mod it came from, for its action callbacks. */
+  mod: string;
+}
+export type BeforeExecuteVerdict =
+  | { action: "run" }
+  | { action: "cancel" }
+  | { action: "replace"; command: string }
+  | { action: "confirm"; title: string; body?: string; alternatives: { label: string; command: string }[] };
+
+interface Provider {
+  kind: "completion" | "explain" | "errorHint";
+  mod: string;
+  fn: number;
+  commands?: string[];
+}
 
 /** An installed mod as `mods_list` (Rust) describes it. */
 export interface ModEntry {
@@ -202,6 +282,15 @@ export class ModHost {
   private readonly setMenus: (v: Map<string, ContextMenuEntry[]>) => void;
   private readonly menuRegs = new Map<string, { target: string; items: SerializedMenu[] }>();
   private readonly uiByMod = new Map<string, { items: UiItem[]; panels: PanelItem[] }>();
+  // --- assist (docs/03 §8): providers, rules and the dictionary, by "mod#reg" ----------------
+  private readonly providers = new Map<string, Provider>();
+  private readonly ruleSets = new Map<string, DangerRule[]>();
+  private readonly dictSets = new Map<string, DictionaryEntry[]>();
+  /** Dictionary mods whose JSON is loaded (`mod_dictionary`). */
+  private readonly loadedDictionaries = new Set<string>();
+  private dictionary = new Map<string, DictionaryEntry>();
+  private rules: DangerRule[] = [];
+  private guideLevel = 2;
 
   constructor(env: HostEnv) {
     this.env = env;
@@ -240,8 +329,15 @@ export class ModHost {
       return;
     }
     const seen = new Set<string>();
+    this.guideLevel = Number(this.env.hostSetting("general.guide_level") ?? 2);
     for (const entry of list) {
       seen.add(entry.id);
+      // Dictionaries have no code: their JSON goes straight into the registry (docs/03 §8.1).
+      if (entry.kind === "dictionary") {
+        const wanted = entry.enabled && entry.problems.length === 0;
+        if (wanted && !this.loadedDictionaries.has(entry.id)) await this.loadDictionary(entry.id);
+        if (!wanted && this.loadedDictionaries.has(entry.id)) this.unloadDictionary(entry.id);
+      }
       const prev = this.states.get(entry.id);
       const state: ModState = prev ?? { entry, status: "inactive", crashes: 0, logs: [], calls: {} };
       const changedSettings = prev ? diffKeys(prev.entry.settings, entry.settings) : [];
@@ -280,9 +376,239 @@ export class ModHost {
       this.stop(id, "inactive");
       this.states.delete(id);
       this.uiByMod.delete(id);
+      if (this.loadedDictionaries.has(id)) this.unloadDictionary(id);
     }
     this.setPendingGrants(this.pendingGrants().filter((g) => seen.has(g.id) && !this.states.get(g.id)?.entry.granted));
     this.publish();
+  }
+
+  /** The UI language changed: every mod restarts, its translations are fixed at start. */
+  restartAll() {
+    for (const id of this.running.keys()) this.requestReload(id);
+    void this.refresh();
+  }
+
+  /** `general.guide_level` changed (status bar, onboarding): mods see it through ctx.assist.guideLevel. */
+  setGuideLevel(level: number) {
+    this.guideLevel = level;
+    for (const id of this.running.keys()) this.send(id, { t: "guide", level });
+  }
+
+  /** A host setting mods may watch changed (`ctx.settings.host.onChange`). */
+  hostSettingChanged(key: string, value: unknown) {
+    for (const id of this.running.keys()) this.send(id, { t: "hostSetting", key, value });
+  }
+
+  // --- assist (docs/03 §8) ---------------------------------------------------------------------
+
+  private async loadDictionary(id: string) {
+    try {
+      const data = await invoke<{ entries: DictionaryEntry[]; rules: DangerRule[] }>("mod_dictionary", { id });
+      this.dictSets.set(`${id}#dict`, data.entries);
+      this.ruleSets.set(`${id}#rules`, data.rules);
+      this.loadedDictionaries.add(id);
+      this.rebuildAssist();
+    } catch (e) {
+      console.error(`dictionary ${id}`, e);
+    }
+  }
+
+  private unloadDictionary(id: string) {
+    this.dictSets.delete(`${id}#dict`);
+    this.ruleSets.delete(`${id}#rules`);
+    this.loadedDictionaries.delete(id);
+    this.rebuildAssist();
+  }
+
+  private rebuildAssist() {
+    const dict = new Map<string, DictionaryEntry>();
+    // Later sets win (a mod can override a bundled entry), so bundled dictionaries go first.
+    for (const entries of this.dictSets.values()) {
+      for (const e of entries) {
+        if (!e || typeof e.name !== "string") continue;
+        dict.set(e.name.toLowerCase(), e);
+        for (const a of e.aliases ?? []) dict.set(a.toLowerCase(), e);
+      }
+    }
+    this.dictionary = dict;
+    this.rules = [...this.ruleSets.values()].flat().filter((r) => r && typeof r.id === "string" && r.match);
+  }
+
+  lookup(name: string): DictionaryEntry | undefined {
+    return this.dictionary.get(name.toLowerCase());
+  }
+
+  parse(line: string, cwd = "", shellKind = "other"): ParsedCommand {
+    return parseCommand(line, cwd, shellKind);
+  }
+
+  /** The strongest danger rule a command line hits (docs/03 §8.3): rules, then dictionary marks. */
+  evaluate(parsed: ParsedCommand): { level: "warn" | "confirm" | "block"; rule: DangerRule } | undefined {
+    const platform = platformName();
+    const rank = { warn: 1, confirm: 2, block: 3 };
+    let best: { level: "warn" | "confirm" | "block"; rule: DangerRule } | undefined;
+    const consider = (rule: DangerRule) => {
+      if (!best || rank[rule.level] > rank[best.level]) best = { level: rule.level, rule };
+    };
+    for (const rule of this.rules) {
+      if (rule.platforms && !rule.platforms.includes(platform)) continue;
+      if (ruleMatches(rule, parsed)) consider(rule);
+    }
+    for (const seg of parsed.segments) {
+      const entry = this.lookup(seg.name);
+      if (!entry) continue;
+      const loc = (v: unknown) => localized(v, this.env.locale());
+      const sub = seg.subcommand
+        ? entry.subcommands?.find((s) => s.name === seg.subcommand || s.aliases?.includes(seg.subcommand ?? ""))
+        : undefined;
+      const alt = (a?: { label: unknown; command: string }) =>
+        a ? [{ label: loc(a.label), command: a.command }] : undefined;
+      if (sub?.danger) {
+        consider({
+          id: `dict.${entry.name}.${sub.name}`,
+          level: sub.danger,
+          match: { command: entry.name, subcommand: sub.name },
+          message: loc(sub.dangerMessage ?? sub.summary),
+          alternatives: alt(sub.alternative),
+        });
+      } else if (entry.danger && !seg.subcommand) {
+        consider({
+          id: `dict.${entry.name}`,
+          level: entry.danger,
+          match: { command: entry.name },
+          message: loc(entry.dangerMessage ?? entry.summary),
+          alternatives: alt(entry.alternative),
+        });
+      }
+      const options = [...(entry.options ?? []), ...(sub?.options ?? [])];
+      for (const o of seg.options) {
+        const def = options.find((d) => d.flags.includes(o.flag));
+        if (def?.danger) {
+          consider({
+            id: `dict.${entry.name}.${o.flag}`,
+            level: def.danger,
+            match: { command: entry.name, anyOption: [o.flag] },
+            message: loc(def.dangerMessage),
+            alternatives: alt(def.alternative),
+          });
+        }
+      }
+    }
+    return best;
+  }
+
+  private providersOf(kind: Provider["kind"], command?: string): Provider[] {
+    return [...this.providers.values()].filter(
+      (p) => p.kind === kind && this.running.has(p.mod) && (!p.commands || !command || p.commands.includes(command)),
+    );
+  }
+
+  private async ask<T>(p: Provider, args: unknown[]): Promise<T | undefined> {
+    const timeout = new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), PROVIDER_MS));
+    try {
+      return (await Promise.race([this.invoke(p.mod, p.fn, args), timeout])) as T | undefined;
+    } catch (e) {
+      this.log(p.mod, "warn", `${p.kind} provider: ${String(e)}`);
+      return undefined;
+    }
+  }
+
+  /** The first explanation a provider gives for the line (docs/03 §8.1). */
+  async explain(parsed: ParsedCommand): Promise<Explanation | undefined> {
+    const name = parsed.segments.at(-1)?.name;
+    for (const p of this.providersOf("explain", name)) {
+      const r = await this.ask<Explanation>(p, [parsed]);
+      if (r?.summary) return r;
+    }
+    return undefined;
+  }
+
+  /** Completion items from every provider (docs/03 §8.2). */
+  async complete(
+    input: { sessionId: string; line: string; cursor: number; exact: boolean },
+    parsed: ParsedCommand,
+  ): Promise<CompletionItem[]> {
+    const name = parsed.segments.at(-1)?.name;
+    const lists = await Promise.all(
+      this.providersOf("completion", name).map((p) => this.ask<CompletionItem[]>(p, [input, parsed])),
+    );
+    const seen = new Set<string>();
+    const out: CompletionItem[] = [];
+    for (const list of lists) {
+      for (const it of list ?? []) {
+        const key = `${it.kind}:${it.insertText ?? it.label}`;
+        if (!it?.label || seen.has(key)) continue;
+        seen.add(key);
+        out.push(it);
+      }
+    }
+    out.sort((a, b) => (a.sortText ?? a.label).localeCompare(b.sortText ?? b.label));
+    return out.slice(0, 50);
+  }
+
+  /** The first hint a provider gives for a failed block (docs/03 §8.4). */
+  async errorHint(block: BlockPayload): Promise<ErrorHint | undefined> {
+    for (const p of this.providersOf("errorHint")) {
+      const r = await this.ask<Omit<ErrorHint, "mod">>(p, [block]);
+      if (r?.title) return { ...r, mod: p.mod };
+    }
+    return undefined;
+  }
+
+  /**
+   * Enter was pressed with `line` at the prompt: mods that subscribed to before-execute get at
+   * most 50 ms each (docs/09 §3.1). A cancel wins over a confirm, which wins over a replace.
+   */
+  async beforeExecute(session: SessionSnapshot, line: string): Promise<BeforeExecuteVerdict> {
+    const payload = { sessionId: String(session.id), command: line, cwd: session.cwd ?? "" };
+    const asks: Promise<unknown[]>[] = [];
+    for (const [id, r] of this.running) {
+      if (!r.subs.has("before-execute") || !this.states.get(id)?.entry.permissions.terminalRead) continue;
+      const reqId = r.nextInvoke++;
+      const started = performance.now();
+      const p = new Promise<unknown[]>((resolve) => {
+        const timer = setTimeout(() => {
+          r.pending.delete(reqId);
+          this.log(id, "warn", `before-execute took over ${BEFORE_EXECUTE_MS} ms; the command ran`);
+          resolve([]);
+        }, BEFORE_EXECUTE_MS);
+        r.pending.set(reqId, {
+          resolve: (v) => {
+            clearTimeout(timer);
+            if (this.env.developerMode())
+              this.log(id, "debug", `before-execute ${Math.round(performance.now() - started)} ms`);
+            resolve(Array.isArray(v) ? v : []);
+          },
+          reject: () => {
+            clearTimeout(timer);
+            resolve([]);
+          },
+        });
+      });
+      r.worker.postMessage({ t: "event", name: "before-execute", payload, id: reqId } satisfies HostToWorker);
+      asks.push(p);
+    }
+    const results = (await Promise.all(asks)).flat() as (Record<string, unknown> | undefined)[];
+    let verdict: BeforeExecuteVerdict = { action: "run" };
+    const rank = { run: 0, replace: 1, confirm: 2, cancel: 3 };
+    for (const r of results) {
+      if (!r || typeof r !== "object" || typeof r.action !== "string") continue;
+      const a = r.action;
+      let v: BeforeExecuteVerdict | undefined;
+      if (a === "cancel") v = { action: "cancel" };
+      else if (a === "replace" && typeof r.command === "string") v = { action: "replace", command: r.command };
+      else if (a === "confirm") {
+        const alts = Array.isArray(r.alternatives) ? (r.alternatives as { label: string; command: string }[]) : [];
+        v = {
+          action: "confirm",
+          title: String(r.title ?? ""),
+          body: r.body === undefined ? undefined : String(r.body),
+          alternatives: alts.filter((x) => x && typeof x.command === "string"),
+        };
+      }
+      if (v && rank[v.action] > rank[verdict.action]) verdict = v;
+    }
+    return verdict;
   }
 
   /** Mods whose source changed on disk (Rust reports the ids); they restart on the next refresh. */
@@ -492,7 +818,7 @@ export class ModHost {
         settings: entry.settings,
         theme: this.env.theme(),
         deadlineMs: DEADLINE_MS,
-        guideLevel: this.env.hostSetting("general.guide_level"),
+        guideLevel: this.guideLevel,
       },
     } satisfies HostToWorker);
   }
@@ -527,6 +853,21 @@ export class ModHost {
       if (k && !this.commands.has(k.command) && k.command.startsWith(`${id}.`)) this.keys.splice(i, 1);
     }
     for (const key of [...this.menuRegs.keys()]) if (key.startsWith(`${id}#`)) this.menuRegs.delete(key);
+    for (const key of [...this.providers.keys()]) if (key.startsWith(`${id}#`)) this.providers.delete(key);
+    let assist = false;
+    for (const key of [...this.ruleSets.keys()]) {
+      if (key.startsWith(`${id}#`) && key !== `${id}#rules`) {
+        this.ruleSets.delete(key);
+        assist = true;
+      }
+    }
+    for (const key of [...this.dictSets.keys()]) {
+      if (key.startsWith(`${id}#`) && key !== `${id}#dict`) {
+        this.dictSets.delete(key);
+        assist = true;
+      }
+    }
+    if (assist) this.rebuildAssist();
     this.uiByMod.delete(id);
     this.publishUi();
     this.publishMenus();
@@ -552,14 +893,14 @@ export class ModHost {
       // Three in a row: off until the user turns it back on (docs/05 §4).
       void invoke("mod_set_enabled", { id, enabled: false }).catch(() => {});
       this.env.toast({
-        text: `${state.entry.name}: disabled after ${MAX_CRASHES} crashes`,
+        text: t("mod-crashed-disabled", { name: state.entry.name }),
         kind: "danger",
         actions: [],
         from: id,
       });
     } else {
       this.env.toast({
-        text: `${state.entry.name} crashed: ${firstLine(message)}`,
+        text: t("mod-crashed-toast", { name: state.entry.name, message: firstLine(message) }),
         kind: "warning",
         actions: [],
         from: id,
@@ -638,6 +979,22 @@ export class ModHost {
         this.publishMenus();
         break;
       }
+      case "provider":
+        this.providers.set(`${id}#${msg.reg}`, { kind: msg.kind, mod: id, fn: msg.fn, commands: msg.commands });
+        break;
+      case "unprovide":
+        this.providers.delete(`${id}#${msg.reg}`);
+        break;
+      case "rules":
+        if (msg.rules) this.ruleSets.set(`${id}#${msg.reg}`, msg.rules as DangerRule[]);
+        else this.ruleSets.delete(`${id}#${msg.reg}`);
+        this.rebuildAssist();
+        break;
+      case "dictionary":
+        if (msg.entries) this.dictSets.set(`${id}#${msg.reg}`, msg.entries as DictionaryEntry[]);
+        else this.dictSets.delete(`${id}#${msg.reg}`);
+        this.rebuildAssist();
+        break;
     }
   }
 
@@ -742,15 +1099,15 @@ export class ModHost {
         // The most abused permission: confirmed again the first time it is used (decision D5).
         if (!r.confirmedWrite) {
           const ok = await this.env.confirm(
-            `${state.entry.name} wants to type into the terminal`,
-            "It will run commands as you. Allow it for this session?",
+            t("mod-write-confirm-title", { name: state.entry.name }),
+            t("mod-write-confirm-body"),
           );
           if (!ok) throw new Error("the user refused terminal.write");
           r.confirmedWrite = true;
         }
         await this.env.write(Number(sid), text);
         this.env.toast({
-          text: `${state.entry.name} wrote to the terminal: ${firstLine(text).slice(0, 80)}`,
+          text: t("mod-wrote-terminal", { name: state.entry.name, text: firstLine(text).slice(0, 80) }),
           kind: "warning",
           actions: [],
           from: id,
@@ -770,11 +1127,34 @@ export class ModHost {
       }
       case "settings.host": {
         const key = String(a[0]);
-        if (!["general.guide_level", "general.language", "appearance.theme", "font.size"].includes(key))
-          throw new Error(`${key} is not readable`);
+        if (!HOST_KEYS.includes(key)) throw new Error(`${key} is not readable`);
         return this.env.hostSetting(key);
       }
-      case "storage.get":
+      case "settings.hostSet": {
+        const [key, value] = a as unknown as [string, unknown];
+        if (!state.entry.official) throw new Error("only otterm's own mods may change host settings");
+        if (!HOST_KEYS.includes(key)) throw new Error(`${key} cannot be set`);
+        await invoke("config_set", { key, value });
+        return undefined;
+      }
+      // --- assist
+      case "assist.parse": {
+        const [line, opts] = a as unknown as [string, { cwd?: string; shellKind?: string } | undefined];
+        return this.parse(
+          String(line ?? ""),
+          opts?.cwd ?? cwd ?? "",
+          opts?.shellKind ?? (active ? sessionInfo(active).shellKind : "other"),
+        );
+      }
+      case "assist.evaluate":
+        return this.evaluate(a[0] as ParsedCommand);
+      case "assist.lookup":
+        return this.lookup(String(a[0] ?? ""));
+      case "storage.get": {
+        // Missing keys come back as JSON null; the API promises undefined.
+        const v = await invoke("mod_storage", { id, op: "get", key: a[0] ?? null, value: null });
+        return v === null ? undefined : v;
+      }
       case "storage.set":
       case "storage.delete":
       case "storage.keys":
@@ -796,6 +1176,7 @@ export class ModHost {
       case "fs.writeBytes":
       case "fs.mkdir":
       case "fs.rename":
+      case "fs.trash":
         return invoke("mod_fs", { id, cwd: cwd ?? null, op: method.slice("fs.".length), args: a });
       case "process.run": {
         const [cmd, pargs, opts] = a as unknown as [
@@ -813,8 +1194,8 @@ export class ModHost {
         if (!perms.clipboard) throw new Error("clipboard is not granted");
         if (!r.confirmedClipboardRead) {
           const ok = await this.env.confirm(
-            `${state.entry.name} wants to read the clipboard`,
-            "Allow it for this session?",
+            t("mod-clipboard-confirm-title", { name: state.entry.name }),
+            t("mod-clipboard-confirm-body"),
           );
           if (!ok) throw new Error("the user refused clipboard.read");
           r.confirmedClipboardRead = true;
@@ -876,6 +1257,54 @@ export class ModHost {
     }
     this.publish();
   }
+}
+
+const HOST_KEYS = [
+  "general.guide_level",
+  "general.language",
+  "appearance.theme",
+  "appearance.follow_system",
+  "general.check_updates",
+  "shell.default_profile",
+  "font.size",
+];
+
+/** A `LocalizedString` (string or per-locale map) in `locale`, English second. */
+export function localized(v: unknown, locale: string): string {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object") {
+    const m = v as Record<string, string>;
+    return m[locale] ?? m.en ?? Object.values(m)[0] ?? "";
+  }
+  return "";
+}
+
+/** `DangerRule.match` against a parsed line: a regex on the raw line, or the structure of a segment. */
+function ruleMatches(rule: DangerRule, parsed: ParsedCommand): boolean {
+  const m = rule.match;
+  if ("regex" in m) {
+    try {
+      return new RegExp(m.regex, "i").test(parsed.raw);
+    } catch {
+      return false;
+    }
+  }
+  return parsed.segments.some((seg) => {
+    if (seg.name.toLowerCase() !== m.command.toLowerCase()) return false;
+    if (m.subcommand !== undefined && seg.subcommand !== m.subcommand) return false;
+    const flags = seg.options.map((o) => o.flag);
+    if (m.anyOption && !m.anyOption.some((f) => flags.includes(f))) return false;
+    if (m.allOptions && !m.allOptions.every((f) => flags.includes(f))) return false;
+    if (m.argPattern) {
+      try {
+        const re = new RegExp(m.argPattern);
+        if (!seg.args.some((x) => re.test(x))) return false;
+      } catch {
+        return false;
+      }
+    }
+    return true;
+  });
 }
 
 function sessionInfo(s: SessionSnapshot) {

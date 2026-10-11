@@ -9,6 +9,7 @@
 import type { JSX } from "solid-js";
 import { createEffect, createMemo, createSignal, For, Match, Show, Switch } from "solid-js";
 import { Dynamic } from "solid-js/web";
+import { t } from "../i18n";
 import type {
   BadgeNode,
   BaseNode,
@@ -398,7 +399,7 @@ function CodeView(props: Props<CodeNode>): JSX.Element {
               class="mt-button mt-button-ghost mt-button-small"
               onClick={() => props.ctx.host.insert(props.node.code)}
             >
-              insert
+              {t("action-insert")}
             </button>
           </Show>
           <Show when={props.node.copyable === true}>
@@ -407,7 +408,7 @@ function CodeView(props: Props<CodeNode>): JSX.Element {
               class="mt-button mt-button-ghost mt-button-small"
               onClick={() => props.ctx.host.copy(props.node.code)}
             >
-              copy
+              {t("menu-copy")}
             </button>
           </Show>
         </div>

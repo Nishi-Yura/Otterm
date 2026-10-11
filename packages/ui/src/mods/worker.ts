@@ -80,8 +80,31 @@ class Sandbox {
   handle(msg: HostToWorker) {
     if (this.dead) return;
     switch (msg.t) {
-      case "event":
-        this.enter(() => this.callApi("dispatch", this.vm.newString(msg.name), this.json(msg.payload)).dispose());
+      case "event": {
+        const r = this.enter(() => this.callApi("dispatch", this.vm.newString(msg.name), this.json(msg.payload)));
+        const id = msg.id;
+        if (!r) {
+          if (id !== undefined) send({ t: "result", id, ok: false, error: "the mod crashed" });
+          break;
+        }
+        if (id === undefined) {
+          // Handlers run on their own; a rejection surfaces as a crash through `settle`.
+          void this.settle(r).then((v) => v?.dispose());
+          break;
+        }
+        void this.settle(r, (e) => send({ t: "result", id, ok: false, error: e })).then((v) => {
+          if (!v) return;
+          const value = this.vm.typeof(v) === "string" ? JSON.parse(this.vm.getString(v)) : undefined;
+          v.dispose();
+          send({ t: "result", id, ok: true, value });
+        });
+        break;
+      }
+      case "guide":
+        this.enter(() => this.callApi("guide", this.vm.newNumber(msg.level)).dispose());
+        break;
+      case "hostSetting":
+        this.enter(() => this.callApi("hostSetting", this.vm.newString(msg.key), this.json(msg.value)).dispose());
         break;
       case "invoke": {
         const r = this.enter(() => this.callApi("invoke", this.vm.newNumber(msg.fn), this.json(msg.args)));

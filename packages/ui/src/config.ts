@@ -58,6 +58,18 @@ export interface UiConfig {
   confirmCloseRunning: boolean;
   /** When the shell exits: close the pane, keep it with the exit message, or start a new shell. */
   closeBehavior: "close" | "keep" | "restart";
+  /** `general.guide_level`, 0 to 3 (docs/03 §11.2). */
+  guideLevel: 0 | 1 | 2 | 3;
+  /** `[assist]` with `auto` resolved against the guide level. */
+  assist: {
+    explain: "off" | "danger-only" | "always";
+    completion: boolean;
+    completionKey: "ctrl-space" | "tab";
+    historyKey: "otterm" | "shell";
+    dangerGuard: boolean;
+    errorHint: boolean;
+    learnHints: boolean;
+  };
   /** `appearance.statusbar.visible`. */
   statusbar: boolean;
   /** `[mods] developer_mode`: logs and timings per mod. */

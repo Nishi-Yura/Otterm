@@ -37,6 +37,9 @@ export interface StatusBarProps {
   insert: (text: string) => void;
   copy: (text: string) => void;
   onModsClick: () => void;
+  /** `general.guide_level`; a click cycles it (docs/03 §11.2). */
+  guideLevel: number;
+  onGuideClick: () => void;
 }
 
 export function StatusBar(props: StatusBarProps) {
@@ -75,6 +78,14 @@ export function StatusBar(props: StatusBarProps) {
             </span>
           )}
         </For>
+        <button
+          type="button"
+          class="statusbar-item statusbar-button"
+          title={t("status-guide")}
+          onClick={() => props.onGuideClick()}
+        >
+          {t("status-guide-level", { level: props.guideLevel })}
+        </button>
         <Show when={props.lastExit !== undefined && props.lastExit !== 0}>
           <span class="statusbar-item failed" title={t("status-exit")}>
             ✗ {props.lastExit}

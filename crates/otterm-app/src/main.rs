@@ -6,6 +6,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod config;
+mod history;
 mod launch;
 mod mods;
 mod open;
@@ -40,6 +41,10 @@ struct AppState {
     unknown_args: Vec<String>,
     /// The shell each session started, to quote dropped paths for it.
     shells: std::sync::Mutex<std::collections::HashMap<SessionId, String>>,
+    /// The run history (decision K1).
+    history: std::sync::Arc<history::History>,
+    /// The folder of each session as the shell reported it (OSC 7), as a path, for the history.
+    cwds: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SessionId, String>>>,
 }
 
 type CmdResult<T = ()> = Result<T, String>;
@@ -53,13 +58,34 @@ fn err(e: impl std::fmt::Display) -> String {
 #[derive(Clone, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 enum UiEvent {
-    Title { title: String },
+    Title {
+        title: String,
+    },
     Bell,
-    Cwd { url: String },
-    Clipboard { data: String },
-    BlockStart { line: u64, command: String },
-    BlockEnd { line: u64, exit: i32, ms: u32 },
-    Exited { code: Option<u32> },
+    Cwd {
+        url: String,
+    },
+    Clipboard {
+        data: String,
+    },
+    BlockStart {
+        line: u64,
+        command: String,
+    },
+    BlockEnd {
+        line: u64,
+        exit: i32,
+        ms: u32,
+    },
+    /// The line being typed (docs/02 §6, estimated). `active` is false once input ended.
+    Input {
+        line: String,
+        cursor: usize,
+        active: bool,
+    },
+    Exited {
+        code: Option<u32>,
+    },
 }
 
 /// A block of the shell integration (docs/03 §6.3) for the block menu: re-run, copy, save.
@@ -182,6 +208,12 @@ fn session_create(
     }
     let shell = opts.program.clone().unwrap_or_else(otterm_session::default_shell);
     let screen = std::sync::Arc::clone(&state.screen);
+    let history = std::sync::Arc::clone(&state.history);
+    let cwds = std::sync::Arc::clone(&state.cwds);
+    let config_state = state.config;
+    let profile_id = chosen.as_ref().map(|p| p.id.clone()).unwrap_or_default();
+    let id_cell = std::sync::Arc::new(std::sync::Mutex::new(None::<SessionId>));
+    let id_for_events = std::sync::Arc::clone(&id_cell);
     let id = state
         .sessions
         .create(
@@ -195,22 +227,66 @@ fn session_create(
                     }
                     SessionEvent::Title(title) => events.send(UiEvent::Title { title }),
                     SessionEvent::Bell => events.send(UiEvent::Bell),
-                    SessionEvent::Cwd(url) => events.send(UiEvent::Cwd { url }),
+                    SessionEvent::Cwd(url) => {
+                        if let (Some(id), Some(path)) = (*id_for_events.lock().unwrap(), local_path(&url)) {
+                            cwds.lock().unwrap().insert(id, path.display().to_string());
+                        }
+                        events.send(UiEvent::Cwd { url })
+                    }
                     // OSC 52 carries base64; the UI applies the clipboard policy (decision H2).
                     SessionEvent::ClipboardWrite(data) => match decode_base64(&data) {
                         Some(data) => events.send(UiEvent::Clipboard { data }),
                         None => Ok(()),
                     },
                     SessionEvent::BlockStart { line, command } => events.send(UiEvent::BlockStart { line, command }),
-                    SessionEvent::BlockEnd { line, exit, ms } => events.send(UiEvent::BlockEnd { line, exit, ms }),
+                    SessionEvent::BlockEnd { line, command, exit, ms } => {
+                        // The run history (decision K1).
+                        let c = config_state.config();
+                        if c.history.enabled
+                            && let Some(id) = *id_for_events.lock().unwrap()
+                        {
+                            let cwd = cwds.lock().unwrap().get(&id).cloned().unwrap_or_default();
+                            if !command.trim().is_empty() {
+                                let started = history::now_ms() - i64::from(ms);
+                                let run = history::NewRun {
+                                    command: command.clone(),
+                                    cwd,
+                                    exit,
+                                    started,
+                                    ms,
+                                    profile: profile_id.clone(),
+                                };
+                                history.record(&run, c.history.redact_secrets);
+                            }
+                        }
+                        events.send(UiEvent::BlockEnd { line, exit, ms })
+                    }
+                    SessionEvent::Input { line, cursor, active } => {
+                        events.send(UiEvent::Input { line, cursor, active })
+                    }
                     SessionEvent::Exited { code } => events.send(UiEvent::Exited { code }),
                     SessionEvent::Output(_) => Ok(()),
                 };
             }),
         )
         .map_err(err)?;
+    *id_cell.lock().unwrap() = Some(id);
     state.shells.lock().unwrap().insert(id, shell);
     Ok(id)
+}
+
+/// The run history, newest first (decision K1).
+#[tauri::command]
+fn history_query(state: State<'_, AppState>, query: history::Query) -> Vec<history::Run> {
+    state.history.query(&query)
+}
+
+#[tauri::command]
+fn history_delete(state: State<'_, AppState>, id: Option<i64>) {
+    match id {
+        Some(id) => state.history.delete(id),
+        None => state.history.clear(),
+    }
 }
 
 /// Files dropped on a pane: their paths, quoted for the pane's shell, typed at the prompt.
@@ -227,6 +303,20 @@ fn session_drop_paths(state: State<'_, AppState>, id: SessionId, paths: Vec<Stri
 #[tauri::command]
 fn session_write(state: State<'_, AppState>, id: SessionId, data: String) -> CmdResult {
     state.sessions.write(id, data.as_bytes()).map_err(err)
+}
+
+/// Replace the line being typed with `text` (danger-guard's alternatives, decision B8): clear
+/// the shell's line editor, then paste. PSReadLine's Windows mode has Escape for "revert line";
+/// readline, zle and fish take Ctrl+A Ctrl+K in emacs mode. Enter is left to the caller.
+#[tauri::command]
+fn session_replace_line(state: State<'_, AppState>, id: SessionId, text: String) -> CmdResult {
+    let shell = state.shells.lock().unwrap().get(&id).cloned().unwrap_or_default();
+    let name = shell.to_lowercase();
+    let clear: &[u8] = if name.contains("pwsh") || name.contains("powershell") { b"\x1b" } else { b"\x01\x0b" };
+    state.sessions.write(id, clear).map_err(err)?;
+    // A moment for the editor to redraw before the paste arrives.
+    std::thread::sleep(std::time::Duration::from_millis(30));
+    state.sessions.paste(id, &text).map_err(err)
 }
 
 /// A key press from the UI (DOM `KeyboardEvent` fields).
@@ -683,6 +773,8 @@ fn app_state() -> AppState {
         let font = config.ui().font;
         text::prepare(&font.families, font.size);
     });
+    let history = std::sync::Arc::new(history::History::open(otterm_config::data_dir()));
+    history.prune(config.config().history.retention_days);
     AppState {
         sessions: Box::new(LocalSessionManager::new()),
         screen: std::sync::Arc::new(ScreenServer::start().expect("start the screen socket")),
@@ -690,6 +782,8 @@ fn app_state() -> AppState {
         first: std::sync::Mutex::new(Some((launch.cwd, launch.command))),
         unknown_args: launch.unknown,
         shells: Default::default(),
+        history,
+        cwds: Default::default(),
     }
 }
 
@@ -762,6 +856,7 @@ fn main() {
         .manage(mods::ModsState::default())
         .setup(|app| {
             watch_config(app);
+            mods::extract_bundled();
             mods::watch(app);
             // The window starts hidden (tauri.conf.json); restore shows it once placed.
             match tauri::Manager::get_webview_window(app, "main") {
@@ -788,6 +883,7 @@ fn main() {
             session_focus,
             session_create,
             session_write,
+            session_replace_line,
             session_key,
             session_paste,
             session_drop_paths,
@@ -824,6 +920,10 @@ fn main() {
             mods::mod_process_run,
             mods::mod_http_fetch,
             mods::mod_log,
+            mods::mod_dictionary,
+            mods::config_set,
+            history_query,
+            history_delete,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run otterm");
@@ -841,6 +941,7 @@ fn main() {
         .manage(bench::BenchState::default())
         .setup(|app| {
             watch_config(app);
+            mods::extract_bundled();
             mods::watch(app);
             // The window starts hidden (tauri.conf.json); restore shows it once placed.
             match tauri::Manager::get_webview_window(app, "main") {
@@ -867,6 +968,7 @@ fn main() {
             session_focus,
             session_create,
             session_write,
+            session_replace_line,
             session_key,
             session_paste,
             session_drop_paths,
@@ -903,6 +1005,10 @@ fn main() {
             mods::mod_process_run,
             mods::mod_http_fetch,
             mods::mod_log,
+            mods::mod_dictionary,
+            mods::config_set,
+            history_query,
+            history_delete,
             bench::bench_mode,
             bench::bench_ipc_start,
             bench::bench_ipc_ack,

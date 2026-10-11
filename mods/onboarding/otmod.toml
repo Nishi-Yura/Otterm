@@ -1,0 +1,39 @@
+[mod]
+id = "otterm.onboarding"
+name = "Onboarding and Tutorial"
+version = "0.0.0"
+description = "First-run setup with Kotsume, and a six-chapter tutorial for your first terminal."
+author = "otterm"
+license = "Apache-2.0"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+panel = "onboarding.tutorial"
+label = "Tutorial panel"
+
+[[adds]]
+command = "onboarding.restart"
+label = "Show the first-run guide again"
+
+[[adds]]
+command = "tutorial.start"
+label = "Start the tutorial"
+
+[[adds]]
+command = "tutorial.reset"
+label = "Reset tutorial progress"
+
+[permissions]
+terminal.read = true
+terminal.write = true
+events = ["block-end", "cwd-changed"]
+fs.read = ["${home}/otterm-tutorial/**"]
+fs.write = ["${home}/otterm-tutorial/**"]

@@ -86,8 +86,12 @@ impl Found {
 
 /// Scan `mods/`. Results are sorted by id. A missing `mods/` folder gives an empty list.
 pub fn discover(data_dir: &Path, platform: Platform, host: &Version) -> Vec<Found> {
-    let mods = mods_dir(data_dir);
-    let Ok(entries) = fs::read_dir(&mods) else {
+    discover_dir(&mods_dir(data_dir), platform, host)
+}
+
+/// Scan any folder of mod folders (the app keeps the mods it ships with in a second one).
+pub fn discover_dir(mods: &Path, platform: Platform, host: &Version) -> Vec<Found> {
+    let Ok(entries) = fs::read_dir(mods) else {
         return Vec::new();
     };
     let mut found: Vec<Found> = entries

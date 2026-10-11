@@ -20,6 +20,6 @@ pub use manifest::{
 };
 pub use paths::{PathVars, VARIABLES, expand, expand_glob};
 pub use store::{
-    EnabledLists, Found, Installed, STORAGE_QUOTA, Storage, data_dir_of, discover, grant, granted, install, is_enabled,
-    mods_dir, revoke, set_enabled, set_setting, uninstall,
+    EnabledLists, Found, Installed, STORAGE_QUOTA, Storage, data_dir_of, discover, discover_dir, grant, granted,
+    install, is_enabled, mods_dir, revoke, set_enabled, set_setting, uninstall,
 };

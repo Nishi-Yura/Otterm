@@ -1,0 +1,24 @@
+[mod]
+id = "otterm.completion"
+name = "Completion"
+version = "0.0.0"
+description = "Completes subcommands, options and file names for the word under the cursor, from the command dictionary (ja / en)."
+author = "otterm"
+license = "Apache-2.0"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+# The input line is read for the word under the cursor; the working folder is listed for file names.
+[permissions]
+terminal.read = true
+fs.read = ["${cwd}/**"]
+
+[dependencies]
+"otterm.dictionary-core" = ">=1.0.0"

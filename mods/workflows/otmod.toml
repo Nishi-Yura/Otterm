@@ -1,0 +1,66 @@
+[mod]
+id = "otterm.workflows"
+name = "Workflows"
+version = "0.1.0"
+description = "よく使うコマンドを埋めて入力欄に入れます。ユーザー定義は ${data}/workflows.json。 / Fill in command templates and insert them at the prompt. User workflows live in workflows.json."
+author = "otterm"
+license = "Apache-2.0"
+kind = "extension"
+
+[compat]
+otterm = ">=1.0.0 <2.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+panel = "workflows.panel"
+label = "ワークフローのパネル / Workflow panel"
+
+[[adds]]
+command = "workflows.open-file"
+label = "ワークフローの定義ファイルを開く / Open workflow definitions"
+
+[[adds]]
+command = "workflows.run.git-new-branch"
+label = "Git: 新しいブランチを作って切り替える / Git: create and switch branch"
+
+[[adds]]
+command = "workflows.run.git-commit-all"
+label = "Git: 変更をすべてコミットする / Git: commit all changes"
+
+[[adds]]
+command = "workflows.run.git-push"
+label = "Git: 現在のブランチをプッシュする / Git: push the branch"
+
+[[adds]]
+command = "workflows.run.files-grep"
+label = "ファイル: フォルダ内で文字を探す / Files: search text in folder"
+
+[[adds]]
+command = "workflows.run.py-venv"
+label = "Python: 仮想環境を作る / Python: create venv"
+
+[[adds]]
+command = "workflows.run.py-run"
+label = "Python: ファイルを実行する / Python: run a file"
+
+[[adds]]
+command = "workflows.run.node-init"
+label = "Node: package.json を作る / Node: create package.json"
+
+[[adds]]
+command = "workflows.run.node-script"
+label = "Node: npm スクリプトを実行する / Node: run an npm script"
+
+# Commands are inserted by default. Running needs terminal.write, and the host tells the user each time.
+[permissions]
+fs.read = ["${mod}/**", "${data}/**"]
+fs.write = ["${data}/**"]
+terminal.read = true
+terminal.write = true
+
+[settings.schema]
+autorun = { type = "boolean", default = false, label = "「実行」ボタンを表示する / Show the Run button" }

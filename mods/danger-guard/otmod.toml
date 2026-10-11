@@ -1,0 +1,32 @@
+[mod]
+id = "otterm.danger-guard"
+name = "Danger Guard"
+version = "0.0.0"
+description = "Asks before risky commands run, and blocks the ones that must not run (ja / en)."
+author = "otterm"
+license = "Apache-2.0"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+command = "danger-guard.mute-last"
+label = "直前の確認を今後出さない"
+
+[[adds]]
+command = "danger-guard.unmute-all"
+label = "危険ガード: 確認をすべて戻す"
+
+# Reads the command line at Enter (before-execute). Nothing is written or run by the mod itself.
+[permissions]
+terminal.read = true
+events = ["before-execute"]
+
+[dependencies]
+"otterm.dictionary-core" = ">=1.0.0"

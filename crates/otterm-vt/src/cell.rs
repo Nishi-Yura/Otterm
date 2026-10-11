@@ -110,11 +110,14 @@ pub struct BlockHead {
     pub output_line: Option<u64>,
     /// When the command started, to measure its duration when the shell reports none.
     pub started: Option<std::time::Instant>,
+    /// Where the user's input begins (OSC 133 B): line number and column. The input line is read
+    /// from here to the cursor's row (docs/02 §6, method B).
+    pub input_start: Option<(u64, usize)>,
 }
 
 impl BlockHead {
     pub fn new(info: Box<str>) -> Self {
-        Self { info, command: None, state: BlockState::Prompt, output_line: None, started: None }
+        Self { info, command: None, state: BlockState::Prompt, output_line: None, started: None, input_start: None }
     }
 
     /// otterm draws a prompt bar over this row (the row itself is blank).

@@ -48,6 +48,8 @@ pub struct ModEntry {
     kind: String,
     official: bool,
     linked: bool,
+    /// Ships with otterm (docs/05 §9): pre-approved, can be disabled but not removed (decision M8).
+    bundled: bool,
     enabled: bool,
     granted: bool,
     problems: Vec<String>,
@@ -84,10 +86,52 @@ pub struct UiAdds {
     label: String,
 }
 
+/// The mods compiled into the executable (build.rs): `mods/*` of the repository.
+mod bundled {
+    include!(concat!(env!("OUT_DIR"), "/bundled_mods.rs"));
+}
+
+/// Where the bundled mods are written out: `<data>/bundled-mods/<folder>/`.
+pub fn bundled_dir(data: &Path) -> PathBuf {
+    data.join("bundled-mods")
+}
+
+/// Write the bundled mods to the data folder when the executable's copy differs from the one
+/// there (a hash file remembers which). Like the shell hooks (decision M5), so that `${mod}` is a
+/// real folder and the same code paths serve bundled and installed mods.
+pub fn extract_bundled() {
+    let Some(data) = data_dir() else { return };
+    let dir = bundled_dir(&data);
+    let stamp = dir.join(".hash");
+    if std::fs::read_to_string(&stamp).is_ok_and(|h| h.trim() == bundled::HASH) {
+        return;
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+    for (rel, bytes) in bundled::FILES {
+        let path = dir.join(rel);
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::write(&path, bytes);
+    }
+    let _ = std::fs::write(&stamp, bundled::HASH);
+}
+
 /// What `mods_list` found last time, to serve `mod_source` and the broker without rescanning.
 #[derive(Default)]
 pub struct ModsState {
     installed: Mutex<Vec<Installed>>,
+}
+
+/// Every mod folder: the user's, then the bundled ones.
+fn discover_all(data: &Path) -> Vec<Found> {
+    let mut all = otterm_modhost::discover(data, Platform::current(), &host_version());
+    all.extend(otterm_modhost::discover_dir(&bundled_dir(data), Platform::current(), &host_version()));
+    all
+}
+
+fn is_bundled(m: &Installed, data: &Path) -> bool {
+    m.dir.starts_with(bundled_dir(data))
 }
 
 impl ModsState {
@@ -125,8 +169,9 @@ fn entry(m: &Installed, config: &otterm_config::Config, data: &Path) -> ModEntry
         kind: serde_json::to_value(mf.mod_.kind).ok().and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_default(),
         official: mf.is_official(),
         linked: m.linked,
+        bundled: is_bundled(m, data),
         enabled: otterm_modhost::is_enabled(&lists, &m.id, mf.is_official()),
-        granted: otterm_modhost::granted(data, &m.id, &mf.mod_.version),
+        granted: is_bundled(m, data) || otterm_modhost::granted(data, &m.id, &mf.mod_.version),
         problems: m.problems.iter().map(|p| p.message.clone()).collect(),
         permissions: UiPermissions {
             process: mf.permissions.process.clone(),
@@ -168,9 +213,13 @@ pub fn mods_list(state: State<'_, AppState>, mods: State<'_, ModsState>) -> CmdR
     let config = state.config.config();
     let mut installed = Vec::new();
     let mut out = Vec::new();
-    for found in otterm_modhost::discover(&data, Platform::current(), &host_version()) {
+    for found in discover_all(&data) {
         match found {
             Found::Mod(m) => {
+                // A user copy of a bundled mod wins (an update, or a fork); the bundled one is hidden.
+                if installed.iter().any(|x: &Installed| x.id == m.id) {
+                    continue;
+                }
                 out.push(entry(&m, &config, &data));
                 installed.push(*m);
             }
@@ -184,6 +233,7 @@ pub fn mods_list(state: State<'_, AppState>, mods: State<'_, ModsState>) -> CmdR
                 kind: String::new(),
                 official: false,
                 linked: false,
+                bundled: false,
                 enabled: false,
                 granted: false,
                 problems: vec![error],
@@ -270,9 +320,88 @@ pub fn mod_install(path: String, link: bool) -> CmdResult<String> {
 }
 
 #[tauri::command]
-pub fn mod_uninstall(id: String) -> CmdResult {
+pub fn mod_uninstall(mods: State<'_, ModsState>, id: String) -> CmdResult {
     let data = data_dir().ok_or("no data folder")?;
+    if mods.find(&id).is_ok_and(|m| is_bundled(&m, &data)) {
+        return Err("a bundled mod can be disabled, not removed".into());
+    }
     otterm_modhost::uninstall(&data, &id).map_err(err)
+}
+
+#[derive(Serialize)]
+pub struct DictionaryData {
+    /// Command entries (`dictionary/commands/*.json`), as in the schema.
+    entries: Vec<Value>,
+    /// Danger rules (`dictionary/rules/*.json`, the `rules` arrays).
+    rules: Vec<Value>,
+}
+
+/// The JSON of a `dictionary` mod (docs/03 §8.1), for the assist registry in the UI.
+#[tauri::command]
+pub fn mod_dictionary(mods: State<'_, ModsState>, id: String) -> CmdResult<DictionaryData> {
+    let m = mods.find(&id)?;
+    let mut data = DictionaryData { entries: Vec::new(), rules: Vec::new() };
+    let root = m.dir.join("dictionary");
+    let read_json = |p: &Path| -> Option<Value> { serde_json::from_str(&std::fs::read_to_string(p).ok()?).ok() };
+    if let Ok(files) = std::fs::read_dir(root.join("commands")) {
+        for f in files.flatten() {
+            if f.path().extension().is_some_and(|e| e == "json")
+                && let Some(v) = read_json(&f.path())
+            {
+                data.entries.push(v);
+            }
+        }
+    }
+    if let Ok(files) = std::fs::read_dir(root.join("rules")) {
+        for f in files.flatten() {
+            if f.path().extension().is_some_and(|e| e == "json")
+                && let Some(Value::Object(mut o)) = read_json(&f.path())
+                && let Some(Value::Array(rules)) = o.remove("rules")
+            {
+                data.rules.extend(rules);
+            }
+        }
+    }
+    Ok(data)
+}
+
+/// Host settings a mod may change (`ctx.settings.host.set`, official mods only): written to
+/// `config.toml` keeping comments (toml_edit); the config watcher tells everyone.
+#[tauri::command]
+pub fn config_set(state: State<'_, AppState>, key: String, value: Value) -> CmdResult {
+    const ALLOWED: &[&str] = &[
+        "general.guide_level",
+        "general.language",
+        "appearance.theme",
+        "appearance.follow_system",
+        "general.check_updates",
+        "shell.default_profile",
+        "font.size",
+    ];
+    if !ALLOWED.contains(&key.as_str()) {
+        return Err(format!("{key} cannot be set this way"));
+    }
+    let path = state.config.path().ok_or("no configuration folder")?;
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir).map_err(err)?;
+    }
+    let text = std::fs::read_to_string(&path).unwrap_or_default();
+    let mut doc: toml_edit::DocumentMut = text.parse().map_err(err)?;
+    let (section, name) = key.split_once('.').ok_or("a dotted key is required")?;
+    let item = match value {
+        Value::Bool(b) => toml_edit::value(b),
+        Value::Number(n) if n.is_i64() => toml_edit::value(n.as_i64().unwrap_or(0)),
+        Value::Number(n) => toml_edit::value(n.as_f64().unwrap_or(0.0)),
+        Value::String(s) => toml_edit::value(s),
+        _ => return Err("only booleans, numbers and strings".into()),
+    };
+    if !doc.contains_table(section) {
+        doc[section] = toml_edit::table();
+    }
+    doc[section][name] = item;
+    let tmp = path.with_extension("toml.tmp");
+    std::fs::write(&tmp, doc.to_string()).map_err(err)?;
+    std::fs::rename(&tmp, &path).map_err(err)
 }
 
 /// `ctx.settings.set`: written under `[mods.settings."<id>"]`.
@@ -397,6 +526,12 @@ pub async fn mod_fs(
         }
         "rename" => {
             grant.rename(&path(0)?, &path(1)?).map_err(err)?;
+            json(Value::Null)
+        }
+        // The OS trash; hard deletes are not offered to mods (docs/03 §9.2).
+        "trash" => {
+            let p = grant.check_write(&path(0)?).map_err(err)?;
+            trash::delete(&p).map_err(err)?;
             json(Value::Null)
         }
         other => Err(format!("unknown fs op {other}")),
@@ -614,10 +749,12 @@ pub fn cli(args: &[String]) -> Result<String, String> {
     match args.first().map(String::as_str) {
         Some("list") => {
             let mut out = String::new();
-            for found in otterm_modhost::discover(&data, platform, &version) {
+            extract_bundled();
+            for found in discover_all(&data) {
                 match found {
                     Found::Mod(m) => {
-                        out.push_str(&format!("{}\t{}\t{}\n", m.id, m.manifest.mod_.version, m.dir.display()));
+                        let tag = if is_bundled(&m, &data) { "bundled" } else { "" };
+                        out.push_str(&format!("{}\t{}\t{}\t{tag}\n", m.id, m.manifest.mod_.version, m.dir.display()));
                         for p in &m.problems {
                             out.push_str(&format!("\tproblem: {}\n", p.message));
                         }

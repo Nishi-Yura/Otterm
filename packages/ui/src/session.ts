@@ -12,6 +12,8 @@ export type SessionEvent =
   /** A command of the shell integration started (docs/03 §6); `command` may be empty. */
   | { kind: "blockStart"; line: number; command: string }
   | { kind: "blockEnd"; line: number; exit: number; ms: number }
+  /** The line being typed at the prompt (estimated from the screen); `active` false once input ended. */
+  | { kind: "input"; line: string; cursor: number; active: boolean }
   | { kind: "exited"; code: number | null };
 
 /** A block of the shell integration (docs/03 §6.3), as `session_block` returns it. */

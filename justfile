@@ -13,8 +13,9 @@ setup:
     pnpm install --frozen-lockfile
     node scripts/fetch-conpty.js
 
-# Everything CI runs. The UI is built first because the app embeds packages/ui/dist at compile time.
-check: fmt-check build-ui lint typecheck validate
+# Everything CI runs. The UI and the bundled mods are built first because the app embeds
+# packages/ui/dist and mods/*/dist at compile time.
+check: fmt-check build-mods build-ui lint typecheck validate
 
 # Run the app with hot reload.
 dev:
@@ -22,6 +23,10 @@ dev:
 
 build-ui:
     pnpm --filter @otterm/ui build
+
+# The mods that ship with otterm (mods/*), bundled into the executable by crates/otterm-app/build.rs.
+build-mods:
+    pnpm -r --filter "./mods/*" build
 
 fmt:
     cargo fmt --all

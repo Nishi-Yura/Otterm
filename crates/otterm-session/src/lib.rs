@@ -51,11 +51,19 @@ pub enum SessionEvent {
         line: u64,
         command: String,
     },
-    /// That command ended (OSC 133 D).
+    /// That command ended (OSC 133 D). `command` is its line, for the history (decision K1).
     BlockEnd {
         line: u64,
+        command: String,
         exit: i32,
         ms: u32,
+    },
+    /// The line being typed at the prompt changed (docs/02 §6, estimated from the screen between
+    /// OSC 133 B and the cursor). An empty line with `active: false` means input ended.
+    Input {
+        line: String,
+        cursor: usize,
+        active: bool,
     },
     /// The process exited. Always the last event for a session. `None` if the exit code was unavailable.
     Exited {
@@ -771,9 +779,9 @@ fn apply_output(session: &Session, sink: &EventSink, bytes: &[u8]) {
             Event::Cwd(c) => SessionEvent::Cwd(c),
             Event::ClipboardWrite(d) => SessionEvent::ClipboardWrite(d),
             Event::BlockStart { line, command } => SessionEvent::BlockStart { line, command },
-            Event::BlockEnd { line, exit, ms } => {
+            Event::BlockEnd { line, command, exit, ms } => {
                 session.fold_long_output(line);
-                SessionEvent::BlockEnd { line, exit, ms }
+                SessionEvent::BlockEnd { line, command, exit, ms }
             }
         });
     }
@@ -787,6 +795,7 @@ fn frame_loop(id: SessionId, session: &Session, sink: &EventSink) {
     let mut last_gap = FRAME_INTERVAL;
     let mut last = FrameState::default();
     let mut sync_since: Option<Instant> = None;
+    let mut last_input: Option<(String, usize)> = None;
     while session.frame.wait() {
         if last_gap < FRAME_INTERVAL {
             let wait = FRAME_INTERVAL.saturating_sub(last_frame.elapsed());
@@ -812,6 +821,13 @@ fn frame_loop(id: SessionId, session: &Session, sink: &EventSink) {
             let spec =
                 View { lines: &view.lines, scrollback: view.scrollback, offset: view.offset, folds: &view.folds };
             otterm_vt::diff::encode_frame(&mut term, id as u32, &spec, &mut last, &mut out);
+            // The input line is read from the screen, so it is checked with every frame.
+            let input = term.input_line();
+            if input != last_input {
+                let (line, cursor) = input.clone().unwrap_or_default();
+                sink(SessionEvent::Input { line, cursor, active: input.is_some() });
+                last_input = input;
+            }
         }
         if !out.is_empty() {
             last_gap = last_frame.elapsed();

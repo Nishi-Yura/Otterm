@@ -398,6 +398,14 @@ export interface CommandMeta {
   hidden?: boolean;
 }
 
+/**
+ * Commands otterm itself answers to (`ctx.commands.run`):
+ * - `otterm.panel.show` `{ id }` / `otterm.panel.hide` `{ id }`: open or close a panel by its id
+ * - `otterm.open` `{ path, line?, col? }`: open a file in the editor (or a folder in the file manager),
+ *   as Ctrl+click on a path does (`[open.rules]` apply)
+ * - `otterm.tab.new` `{ cwd? }`: a new tab, in a folder
+ * - `otterm.palette.show`, `otterm.settings.open`, `otterm.history.show`
+ */
 export interface CommandsApi {
   /** `id` is namespaced automatically as "<modId>.<id>" unless it already contains a dot. */
   register(
@@ -778,14 +786,25 @@ export interface ClipboardApi {
 // Settings, storage, theme, i18n, log, events, workspace
 // ---------------------------------------------------------------------------
 
-export type HostSettingKey = "general.guide_level" | "general.language" | "appearance.theme" | "font.size";
+export type HostSettingKey =
+  | "general.guide_level"
+  | "general.language"
+  | "appearance.theme"
+  | "appearance.follow_system"
+  | "general.check_updates"
+  | "shell.default_profile"
+  | "font.size";
 
 export interface SettingsApi {
   get<T = unknown>(key: string): Promise<T>;
   set<T = unknown>(key: string, value: T): Promise<void>;
   onChange(cb: (e: { key: string; value: unknown }) => void): Disposable;
-  /** Read-only access to a few host settings. */
-  host: { get<T = unknown>(key: HostSettingKey): Promise<T> };
+  /** A few host settings. `set` is for official (`otterm.*`) mods only, such as onboarding. */
+  host: {
+    get<T = unknown>(key: HostSettingKey): Promise<T>;
+    set<T = unknown>(key: HostSettingKey, value: T): Promise<void>;
+    onChange(cb: (e: { key: HostSettingKey; value: unknown }) => void): Disposable;
+  };
 }
 
 export interface StorageApi {

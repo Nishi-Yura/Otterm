@@ -49,8 +49,13 @@ export interface ThemeInfo {
 
 export type HostToWorker =
   | { t: "init"; init: ModInit }
-  /** An event the mod subscribed to (session-created, cwd-changed, block-end, …). */
-  | { t: "event"; name: string; payload: unknown }
+  /** An event the mod subscribed to (session-created, cwd-changed, block-end, …). With `id`, the
+   * host wants the handlers' return values back as a `result` (before-execute). */
+  | { t: "event"; name: string; payload: unknown; id?: number }
+  /** `general.guide_level` changed (ctx.assist.guideLevel). */
+  | { t: "guide"; level: number }
+  /** A host setting a mod may watch changed (ctx.settings.host.onChange). */
+  | { t: "hostSetting"; key: string; value: unknown }
   /** Run a mod callback (a UI handler, a command, a `loadChildren`). `id` gets a `result` back. */
   | { t: "invoke"; id: number; fn: number; args: unknown[] }
   /** The user edited a Signal-backed control. */
@@ -101,7 +106,13 @@ export type WorkerToHost =
   | { t: "subscribe"; event: string }
   | { t: "unsubscribe"; event: string }
   /** Menu items for a right-click target (`context.terminal`, `context.block`, …). */
-  | { t: "contextMenu"; target: string; reg: number; items: SerializedMenu[] | null };
+  | { t: "contextMenu"; target: string; reg: number; items: SerializedMenu[] | null }
+  /** An assist provider (docs/03 §8): the host invokes `fn` with the provider's arguments. */
+  | { t: "provider"; kind: "completion" | "explain" | "errorHint"; reg: number; fn: number; commands?: string[] }
+  | { t: "unprovide"; reg: number }
+  /** Danger rules (`ctx.assist.danger.addRules`) and dictionary entries (`ctx.assist.dictionary.add`). */
+  | { t: "rules"; reg: number; rules: unknown[] | null }
+  | { t: "dictionary"; reg: number; entries: unknown[] | null };
 
 export interface SerializedMenu {
   label: string;

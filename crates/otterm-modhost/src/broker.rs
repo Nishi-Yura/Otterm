@@ -48,6 +48,10 @@ pub struct Protected {
 #[derive(Debug)]
 pub struct Grant {
     vars: PathVars,
+    /// `${data}` as the host wrote it, before resolving links. Under per-app file system
+    /// redirection (MSIX) a file and its folder can resolve into different trees, so the mod's own
+    /// data folder is also judged by the paths as written.
+    data_plain: PathBuf,
     protected: Protected,
     read: Vec<GlobMatcher>,
     read_roots: Vec<PathBuf>,
@@ -67,6 +71,7 @@ impl Grant {
     /// left out, and listed by [`Grant::skipped`]. Leaving them out is the safe choice: a pattern that cannot be
     /// expanded grants nothing.
     pub fn new(manifest: &Manifest, vars: PathVars, protected: Protected) -> Self {
+        let data_plain = vars.data.clone();
         let vars = PathVars {
             cwd: vars.cwd.map(canonical_or),
             home: canonical_or(vars.home),
@@ -93,6 +98,7 @@ impl Grant {
         }
         Self {
             vars,
+            data_plain,
             protected,
             read,
             read_roots,
@@ -137,7 +143,15 @@ impl Grant {
     pub fn check_read(&self, path: &Path) -> Result<PathBuf> {
         require_absolute(path)?;
         let canon = canonical(path).with_context(|| format!("cannot read {}", path.display()))?;
-        if self.read_allowed(&canon) { Ok(canon) } else { bail!("not in fs.read: {}", canon.display()) }
+        // The mod's own data folder is judged by the path as written too: under per-app file
+        // system redirection (MSIX) a file's resolved path can land in another tree than its folder's.
+        if self.read_allowed(&canon) || within(path, &self.data_plain) || within(&canon, &self.data_plain) {
+            Ok(canon)
+        } else if canon != path {
+            bail!("not in fs.read: {} (resolved from {})", canon.display(), path.display())
+        } else {
+            bail!("not in fs.read: {}", canon.display())
+        }
     }
 
     /// Check that a write is allowed and return the resolved path. The file may not exist yet.
@@ -149,7 +163,7 @@ impl Grant {
         if self.picked_save.iter().any(|p| within(&canon, p)) {
             return Ok(canon);
         }
-        if within(&canon, &self.vars.data) {
+        if within(&canon, &self.vars.data) || within(path, &self.data_plain) || within(&canon, &self.data_plain) {
             return Ok(canon);
         }
         let granted = self.write_roots.iter().any(|r| within(&canon, r))
@@ -382,8 +396,11 @@ fn require_absolute(path: &Path) -> Result<()> {
     if path.is_absolute() { Ok(()) } else { bail!("path must be absolute: {}", path.display()) }
 }
 
+/// Resolve a root the way [`resolve`] resolves a path to be written: through its nearest existing
+/// ancestor. `${data}` may not exist yet, and `expand` resolves the same way, so both sides of a
+/// check agree even where a folder's resolved form differs from the path as written.
 fn canonical_or(path: PathBuf) -> PathBuf {
-    canonical(&path).unwrap_or(path)
+    resolve(&path).unwrap_or(path)
 }
 
 /// Compile glob templates. A template that cannot be used is recorded in `skipped` and left out.

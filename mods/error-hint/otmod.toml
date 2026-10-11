@@ -1,0 +1,25 @@
+[mod]
+id = "otterm.error-hint"
+name = "Error Hints"
+version = "0.0.0"
+description = "Explains common command errors and offers a fix you can insert, never run (ja / en)."
+author = "otterm"
+license = "Apache-2.0"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+# Reads the finished block and its output. `where` / `which` only check which package managers are installed.
+[permissions]
+terminal.read = true
+events = ["block-end"]
+process = ["where", "which"]
+
+[dependencies]
+"otterm.dictionary-core" = ">=1.0.0"

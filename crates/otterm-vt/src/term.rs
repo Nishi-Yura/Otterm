@@ -151,6 +151,8 @@ pub enum Event {
     /// That command ended with this exit code after `ms` (OSC 133 D). `line` is its block head.
     BlockEnd {
         line: u64,
+        /// The command line (OSC 7777 cmd), empty when the shell did not report one.
+        command: String,
         exit: i32,
         ms: u32,
     },
@@ -684,13 +686,45 @@ impl Terminal {
         if self.modes.alt_screen {
             return;
         }
+        let start = (self.cursor_line(), self.cursor.col);
         if let Some(at) = self.find_head(self.cursor.row) {
             let h = self.head_mut(at);
             if h.state == BlockState::Prompt {
                 h.state = BlockState::Input;
+                h.input_start = Some(start);
                 self.touch_head(at);
             }
         }
+    }
+
+    /// The line the user is typing at the prompt, and the cursor's index in it (docs/02 §6,
+    /// method B: read from the screen between OSC 133 B and the cursor). `None` outside of input.
+    pub fn input_line(&self) -> Option<(String, usize)> {
+        if self.modes.alt_screen {
+            return None;
+        }
+        let (_, head) = self.block_head_at(self.cursor_line())?;
+        if head.state != BlockState::Input {
+            return None;
+        }
+        let (start_line, start_col) = head.input_start?;
+        let cursor_line = self.cursor_line();
+        if cursor_line < start_line {
+            return None;
+        }
+        // The line may continue past the cursor; follow soft wraps to its end.
+        let mut end_line = cursor_line;
+        while self.line(end_line).is_some_and(|r| r.wrapped) && self.line(end_line + 1).is_some() {
+            end_line += 1;
+        }
+        let text = self.text_range((start_line, start_col), (end_line, self.cols.saturating_sub(1)));
+        let before = if (cursor_line, self.cursor.col) <= (start_line, start_col) {
+            0
+        } else {
+            self.text_range((start_line, start_col), (cursor_line, self.cursor.col.saturating_sub(1))).chars().count()
+        };
+        let len = text.chars().count();
+        Some((text, before.min(len)))
     }
 
     /// OSC 7777 cmd: the command line the user entered.
@@ -753,7 +787,8 @@ impl Terminal {
         let ms = ms.or(measured).unwrap_or(0);
         let exit = exit.unwrap_or(0);
         h.state = BlockState::Done { exit, ms };
-        self.events.push(Event::BlockEnd { line, exit, ms });
+        let command = h.command.as_deref().unwrap_or_default().to_owned();
+        self.events.push(Event::BlockEnd { line, command, exit, ms });
         self.touch_head(at);
     }
 

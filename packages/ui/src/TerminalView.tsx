@@ -55,6 +55,15 @@ export interface TerminalViewProps {
   onBlock?: (e: { kind: "start" | "end"; line: number; exit?: number; ms?: number }) => void;
   /** Extra right-click items, from mods (`context.terminal`). */
   extraMenu?: () => MenuItem[];
+  /** The line being typed at the prompt changed (docs/02 §6). `active` false once input ended. */
+  onInput?: (e: { line: string; cursor: number; active: boolean }) => void;
+  /**
+   * Enter at the prompt with a non-empty line: mods may veto or replace it (before-execute,
+   * docs/05 §5.4). Resolves to false when the Enter must not be sent.
+   */
+  beforeExecute?: (line: string) => Promise<boolean>;
+  /** Keys the window's assist UI (completion popup, history) wants first. Returns true when taken. */
+  assistKey?: (e: KeyboardEvent, input: { line: string; cursor: number; active: boolean }) => boolean;
   onCwd: (url: string) => void;
   onExit: (code: number | null) => void;
   /** The program rang the bell (BEL). */
@@ -221,6 +230,10 @@ export function TerminalView(props: TerminalViewProps) {
           if (e.kind === "blockEnd") {
             props.onRunning("");
             props.onBlock?.({ kind: "end", line: e.line, exit: e.exit, ms: e.ms });
+          }
+          if (e.kind === "input") {
+            inputState = { line: e.line, cursor: e.cursor, active: e.active };
+            props.onInput?.(inputState);
           }
           // A view that is gone (its pane was closed) has nothing left to report.
           if (e.kind === "exited" && !closed) {
@@ -720,12 +733,47 @@ export function TerminalView(props: TerminalViewProps) {
     input.focus();
   };
 
+  /** What the user is typing at the prompt, as the last `input` event reported it. */
+  let inputState = { line: "", cursor: 0, active: false };
+  /** An Enter is waiting for the mods' verdict; keys typed meanwhile are not lost (they queue in the DOM). */
+  let enterPending = false;
+
   const onKeyDown = (e: KeyboardEvent) => {
     if (props.appKey(e, model.altScreen)) {
       e.preventDefault();
       return;
     }
     if (!session) return;
+    if (!model.altScreen && props.assistKey?.(e, inputState)) {
+      e.preventDefault();
+      return;
+    }
+    // Enter at the prompt: mods get a look first (before-execute), with a short deadline.
+    if (
+      e.key === "Enter" &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !e.shiftKey &&
+      !e.metaKey &&
+      !model.altScreen &&
+      inputState.active &&
+      inputState.line.trim() !== "" &&
+      props.beforeExecute
+    ) {
+      e.preventDefault();
+      if (enterPending) return;
+      enterPending = true;
+      const s = session;
+      props
+        .beforeExecute(inputState.line)
+        .then((ok) => {
+          if (ok) void s.key({ key: "Enter", ctrl: false, alt: false, shift: false });
+        })
+        .finally(() => {
+          enterPending = false;
+        });
+      return;
+    }
     if (isSearchShortcut(e)) {
       e.preventDefault();
       if (searching()) focusSearch?.();
