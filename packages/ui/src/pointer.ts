@@ -1,7 +1,7 @@
 import { platform } from "./keys";
-import type { CanvasRenderer } from "./screen/canvasRenderer";
 import type { Link } from "./screen/links";
 import type { ScreenModel } from "./screen/model";
+import type { Renderer } from "./screen/renderer";
 import type { Selection, SelectionMode } from "./screen/selection";
 import type { MouseInput, Session } from "./session";
 
@@ -14,7 +14,7 @@ const AUTOSCROLL_MS = 50;
 
 export interface PointerHost {
   canvas: HTMLCanvasElement;
-  renderer: CanvasRenderer;
+  renderer: Renderer;
   model: ScreenModel;
   selection: Selection;
   session: () => Session | undefined;

@@ -31,6 +31,7 @@ theme = "otterm Dark"
 theme_light = "otterm Light"        # OS 追従時のライト側
 follow_system = true
 minimum_contrast = 3.0              # 背景と近すぎる文字色を読める色に寄せる（1 = しない、最大 21）
+renderer = "auto"                   # auto（WebGL2、使えなければ Canvas 2D）| webgl | canvas。次に開くペインから効く
 layout = "guided"                   # minimal | classic | guided | ide | <custom name>
 ui_scale = 1.0
 tabbar.position = "top"             # top | bottom | left | hidden-when-single

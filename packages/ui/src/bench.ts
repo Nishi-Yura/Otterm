@@ -1,7 +1,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { createSignal } from "solid-js";
-import type { CanvasRenderer } from "./screen/canvasRenderer";
 import type { ScreenModel } from "./screen/model";
+import type { Renderer } from "./screen/renderer";
 
 /** Bench builds expose the active pane on `window.__otterm` (dev builds always do). */
 export const [exposeInternals, setExposeInternals] = createSignal(false);
@@ -52,7 +52,7 @@ const LINE_LENGTH = 60;
 
 interface Exposed {
   model: ScreenModel;
-  renderer: CanvasRenderer;
+  renderer: Renderer;
   input: HTMLTextAreaElement;
 }
 

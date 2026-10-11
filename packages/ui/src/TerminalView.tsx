@@ -9,13 +9,15 @@ import { PromptBar, type PromptProps } from "./PromptBar";
 import { type HeaderRow, PromptHeaders } from "./PromptHeaders";
 import { attachPointer } from "./pointer";
 import { SearchBar } from "./SearchBar";
-import { CanvasRenderer, DEFAULT_FONT, type FontConfig } from "./screen/canvasRenderer";
+import { CanvasRenderer } from "./screen/canvasRenderer";
 import { Highlights } from "./screen/highlights";
 import { type Link, linkAt, pathAt } from "./screen/links";
 import { ScreenModel } from "./screen/model";
 import { themeFromConfig } from "./screen/palette";
 import type { Frame } from "./screen/protocol";
+import { DEFAULT_FONT, type FontConfig, type Renderer } from "./screen/renderer";
 import { Selection } from "./screen/selection";
+import { WebGLRenderer } from "./screen/webglRenderer";
 import {
   clipboard,
   createSession,
@@ -127,7 +129,7 @@ export function TerminalView(props: TerminalViewProps) {
       if (!String(e).startsWith("not found")) props.notify(String(e));
     });
   };
-  let renderer: CanvasRenderer | undefined;
+  let renderer: Renderer | undefined;
   let closed = false;
   /** Fit the grid to the pane again (after a resize or a font change). */
   let refit: (() => void) | undefined;
@@ -170,7 +172,7 @@ export function TerminalView(props: TerminalViewProps) {
   };
 
   onMount(async () => {
-    const r = new CanvasRenderer(canvas, model);
+    const r = createRenderer(canvas, model, props.config()?.renderer ?? "auto");
     renderer = r;
     r.selection = selection;
     r.highlights = highlights;
@@ -319,6 +321,7 @@ export function TerminalView(props: TerminalViewProps) {
     observer?.disconnect();
     detachPointer?.();
     unsubscribe?.();
+    renderer?.dispose();
     // The process may already have exited; then there is nothing to close.
     session?.close().catch(() => {});
   });
@@ -792,6 +795,18 @@ export function TerminalView(props: TerminalViewProps) {
       {status() && <div class="status">{status()}</div>}
     </div>
   );
+}
+
+/** WebGL2 unless the configuration asks for Canvas 2D or WebGL2 is not available (docs/02 §1.2). */
+function createRenderer(canvas: HTMLCanvasElement, model: ScreenModel, kind: UiConfig["renderer"]): Renderer {
+  if (kind !== "canvas") {
+    try {
+      return new WebGLRenderer(canvas, model);
+    } catch (e) {
+      console.warn("WebGL2 renderer unavailable, using Canvas 2D:", e);
+    }
+  }
+  return new CanvasRenderer(canvas, model);
 }
 
 function sameLink(a: Link | undefined, b: Link | undefined): boolean {

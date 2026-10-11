@@ -154,6 +154,9 @@ pub struct Appearance {
     /// a dark background readable on a light theme, and the other way round.
     #[schemars(range(min = 1.0, max = 21.0))]
     pub minimum_contrast: f32,
+    /// How the terminal grid is drawn (docs/02 §1.2). `auto` uses WebGL2 and falls back to Canvas 2D.
+    /// Takes effect for panes opened after the change.
+    pub renderer: RendererKind,
     /// Layout preset or a saved custom layout name.
     pub layout: String,
     /// UI scale factor (0.8–2.0). The terminal grid follows OS DPI independently.
@@ -166,6 +169,14 @@ pub struct Appearance {
     pub window: Window,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum RendererKind {
+    Auto,
+    Webgl,
+    Canvas,
+}
+
 impl Default for Appearance {
     fn default() -> Self {
         Self {
@@ -173,6 +184,7 @@ impl Default for Appearance {
             theme_light: "otterm Light".into(),
             follow_system: true,
             minimum_contrast: 3.0,
+            renderer: RendererKind::Auto,
             layout: "guided".into(),
             ui_scale: 1.0,
             tabbar: Tabbar::default(),

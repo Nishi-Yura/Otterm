@@ -4,35 +4,14 @@ import type { Link } from "./links";
 import { DEFAULT_ATTR, type ScreenModel } from "./model";
 import { Palette, type Theme } from "./palette";
 import { CursorShape, Flags } from "./protocol";
+import { cssFont, DEFAULT_FONT, type FontConfig, inLink, measureFont, type Renderer, searchColors } from "./renderer";
 import type { Selection } from "./selection";
-
-export interface FontConfig {
-  family: string;
-  /** CSS pixels (decision I9). */
-  size: number;
-  lineHeight: number;
-  /** Extra space between cells in CSS pixels (may be negative). */
-  letterSpacing: number;
-  weight: number;
-  weightBold: number;
-}
-
-/** Used until the configuration arrives. */
-export const DEFAULT_FONT: FontConfig = {
-  family: '"Cascadia Mono", "SF Mono", Menlo, "DejaVu Sans Mono", "BIZ UDGothic", "Noto Sans Mono CJK JP", monospace',
-  size: 14,
-  lineHeight: 1.2,
-  letterSpacing: 0,
-  weight: 400,
-  weightBold: 700,
-};
 
 /**
  * Canvas 2D renderer: the fallback backend of docs/02 §1.2 and the first one built. Draws only the
- * rows the model marks dirty, at most once per animation frame. Cells are whole device pixels so
- * glyphs stay sharp (docs/03 §2.3).
+ * rows the model marks dirty, at most once per animation frame.
  */
-export class CanvasRenderer {
+export class CanvasRenderer implements Renderer {
   private readonly ctx: CanvasRenderingContext2D;
   private readonly palette = new Palette();
   private dpr = 1;
@@ -67,9 +46,7 @@ export class CanvasRenderer {
   }
 
   private fontFor(flags: number): string {
-    const weight = flags & Flags.BOLD ? this.font.weightBold : this.font.weight;
-    const style = flags & Flags.ITALIC ? "italic " : "";
-    return `${style}${weight} ${this.font.size * this.dpr}px ${this.font.family}`;
+    return cssFont(this.font, flags, this.dpr);
   }
 
   get currentFont(): FontConfig {
@@ -91,16 +68,12 @@ export class CanvasRenderer {
   /** Recompute the cell size for the current font and display scale. */
   measure(): void {
     this.dpr = window.devicePixelRatio || 1;
-    this.ctx.font = this.fontFor(0);
-    const m = this.ctx.measureText("M");
-    const spacing = this.font.letterSpacing * this.dpr;
-    this.cellWidth = Math.max(1, Math.round(m.width + spacing));
-    // Glyphs sit in the middle of the space they gained or lost.
-    this.glyphOffset = spacing === 0 ? 0 : Math.round((this.cellWidth - m.width) / 2);
-    this.cellHeight = Math.max(1, Math.round(this.font.size * this.font.lineHeight * this.dpr));
-    const ascent = m.fontBoundingBoxAscent || this.font.size * this.dpr * 0.8;
-    const descent = m.fontBoundingBoxDescent || this.font.size * this.dpr * 0.2;
-    this.baseline = Math.round((this.cellHeight - (ascent + descent)) / 2 + ascent);
+    ({
+      cellWidth: this.cellWidth,
+      cellHeight: this.cellHeight,
+      baseline: this.baseline,
+      glyphOffset: this.glyphOffset,
+    } = measureFont(this.ctx, this.font, this.dpr));
   }
 
   /** How many cells fit in a box of CSS pixels. */
@@ -154,6 +127,8 @@ export class CanvasRenderer {
       this.draw();
     });
   }
+
+  dispose(): void {}
 
   draw(): void {
     this.resizeCanvas();
@@ -223,7 +198,7 @@ export class CanvasRenderer {
       const thickness = Math.max(1, Math.round(this.dpr));
       const w = cw * span;
       const under = y + ch - 2 * thickness;
-      if (this.inLink(row, col)) {
+      if (inLink(this.link, row, col)) {
         ctx.fillStyle = fg;
         ctx.fillRect(x, under, w, thickness);
       } else if (attr.flags & Flags.CURLY_UNDERLINE) {
@@ -271,14 +246,6 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
-  private inLink(row: number, col: number): boolean {
-    const l = this.link;
-    if (!l) return false;
-    const afterStart = row > l.start.row || (row === l.start.row && col >= l.start.col);
-    const beforeEnd = row < l.end.row || (row === l.end.row && col <= l.end.col);
-    return afterStart && beforeEnd;
-  }
-
   private drawCursor(): void {
     const m = this.model;
     if (!m.cursorVisible || m.rows === 0) return;
@@ -313,13 +280,4 @@ export class CanvasRenderer {
       }
     }
   }
-}
-
-/** Search highlight colors that stand out on dark and on light backgrounds. */
-function searchColors(background: string): { match: string; current: string; currentText: string } {
-  const n = Number.parseInt(background.slice(1), 16);
-  const luma = 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
-  return luma < 128
-    ? { match: "#5a4a12", current: "#f0c674", currentText: "#1b1d23" }
-    : { match: "#fff0a8", current: "#f5a623", currentText: "#000000" };
 }

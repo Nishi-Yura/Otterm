@@ -31,6 +31,8 @@ export interface UiConfig {
   followSystem: boolean;
   /** Text below this contrast with its background is made readable; 1 is off. */
   minimumContrast: number;
+  /** `appearance.renderer`; read when a pane opens. */
+  renderer: "auto" | "webgl" | "canvas";
   /** Space around the terminal grid in CSS pixels. */
   padding: number;
   /** Tab accent colors (`#rrggbb`) by profile id. */

@@ -39,6 +39,8 @@ pub struct UiConfig {
     pub follow_system: bool,
     /// `appearance.minimum_contrast`, 1 to 21.
     pub minimum_contrast: f32,
+    /// `appearance.renderer`: auto, webgl or canvas.
+    pub renderer: otterm_config::RendererKind,
     /// Space around the terminal grid, CSS pixels (`appearance.window.padding`).
     pub padding: u32,
     /// Tab accent colors by profile id (`profiles.color`), only valid `#rrggbb` values.
@@ -142,6 +144,7 @@ impl ConfigState {
             theme_light,
             follow_system: c.appearance.follow_system,
             minimum_contrast: c.appearance.minimum_contrast.clamp(1.0, 21.0),
+            renderer: c.appearance.renderer,
             padding: c.appearance.window.padding.min(64),
             profile_colors: c
                 .profiles
