@@ -345,7 +345,10 @@ export function App() {
   const askThenClose = async (paneIds: number[], close: () => void) => {
     const program = await runningIn(paneIds);
     if (!program) return close();
-    const done = () => setConfirm(undefined);
+    const done = () => {
+      setConfirm(undefined);
+      refocus();
+    };
     setConfirm({
       title: t("close-running-title"),
       body: t("close-running-body", { program }),
@@ -559,6 +562,13 @@ export function App() {
     window.addEventListener("mouseup", up);
   };
 
+  /**
+   * Give the keyboard back to the active pane after a window-level menu or prompt closes; without
+   * this, Escape left the focus on nothing and keys went nowhere until a click. After a tick, so a
+   * tab the menu just opened is the active one.
+   */
+  const refocus = () => setTimeout(() => document.querySelector<HTMLElement>(".terminal.active .input")?.focus());
+
   /** The new-tab menu (Ctrl+Shift+N, or the ∨ next to +): one entry per profile. */
   const [profileMenu, setProfileMenu] = createSignal<{ x: number; y: number; items: MenuItem[] }>();
   let newButton!: HTMLButtonElement;
@@ -717,7 +727,17 @@ export function App() {
         </For>
       </div>
       <Show when={profileMenu()} keyed>
-        {(m) => <ContextMenu x={m.x} y={m.y} items={m.items} close={() => setProfileMenu(undefined)} />}
+        {(m) => (
+          <ContextMenu
+            x={m.x}
+            y={m.y}
+            items={m.items}
+            close={() => {
+              setProfileMenu(undefined);
+              refocus();
+            }}
+          />
+        )}
       </Show>
       <Show when={confirm()} keyed>
         {(c) => (
