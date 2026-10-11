@@ -302,6 +302,67 @@
     });
   };
 
+  // --- file watches and child processes (the host keeps them only while the mod runs) ---------------
+
+  /** Forgets a callback the host may still call by id; its stream is over. */
+  const release = (id) => {
+    fns.delete(id);
+    persistent.delete(id);
+  };
+  /** `ctx.fs.watch`: `cb` gets `{ kind, path }` for each change. The host releases it when the mod stops. */
+  const watchPath = (path, cb) => {
+    const fn = ref(cb, true);
+    call("fs.watch", path, fn.$fn).catch((e) => log("warn", ["fs.watch failed", e]));
+    return disposable(() => {
+      release(fn.$fn);
+      call("fs.unwatch", fn.$fn).catch(() => {});
+    });
+  };
+  /** `ctx.process.spawn`. Output and exit come back through the callback `token`. Events that arrive before a
+   * listener is attached are kept for the first one, so output printed while spawn() is pending is not lost. */
+  const spawnProcess = (cmd, args, opts) => {
+    const sinks = { stdout: new Set(), stderr: new Set(), exit: new Set() };
+    const early = { stdout: [], stderr: [], exit: [] };
+    let exited = false;
+    const fn = ref((ev) => {
+      const value = ev.kind === "exit" ? ev.code : ev.data;
+      if (sinks[ev.kind].size === 0) early[ev.kind].push(value);
+      else for (const cb of [...sinks[ev.kind]]) cb(value);
+      if (ev.kind === "exit") {
+        exited = true;
+        release(fn.$fn);
+      }
+    }, true);
+    const listen = (kind) => (cb) => {
+      sinks[kind].add(cb);
+      for (const value of early[kind].splice(0)) cb(value);
+      return disposable(() => {
+        sinks[kind].delete(cb);
+      });
+    };
+    return call("process.spawn", cmd, args ?? [], opts ?? {}, fn.$fn).then(
+      () => {
+        // Killing a child on dispose keeps it from outliving the mod, even before the host's release.
+        const owned = disposable(() => {
+          for (const set of Object.values(sinks)) set.clear();
+          if (!exited) call("process.kill", fn.$fn).catch(() => {});
+        });
+        return {
+          onStdout: listen("stdout"),
+          onStderr: listen("stderr"),
+          onExit: listen("exit"),
+          write: (data) => call("process.write", fn.$fn, String(data)),
+          kill: () => (exited ? Promise.resolve() : call("process.kill", fn.$fn)),
+          dispose: () => owned.dispose(),
+        };
+      },
+      (e) => {
+        release(fn.$fn);
+        throw e;
+      },
+    );
+  };
+
   // --- the context --------------------------------------------------------------------------------
 
   const build = () => {
@@ -517,7 +578,7 @@
         readDir: (path, opts) => call("fs.readDir", path, !!opts?.includeHidden),
         stat: (path) => call("fs.stat", path),
         exists: (path) => call("fs.exists", path),
-        watch: () => later("fs.watch", "fs.watch is not available yet"),
+        watch: watchPath,
         resolve: (template, sessionId) => call("fs.resolve", template, sessionId),
       };
       if (p.fsWrite.length > 0) ctx.fs.trash = (path) => call("fs.trash", path);
@@ -533,7 +594,7 @@
     if (p.process.length > 0) {
       ctx.process = {
         run: (cmd, args, opts) => call("process.run", cmd, args, opts),
-        spawn: () => Promise.reject(new Error("process.spawn is not available yet; use process.run")),
+        spawn: spawnProcess,
       };
     }
     if (p.network.length > 0) {

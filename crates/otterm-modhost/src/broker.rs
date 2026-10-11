@@ -289,6 +289,43 @@ impl Grant {
         fs::rename(&from, &to).with_context(|| format!("cannot rename {}", from.display()))
     }
 
+    /// Start a process without waiting for it (docs/05 §5.2, `ctx.process.spawn`). The caller owns the child: it reads
+    /// its output, writes its stdin, and kills it. The same `permissions.process` and `cwd` checks as
+    /// [`Grant::run_process`] apply, so a mod cannot start anything its manifest does not list.
+    pub fn spawn_process(
+        &self,
+        cmd: &str,
+        args: &[String],
+        cwd: Option<PathBuf>,
+        env: &BTreeMap<String, String>,
+    ) -> Result<Child> {
+        let mut command = self.process_command(cmd, args, cwd, env)?;
+        command.stdin(Stdio::piped());
+        hide_window(&mut command);
+        command.spawn().with_context(|| format!("cannot start {cmd}"))
+    }
+
+    /// Check `cmd` and `cwd`, and build the command with its arguments, environment, and piped output.
+    fn process_command(
+        &self,
+        cmd: &str,
+        args: &[String],
+        cwd: Option<PathBuf>,
+        env: &BTreeMap<String, String>,
+    ) -> Result<Command> {
+        self.check_process(cmd)?;
+        let cwd = match cwd.or_else(|| self.vars.cwd.clone()) {
+            Some(dir) => Some(self.check_read(&dir)?),
+            None => None,
+        };
+        let mut command = Command::new(cmd);
+        command.args(args).envs(env).stdout(Stdio::piped()).stderr(Stdio::piped());
+        if let Some(dir) = &cwd {
+            command.current_dir(dir);
+        }
+        Ok(command)
+    }
+
     /// Start a process and wait for it, with its output captured (docs/05 §5.2, `ctx.process.run`).
     ///
     /// `cmd` must be in `permissions.process`. `cwd` must be readable, and defaults to the session's cwd. The
@@ -303,21 +340,8 @@ impl Grant {
         timeout_ms: Option<u64>,
         stdin: Option<String>,
     ) -> Result<ProcessOutput> {
-        self.check_process(cmd)?;
-        let cwd = match cwd.or_else(|| self.vars.cwd.clone()) {
-            Some(dir) => Some(self.check_read(&dir)?),
-            None => None,
-        };
-        let mut command = Command::new(cmd);
-        command
-            .args(args)
-            .envs(env)
-            .stdin(if stdin.is_some() { Stdio::piped() } else { Stdio::null() })
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        if let Some(dir) = &cwd {
-            command.current_dir(dir);
-        }
+        let mut command = self.process_command(cmd, args, cwd, env)?;
+        command.stdin(if stdin.is_some() { Stdio::piped() } else { Stdio::null() });
         hide_window(&mut command);
         let mut child = command.spawn().with_context(|| format!("cannot start {cmd}"))?;
         if let (Some(text), Some(mut input)) = (stdin, child.stdin.take()) {

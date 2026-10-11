@@ -16,6 +16,7 @@ mod history;
 mod instance;
 mod launch;
 mod mascot;
+mod mod_io;
 mod mods;
 mod open;
 mod profiles;
@@ -1178,8 +1179,10 @@ fn main() {
     let listen = !launch.new_window;
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .manage(app_state(launch))
         .manage(mods::ModsState::default())
+        .manage(mod_io::ModStreams::default())
         .manage(update::UpdateState::default())
         .setup(move |app| {
             if listen {
@@ -1276,6 +1279,13 @@ fn main() {
             mods::mod_storage,
             mods::mod_fs,
             mods::mod_process_run,
+            mod_io::mod_watch,
+            mod_io::mod_unwatch,
+            mod_io::mod_process_spawn,
+            mod_io::mod_process_write,
+            mod_io::mod_process_kill,
+            mod_io::mod_release,
+            mods::mod_pick_allow,
             mods::mod_http_fetch,
             mods::mod_log,
             session_info,
@@ -1322,6 +1332,7 @@ fn main() {
     tauri::Builder::default()
         .manage(app_state(launch::parse(std::env::args().skip(1))))
         .manage(mods::ModsState::default())
+        .manage(mod_io::ModStreams::default())
         .manage(bench::BenchState::default())
         .setup(|app| {
             watch_config(app);
@@ -1387,6 +1398,13 @@ fn main() {
             mods::mod_storage,
             mods::mod_fs,
             mods::mod_process_run,
+            mod_io::mod_watch,
+            mod_io::mod_unwatch,
+            mod_io::mod_process_spawn,
+            mod_io::mod_process_write,
+            mod_io::mod_process_kill,
+            mod_io::mod_release,
+            mods::mod_pick_allow,
             mods::mod_http_fetch,
             mods::mod_log,
             session_info,

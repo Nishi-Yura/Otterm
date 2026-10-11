@@ -122,6 +122,9 @@ pub fn extract_bundled() {
 #[derive(Default)]
 pub struct ModsState {
     installed: Mutex<Vec<Installed>>,
+    /// Paths the user chose in a native dialog for each mod (`ctx.ui.pickPath`), and whether each was a save.
+    /// They are readable (or writable, for a save) for the rest of the session, whatever the manifest says.
+    picked: Mutex<BTreeMap<String, Vec<(PathBuf, bool)>>>,
 }
 
 /// Every mod folder, for other modules of the app (the mascot's outfits).
@@ -561,7 +564,7 @@ pub fn mod_storage(id: String, op: String, key: Option<String>, value: Option<Va
 }
 
 /// The broker for one mod, with the session's folder as `${cwd}`.
-fn grant_for(mods: &ModsState, config: &ConfigState, id: &str, cwd: Option<&str>) -> CmdResult<Grant> {
+pub(crate) fn grant_for(mods: &ModsState, config: &ConfigState, id: &str, cwd: Option<&str>) -> CmdResult<Grant> {
     let data = data_dir().ok_or("no data folder")?;
     let m = mods.find(id)?;
     let vars = PathVars {
@@ -577,7 +580,30 @@ fn grant_for(mods: &ModsState, config: &ConfigState, id: &str, cwd: Option<&str>
         home: home(),
         mod_dirs: mods.installed.lock().unwrap().iter().map(|x| x.dir.clone()).collect(),
     };
-    Ok(Grant::new(&m.manifest, vars, protected))
+    let mut grant = Grant::new(&m.manifest, vars, protected);
+    for (path, save) in mods.picked.lock().unwrap().get(id).into_iter().flatten() {
+        let allowed = if *save { grant.allow_picked_for_save(path.clone()) } else { grant.allow_picked(path.clone()) };
+        allowed.map_err(err)?;
+    }
+    Ok(grant)
+}
+
+/// `ctx.ui.pickPath` (host.ts): the user chose `path` in a native dialog, so the mod may use it. The host calls
+/// this only with a path from the dialog, never with one the mod sent.
+#[tauri::command]
+pub async fn mod_pick_allow(
+    state: State<'_, AppState>,
+    mods: State<'_, ModsState>,
+    id: String,
+    path: String,
+    save: bool,
+) -> CmdResult<()> {
+    let path = PathBuf::from(path);
+    // Check now that the broker accepts the path, so a bad one is refused here, not on every later call.
+    let mut grant = grant_for(&mods, state.config, &id, None)?;
+    if save { grant.allow_picked_for_save(path.clone()) } else { grant.allow_picked(path.clone()) }.map_err(err)?;
+    mods.picked.lock().unwrap().entry(id).or_default().push((path, save));
+    Ok(())
 }
 
 /// `ctx.fs.*`. `op` names the method; `args` are its arguments in order.

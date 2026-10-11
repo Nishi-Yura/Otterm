@@ -41,6 +41,10 @@ schemars.workspace = true
 tauri = { workspace = true, features = ["macos-private-api"] }
 # Signed updates from GitHub Releases (decision C10).
 tauri-plugin-updater = "2"
+# Native open and save dialogs for `ctx.ui.pickPath` (docs/05 §5.2).
+tauri-plugin-dialog = "2"
+# File watching for `ctx.fs.watch` (docs/05 §5.2).
+notify = "8"
 tungstenite.workspace = true
 
 # API keys for AI providers live in the OS keychain, never in config.toml (docs/10 §5).

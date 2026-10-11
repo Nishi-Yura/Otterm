@@ -4,8 +4,9 @@
  * docs/05 §6) and to the window, and collects what the mods want drawn. Lifecycle and crash
  * handling follow docs/05 §4.
  */
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { createSignal } from "solid-js";
 import { type ParsedCommand, parseCommand } from "../assist/parse";
 import { t } from "../i18n";
@@ -328,6 +329,15 @@ interface Running {
   calls: number;
 }
 
+/** A change under a path a mod watches (`ctx.fs.watch`; `mod_watch` in crates/otterm-app/src/mod_io.rs). */
+interface WatchChange {
+  kind: "create" | "modify" | "remove";
+  path: string;
+}
+
+/** Output or exit of a child a mod spawned (`ctx.process.spawn`; `mod_process_spawn` in mod_io.rs). */
+type ProcessEvent = { kind: "stdout" | "stderr"; data: string } | { kind: "exit"; code: number };
+
 /** A suspended mod that is starting again: what to send it once it is active. */
 interface Waking {
   queue: HostToWorker[];
@@ -348,6 +358,8 @@ export class ModHost {
    * them. Their last rendered items and panels and their commands stay in place.
    */
   private readonly suspended = new Map<string, Set<string>>();
+  /** Watch registrations and removals in order, per watch (see `inOrder`). */
+  private readonly streamOps = new Map<string, Promise<unknown>>();
   /** Mods starting again after a suspension, until their Worker exists. */
   private readonly waking = new Map<string, Waking>();
   private suspendTimer?: ReturnType<typeof setInterval>;
@@ -1028,6 +1040,8 @@ export class ModHost {
 
   /** Everything the mod registered is withdrawn (docs/05 §4 deactivated). */
   private forget(id: string) {
+    // Watches and processes the mod started go with it (mod_io.rs).
+    void invoke("mod_release", { id }).catch(() => {});
     for (const [cid, c] of this.commands) if (c.mod === id) this.commands.delete(cid);
     for (let i = this.keys.length - 1; i >= 0; i--) {
       const k = this.keys[i];
@@ -1232,6 +1246,8 @@ export class ModHost {
     clearInterval(r.pingTimer);
     clearTimeout(r.pongTimer);
     this.retire(r);
+    // Watches and processes stop while the mod sleeps; it starts them again when it wakes.
+    void invoke("mod_release", { id }).catch(() => {});
     // The Worker's callbacks go with it, so its providers and context menus are dropped. The
     // subscriptions stay so an event can wake the mod; commands, items and panels stay as they were.
     this.suspended.set(id, new Set(r.subs));
@@ -1268,6 +1284,27 @@ export class ModHost {
   }
 
   /** End a Worker: give the mod its deactivate(), then terminate it whatever it does. */
+  /** Passes a stream event (a watch change, or a child's output or exit) to the callback the mod gave for it. */
+  private deliver(id: string, token: number, ev: WatchChange | ProcessEvent) {
+    // A mod that is not running has no callback left, and its streams were released with it.
+    if (this.running.has(id)) void this.invoke(id, token, [ev]).catch(() => {});
+  }
+
+  /** Runs the stream operations of one key in order, so a dispose right after a watch cannot overtake it. */
+  private inOrder(key: string, op: () => Promise<unknown>): Promise<unknown> {
+    const next = (this.streamOps.get(key) ?? Promise.resolve()).then(
+      () => op(),
+      () => op(),
+    );
+    this.streamOps.set(key, next);
+    next
+      .catch(() => {})
+      .finally(() => {
+        if (this.streamOps.get(key) === next) this.streamOps.delete(key);
+      });
+    return next;
+  }
+
   private retire(r: Running) {
     r.worker.postMessage({ t: "deactivate" } satisfies HostToWorker);
     const kill = setTimeout(() => r.worker.terminate(), 1000);
@@ -1380,8 +1417,23 @@ export class ModHost {
         const o = a[0] as unknown as Omit<DialogRequest, "from" | "tree">;
         return this.env.dialog({ ...o, from: id, tree: this.treeHostFor(id) });
       }
-      case "ui.pickPath":
-        throw new Error("ui.pickPath is not available yet");
+      case "ui.pickPath": {
+        const o = a[0] as {
+          mode: "open-file" | "open-folder" | "save-file";
+          title?: string;
+          defaultPath?: string;
+          filters?: { name: string; extensions: string[] }[];
+        };
+        const dialog = { title: o.title, defaultPath: o.defaultPath, filters: o.filters };
+        const picked =
+          o.mode === "save-file"
+            ? await save(dialog)
+            : await open({ ...dialog, directory: o.mode === "open-folder", multiple: false });
+        if (!picked) return null;
+        // The user chose it, so the broker may read (or, for a save, write) it whatever the globs say.
+        await invoke("mod_pick_allow", { id, path: picked, save: o.mode === "save-file" });
+        return picked;
+      }
       // --- commands
       case "commands.run": {
         const [cid, cargs] = a as unknown as [string, Record<string, unknown> | undefined];
@@ -1523,6 +1575,41 @@ export class ModHost {
       case "fs.rename":
       case "fs.trash":
         return invoke("mod_fs", { id, cwd: cwd ?? null, op: method.slice("fs.".length), args: a });
+      case "fs.watch": {
+        const [path, token] = a as unknown as [string, number];
+        const events = new Channel<WatchChange>();
+        events.onmessage = (change) => this.deliver(id, token, change);
+        return this.inOrder(`${id}#${token}`, () => invoke("mod_watch", { id, cwd: cwd ?? null, path, token, events }));
+      }
+      case "fs.unwatch": {
+        const token = Number(a[0]);
+        return this.inOrder(`${id}#${token}`, () => invoke("mod_unwatch", { id, token }));
+      }
+      case "process.spawn": {
+        const [cmd, pargs, opts, token] = a as unknown as [
+          string,
+          string[],
+          { cwd?: string; env?: Record<string, string> } | undefined,
+          number,
+        ];
+        const events = new Channel<ProcessEvent>();
+        events.onmessage = (ev) => this.deliver(id, token, ev);
+        return invoke("mod_process_spawn", {
+          id,
+          cwd: cwd ?? null,
+          cmd,
+          args: pargs,
+          opts: opts ?? {},
+          token,
+          events,
+        });
+      }
+      case "process.write": {
+        const [token, data] = a as unknown as [number, string];
+        return invoke("mod_process_write", { id, token, data });
+      }
+      case "process.kill":
+        return invoke("mod_process_kill", { id, token: Number(a[0]) });
       case "process.run": {
         const [cmd, pargs, opts] = a as unknown as [
           string,
