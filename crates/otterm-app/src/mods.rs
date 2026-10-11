@@ -377,6 +377,8 @@ pub fn config_set(state: State<'_, AppState>, key: String, value: Value) -> CmdR
         "general.check_updates",
         "shell.default_profile",
         "font.size",
+        // The palette's editor choice (decision I16) until there is a settings screen.
+        "open.editor",
     ];
     if !ALLOWED.contains(&key.as_str()) {
         return Err(format!("{key} cannot be set this way"));

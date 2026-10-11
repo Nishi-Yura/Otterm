@@ -2418,6 +2418,7 @@ name = "otterm-pty"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "nix",
  "portable-pty",
  "windows-sys 0.61.2",
 ]

@@ -697,15 +697,19 @@ impl Terminal {
         }
     }
 
-    /// The line the user is typing at the prompt, and the cursor's index in it (docs/02 §6,
-    /// method B: read from the screen between OSC 133 B and the cursor). `None` outside of input.
-    pub fn input_line(&self) -> Option<(String, usize)> {
+    /// The line the user is typing at the prompt, the cursor's index in it, and whether the shell
+    /// reported it (method A, OSC 7777 line) rather than otterm reading it off the screen
+    /// (method B: between OSC 133 B and the cursor). `None` outside of input (docs/02 §6).
+    pub fn input_line(&self) -> Option<(String, usize, bool)> {
         if self.modes.alt_screen {
             return None;
         }
         let (_, head) = self.block_head_at(self.cursor_line())?;
         if head.state != BlockState::Input {
             return None;
+        }
+        if let Some((line, cursor)) = &head.input_exact {
+            return Some((line.to_string(), *cursor, true));
         }
         let (start_line, start_col) = head.input_start?;
         let cursor_line = self.cursor_line();
@@ -717,14 +721,57 @@ impl Terminal {
         while self.line(end_line).is_some_and(|r| r.wrapped) && self.line(end_line + 1).is_some() {
             end_line += 1;
         }
-        let text = self.text_range((start_line, start_col), (end_line, self.cols.saturating_sub(1)));
-        let before = if (cursor_line, self.cursor.col) <= (start_line, start_col) {
-            0
-        } else {
-            self.text_range((start_line, start_col), (cursor_line, self.cursor.col.saturating_sub(1))).chars().count()
-        };
-        let len = text.chars().count();
-        Some((text, before.min(len)))
+        let mut text = self.text_range((start_line, start_col), (end_line, self.cols.saturating_sub(1)));
+        if (cursor_line, self.cursor.col) <= (start_line, start_col) {
+            return Some((text, 0, false));
+        }
+        // Reading text drops trailing blanks, but a space the user typed before the cursor
+        // matters (`git ` asks for a subcommand). Pad the part before the cursor back to the
+        // number of cells it spans.
+        let mut before = self.text_range((start_line, start_col), (cursor_line, self.cursor.col.saturating_sub(1)));
+        let cells = ((cursor_line - start_line) as usize * self.cols + self.cursor.col).saturating_sub(start_col);
+        let width: usize = before.chars().map(|c| c.width().unwrap_or(0)).sum();
+        if width < cells {
+            before.extend(std::iter::repeat_n(' ', cells - width));
+        }
+        let n = before.chars().count();
+        if text.chars().count() < n {
+            text = before;
+        }
+        Some((text, n, false))
+    }
+
+    /// The text of the cursor's row up to the cursor looks like a password prompt (decision K2).
+    /// A guess for platforms that cannot report the PTY's echo flag (ConPTY): only while a command
+    /// runs or no shell integration is active, never at otterm's own prompt.
+    pub fn password_prompt(&self) -> bool {
+        if self.modes.alt_screen {
+            return false;
+        }
+        if let Some((_, head)) = self.block_head_at(self.cursor_line())
+            && matches!(head.state, BlockState::Prompt | BlockState::Input)
+        {
+            return false;
+        }
+        let line = self.cursor_line();
+        let text = self.text_range((line, 0), (line, self.cursor.col.saturating_sub(1)));
+        let text = text.trim_end().to_lowercase();
+        let Some(body) = text.strip_suffix(':').or_else(|| text.strip_suffix('：')) else { return false };
+        ["password", "passphrase", "passcode", "pin", "パスワード", "暗証番号"].iter().any(|w| body.contains(w))
+    }
+
+    /// OSC 7777 line: what the line editor holds now (method A of docs/02 §6).
+    fn block_input_exact(&mut self, line: String, cursor: usize) {
+        if self.modes.alt_screen {
+            return;
+        }
+        if let Some(at) = self.find_head(self.cursor.row) {
+            let h = self.head_mut(at);
+            if h.state == BlockState::Input {
+                let cursor = cursor.min(line.chars().count());
+                h.input_exact = Some((line.into_boxed_str(), cursor));
+            }
+        }
     }
 
     /// OSC 7777 cmd: the command line the user entered.
@@ -822,6 +869,20 @@ impl Terminal {
         let (start, head) = self.block_head_at(line)?;
         let end = self.block_jump(start, 1).map_or(self.cursor_line(), |next| next - 1);
         Some(BlockRange { line: start, head, end })
+    }
+
+    /// Every block head in the scrollback and on the screen, oldest first: its line number and head.
+    pub fn block_heads(&self) -> Vec<(u64, &BlockHead)> {
+        if self.modes.alt_screen {
+            return Vec::new();
+        }
+        let base = self.history_base;
+        self.scrollback
+            .iter()
+            .chain(self.primary.iter())
+            .enumerate()
+            .filter_map(|(i, r)| Some((base + i as u64, r.block.as_deref()?)))
+            .collect()
     }
 
     /// The line of the nearest block head strictly above (`dir < 0`) or below (`dir > 0`) `line`.
@@ -1791,6 +1852,12 @@ impl Perform for Terminal {
                     }
                 }
                 Some(b"bar") => self.block_bar(text(2)),
+                // `7777;line;<cursor>;<percent-encoded line>`: the line editor's buffer (zsh).
+                Some(b"line") => {
+                    if let (Ok(cursor), Some(line)) = (text(2).parse::<usize>(), percent_decode(&text(3))) {
+                        self.block_input_exact(line, cursor);
+                    }
+                }
                 Some(b"done") => {
                     if let (Ok(code), Ok(ms)) = (text(2).parse::<i32>(), text(3).parse::<u32>()) {
                         self.block_end(Some(code), Some(ms));
@@ -1807,6 +1874,25 @@ impl Perform for Terminal {
             _ => {}
         }
     }
+}
+
+/// `%XX`-encoded UTF-8 text (OSC 7777 line); `None` when the bytes are not UTF-8.
+fn percent_decode(s: &str) -> Option<String> {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%'
+            && let Some(b) = s.get(i + 1..i + 3).and_then(|h| u8::from_str_radix(h, 16).ok())
+        {
+            out.push(b);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).ok()
 }
 
 /// Standard base64 (padding optional) to UTF-8 text; `None` for anything else.

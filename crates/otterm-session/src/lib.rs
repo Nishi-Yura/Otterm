@@ -64,11 +64,24 @@ pub enum SessionEvent {
         line: String,
         cursor: usize,
         active: bool,
+        /// The shell reported the line (method A) rather than otterm reading the screen.
+        exact: bool,
     },
+    /// The terminal's echo went off or on (a password prompt, decision K2). While it is off the
+    /// input assist stops and nothing typed is recorded.
+    EchoOff(bool),
     /// The process exited. Always the last event for a session. `None` if the exit code was unavailable.
     Exited {
         code: Option<u32>,
     },
+}
+
+/// A block head without its output.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BlockSummary {
+    pub line: u64,
+    pub command: Option<String>,
+    pub state: BlockState,
 }
 
 /// A block of the shell integration (docs/03 §6.3), as the block menu needs it.
@@ -182,6 +195,14 @@ pub trait SessionManager: Send + Sync {
     /// Scroll so that the previous (`dir < 0`) or next block head is at the top of the view.
     /// `false` when there is none that way, or it is in view already.
     fn block_jump(&self, id: SessionId, dir: i32) -> Result<bool>;
+    /// Every block (docs/03 §6.3) still in the scrollback or on the screen, oldest first, without
+    /// its output: for the palette's `#` search and `ctx.terminal.blocks`.
+    fn blocks(&self, id: SessionId) -> Result<Vec<BlockSummary>>;
+    /// The visible screen as text, one string per row, and the cursor (`ctx.terminal.screen`).
+    fn screen_and_cursor(&self, id: SessionId) -> Result<(Vec<String>, (usize, usize))>;
+    /// Scroll so that row `n` (1-based) of the scrollback and screen together is in view: the
+    /// palette's `:` jump.
+    fn reveal_row(&self, id: SessionId, n: u64) -> Result<()>;
     /// Fold (`Some(true)`), show (`Some(false)`) or toggle (`None`) the output of the block
     /// holding `line`, or of the newest finished block when `line` is `None`. Returns whether the
     /// block is folded afterwards; `None` when there is no such block or nothing to fold.
@@ -673,6 +694,35 @@ impl SessionManager for LocalSessionManager {
         Ok(Some(now))
     }
 
+    fn blocks(&self, id: SessionId) -> Result<Vec<BlockSummary>> {
+        let session = self.get(id)?;
+        let term = session.term.lock().unwrap();
+        Ok(term
+            .block_heads()
+            .into_iter()
+            .map(|(line, h)| BlockSummary { line, command: h.command.as_deref().map(str::to_owned), state: h.state })
+            .collect())
+    }
+
+    fn screen_and_cursor(&self, id: SessionId) -> Result<(Vec<String>, (usize, usize))> {
+        let session = self.get(id)?;
+        let term = session.term.lock().unwrap();
+        let top = term.screen_top();
+        let last = term.cols().saturating_sub(1);
+        let lines = (0..term.rows() as u64).map(|r| term.text_range((top + r, 0), (top + r, last))).collect();
+        let c = term.cursor();
+        Ok((lines, (c.row, c.col)))
+    }
+
+    fn reveal_row(&self, id: SessionId, n: u64) -> Result<()> {
+        let line = {
+            let session = self.get(id)?;
+            let term = session.term.lock().unwrap();
+            (term.history_base() + n.saturating_sub(1)).min(term.screen_top() + term.rows() as u64 - 1)
+        };
+        self.reveal(id, line)
+    }
+
     fn block_jump(&self, id: SessionId, dir: i32) -> Result<bool> {
         let session = self.get(id)?;
         let term = session.term.lock().unwrap();
@@ -795,7 +845,8 @@ fn frame_loop(id: SessionId, session: &Session, sink: &EventSink) {
     let mut last_gap = FRAME_INTERVAL;
     let mut last = FrameState::default();
     let mut sync_since: Option<Instant> = None;
-    let mut last_input: Option<(String, usize)> = None;
+    let mut last_input: Option<(String, usize, bool)> = None;
+    let mut last_echo_off = false;
     while session.frame.wait() {
         if last_gap < FRAME_INTERVAL {
             let wait = FRAME_INTERVAL.saturating_sub(last_frame.elapsed());
@@ -824,9 +875,16 @@ fn frame_loop(id: SessionId, session: &Session, sink: &EventSink) {
             // The input line is read from the screen, so it is checked with every frame.
             let input = term.input_line();
             if input != last_input {
-                let (line, cursor) = input.clone().unwrap_or_default();
-                sink(SessionEvent::Input { line, cursor, active: input.is_some() });
+                let (line, cursor, exact) = input.clone().unwrap_or_default();
+                sink(SessionEvent::Input { line, cursor, active: input.is_some(), exact });
                 last_input = input;
+            }
+            // The PTY's echo flag where there is one, else a guess from the cursor's row.
+            let echo_off =
+                session.pty.lock().unwrap().as_ref().and_then(Pty::echo_off).unwrap_or_else(|| term.password_prompt());
+            if echo_off != last_echo_off {
+                sink(SessionEvent::EchoOff(echo_off));
+                last_echo_off = echo_off;
             }
         }
         if !out.is_empty() {

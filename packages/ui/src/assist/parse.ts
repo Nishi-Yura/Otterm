@@ -209,7 +209,7 @@ function basename(word: string): string {
 /** The word under the cursor and where it starts, for completion. */
 export function wordAt(line: string, cursor: number): { word: string; start: number } {
   const before = line.slice(0, cursor);
-  let start = before.length;
+  let start = 0;
   let quote: string | undefined;
   // Walk back to the last unquoted space.
   for (let i = 0; i < before.length; i++) {

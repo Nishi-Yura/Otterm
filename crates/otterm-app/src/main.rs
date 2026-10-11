@@ -5,7 +5,10 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod assist;
 mod config;
+mod editor;
+mod helptext;
 mod history;
 mod launch;
 mod mods;
@@ -14,6 +17,7 @@ mod profiles;
 mod quote;
 mod screen;
 mod shell;
+mod shell_history;
 mod text;
 mod window_state;
 
@@ -43,6 +47,10 @@ struct AppState {
     shells: std::sync::Mutex<std::collections::HashMap<SessionId, String>>,
     /// The run history (decision K1).
     history: std::sync::Arc<history::History>,
+    /// What the `--help` of commands the dictionary lacks says (decision B9).
+    help: &'static helptext::HelpCache,
+    /// The WSL distribution a session runs, for host paths (decision J2).
+    wsl: std::sync::Mutex<std::collections::HashMap<SessionId, String>>,
     /// The folder of each session as the shell reported it (OSC 7), as a path, for the history.
     cwds: std::sync::Arc<std::sync::Mutex<std::collections::HashMap<SessionId, String>>>,
 }
@@ -82,6 +90,12 @@ enum UiEvent {
         line: String,
         cursor: usize,
         active: bool,
+        /// The shell reported it (method A) rather than otterm reading the screen.
+        exact: bool,
+    },
+    /// Echo went off (a password prompt) or back on (decision K2).
+    EchoOff {
+        off: bool,
     },
     Exited {
         code: Option<u32>,
@@ -206,6 +220,31 @@ fn session_create(
         opts.program = Some(program);
         opts.args = args;
     }
+    // `otterm trash` (danger-guard's alternative, decision B8) must run from the shell: put
+    // otterm's folder at the end of PATH, so anything the user installed still wins.
+    if let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(std::path::Path::to_path_buf)) {
+        let current = opts
+            .env
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case("PATH"))
+            .map(|(_, v)| std::ffi::OsString::from(v))
+            .or_else(|| std::env::var_os("PATH"))
+            .unwrap_or_default();
+        let mut parts: Vec<std::path::PathBuf> = std::env::split_paths(&current).collect();
+        if !parts.contains(&dir) {
+            parts.push(dir);
+        }
+        if let Ok(joined) = std::env::join_paths(parts) {
+            opts.env.retain(|(k, _)| !k.eq_ignore_ascii_case("PATH"));
+            opts.env.push(("PATH".into(), joined.to_string_lossy().into_owned()));
+        }
+    }
+    let wsl_distro = opts
+        .program
+        .as_deref()
+        .filter(|p| p.to_ascii_lowercase().ends_with("wsl.exe") || p.eq_ignore_ascii_case("wsl"))
+        .and_then(|_| opts.args.iter().position(|a| a == "-d" || a == "--distribution"))
+        .and_then(|i| opts.args.get(i + 1).cloned());
     let shell = opts.program.clone().unwrap_or_else(otterm_session::default_shell);
     let screen = std::sync::Arc::clone(&state.screen);
     let history = std::sync::Arc::clone(&state.history);
@@ -261,9 +300,10 @@ fn session_create(
                         }
                         events.send(UiEvent::BlockEnd { line, exit, ms })
                     }
-                    SessionEvent::Input { line, cursor, active } => {
-                        events.send(UiEvent::Input { line, cursor, active })
+                    SessionEvent::Input { line, cursor, active, exact } => {
+                        events.send(UiEvent::Input { line, cursor, active, exact })
                     }
+                    SessionEvent::EchoOff(off) => events.send(UiEvent::EchoOff { off }),
                     SessionEvent::Exited { code } => events.send(UiEvent::Exited { code }),
                     SessionEvent::Output(_) => Ok(()),
                 };
@@ -272,7 +312,89 @@ fn session_create(
         .map_err(err)?;
     *id_cell.lock().unwrap() = Some(id);
     state.shells.lock().unwrap().insert(id, shell);
+    if let Some(d) = wsl_distro {
+        state.wsl.lock().unwrap().insert(id, d);
+    }
     Ok(id)
+}
+
+/// The program a session runs and its WSL distribution, for the mods' `SessionInfo`.
+#[derive(Serialize)]
+struct SessionShell {
+    shell: String,
+    wsl: Option<String>,
+}
+
+#[tauri::command]
+fn session_info(state: State<'_, AppState>, id: SessionId) -> SessionShell {
+    SessionShell {
+        shell: state.shells.lock().unwrap().get(&id).cloned().unwrap_or_default(),
+        wsl: state.wsl.lock().unwrap().get(&id).cloned(),
+    }
+}
+
+/// A block head without its output (the palette's `#`, `ctx.terminal.blocks`).
+#[derive(Serialize)]
+struct BlockRow {
+    line: u64,
+    command: Option<String>,
+    running: bool,
+    exit: Option<i32>,
+}
+
+#[tauri::command]
+fn session_blocks(state: State<'_, AppState>, id: SessionId) -> CmdResult<Vec<BlockRow>> {
+    Ok(state
+        .sessions
+        .blocks(id)
+        .map_err(err)?
+        .into_iter()
+        .map(|b| BlockRow {
+            line: b.line,
+            command: b.command,
+            running: b.state == BlockState::Running,
+            exit: match b.state {
+                BlockState::Done { exit, .. } => Some(exit),
+                _ => None,
+            },
+        })
+        .collect())
+}
+
+/// The visible screen as text and the cursor (`ctx.terminal.screen`).
+#[tauri::command]
+fn session_screen(state: State<'_, AppState>, id: SessionId) -> CmdResult<(Vec<String>, (usize, usize))> {
+    state.sessions.screen_and_cursor(id).map_err(err)
+}
+
+/// Scroll to row `n` (1-based) of the scrollback and screen: the palette's `:`.
+#[tauri::command]
+fn session_reveal_row(state: State<'_, AppState>, id: SessionId, n: u64) -> CmdResult {
+    state.sessions.reveal_row(id, n).map_err(err)
+}
+
+/// Editors found on this computer (decision I16).
+#[tauri::command]
+fn editors_detect() -> Vec<editor::Editor> {
+    editor::detect().to_vec()
+}
+
+/// What `--help` said for a command the dictionary does not know (decision B9).
+#[tauri::command]
+fn help_get(state: State<'_, AppState>, name: String) -> Option<helptext::HelpEntry> {
+    state.help.get(&name)
+}
+
+/// The user ran `name` once: learn its `--help` in the background (decision B9).
+#[tauri::command]
+fn help_learn(state: State<'_, AppState>, name: String) {
+    state.help.learn(&name);
+}
+
+/// The shells' own history files, newest first (docs/03 §8.5).
+#[tauri::command]
+async fn shell_history(limit: usize) -> Vec<shell_history::ShellEntry> {
+    tauri::async_runtime::spawn_blocking(move || shell_history::read(limit.min(5000))).await.unwrap_or_default()
 }
 
 /// The run history, newest first (decision K1).
@@ -532,54 +654,18 @@ fn config_open(state: State<'_, AppState>) -> CmdResult<String> {
         }
         std::fs::write(&path, include_str!("config_template.toml")).map_err(err)?;
     }
-    open_in_editor(&path, None, None).map_err(err)?;
+    open_in_editor(&state.config.config().open, &path, None, None).map_err(err)?;
     Ok(path.display().to_string())
 }
 
-/// VS Code when it is on PATH (docs/06 `open.editor`, auto-detect), at `line`:`col` if given, else
-/// the platform's text editor. The path is one argument, never parsed by a shell.
-fn open_in_editor(path: &std::path::Path, line: Option<u32>, col: Option<u32>) -> std::io::Result<()> {
-    let at = line.map(|l| format!("{}:{l}:{}", path.display(), col.unwrap_or(1)));
-    // UI tests record it instead (see open_url).
-    if let Some(log) = std::env::var_os("OTTERM_TEST_OPEN_LOG") {
-        use std::io::Write;
-        let mut f = std::fs::OpenOptions::new().create(true).append(true).open(log)?;
-        return writeln!(f, "editor {}", at.unwrap_or_else(|| path.display().to_string()));
-    }
-    let find = |exe: &str| {
-        std::env::var_os("PATH").and_then(|p| std::env::split_paths(&p).map(|d| d.join(exe)).find(|f| f.is_file()))
-    };
-    // VS Code takes `-g path:line:col` to go to a line.
-    let code = |program: std::path::PathBuf| {
-        let mut c = std::process::Command::new(program);
-        match &at {
-            Some(at) => c.arg("-g").arg(at),
-            None => c.arg(path),
-        };
-        c
-    };
-    let mut cmd = if cfg!(windows) {
-        // Run the batch file itself: the standard library then quotes the argument for cmd
-        // safely (and refuses one it cannot).
-        if let Some(program) = find("code.cmd") {
-            code(program)
-        } else {
-            let mut c = std::process::Command::new("notepad.exe");
-            c.arg(path);
-            c
-        }
-    } else if let Some(program) = find("code") {
-        code(program)
-    } else if cfg!(target_os = "macos") {
-        let mut c = std::process::Command::new("open");
-        c.arg("-t").arg(path);
-        c
-    } else {
-        let mut c = std::process::Command::new("xdg-open");
-        c.arg(path);
-        c
-    };
-    cmd.spawn().map(drop)
+/// The configured editor (`[open]`, decision I16), at `line`:`col` if given (editor.rs).
+fn open_in_editor(
+    config: &otterm_config::Open,
+    path: &std::path::Path,
+    line: Option<u32>,
+    col: Option<u32>,
+) -> std::io::Result<()> {
+    editor::open(path, line, col, config)
 }
 
 /// Open a file with its default app, or a folder in the file manager.
@@ -625,7 +711,7 @@ async fn path_open(state: State<'_, AppState>, cwd: Option<String>, text: String
     if system {
         open_with_system(&target.path).map_err(err)
     } else {
-        open_in_editor(&target.path, target.line, target.col).map_err(err)
+        open_in_editor(&config.open, &target.path, target.line, target.col).map_err(err)
     }
 }
 
@@ -750,10 +836,12 @@ fn expand_home(path: &str) -> std::path::PathBuf {
 /// no console, so there the output is only visible from a terminal that reads stdout.
 fn cli() -> bool {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.first().map(String::as_str) != Some("mod") {
-        return false;
-    }
-    match mods::cli(&args[1..]) {
+    let result = match args.first().map(String::as_str) {
+        Some("mod") => mods::cli(&args[1..]),
+        Some("trash") => assist::trash_cli(&args[1..]),
+        _ => return false,
+    };
+    match result {
         Ok(text) => print!("{text}"),
         Err(e) => {
             eprintln!("{e}");
@@ -784,6 +872,8 @@ fn app_state() -> AppState {
         shells: Default::default(),
         history,
         cwds: Default::default(),
+        help: Box::leak(Box::new(helptext::HelpCache::open(otterm_config::data_dir()))),
+        wsl: Default::default(),
     }
 }
 
@@ -920,6 +1010,16 @@ fn main() {
             mods::mod_process_run,
             mods::mod_http_fetch,
             mods::mod_log,
+            session_info,
+            session_blocks,
+            session_screen,
+            session_reveal_row,
+            editors_detect,
+            help_get,
+            help_learn,
+            shell_history,
+            assist::path_commands,
+            assist::files_find,
             mods::mod_dictionary,
             mods::config_set,
             history_query,
@@ -1005,6 +1105,16 @@ fn main() {
             mods::mod_process_run,
             mods::mod_http_fetch,
             mods::mod_log,
+            session_info,
+            session_blocks,
+            session_screen,
+            session_reveal_row,
+            editors_detect,
+            help_get,
+            help_learn,
+            shell_history,
+            assist::path_commands,
+            assist::files_find,
             mods::mod_dictionary,
             mods::config_set,
             history_query,

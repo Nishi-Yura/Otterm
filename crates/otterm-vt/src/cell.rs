@@ -113,11 +113,22 @@ pub struct BlockHead {
     /// Where the user's input begins (OSC 133 B): line number and column. The input line is read
     /// from here to the cursor's row (docs/02 §6, method B).
     pub input_start: Option<(u64, usize)>,
+    /// The line as the shell's line editor reported it (OSC 7777 line, method A of docs/02 §6),
+    /// with the cursor as a character index. Wins over reading the screen.
+    pub input_exact: Option<(Box<str>, usize)>,
 }
 
 impl BlockHead {
     pub fn new(info: Box<str>) -> Self {
-        Self { info, command: None, state: BlockState::Prompt, output_line: None, started: None, input_start: None }
+        Self {
+            info,
+            command: None,
+            state: BlockState::Prompt,
+            output_line: None,
+            started: None,
+            input_start: None,
+            input_exact: None,
+        }
     }
 
     /// otterm draws a prompt bar over this row (the row itself is blank).

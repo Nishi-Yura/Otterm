@@ -114,6 +114,20 @@ impl Pty {
         self.master.resize(size.into())
     }
 
+    /// Whether the terminal's echo is off (a password prompt, decision K2). `None` where the
+    /// platform cannot say: ConPTY has no termios, so Windows guesses from the screen instead.
+    pub fn echo_off(&self) -> Option<bool> {
+        #[cfg(unix)]
+        {
+            let t = self.master.get_termios()?;
+            Some(!t.local_flags.contains(nix::sys::termios::LocalFlags::ECHO))
+        }
+        #[cfg(not(unix))]
+        {
+            None
+        }
+    }
+
     pub fn kill(&mut self) -> Result<()> {
         let res = self.killer.kill();
         // portable-pty 0.9.0 inverts the TerminateProcess check on Windows: it returns Err when the

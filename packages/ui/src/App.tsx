@@ -2,7 +2,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
-import { AssistBar, CompletionPopup, MultilineEditor, Palette, type PaletteEntry } from "./assist/AssistUi";
+import {
+  AssistBar,
+  CompletionPopup,
+  MultilineEditor,
+  Palette,
+  type PaletteEntry,
+  type PaletteProps,
+} from "./assist/AssistUi";
 import { wordAt } from "./assist/parse";
 import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInternals, startupMark } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
@@ -31,6 +38,7 @@ import {
   type ErrorHint,
   type Explanation,
   type HostEnv,
+  localized,
   ModHost,
   type SessionSnapshot,
 } from "./mods/host";
@@ -69,6 +77,22 @@ interface Pane {
   profileName?: string;
   /** When it was created (ms), to tell a shell that dies at once from one that ran. */
   started?: number;
+}
+
+/**
+ * A shell's folder as a Windows path, for file operations on the host (docs/03 §9.1, decision J2):
+ * `/mnt/c/x` and Git Bash's `/c/x` are `C:\x`; other WSL paths go through `\\wsl.localhost\<distro>`.
+ */
+export function hostPath(path: string, info: { shell: string; wsl: string | null } | undefined): string | undefined {
+  if (!/^\//.test(path) || !/Windows/.test(navigator.userAgent)) return undefined;
+  const drive = /^\/(?:mnt\/)?([a-zA-Z])(\/.*)?$/.exec(path);
+  if (drive && (info?.wsl || /bash|sh\.exe|zsh|fish/i.test(info?.shell ?? ""))) {
+    const letter = (drive[1] as string).toUpperCase();
+    // Git Bash says /c/…, WSL says /mnt/c/…; a WSL path like /c/… is not a drive.
+    if (info?.wsl ? path.startsWith("/mnt/") : true) return `${letter}:${(drive[2] ?? "/").replaceAll("/", "\\")}`;
+  }
+  if (info?.wsl) return `\\\\wsl.localhost\\${info.wsl}${path.replaceAll("/", "\\")}`;
+  return undefined;
 }
 
 /** The program a command line starts: its first word without a path or quotes ("git", "npm"). */
@@ -135,17 +159,25 @@ export function App() {
   /** The panel open in each panel slot, by panel id. */
   const [shownPanel, setShownPanel] = createSignal<Record<string, string | undefined>>({});
   const MODS_PANEL = "otterm.mods";
+  /** Each session's shell program and WSL distribution, from Rust (`session_info`). */
+  const shellOf = new Map<number, { shell: string; wsl: string | null }>();
+  /** Panes whose terminal has echo off now (a password prompt, decision K2). */
+  const echoOff = new Set<number>();
   const snapshot = (pane: Pane): SessionSnapshot | undefined => {
     const id = sessionOf.get(pane.id);
     if (id === undefined) return undefined;
     const url = cwds.get(pane.id);
+    const cwd = url ? urlToPath(url) : undefined;
+    const info = shellOf.get(pane.id);
     return {
       id,
-      cwd: url ? urlToPath(url) : undefined,
+      cwd,
+      hostCwd: cwd ? hostPath(cwd, info) : undefined,
       title: titles()[pane.id] ?? "",
       profileId: pane.profile ?? config()?.defaultProfile ?? "",
-      shell: pane.profileName ?? pane.profile ?? config()?.defaultProfile ?? "",
+      shell: info?.shell ?? pane.profile ?? "",
       integrated: integrated.has(pane.id),
+      echoOff: echoOff.has(pane.id),
     };
   };
   const activePane = () => {
@@ -291,9 +323,11 @@ export function App() {
     line: string;
     cursor: number;
     active: boolean;
+    /** The shell reported the line (method A); otherwise it was read off the screen. */
+    exact: boolean;
   }
   const inputs = new Map<number, InputState>();
-  const [inputState, setInputState] = createSignal<InputState>({ line: "", cursor: 0, active: false });
+  const [inputState, setInputState] = createSignal<InputState>({ line: "", cursor: 0, active: false, exact: false });
   const [explanation, setExplanation] = createSignal<Explanation>();
   const [hint, setHint] = createSignal<{ hint: ErrorHint; command: string }>();
   const [completion, setCompletion] = createSignal<{ items: CompletionItem[]; selected: number }>();
@@ -303,6 +337,9 @@ export function App() {
     entries: PaletteEntry[];
     empty: string;
     bang?: boolean;
+    prefixes?: PaletteProps["prefixes"];
+    chips?: PaletteProps["chips"];
+    onChip?: (id: string) => void;
   }>();
   const [multiline, setMultiline] = createSignal<string>();
   let explainTimer: ReturnType<typeof setTimeout> | undefined;
@@ -334,26 +371,85 @@ export function App() {
     }, 80);
   };
   const onPaneInput = (pane: Pane, st: InputState) => {
+    // Nothing typed at a password prompt reaches the assist or the mods (decision K2).
+    if (echoOff.has(pane.id)) return;
     inputs.set(pane.id, st);
     if (currentTab()?.active !== pane.id) return;
     setInputState(st);
     const s = snapshot(pane);
-    if (s) host.emit("input-changed", { sessionId: String(s.id), line: st.line, cursor: st.cursor, exact: false });
+    if (s) host.emit("input-changed", { sessionId: String(s.id), line: st.line, cursor: st.cursor, exact: st.exact });
     scheduleExplain(st);
     if (completion()) void refreshCompletion(st);
     if (!st.active) setCompletion(undefined);
   };
+  const onPaneEcho = (pane: Pane, off: boolean) => {
+    if (off) echoOff.add(pane.id);
+    else echoOff.delete(pane.id);
+    if (off && currentTab()?.active === pane.id) {
+      clearTimeout(explainTimer);
+      setExplanation(undefined);
+      setCompletion(undefined);
+    }
+  };
+  /** Executables on PATH, fetched once per session of the window (docs/03 §8.2 source 2). */
+  let pathCommands: Promise<string[]> | undefined;
+  /** otterm's own completion sources: command names (dictionary and PATH) and the history. */
+  const builtinCompletions = async (st: InputState): Promise<CompletionItem[]> => {
+    const { word, start } = wordAt(st.line, st.cursor);
+    const lower = word.toLowerCase();
+    const out: CompletionItem[] = [];
+    // The first word: commands. Only from two letters on, so the list stays short and useful.
+    if (st.line.slice(0, start).trim() === "" && word.length >= 2) {
+      pathCommands ??= invoke<string[]>("path_commands").catch(() => []);
+      const names = new Set([...host.dictionaryNames(), ...(await pathCommands)]);
+      for (const n of names) {
+        if (n.toLowerCase().startsWith(lower) && n.toLowerCase() !== lower) {
+          const entry = host.lookup(n);
+          const summary = entry?.summary;
+          out.push({
+            label: n,
+            kind: "command",
+            detail: summary ? localized(summary, language()) : undefined,
+            sortText: `0${entry ? "0" : "1"}${n}`,
+          });
+        }
+        if (out.length >= 40) break;
+      }
+    }
+    // The history: earlier lines that start with what is typed (source 4).
+    if (st.line.trim().length >= 2) {
+      const runs = await invoke<{ command: string; exit: number }[]>("history_query", {
+        query: { text: st.line.trim(), limit: 40 },
+      }).catch(() => []);
+      const seen = new Set<string>();
+      for (const r of runs) {
+        if (!r.command.startsWith(st.line.trim()) || r.command === st.line || seen.has(r.command)) continue;
+        seen.add(r.command);
+        out.push({ label: r.command, kind: "history", replaceLine: true, sortText: `9${seen.size}` });
+        if (seen.size >= 8) break;
+      }
+    }
+    return out;
+  };
   /** Ask the providers for items at the cursor (docs/03 §8.2). */
   const refreshCompletion = async (st: InputState) => {
     const s = env.activeSession();
-    if (!s || !st.active) return setCompletion(undefined);
+    if (!s || !st.active || s.echoOff) return setCompletion(undefined);
     const parsed = host.parse(st.line, s.cwd ?? "", shellKindOf(s));
-    const items = await host.complete(
-      { sessionId: String(s.id), line: st.line, cursor: st.cursor, exact: false },
-      parsed,
-    );
+    const [fromMods, mine] = await Promise.all([
+      host.complete({ sessionId: String(s.id), line: st.line, cursor: st.cursor, exact: st.exact }, parsed),
+      builtinCompletions(st),
+    ]);
     if (inputState() !== st && inputState().line !== st.line) return;
-    setCompletion(items.length > 0 ? { items, selected: 0 } : undefined);
+    const seen = new Set<string>();
+    const items = [...fromMods, ...mine].filter((it) => {
+      const key = `${it.replaceLine ? "line" : "word"}:${it.insertText ?? it.label}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    items.sort((a, b) => (a.sortText ?? a.label).localeCompare(b.sortText ?? b.label));
+    setCompletion(items.length > 0 ? { items: items.slice(0, 50), selected: 0 } : undefined);
   };
   /** Put a completion in place of the word under the cursor: delete it, then paste the text. */
   const acceptCompletion = (item: CompletionItem) => {
@@ -361,6 +457,12 @@ export function App() {
     const st = inputState();
     setCompletion(undefined);
     if (!s) return;
+    if (item.replaceLine) {
+      void invoke("session_replace_line", { id: s.id, text: item.insertText ?? item.label }).catch((e) =>
+        showNotice(String(e)),
+      );
+      return;
+    }
     const { word } = wordAt(st.line, st.cursor);
     const text = item.insertText ?? item.label;
     const erase = "\u007f".repeat([...word].length);
@@ -438,7 +540,17 @@ export function App() {
   };
   /** A block failed: the error-hint providers get a look (docs/03 §8.4). */
   const onBlockFailed = async (pane: Pane, line: number, exit: number, ms: number) => {
-    if (!(config()?.assist.errorHint ?? true) || exit === 130 || exit === 0) return;
+    if (exit === 0) {
+      // A command the dictionary does not know ran once: learn its --help for next time (decision B9).
+      const s = snapshot(pane);
+      const b = s
+        ? await invoke<{ command: string | null } | null>("session_block", { id: s.id, line }).catch(() => null)
+        : null;
+      const name = b?.command ? host.parse(b.command).segments[0]?.name : undefined;
+      if (name && !host.lookup(name)) void invoke("help_learn", { name }).catch(() => {});
+      return;
+    }
+    if (!(config()?.assist.errorHint ?? true) || exit === 130) return;
     const s = snapshot(pane);
     if (!s) return;
     const b = await invoke<{ command: string | null; output: string } | null>("session_block", {
@@ -505,30 +617,154 @@ export function App() {
         hint: c.mod,
         run: () => void host.runCommand(c.id),
       }));
+    const editors = await invoke<{ id: string; name: string }[]>("editors_detect").catch(() => []);
+    const editorEntries: PaletteEntry[] = editors.map((ed) => ({
+      id: `editor.${ed.id}`,
+      title: t("palette-cmd-editor", { name: ed.name }),
+      run: () => void invoke("config_set", { key: "open.editor", value: ed.id }).catch((e) => showNotice(String(e))),
+    }));
+    setPalette(undefined);
     setPalette({
       title: t("palette-title"),
       placeholder: t("palette-placeholder"),
-      entries: [...mine, ...mods],
+      entries: [...mine, ...editorEntries, ...mods],
       empty: t("palette-empty"),
       bang: true,
+      prefixes: palettePrefixes(),
     });
   };
+  /** docs/03 §7: `:` line, `?` help, `@` file under the folder, `#` block. */
+  const palettePrefixes = () => {
+    const s = env.activeSession();
+    return {
+      ":": {
+        hint: t("palette-prefix-line"),
+        source: (rest: string): PaletteEntry[] => {
+          const n = Number.parseInt(rest, 10);
+          if (!s || !Number.isFinite(n) || n < 1) return [];
+          return [
+            {
+              id: `line.${n}`,
+              title: t("palette-goto-line", { line: n }),
+              run: () => void invoke("session_reveal_row", { id: s.id, n }).catch(() => {}),
+            },
+          ];
+        },
+      },
+      "?": {
+        hint: t("palette-prefix-help"),
+        source: (rest: string): PaletteEntry[] => {
+          const q = rest.toLowerCase();
+          return host
+            .dictionaryEntries()
+            .filter(
+              (e) =>
+                !q || e.name.toLowerCase().includes(q) || localized(e.summary, language()).toLowerCase().includes(q),
+            )
+            .slice(0, 100)
+            .map((e) => ({
+              id: `help.${e.name}`,
+              title: e.name,
+              description: localized(e.summary, language()),
+              run: () => insertText(`${e.name} `),
+            }));
+        },
+      },
+      "@": {
+        hint: t("palette-prefix-file"),
+        source: async (rest: string): Promise<PaletteEntry[]> => {
+          const cwd = s?.hostCwd ?? s?.cwd;
+          if (!cwd) return [];
+          const files = await invoke<string[]>("files_find", { cwd, query: rest, limit: 100 }).catch(() => []);
+          return files.map((f) => ({
+            id: `file.${f}`,
+            title: f,
+            run: () => void invoke("path_open", { cwd, text: f }).catch((e) => showNotice(String(e))),
+          }));
+        },
+      },
+      "#": {
+        hint: t("palette-prefix-block"),
+        source: async (rest: string): Promise<PaletteEntry[]> => {
+          if (!s) return [];
+          const q = rest.toLowerCase();
+          const list = await invoke<{ line: number; command: string | null; running: boolean; exit: number | null }[]>(
+            "session_blocks",
+            { id: s.id },
+          ).catch(() => []);
+          return list
+            .filter((b) => b.command && (!q || b.command.toLowerCase().includes(q)))
+            .reverse()
+            .slice(0, 200)
+            .map((b) => ({
+              id: `block.${b.line}`,
+              title: b.command ?? "",
+              hint: b.running ? "…" : b.exit === null ? "" : b.exit === 0 ? "✓" : `✗ ${b.exit}`,
+              run: () => void invoke("session_reveal", { id: s.id, line: b.line }).catch(() => {}),
+            }));
+        },
+      },
+    };
+  };
+  /** The history UI's filters (docs/03 §8.5): this folder, successful runs, today, shells' history. */
+  const [historyFilters, setHistoryFilters] = createSignal({ cwd: false, ok: false, today: false, shell: true });
   /** otterm's history UI (docs/03 §8.5): newest first; picking a row types it at the prompt. */
   const openHistory = async () => {
+    const f = historyFilters();
+    const s = env.activeSession();
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
     const runs = await invoke<
       { id: number; started: number; ms: number; exit: number; command: string; cwd: string }[]
-    >("history_query", { query: { text: "", limit: 500 } }).catch(() => []);
+    >("history_query", {
+      query: {
+        text: "",
+        limit: 500,
+        cwd: f.cwd ? (s?.cwd ?? null) : null,
+        successOnly: f.ok,
+        since: f.today ? midnight.getTime() : null,
+      },
+    }).catch(() => []);
     const entries: PaletteEntry[] = runs.map((r) => ({
       id: String(r.id),
       title: r.command,
       description: `${folderName(r.cwd.replaceAll("\\", "/"))} · ${new Date(r.started).toLocaleString()} · ${r.exit === 0 ? t("history-exit-ok") : t("history-exit-failed", { code: r.exit })}`,
       run: () => insertText(r.command),
     }));
+    // The shells' own history files, below otterm's records; they know no folder or exit code.
+    if (f.shell && !f.cwd && !f.ok) {
+      const mine = new Set(runs.map((r) => r.command));
+      const shell = await invoke<{ command: string; shell: string; at: number | null }[]>("shell_history", {
+        limit: 500,
+      }).catch(() => []);
+      for (const e of shell) {
+        if (mine.has(e.command)) continue;
+        if (f.today && (e.at === null || e.at < midnight.getTime())) continue;
+        mine.add(e.command);
+        entries.push({
+          id: `shell.${entries.length}`,
+          title: e.command,
+          description: t("history-from-shell", { shell: e.shell }),
+          run: () => insertText(e.command),
+        });
+      }
+    }
     setPalette({
       title: t("history-title"),
       placeholder: t("history-placeholder"),
       entries,
       empty: t("history-empty"),
+      chips: [
+        { id: "cwd", label: t("history-filter-cwd"), on: f.cwd },
+        { id: "ok", label: t("history-filter-ok"), on: f.ok },
+        { id: "today", label: t("history-filter-today"), on: f.today },
+        { id: "shell", label: t("history-filter-shell"), on: f.shell },
+      ],
+      onChip: (id: string) => {
+        const k = id as keyof ReturnType<typeof historyFilters>;
+        setHistoryFilters({ ...historyFilters(), [k]: !historyFilters()[k] });
+        void openHistory();
+      },
     });
   };
   const closePalette = () => {
@@ -1240,6 +1476,7 @@ export function App() {
                       }}
                       onRunning={(command) => setRunning({ ...running(), [p.id]: command })}
                       onInput={(st) => onPaneInput(p, st)}
+                      onEchoOff={(off) => onPaneEcho(p, off)}
                       beforeExecute={beforeExecute}
                       assistKey={assistKey}
                       onBlock={(e) => {
@@ -1273,6 +1510,9 @@ export function App() {
                       }}
                       onSession={(id) => {
                         sessionOf.set(p.id, id);
+                        void invoke<{ shell: string; wsl: string | null }>("session_info", { id })
+                          .then((info) => shellOf.set(p.id, info))
+                          .catch(() => {});
                         const s = snapshot(p);
                         if (s) host.emit("session-created", s);
                         if (currentTab()?.active === p.id) emitFocus();
@@ -1291,6 +1531,18 @@ export function App() {
                 );
               }}
             </For>
+            <Show when={completion()} keyed>
+              {(c) => (
+                <CompletionPopup
+                  items={c.items}
+                  selected={c.selected}
+                  x={16}
+                  y={8}
+                  onPick={acceptCompletion}
+                  onHover={(i) => setCompletion({ ...c, selected: i })}
+                />
+              )}
+            </Show>
             <For each={geometry().dividers}>
               {(d) => (
                 <hr
@@ -1303,18 +1555,6 @@ export function App() {
               )}
             </For>
           </div>
-          <Show when={completion()} keyed>
-            {(c) => (
-              <CompletionPopup
-                items={c.items}
-                selected={c.selected}
-                x={16}
-                y={8}
-                onPick={acceptCompletion}
-                onHover={(i) => setCompletion({ ...c, selected: i })}
-              />
-            )}
-          </Show>
           <Show when={multiline() !== undefined}>
             <MultilineEditor
               initial={multiline() ?? ""}
@@ -1403,15 +1643,18 @@ export function App() {
           ]}
         />
       </div>
-      <Show when={palette()} keyed>
+      <Show when={palette()}>
         {(p) => (
           <Palette
-            title={p.title}
-            placeholder={p.placeholder}
-            entries={p.entries}
-            emptyText={p.empty}
+            title={p().title}
+            placeholder={p().placeholder}
+            entries={p().entries}
+            emptyText={p().empty}
             onClose={closePalette}
-            onBang={p.bang ? (cmd) => insertText(cmd) : undefined}
+            onBang={p().bang ? (cmd) => insertText(cmd) : undefined}
+            prefixes={p().prefixes}
+            chips={p().chips}
+            onChip={p().onChip}
           />
         )}
       </Show>

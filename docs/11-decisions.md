@@ -792,6 +792,12 @@ A〜H を決定した後に見つかった事項。同日に推奨どおり決�
 - 影響: 02 §6、03 §8.0
 - 時期: M4
 
+### M11. `OSC 7777;line` の形
+- 経緯: 03 §6.1 は `OSC 7777;line;<base64>` としていたが、zsh には base64 の組み込みがなく、1 キーごとに `base64` を fork すると入力が重くなる
+- 決定（2026-10-11）: **`OSC 7777;line;<cursor>;<%エンコード>`**。%エンコードは zsh の中だけで書け（既存の `__otterm_urlencode`）、fork が要らない。カーソルは文字単位（zsh の `$CURSOR`）。行が変わらないときは送らない
+- 影響: 03 §6.1、02 §6
+- 時期: M4
+
 ### M10. 履歴 UI と `otterm.history-search`
 - 経緯: 05 §9 は履歴 UI を同梱 mod `otterm.history-search` としているが、`@otterm/api` に履歴を読む名前空間がなく、SQLite はブローカーの外にある
 - 決定（2026-10-11）: v1.0 では **履歴 UI は本体が描く**（`Ctrl+R`、パレットと同じ部品）。実行記録は Rust の `history.sqlite`。mod から履歴を読む API（`ctx.history`）は v1.x で検討し、そのとき mod に切り出す

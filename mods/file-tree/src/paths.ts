@@ -21,6 +21,7 @@ const TEXT_LANGUAGES = new Map<string, string>([
   ["yaml", "yaml"],
   ["yml", "yaml"],
   ["csv", "csv"],
+  ["tsv", "plaintext"],
   ["js", "javascript"],
   ["ts", "typescript"],
   ["py", "python"],
@@ -52,6 +53,15 @@ export function isTextExt(ext: string): boolean {
   return TEXT_LANGUAGES.has(ext);
 }
 
+/** Extensions previewed as a table (docs/03 §9.3). */
+export function isTableExt(ext: string): boolean {
+  return ext === "csv" || ext === "tsv";
+}
+
+export function delimiterOf(ext: string): string {
+  return ext === "tsv" ? "\t" : ",";
+}
+
 export function languageOf(ext: string): string {
   return TEXT_LANGUAGES.get(ext) ?? "plaintext";
 }
@@ -62,7 +72,7 @@ export function runPrefixFor(ext: string): string | undefined {
 
 export function iconFor(ext: string): string {
   if (IMAGE_MIME.has(ext)) return "image";
-  if (ext === "md" || ext === "txt" || ext === "log" || ext === "csv") return "file-text";
+  if (ext === "md" || ext === "txt" || ext === "log" || ext === "csv" || ext === "tsv") return "file-text";
   if (CODE_EXTENSIONS.has(ext)) return "file-code";
   return "file";
 }
@@ -109,6 +119,19 @@ export function breadcrumb(path: string, home: string): string {
   const parts = p.split("/").filter((s) => s !== "");
   if (p.startsWith("/")) parts.unshift("/");
   return parts.length > 0 ? parts.join(" › ") : path;
+}
+
+/** Human-readable size with binary units. The unit names are the same in both locales. */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(1)} ${units[unit]}`;
 }
 
 export function baseName(path: string): string {

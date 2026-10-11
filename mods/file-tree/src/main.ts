@@ -5,15 +5,30 @@
  * Permissions and settings are declared in ../otmod.toml.
  */
 
-import type { DirEntry, FsApi, MenuItem, ModContext, SessionId, SessionInfo, TreeItem, UiNode } from "@otterm/api";
+import type {
+  DirEntry,
+  FsApi,
+  MenuItem,
+  ModContext,
+  ProcessApi,
+  SessionId,
+  SessionInfo,
+  TreeItem,
+  UiNode,
+} from "@otterm/api";
+import { prettyJson, TABLE_ROW_LIMIT, tableData } from "./data";
+import { buildDecorations, decorationsSignature, parsePorcelainZ, pathKey } from "./git";
 import {
   base64Encode,
   baseName,
   breadcrumb,
+  delimiterOf,
   extOf,
+  formatBytes,
   IMAGE_LIMIT_BYTES,
   IMAGE_MIME,
   iconFor,
+  isTableExt,
   isTextExt,
   isValidName,
   joinPath,
@@ -30,6 +45,10 @@ const PREVIEW_ID = "file-tree.preview";
 const HOME_TOKEN = `\${home}`;
 /** Caps how deep eagerly-built children nest in the tree. */
 const MAX_DEPTH = 16;
+/** How often git status is re-read while the tree panel is shown. */
+const GIT_INTERVAL_MS = 5000;
+/** Per git call. A slower repository shows no decoration rather than blocking. */
+const GIT_TIMEOUT_MS = 3000;
 
 type ToastKind = "info" | "success" | "warning" | "danger";
 
@@ -38,9 +57,15 @@ type Preview =
   | { kind: "text"; path: string; text: string; language: string }
   | { kind: "markdown"; path: string; text: string }
   | { kind: "image"; path: string; src: string }
+  | { kind: "table"; path: string; header: string[]; body: string[][]; total: number; columns: number }
+  | { kind: "json"; path: string; text: string; error?: string }
+  /** The sandboxed preview iframe cannot render PDF, so only the default-app button is offered (v1). */
+  | { kind: "pdf"; path: string; size: number }
   | { kind: "large"; path: string }
   | { kind: "unsupported"; path: string }
   | { kind: "error"; path: string; message: string };
+
+let gitTimer: ReturnType<typeof setInterval> | undefined;
 
 export async function activate(ctx: ModContext): Promise<void> {
   if (!ctx.fs) throw new Error("file-tree: fs permission is missing");
@@ -79,6 +104,11 @@ export async function activate(ctx: ModContext): Promise<void> {
   const expanded = ctx.signal<Set<string>>(new Set());
   const selected = ctx.signal<string | undefined>(undefined);
   const preview = ctx.signal<Preview>({ kind: "none" });
+  /** Git badge per `pathKey`. The tree getters read it, so a change re-renders the tree. */
+  const gitBadges = ctx.signal<Map<string, string>>(new Map());
+  let gitSig = "";
+  let gitBusy = false;
+  let gitQueued = false;
   let panelVisible = false;
   let cdHintShown = false;
 
@@ -98,6 +128,7 @@ export async function activate(ctx: ModContext): Promise<void> {
       listing.set(new Map());
     }
     rootPath.set(dir);
+    void refreshGit(true);
     try {
       await readInto(dir);
     } catch (e) {
@@ -106,6 +137,7 @@ export async function activate(ctx: ModContext): Promise<void> {
   }
 
   async function refreshDir(dir: string): Promise<void> {
+    void refreshGit(true);
     try {
       await readInto(dir);
     } catch (e) {
@@ -114,7 +146,7 @@ export async function activate(ctx: ModContext): Promise<void> {
     ctx.ui.refresh();
   }
 
-  function itemFor(entry: DirEntry): TreeItem {
+  function itemFor(entry: DirEntry, badges: Map<string, string>): TreeItem {
     const isDir = entry.kind === "dir";
     const item: TreeItem = {
       key: entry.path,
@@ -132,21 +164,59 @@ export async function activate(ctx: ModContext): Promise<void> {
       drag: { kind: "path", path: entry.path },
     };
     if (isDir) item.children = true;
+    const badge = badges.get(pathKey(entry.path));
+    if (badge !== undefined) item.badge = badge;
     return item;
   }
 
   /** Builds tree items from the cache. Folders already read get their children inline. */
   function nodesFor(dir: string, map: Map<string, DirEntry[]>, hidden: boolean, depth: number): TreeItem[] {
     const items: TreeItem[] = [];
+    const badges = gitBadges.get();
     for (const entry of sortEntries(map.get(dir) ?? [])) {
       if (entry.hidden && !hidden) continue;
-      const item = itemFor(entry);
+      const item = itemFor(entry, badges);
       if (entry.kind === "dir" && map.has(entry.path) && depth < MAX_DEPTH) {
         item.children = nodesFor(entry.path, map, hidden, depth + 1);
       }
       items.push(item);
     }
     return items;
+  }
+
+  // --- git status -------------------------------------------------------------
+
+  /**
+   * Re-reads git status under the tree root and publishes the badges. A run that is already in flight
+   * is skipped; `force` (root change, file operation) queues one more run after it instead.
+   */
+  async function refreshGit(force: boolean): Promise<void> {
+    const proc = ctx.process;
+    if (!proc) return;
+    if (gitBusy) {
+      if (force) gitQueued = true;
+      return;
+    }
+    const root = rootPath.get();
+    if (!root) return;
+    gitBusy = true;
+    try {
+      const next = await readGitDecorations(proc, root);
+      // The root may have moved while git ran. In that case the queued run below reads the new one.
+      if (root === rootPath.get()) {
+        const sig = decorationsSignature(next);
+        if (sig !== gitSig) {
+          gitSig = sig;
+          gitBadges.set(next);
+        }
+      }
+    } finally {
+      gitBusy = false;
+    }
+    if (gitQueued) {
+      gitQueued = false;
+      await refreshGit(true);
+    }
   }
 
   async function loadChildren(key: string): Promise<TreeItem[]> {
@@ -239,13 +309,26 @@ export async function activate(ctx: ModContext): Promise<void> {
           const bytes = await files.readBytes(path, { maxBytes: IMAGE_LIMIT_BYTES });
           preview.set({ kind: "image", path, src: `data:${mime};base64,${base64Encode(bytes)}` });
         }
+      } else if (ext === "pdf") {
+        // v1: the preview cannot render PDF (its iframe runs without scripts). The host opens it with
+        // the system app per [open.rules], so the panel only offers that button.
+        preview.set({ kind: "pdf", path, size });
       } else if (isTextExt(ext)) {
         if (size > TEXT_LIMIT_BYTES) {
           preview.set({ kind: "large", path });
         } else {
           const text = await files.readText(path, { maxBytes: TEXT_LIMIT_BYTES });
-          if (ext === "md") preview.set({ kind: "markdown", path, text });
-          else preview.set({ kind: "text", path, text, language: languageOf(ext) });
+          if (isTableExt(ext)) {
+            preview.set({ kind: "table", path, ...tableData(text, delimiterOf(ext)) });
+          } else if (ext === "json") {
+            const view = prettyJson(text);
+            if (view.ok) preview.set({ kind: "json", path, text: view.text });
+            else preview.set({ kind: "json", path, text, error: view.message });
+          } else if (ext === "md") {
+            preview.set({ kind: "markdown", path, text });
+          } else {
+            preview.set({ kind: "text", path, text, language: languageOf(ext) });
+          }
         }
       } else {
         preview.set({ kind: "unsupported", path });
@@ -270,6 +353,41 @@ export async function activate(ctx: ModContext): Promise<void> {
       case "image":
         body.push({ type: "custom", html: imageHtml(p.src), height: "auto" });
         break;
+      case "table":
+        if (p.columns === 0) {
+          body.push({ type: "text", text: t("preview-table-empty"), muted: true });
+        } else {
+          body.push(tableNode(p));
+          if (p.total > TABLE_ROW_LIMIT) {
+            body.push({
+              type: "text",
+              text: t("preview-table-cut", { count: TABLE_ROW_LIMIT, total: p.total }),
+              muted: true,
+            });
+          }
+        }
+        break;
+      case "json":
+        body.push({
+          type: "code",
+          code: p.text,
+          language: p.error === undefined ? "json" : "plaintext",
+          copyable: true,
+        });
+        if (p.error !== undefined) {
+          body.push({ type: "text", text: t("preview-json-error", { message: p.error }), muted: true });
+        }
+        break;
+      case "pdf":
+        body.push({ type: "text", text: t("preview-size", { size: formatBytes(p.size) }), muted: true });
+        body.push({
+          type: "button",
+          text: t("preview-pdf-open"),
+          icon: "external-link",
+          variant: "primary",
+          onClick: () => openPath(target),
+        });
+        return { type: "stack", gap: "s", children: body };
       case "large":
         body.push({ type: "text", text: t("preview-large") });
         break;
@@ -492,6 +610,7 @@ export async function activate(ctx: ModContext): Promise<void> {
     content: panelContent,
     onShow: () => {
       panelVisible = true;
+      void refreshGit(true);
     },
     onHide: () => {
       panelVisible = false;
@@ -539,6 +658,11 @@ export async function activate(ctx: ModContext): Promise<void> {
 
   // --- start ------------------------------------------------------------------
 
+  // Git status is polled only while the tree panel is visible (see refreshGit).
+  gitTimer = setInterval(() => {
+    if (panelVisible) void refreshGit(false);
+  }, GIT_INTERVAL_MS);
+
   await setRoot(startDir);
   if (guide() >= 2) {
     await ctx.commands.run("otterm.panel.show", { id: PANEL_ID }).catch(fail);
@@ -546,10 +670,41 @@ export async function activate(ctx: ModContext): Promise<void> {
 }
 
 export function deactivate(): void {
-  // Every registration is a Disposable the host tracks; nothing to do here.
+  // The registrations are Disposables the host tracks. The git poll timer is ours, so stop it here.
+  if (gitTimer !== undefined) clearInterval(gitTimer);
+  gitTimer = undefined;
 }
 
 // --- helpers ------------------------------------------------------------------
+
+/**
+ * Runs `git rev-parse --show-toplevel` and `git status` under `root`. Not a repository, a non-zero exit,
+ * a timeout, or a refused process permission all give an empty map (no decoration).
+ */
+async function readGitDecorations(proc: ProcessApi, root: string): Promise<Map<string, string>> {
+  try {
+    const top = await proc.run("git", ["rev-parse", "--show-toplevel"], { cwd: root, timeoutMs: GIT_TIMEOUT_MS });
+    if (top.code !== 0 || top.timedOut) return new Map();
+    const status = await proc.run("git", ["status", "--porcelain=v1", "-z", "--ignored=no", "--untracked-files=all"], {
+      cwd: root,
+      timeoutMs: GIT_TIMEOUT_MS,
+    });
+    if (status.code !== 0 || status.timedOut) return new Map();
+    return buildDecorations(top.stdout.trim(), parsePorcelainZ(status.stdout));
+  } catch {
+    return new Map();
+  }
+}
+
+/** Table preview node. Columns are keyed c0..cN; a missing cell is an empty string. */
+function tableNode(p: { header: string[]; body: string[][]; columns: number }): UiNode {
+  const keys = Array.from({ length: p.columns }, (_, i) => `c${i}`);
+  return {
+    type: "table",
+    columns: keys.map((key, i) => ({ key, title: p.header[i] || `#${i + 1}` })),
+    rows: p.body.map((row) => Object.fromEntries(keys.map((key, i) => [key, row[i] ?? ""]))),
+  };
+}
 
 /** Folders first, then files; case-insensitive by name. */
 function sortEntries(entries: DirEntry[]): DirEntry[] {

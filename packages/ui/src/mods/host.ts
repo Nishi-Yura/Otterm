@@ -82,6 +82,8 @@ export interface Explanation {
 export interface CompletionItem {
   label: string;
   insertText?: string;
+  /** Replace the whole line rather than the word at the cursor (history items). */
+  replaceLine?: boolean;
   detail?: string;
   kind: string;
   danger?: string;
@@ -172,6 +174,10 @@ export interface SessionSnapshot {
   shell: string;
   /** The shell integration has reported a block. */
   integrated: boolean;
+  /** For WSL and Git Bash sessions: `cwd` as a Windows path. */
+  hostCwd?: string;
+  /** Echo is off (a password prompt, decision K2). */
+  echoOff: boolean;
 }
 
 export interface ToastRequest {
@@ -436,6 +442,32 @@ export class ModHost {
 
   lookup(name: string): DictionaryEntry | undefined {
     return this.dictionary.get(name.toLowerCase());
+  }
+
+  /** The dictionary, or else what otterm learned from the command's `--help` (decision B9). */
+  async lookupWithHelp(name: string): Promise<DictionaryEntry | undefined> {
+    const known = this.lookup(name);
+    if (known || !name) return known;
+    const help = await invoke<{ name: string; summary: string; options: [string[], string][] } | null>("help_get", {
+      name,
+    }).catch(() => null);
+    if (!help?.summary) return undefined;
+    return {
+      name: help.name,
+      summary: { en: help.summary, ja: help.summary },
+      options: help.options.map(([flags, summary]) => ({ flags, summary: { en: summary, ja: summary } })),
+      source: "help",
+    } as DictionaryEntry;
+  }
+
+  /** Every command name the dictionary knows, aliases included (for first-word completion). */
+  dictionaryNames(): string[] {
+    return [...this.dictionary.keys()];
+  }
+
+  /** The dictionary's entries once each (the palette's `?` search). */
+  dictionaryEntries(): DictionaryEntry[] {
+    return [...new Set(this.dictionary.values())];
   }
 
   parse(line: string, cwd = "", shellKind = "other"): ParsedCommand {
@@ -1114,10 +1146,34 @@ export class ModHost {
         });
         return undefined;
       }
-      case "terminal.screen":
-      case "terminal.blocks":
+      case "terminal.screen": {
+        if (!perms.terminalRead) throw new Error("terminal.read is not granted");
+        const sid = Number(a[0] ?? active?.id);
+        const [lines, [row, col]] = await invoke<[string[], [number, number]]>("session_screen", { id: sid });
+        return { lines, cursor: { row, col } };
+      }
+      case "terminal.blocks": {
+        if (!perms.terminalRead) throw new Error("terminal.read is not granted");
+        const sid = Number(a[0] ?? active?.id);
+        const opts = (a[1] ?? {}) as { limit?: number };
+        const list = await invoke<{ line: number; command: string | null; running: boolean; exit: number | null }[]>(
+          "session_blocks",
+          { id: sid },
+        );
+        return list
+          .filter((b) => b.command)
+          .slice(-(opts.limit ?? 100))
+          .map((b) => ({
+            id: `${sid}:${b.line}`,
+            sessionId: String(sid),
+            command: b.command ?? "",
+            cwd: "",
+            startedAt: 0,
+            exitCode: b.exit ?? undefined,
+          }));
+      }
       case "terminal.selection":
-        throw new Error(`${method} is not available yet`);
+        throw new Error("terminal.selection is not available yet");
       // --- settings and storage
       case "settings.set": {
         const [key, value] = a as unknown as [string, unknown];
@@ -1149,7 +1205,7 @@ export class ModHost {
       case "assist.evaluate":
         return this.evaluate(a[0] as ParsedCommand);
       case "assist.lookup":
-        return this.lookup(String(a[0] ?? ""));
+        return this.lookupWithHelp(String(a[0] ?? ""));
       case "storage.get": {
         // Missing keys come back as JSON null; the API promises undefined.
         const v = await invoke("mod_storage", { id, op: "get", key: a[0] ?? null, value: null });
@@ -1324,10 +1380,11 @@ function sessionInfo(s: SessionSnapshot) {
     profileId: s.profileId,
     shellKind,
     cwd: s.cwd ?? "",
+    hostCwd: s.hostCwd,
     title: s.title,
     integration: s.integrated ? "full" : "none",
     altScreen: false,
-    echoOff: false,
+    echoOff: s.echoOff,
     // Not tracked yet; 0 says so rather than inventing one.
     pid: 0,
   };

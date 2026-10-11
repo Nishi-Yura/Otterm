@@ -56,14 +56,16 @@ export interface TerminalViewProps {
   /** Extra right-click items, from mods (`context.terminal`). */
   extraMenu?: () => MenuItem[];
   /** The line being typed at the prompt changed (docs/02 §6). `active` false once input ended. */
-  onInput?: (e: { line: string; cursor: number; active: boolean }) => void;
+  onInput?: (e: { line: string; cursor: number; active: boolean; exact: boolean }) => void;
+  /** Echo went off (a password prompt) or back on (decision K2). */
+  onEchoOff?: (off: boolean) => void;
   /**
    * Enter at the prompt with a non-empty line: mods may veto or replace it (before-execute,
    * docs/05 §5.4). Resolves to false when the Enter must not be sent.
    */
   beforeExecute?: (line: string) => Promise<boolean>;
   /** Keys the window's assist UI (completion popup, history) wants first. Returns true when taken. */
-  assistKey?: (e: KeyboardEvent, input: { line: string; cursor: number; active: boolean }) => boolean;
+  assistKey?: (e: KeyboardEvent, input: { line: string; cursor: number; active: boolean; exact: boolean }) => boolean;
   onCwd: (url: string) => void;
   onExit: (code: number | null) => void;
   /** The program rang the bell (BEL). */
@@ -232,9 +234,10 @@ export function TerminalView(props: TerminalViewProps) {
             props.onBlock?.({ kind: "end", line: e.line, exit: e.exit, ms: e.ms });
           }
           if (e.kind === "input") {
-            inputState = { line: e.line, cursor: e.cursor, active: e.active };
+            inputState = { line: e.line, cursor: e.cursor, active: e.active, exact: e.exact };
             props.onInput?.(inputState);
           }
+          if (e.kind === "echoOff") props.onEchoOff?.(e.off);
           // A view that is gone (its pane was closed) has nothing left to report.
           if (e.kind === "exited" && !closed) {
             setStatus(t("process-exited", { code: e.code ?? "none" }));
@@ -734,7 +737,7 @@ export function TerminalView(props: TerminalViewProps) {
   };
 
   /** What the user is typing at the prompt, as the last `input` event reported it. */
-  let inputState = { line: "", cursor: 0, active: false };
+  let inputState = { line: "", cursor: 0, active: false, exact: false };
   /** An Enter is waiting for the mods' verdict; keys typed meanwhile are not lost (they queue in the DOM). */
   let enterPending = false;
 

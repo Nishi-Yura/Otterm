@@ -183,6 +183,14 @@ export interface PaletteProps {
   onClose: () => void;
   /** Rendered right of each row (history: folder, time, exit code). */
   emptyText: string;
+  /**
+   * Prefix characters with their own source (docs/03 §7: `:` line, `?` help, `@` file, `#` block).
+   * The source gets the text after the prefix and returns the rows to show, already filtered.
+   */
+  prefixes?: Record<string, { hint: string; source: (rest: string) => Promise<PaletteEntry[]> | PaletteEntry[] }>;
+  /** Toggles shown under the search box (the history's filters). */
+  chips?: { id: string; label: string; on: boolean }[];
+  onChip?: (id: string) => void;
 }
 
 /** A fuzzy-filtered list with a search box (the palette, docs/03 §7, and the history, §8.5). */
@@ -192,7 +200,27 @@ export function Palette(props: PaletteProps) {
   let input!: HTMLInputElement;
   let list!: HTMLDivElement;
   const bang = () => query().startsWith("!");
+  /** The prefix the query starts with, if the caller gave it a source. */
+  const prefix = () => {
+    const c = query()[0];
+    return c && props.prefixes?.[c] ? c : undefined;
+  };
+  const [prefixed, setPrefixed] = createSignal<PaletteEntry[]>([]);
+  let prefixSeq = 0;
+  createEffect(() => {
+    const p = prefix();
+    const rest = query().slice(1).trim();
+    if (!p) return;
+    const seq = ++prefixSeq;
+    // A short pause so a file search does not run on every keystroke.
+    setTimeout(async () => {
+      if (seq !== prefixSeq) return;
+      const rows = await Promise.resolve(props.prefixes?.[p]?.source(rest) ?? []).catch(() => []);
+      if (seq === prefixSeq) setPrefixed(rows);
+    }, 120);
+  });
   const filtered = createMemo(() => {
+    if (prefix()) return prefixed();
     const q = bang() ? "" : query().trim().toLowerCase();
     const scored = props.entries
       .map((e) => ({ e, s: q ? fuzzy(q, `${e.title} ${e.description ?? ""} ${e.id}`.toLowerCase()) : 1 }))
@@ -250,6 +278,38 @@ export function Palette(props: PaletteProps) {
           }}
           onKeyDown={onKeyDown}
         />
+        <Show when={props.chips?.length}>
+          <div class="palette-chips">
+            <For each={props.chips ?? []}>
+              {(c) => (
+                <button
+                  type="button"
+                  class="palette-chip"
+                  classList={{ on: c.on }}
+                  aria-pressed={c.on}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    props.onChip?.(c.id);
+                    input.focus();
+                  }}
+                >
+                  {c.label}
+                </button>
+              )}
+            </For>
+          </div>
+        </Show>
+        <Show when={props.prefixes && query() === ""}>
+          <div class="palette-prefixes">
+            <For each={Object.entries(props.prefixes ?? {})}>
+              {([c, p]) => (
+                <span class="palette-prefix">
+                  <code>{c}</code> {p.hint}
+                </span>
+              )}
+            </For>
+          </div>
+        </Show>
         <div ref={list} class="palette-list" role="listbox">
           <Show when={bang() && props.onBang}>
             <div class="palette-item selected">

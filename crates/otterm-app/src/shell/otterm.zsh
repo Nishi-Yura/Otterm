@@ -154,6 +154,28 @@ if [[ -n $OTTERM && -z $OTTERM_SHELL_INTEGRATION ]]; then
         printf '%s' "${__OTTERM_ESC}]7777;cmd;${REPLY}${__OTTERM_ST}${__OTTERM_ESC}]133;C${__OTTERM_ST}"
     }
 
+    # The line as zle holds it, after every change (method A of docs/02 §6): OSC 7777 line with
+    # the cursor and the percent-encoded buffer. Percent-encoding is done in zsh, so a keystroke
+    # costs no fork; unchanged buffers send nothing.
+    __OTTERM_LAST_LINE=
+    __otterm_line() {
+        emulate -L zsh
+        local state="$CURSOR;$BUFFER"
+        [[ $state == "$__OTTERM_LAST_LINE" ]] && return 0
+        __OTTERM_LAST_LINE=$state
+        __otterm_urlencode "$BUFFER"
+        printf '%s' "${__OTTERM_ESC}]7777;line;${CURSOR};${REPLY}${__OTTERM_ST}" > /dev/tty
+    }
+    __otterm_line_init() {
+        __OTTERM_LAST_LINE=
+        __otterm_line
+    }
+    # add-zle-hook-widget arrived in zsh 5.3; older shells fall back to reading the screen.
+    if autoload -Uz add-zle-hook-widget 2>/dev/null; then
+        add-zle-hook-widget line-pre-redraw __otterm_line
+        add-zle-hook-widget line-init __otterm_line_init
+    fi
+
     autoload -Uz add-zsh-hook
     add-zsh-hook precmd __otterm_precmd_end
     add-zsh-hook preexec __otterm_preexec

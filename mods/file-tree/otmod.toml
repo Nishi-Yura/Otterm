@@ -33,6 +33,7 @@ label = "シェルのフォルダをツリーに表示 / Reveal the shell folder
 
 # cd is sent to the shell at guide level 2+ (decision B10); the user is told each time by the host.
 [permissions]
+process = ["git"]
 fs.read = ["${home}/**", "${cwd}/**"]
 fs.write = ["${home}/**", "${cwd}/**"]
 terminal.read = true
