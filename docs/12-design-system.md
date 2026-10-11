@@ -35,6 +35,9 @@ otterm の画面（タブ、パネル、ステータスバー、ダイアログ�
 | `--ot-warning` | 注意、承認待ち | ANSI 3（黄） |
 | `--ot-radius` | 角丸 | `6px` |
 | `--ot-shadow` | 浮いた面の影 | ダーク `0 4px 16px rgb(0 0 0 / 0.4)`、ライト `0 4px 16px rgb(0 0 0 / 0.15)` |
+| `--ot-scrim` | パレットの後ろの幕 | `rgb(0 0 0 / 0.25)` |
+| `--ot-scrim-strong` | ダイアログの後ろの幕 | `rgb(0 0 0 / 0.45)` |
+| `--ot-on-color` | 塗りのアクセント・危険色の上の文字とつまみ | `#fff` |
 | `--ot-font-ui` | UI の文字 | `system-ui, "Segoe UI", "Noto Sans JP", sans-serif` |
 
 ### 2.2 文字に使う状態色
