@@ -428,6 +428,14 @@ export function App() {
       case "closePane":
         if (tab) void askThenClose([tab.active], () => closePane(tab.active));
         break;
+      case "fullscreen": {
+        const w = getCurrentWindow();
+        void w.isFullscreen().then((on) => w.setFullscreen(!on));
+        break;
+      }
+      case "settings":
+        void invoke("config_open").catch((e) => showNotice(String(e)));
+        break;
     }
     return true;
   };

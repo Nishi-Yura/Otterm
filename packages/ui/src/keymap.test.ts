@@ -21,6 +21,11 @@ describe("keymap (Windows/Linux defaults)", () => {
     expect(map.match(keyEvent("3", { ctrl: true, code: "Digit3" }))?.action).toEqual({ kind: "gotoTab", index: 2 });
   });
 
+  it("has F11 for full screen and Ctrl+, for the settings", () => {
+    expect(map.match(keyEvent("F11", {}))?.action).toEqual({ kind: "fullscreen" });
+    expect(map.match(keyEvent(",", { ctrl: true, code: "Comma" }))?.action).toEqual({ kind: "settings" });
+  });
+
   it("marks Ctrl+Shift chords as kept on the alternate screen", () => {
     expect(map.match(keyEvent("T", { ctrl: true, shift: true }))?.strong).toBe(true);
     expect(map.match(keyEvent("ArrowLeft", { alt: true }))?.strong).toBe(false);

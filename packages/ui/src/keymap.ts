@@ -21,6 +21,9 @@ function defaults(): Bindings {
     "pane.split.horizontal": [mac ? "cmd+shift+d" : "ctrl+shift+e"],
     "pane.zoom": [mac ? "cmd+shift+enter" : "ctrl+shift+z"],
     "pane.close": [mac ? "cmd+shift+w" : "ctrl+shift+q"],
+    "window.fullscreen": [mac ? "ctrl+cmd+f" : "f11"],
+    // Opens config.toml until there is a settings screen.
+    settings: [mac ? "cmd+," : "ctrl+,"],
   };
   for (let i = 1; i <= 9; i++) b[`tab.goto.${i}`] = [mac ? `cmd+${i}` : `ctrl+${i}`];
   for (const d of DIRS) {
@@ -33,6 +36,7 @@ function defaults(): Bindings {
 }
 
 function action(id: string): AppAction | undefined {
+  if (id === "settings") return { kind: "settings" };
   const [group, verb, arg] = id.split(".");
   const dir = DIRS.find((d) => d === arg);
   switch (`${group}.${verb}`) {
@@ -60,6 +64,8 @@ function action(id: string): AppAction | undefined {
       return { kind: "zoomPane" };
     case "pane.close":
       return { kind: "closePane" };
+    case "window.fullscreen":
+      return { kind: "fullscreen" };
     default:
       return undefined;
   }

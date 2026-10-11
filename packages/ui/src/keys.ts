@@ -61,7 +61,9 @@ export type AppAction =
   | { kind: "focusPane"; dir: Dir }
   | { kind: "resizePane"; dir: Dir }
   | { kind: "zoomPane" }
-  | { kind: "closePane" };
+  | { kind: "closePane" }
+  | { kind: "fullscreen" }
+  | { kind: "settings" };
 
 /** Font size keys (docs/06 §5.2): Ctrl (Cmd on macOS) with `=` / `+` bigger, `-` smaller, `0` reset. */
 export function zoomKey(e: KeyboardEvent): 1 | -1 | 0 | undefined {
