@@ -11,6 +11,8 @@ pub struct Launch {
     pub command: Option<Vec<String>>,
     /// Configuration file to use instead of the usual one.
     pub config: Option<PathBuf>,
+    /// `--safe-mode` (docs/04 §2.3): the default theme, no theme or user CSS, no mods.
+    pub safe_mode: bool,
     /// Arguments that were not understood, to report.
     pub unknown: Vec<String>,
 }
@@ -28,6 +30,7 @@ pub fn parse(args: impl IntoIterator<Item = String>) -> Launch {
                 }
             }
             "--config" => launch.config = args.next().map(PathBuf::from),
+            "--safe-mode" => launch.safe_mode = true,
             a if a.starts_with('-') => launch.unknown.push(arg),
             _ => {
                 let path = PathBuf::from(&arg);

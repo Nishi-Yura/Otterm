@@ -16,6 +16,8 @@ const WATCH_INTERVAL: Duration = Duration::from_secs(1);
 
 pub struct ConfigState {
     path: Option<PathBuf>,
+    /// Started with `--safe-mode`: what the configuration says about looks and mods is ignored.
+    safe: std::sync::atomic::AtomicBool,
     loaded: Mutex<Loaded>,
 }
 
@@ -94,6 +96,8 @@ pub struct UiConfig {
     pub statusbar_order: Vec<String>,
     /// `[mods] developer_mode`: per-mod logs and timings in the mods panel (docs/05 §8.2).
     pub developer_mode: bool,
+    /// Started with `--safe-mode`: mods are not started and a banner says so.
+    pub safe_mode: bool,
     /// Where installed mods live, to tell the user.
     pub mods_dir: Option<String>,
     /// Keys that were ignored, to show once.
@@ -161,7 +165,16 @@ impl ConfigState {
     /// Read `path`, or the usual config.toml when it is `None`.
     pub fn load(path: Option<PathBuf>) -> Self {
         let path = path.or_else(otterm_config::config_path);
-        Self { loaded: Mutex::new(read(path.as_ref())), path }
+        Self { loaded: Mutex::new(read(path.as_ref())), path, safe: Default::default() }
+    }
+
+    /// Turn safe mode on (docs/04 §2.3).
+    pub fn set_safe(&self, on: bool) {
+        self.safe.store(on, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub fn safe(&self) -> bool {
+        self.safe.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// Where config.toml is (it may not exist yet).
@@ -175,22 +188,41 @@ impl ConfigState {
 
     pub fn ui(&self) -> UiConfig {
         let l = self.loaded.lock().unwrap();
-        let c = &l.config;
+        let safe = self.safe();
+        // Safe mode: the bundled default themes and a plain window, whatever the file says.
+        let mut safe_config;
+        let c = if safe {
+            safe_config = l.config.clone();
+            safe_config.appearance.theme = "otterm Dark".into();
+            safe_config.appearance.theme_light = "otterm Light".into();
+            safe_config.appearance.window = otterm_config::Window::default();
+            safe_config.appearance.custom_css = false;
+            &safe_config
+        } else {
+            &l.config
+        };
+        let bundled;
+        let themes: &[Theme] = if safe {
+            bundled = otterm_config::bundled_themes();
+            &bundled
+        } else {
+            &l.themes
+        };
         let effective = Effective::resolve(c);
-        let theme = otterm_config::find_theme(&l.themes, &c.appearance.theme)
-            .or_else(|| otterm_config::find_theme(&l.themes, "otterm Dark"))
+        let theme = otterm_config::find_theme(themes, &c.appearance.theme)
+            .or_else(|| otterm_config::find_theme(themes, "otterm Dark"))
             .cloned()
             .expect("the default theme is bundled");
         let mut warnings: Vec<UiWarning> =
             l.warnings.iter().map(|w| UiWarning { key: w.key.clone(), message: w.message.clone() }).collect();
-        let theme_light = otterm_config::find_theme(&l.themes, &c.appearance.theme_light).cloned();
+        let theme_light = otterm_config::find_theme(themes, &c.appearance.theme_light).cloned();
         if c.appearance.follow_system && theme_light.is_none() {
             warnings.push(UiWarning {
                 key: "appearance.theme_light".into(),
                 message: format!("no theme named \"{}\"", c.appearance.theme_light),
             });
         }
-        if otterm_config::find_theme(&l.themes, &c.appearance.theme).is_none() {
+        if otterm_config::find_theme(themes, &c.appearance.theme).is_none() {
             warnings.push(UiWarning {
                 key: "appearance.theme".into(),
                 message: format!("no theme named \"{}\"", c.appearance.theme),
@@ -246,7 +278,7 @@ impl ConfigState {
                 reduce_motion: auto(&c.accessibility.reduce_motion),
                 high_contrast: auto(&c.accessibility.high_contrast),
             },
-            theme_high_contrast: otterm_config::find_theme(&l.themes, "High Contrast").cloned(),
+            theme_high_contrast: otterm_config::find_theme(themes, "High Contrast").cloned(),
             cursor_style: c.terminal.cursor.style,
             cursor_blink: c.terminal.cursor.blink,
             copy_on_select: c.terminal.copy_on_select,
@@ -284,6 +316,7 @@ impl ConfigState {
             statusbar_order: c.appearance.statusbar.order.clone(),
             layout,
             developer_mode: c.mods.developer_mode,
+            safe_mode: safe,
             mods_dir: otterm_config::data_dir().map(|d| otterm_modhost::mods_dir(&d).display().to_string()),
             warnings,
             config_path: self.path.as_ref().map(|p| p.display().to_string()),
@@ -376,6 +409,8 @@ fn newest_change(path: Option<&PathBuf>) -> Option<SystemTime> {
         }
     };
     if let Some(dir) = path.parent() {
+        // The folder's own time changes when user.css (or a theme) is deleted or added.
+        see(time(dir));
         see(time(&dir.join("user.css")));
         for sub in ["themes", "layouts"] {
             let d = dir.join(sub);

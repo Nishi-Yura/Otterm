@@ -36,6 +36,8 @@ export interface SettingsProps {
   /** Show this theme in the window while it is edited; undefined to stop. */
   preview: (theme: Theme | undefined) => void;
   notify: (text: string) => void;
+  /** Start otterm again, in safe mode (`true`) or normally. */
+  restart: (safe: boolean) => void;
 }
 
 /** Keys the generic form leaves to a page of its own. */
@@ -1591,6 +1593,13 @@ function AdvancedPage(props: SettingsProps & { form: Form }) {
           }
         >
           {t("settings-css-save")}
+        </button>
+      </div>
+      <h3>{t("settings-safe-mode")}</h3>
+      <p class="muted">{t("settings-safe-mode-hint")}</p>
+      <div class="settings-actions">
+        <button type="button" onClick={() => props.restart(!props.config?.safeMode)}>
+          {t(props.config?.safeMode ? "palette-cmd-restart-normal" : "palette-cmd-restart-safe")}
         </button>
       </div>
       <h3>{t("settings-file")}</h3>

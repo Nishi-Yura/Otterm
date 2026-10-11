@@ -858,6 +858,7 @@ fn app_state() -> AppState {
     let launch = launch::parse(std::env::args().skip(1));
     // Lives as long as the app; the watcher thread holds it.
     let config: &'static ConfigState = Box::leak(Box::new(ConfigState::load(launch.config)));
+    config.set_safe(launch.safe_mode || std::env::var_os("OTTERM_SAFE_MODE").is_some_and(|v| v == "1"));
     // Resolve the configured fonts while the WebView starts (decision C4).
     std::thread::spawn(move || {
         let font = config.ui().font;
@@ -914,6 +915,23 @@ fn profiles_list(state: State<'_, AppState>) -> Vec<profiles::MenuEntry> {
 #[tauri::command]
 fn launch_problems(state: State<'_, AppState>) -> Vec<String> {
     state.unknown_args.clone()
+}
+
+/// Start otterm again, in safe mode or out of it (docs/04 §2.3), and quit this one. The new
+/// process gets the same arguments, with `--safe-mode` added or taken away.
+#[tauri::command]
+fn app_restart(app: tauri::AppHandle, safe: bool) -> CmdResult {
+    let exe = std::env::current_exe().map_err(err)?;
+    let mut args: Vec<String> = std::env::args().skip(1).filter(|a| a != "--safe-mode").collect();
+    if safe {
+        args.push("--safe-mode".into());
+    }
+    std::process::Command::new(exe).args(args).env_remove("OTTERM_SAFE_MODE").spawn().map_err(err)?;
+    if let Some(window) = tauri::Manager::get_webview_window(&app, "main") {
+        window_state::save(&window);
+    }
+    app.exit(0);
+    Ok(())
 }
 
 /// Save the window's size and place when it closes (decision I7).
@@ -1046,6 +1064,7 @@ fn main() {
             settings::background_set,
             settings::background_image_get,
             settings::fonts_list,
+            app_restart,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run otterm");

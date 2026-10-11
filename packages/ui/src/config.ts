@@ -105,6 +105,8 @@ export interface UiConfig {
   statusbarOrder: string[];
   /** `[mods] developer_mode`: logs and timings per mod. */
   developerMode: boolean;
+  /** Started with `--safe-mode` (docs/04 §2.3): default theme, no CSS overrides, no mods. */
+  safeMode: boolean;
   /** Where installed mods live, to tell the user. */
   modsDir: string | null;
   warnings: { key: string; message: string }[];

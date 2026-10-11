@@ -107,18 +107,19 @@
 }
 
 .side-panel[data-slot="sidebar.left"] {
-  /* appearance.sidebar.*.width and panel.bottom.height (set on :root by config.ts). */
-  width: var(--ot-sidebar-left-width, 260px);
+  /* appearance.sidebar.*.width and panel.bottom.height (set on :root by config.ts), in real pixels:
+     the panel is zoomed by the UI scale, so the length is divided by it. */
+  width: calc(var(--ot-sidebar-left-width, 260px) / var(--ot-ui-scale, 1));
   border-right: 1px solid var(--ot-border);
 }
 
 .side-panel[data-slot="sidebar.right"] {
-  width: var(--ot-sidebar-right-width, 260px);
+  width: calc(var(--ot-sidebar-right-width, 260px) / var(--ot-ui-scale, 1));
   border-left: 1px solid var(--ot-border);
 }
 
 .side-panel[data-slot="panel.bottom"] {
-  height: var(--ot-panel-bottom-height, 220px);
+  height: calc(var(--ot-panel-bottom-height, 220px) / var(--ot-ui-scale, 1));
   border-top: 1px solid var(--ot-border);
 }
 

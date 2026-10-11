@@ -145,6 +145,7 @@ UI の文字は `--ot-font-ui`。ターミナルの文字は `[font]` の設定�
 
 | 場所 | `data-ot` |
 | --- | --- |
+| ウィンドウ | `safe-banner`（セーフモードの帯） |
 | タブ | `tabbar`、`tab` |
 | ペインとターミナル | `pane`、`terminal`、`prompt-header`（プロンプトバー）、`block-actions`（ブロックのボタン） |
 | パネル | `sidebar.left` / `sidebar.right` / `panel.bottom`（パネル全体）、`panel-tab`、`panel-body`、`panel-close` |

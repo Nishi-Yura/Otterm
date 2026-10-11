@@ -622,6 +622,11 @@ export function App() {
       },
       { id: "settings", title: t("palette-cmd-settings"), run: () => run({ kind: "settings" }) },
       {
+        id: "app.safe_mode",
+        title: t(config()?.safeMode ? "palette-cmd-restart-normal" : "palette-cmd-restart-safe"),
+        run: () => restart(!config()?.safeMode),
+      },
+      {
         id: "settings.file",
         title: t("palette-cmd-settings-file"),
         run: () => void invoke("config_open").catch((e) => showNotice(String(e))),
@@ -941,7 +946,8 @@ export function App() {
     newTab();
     setReady(true);
     // Mods load after the first tab is up (docs/09 §3.5).
-    host.start().catch((e) => showNotice(String(e)));
+    // Safe mode starts no mods (docs/04 §2.3): one of them may be what broke the window.
+    if (!config()?.safeMode) host.start().catch((e) => showNotice(String(e)));
     const unknown = await invoke<string[]>("launch_problems").catch(() => []);
     if (unknown.length > 0) showNotice(t("launch-unknown", { args: unknown.join(" ") }));
     if (mode === "startup") runStartupBench().catch((e) => setBench(`startup bench failed: ${String(e)}`));
@@ -1136,6 +1142,13 @@ export function App() {
     return undefined;
   };
 
+  /** Start otterm again in safe mode, or back out of it, asking first if programs run. */
+  const restart = (safe: boolean) =>
+    void askThenClose(
+      panes().map((p) => p.id),
+      () => void invoke("app_restart", { safe }).catch((e) => showNotice(String(e))),
+    );
+
   /** Close, asking first when a program is still running there (docs/03 §3.2). */
   const askThenClose = async (paneIds: number[], close: () => void) => {
     const program = await runningIn(paneIds);
@@ -1180,6 +1193,43 @@ export function App() {
     if (altScreen && !hit.strong && (config()?.altScreenPassthrough ?? true)) return false;
     return run(hit.action);
   };
+
+  /**
+   * Keys pressed outside the terminal (a panel, the status bar, nothing focused): otterm's own
+   * shortcuts still work there (F6 between regions, the palette, panel toggles), and the WebView's
+   * browser keys never do — F5 / Ctrl+R would reload the whole window, F6 would move the focus out
+   * of it, F7 turns on caret browsing, Ctrl+P prints, Ctrl+F / F3 search the page.
+   */
+  onMount(() => {
+    const browserKey = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (["f3", "f5", "f6", "f7"].includes(k)) return true;
+      return (e.ctrlKey || e.metaKey) && !e.altKey && ["r", "p", "f", "g", "u", "j"].includes(k);
+    };
+    // Capture phase: dialogs (settings, palette) stop keys from bubbling, but the browser's own
+    // handling must be cancelled wherever the focus is. The terminal cancels its keys itself.
+    const blockBrowser = (e: KeyboardEvent) => {
+      if (!(e.target as HTMLElement | null)?.closest(".terminal") && browserKey(e)) e.preventDefault();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      // The terminal asks onAppKey itself before it sends a key.
+      if (target?.closest(".terminal")) return;
+      const editing = !!target?.matches("input, textarea, select, [contenteditable]");
+      const chord = e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key);
+      const hit = !editing || chord ? keymap.match(e) : undefined;
+      if (hit && run(hit.action)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", blockBrowser, true);
+    window.addEventListener("keydown", onKey);
+    onCleanup(() => {
+      window.removeEventListener("keydown", blockBrowser, true);
+      window.removeEventListener("keydown", onKey);
+    });
+  });
 
   /** Returns false when the action had nothing to do, so the key goes to the terminal instead. */
   const run = (action: AppAction): boolean => {
@@ -1591,6 +1641,15 @@ export function App() {
         "blocks-cards": config()?.layout.blocks === "cards",
       }}
     >
+      <Show when={config()?.safeMode}>
+        <div class="safe-banner" role="status" data-ot="safe-banner">
+          <Icon name="alert-triangle" />
+          <span>{t("safe-mode-banner")}</span>
+          <button type="button" onClick={() => restart(false)}>
+            {t("palette-cmd-restart-normal")}
+          </button>
+        </div>
+      </Show>
       <Show when={bench()}>
         <div class="status">{bench()}</div>
       </Show>
@@ -1927,6 +1986,7 @@ export function App() {
       </Show>
       <Show when={settingsOpen()}>
         <Settings
+          restart={restart}
           config={config()}
           host={host}
           panels={[
