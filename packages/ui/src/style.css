@@ -282,6 +282,33 @@ body,
   color: var(--ot-prompt-edge, var(--ot-term-ansi-4, #81a1c1));
 }
 
+/* A row standing in for folded output (docs/03 §6.3): covers the row's text; a click shows the
+   lines again. */
+.block-fold {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 0.6em 0 1.4em;
+  border: 0;
+  border-top: 1px dashed var(--ot-gutter, color-mix(in srgb, var(--fg) 25%, transparent));
+  background: var(--bg);
+  color: var(--muted);
+  font-family: var(--ot-prompt-font, system-ui, sans-serif);
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.block-fold:hover,
+.block-fold:focus-visible {
+  color: var(--fg);
+}
+
 /* The block gutter (docs/03 §6.3): a thin line at the left edge of every block; a failure is
    red, a running command pulses blue. Success stays neutral. */
 .block-gutter {

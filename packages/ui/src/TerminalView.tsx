@@ -6,7 +6,7 @@ import type { UiConfig } from "./config";
 import { t } from "./i18n";
 import { isCopyShortcut, isSearchShortcut, platform, scrollKey, terminalKey, zoomKey } from "./keys";
 import { PromptBar, type PromptProps } from "./PromptBar";
-import { decodeInfo, duration, type HeaderRow, PromptHeaders } from "./PromptHeaders";
+import { decodeInfo, duration, type FoldRow, type HeaderRow, PromptHeaders } from "./PromptHeaders";
 import { attachPointer } from "./pointer";
 import { SearchBar } from "./SearchBar";
 import { CanvasRenderer } from "./screen/canvasRenderer";
@@ -82,10 +82,11 @@ export function TerminalView(props: TerminalViewProps) {
   /** Block heads in view (docs/03 §6.3), the block row 0 is in, and the row height to place them. */
   const [headers, setHeaders] = createSignal<{
     rows: HeaderRow[];
+    folds: FoldRow[];
     lineHeight: number;
     topBlock: number;
     lastRow: number;
-  }>({ rows: [], lineHeight: 0, topBlock: 0, lastRow: 0 });
+  }>({ rows: [], folds: [], lineHeight: 0, topBlock: 0, lastRow: 0 });
   let lastBell = 0;
   /** The user chose "always allow" for OSC 52 in this pane. */
   let osc52Allowed = false;
@@ -375,9 +376,11 @@ export function TerminalView(props: TerminalViewProps) {
 
   const updateHeaders = () => {
     const rows: HeaderRow[] = [];
+    const folds: FoldRow[] = [];
     for (let row = 0; row < model.rows; row++) {
-      const block = model.lines[row]?.block;
-      if (block) rows.push({ row, block });
+      const line = model.lines[row];
+      if (line?.block) rows.push({ row, block: line.block });
+      if (line?.folded) folds.push({ row, line: line.line, count: line.folded });
     }
     const lineHeight = renderer?.lineHeightCss ?? 0;
     // Scrolled up, the view shows history only, which the blocks fill to the bottom.
@@ -387,6 +390,8 @@ export function TerminalView(props: TerminalViewProps) {
       old.lineHeight === lineHeight &&
       old.topBlock === model.topBlock &&
       old.lastRow === lastRow &&
+      old.folds.length === folds.length &&
+      folds.every((f, i) => old.folds[i]?.row === f.row && old.folds[i]?.count === f.count) &&
       old.rows.length === rows.length &&
       rows.every((h, i) => {
         const o = old.rows[i];
@@ -397,7 +402,7 @@ export function TerminalView(props: TerminalViewProps) {
           o.block.done?.exit === h.block.done?.exit
         );
       });
-    if (!same) setHeaders({ rows, lineHeight, topBlock: model.topBlock, lastRow });
+    if (!same) setHeaders({ rows, folds, lineHeight, topBlock: model.topBlock, lastRow });
   };
 
   /** The block (docs/03 §6.3) as Markdown: command and output in code blocks, the rest as a line. */
@@ -432,17 +437,29 @@ export function TerminalView(props: TerminalViewProps) {
 
   /** Menu items for the block under the pointer, if the shell integration made one there. */
   const blockItems = async (row: number): Promise<MenuItem[]> => {
-    if (!session || model.altScreen) return [];
-    const b = await session.block(model.topLine + row).catch(() => null);
+    const line = model.lineAt(row);
+    if (!session || model.altScreen || line < 0) return [];
+    const b = await session.block(line).catch(() => null);
     if (!b || b.command === null) return [];
     const command = b.command;
     const short = command.length > 40 ? `${command.slice(0, 40)}…` : command;
+    const selectBlock = () => {
+      selection.start({ line: b.line, col: 0 }, "line");
+      selection.extend({ line: b.end, col: 0 });
+      renderer?.invalidate();
+    };
     return [
       {
         label: t("menu-rerun", { command: short }),
         disabled: b.running,
         action: () => void session?.write(`${command}\r`),
       },
+      {
+        label: t(b.folded ? "menu-unfold" : "menu-fold"),
+        disabled: !b.foldable,
+        action: () => void session?.blockFold(b.line, !b.folded),
+      },
+      { label: t("menu-select-block"), action: selectBlock },
       { label: t("menu-copy-command"), action: () => void clipboard.write(command) },
       { label: t("menu-copy-output"), disabled: !b.output, action: () => void clipboard.write(b.output) },
       { label: t("menu-save-output"), disabled: !b.output, action: () => void saveOutput(b) },
@@ -472,8 +489,8 @@ export function TerminalView(props: TerminalViewProps) {
       if (markers().length > 0) setMarkers([]);
       return;
     }
-    const first = model.topLine - (model.scrollback - model.offset);
-    const total = model.scrollback + model.rows;
+    const first = model.firstLine;
+    const total = model.lastLine - first + 1;
     // One marker per half percent of the track is as fine as the eye can tell.
     const at = new Set(highlights.matches.map((m) => Math.round(((m[0] - first) / total) * 200) / 200));
     setMarkers([...at].filter((f) => f >= 0 && f <= 1));
@@ -643,10 +660,8 @@ export function TerminalView(props: TerminalViewProps) {
 
   /** Select every line: the scrollback and the screen. */
   const selectAll = () => {
-    const first = model.topLine - (model.scrollback - model.offset);
-    const last = model.topLine + model.offset + model.rows - 1;
-    selection.start({ line: first, col: 0 }, "line");
-    selection.extend({ line: last, col: 0 });
+    selection.start({ line: model.firstLine, col: 0 }, "line");
+    selection.extend({ line: model.lastLine, col: 0 });
     renderer?.invalidate();
   };
 
@@ -829,6 +844,8 @@ export function TerminalView(props: TerminalViewProps) {
           topBlock={headers().topBlock}
           viewRows={model.rows}
           lastRow={headers().lastRow}
+          folds={headers().folds}
+          onUnfold={(line) => void session?.blockFold(line, false)}
         />
         <textarea
           ref={input}

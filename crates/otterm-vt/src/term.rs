@@ -146,8 +146,9 @@ pub enum Event {
     BlockStart {
         command: String,
     },
-    /// That command ended with this exit code after `ms` (OSC 133 D).
+    /// That command ended with this exit code after `ms` (OSC 133 D). `line` is its block head.
     BlockEnd {
+        line: u64,
         exit: i32,
         ms: u32,
     },
@@ -733,6 +734,10 @@ impl Terminal {
             return;
         }
         let Some(at) = self.find_head(self.cursor.row) else { return };
+        let line = match at {
+            HeadAt::Screen(r) => self.screen_top() + r as u64,
+            HeadAt::History(i) => self.history_base + i as u64,
+        };
         let h = self.head_mut(at);
         let ran = h.state == BlockState::Running;
         if matches!(h.state, BlockState::Done { .. }) || (!ran && exit.is_none()) {
@@ -742,7 +747,7 @@ impl Terminal {
         let ms = ms.or(measured).unwrap_or(0);
         let exit = exit.unwrap_or(0);
         h.state = BlockState::Done { exit, ms };
-        self.events.push(Event::BlockEnd { exit, ms });
+        self.events.push(Event::BlockEnd { line, exit, ms });
         self.touch_head(at);
     }
 

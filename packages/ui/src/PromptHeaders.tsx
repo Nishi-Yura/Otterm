@@ -1,5 +1,13 @@
 import { For, Show } from "solid-js";
+import { t } from "./i18n";
 import type { RowBlock } from "./screen/protocol";
+
+/** A row standing in for folded lines (docs/03 §6.3). */
+export interface FoldRow {
+  row: number;
+  line: number;
+  count: number;
+}
 
 /** A block head in view: the screen row it is on and what the shell reported. */
 export interface HeaderRow {
@@ -106,9 +114,28 @@ export function PromptHeaders(props: {
   viewRows: number;
   /** The last row the last block covers: the cursor row on the live screen, else the bottom. */
   lastRow: number;
+  folds: FoldRow[];
+  /** The user clicked a fold: show its lines again. */
+  onUnfold: (line: number) => void;
 }) {
   return (
-    <div class="prompt-headers" aria-hidden="true">
+    <div class="prompt-headers">
+      <For each={props.folds}>
+        {(f) => (
+          <button
+            type="button"
+            class="block-fold"
+            style={{
+              top: `${f.row * props.lineHeight}px`,
+              height: `${props.lineHeight}px`,
+              "font-size": `${props.fontSize * 0.9}px`,
+            }}
+            onClick={() => props.onUnfold(f.line)}
+          >
+            {t("block-folded", { n: f.count })}
+          </button>
+        )}
+      </For>
       <For each={segments(props.rows, props.topBlock, props.viewRows, props.lastRow)}>
         {(s) => (
           <div

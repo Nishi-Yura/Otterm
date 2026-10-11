@@ -159,7 +159,7 @@ export class CanvasRenderer implements Renderer {
 
     ctx.fillStyle = theme.background;
     ctx.fillRect(0, y, this.model.cols * cw, ch);
-    const lineNo = this.model.topLine + row;
+    const lineNo = this.model.lineAt(row);
     const selected = this.selection?.colsOn(this.model, lineNo);
     const found = this.highlights?.colsOn(lineNo, this.model.cols) ?? [];
     const findColors = searchColors(theme.background);

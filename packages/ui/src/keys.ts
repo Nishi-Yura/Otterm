@@ -65,7 +65,9 @@ export type AppAction =
   | { kind: "fullscreen" }
   | { kind: "settings" }
   /** Scroll to the previous (-1) or next (1) block (docs/03 §6.3). */
-  | { kind: "blockJump"; dir: -1 | 1 };
+  | { kind: "blockJump"; dir: -1 | 1 }
+  /** Fold or show the output of the newest finished block. */
+  | { kind: "blockFold" };
 
 /** Font size keys (docs/06 §5.2): Ctrl (Cmd on macOS) with `=` / `+` bigger, `-` smaller, `0` reset. */
 export function zoomKey(e: KeyboardEvent): 1 | -1 | 0 | undefined {

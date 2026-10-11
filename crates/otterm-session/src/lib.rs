@@ -15,7 +15,7 @@ use std::time::{Duration, Instant};
 use anyhow::{Result, anyhow};
 use otterm_pty::{Pty, Spawned};
 pub use otterm_pty::{PtySize, SpawnOptions, default_shell};
-use otterm_vt::diff::FrameState;
+use otterm_vt::diff::{FrameState, View};
 pub use otterm_vt::search::{Match, SearchOptions};
 pub use otterm_vt::{BlockState, CursorShape, Key, Mouse, MouseAction, MouseButton};
 use otterm_vt::{Event, Terminal};
@@ -65,12 +65,42 @@ pub enum SessionEvent {
 pub struct BlockText {
     /// Line number of the head row.
     pub line: u64,
+    /// Line number of its last row.
+    pub end: u64,
     pub command: Option<String>,
     pub state: BlockState,
     /// The prompt bar's info (base64 JSON), empty when the shell printed its own prompt.
     pub info: String,
     /// The command's output so far, without trailing blank lines.
     pub output: String,
+    /// The output has enough rows to fold (two or more).
+    pub foldable: bool,
+    /// Some of its output is folded away.
+    pub folded: bool,
+}
+
+/// Lines of a block hidden from the view (docs/03 §6.3). The row before `start` stands in for
+/// them and shows how many there are.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Fold {
+    /// Line of the block head the fold belongs to.
+    pub head: u64,
+    /// First and last hidden line, inclusive.
+    pub start: u64,
+    pub end: u64,
+}
+
+/// Which lines a session shows: see [`Session::view`].
+struct ViewData {
+    /// The line of each row (`u64::MAX` for blank rows below the last line).
+    lines: Vec<u64>,
+    /// Every line that is not folded away, oldest first; empty when nothing is folded (then
+    /// visible line `i` is `history_base + i`).
+    visible: Vec<u64>,
+    /// Lines above the live view; the index of the live view's first line in `visible`.
+    scrollback: usize,
+    offset: usize,
+    folds: Vec<(u64, u32)>,
 }
 
 /// Settings for each new session's terminal.
@@ -87,6 +117,9 @@ pub struct TerminalOptions {
     pub kitty_keyboard: bool,
     /// On the alternate screen the wheel sends arrow keys (decision I5).
     pub wheel_arrows: bool,
+    /// Output longer than this many rows is folded in the middle when its command ends (docs/03
+    /// §6.3); 0 turns that off.
+    pub fold_lines: usize,
 }
 
 impl Default for TerminalOptions {
@@ -98,6 +131,7 @@ impl Default for TerminalOptions {
             cursor_blink: true,
             kitty_keyboard: true,
             wheel_arrows: true,
+            fold_lines: 200,
         }
     }
 }
@@ -137,6 +171,10 @@ pub trait SessionManager: Send + Sync {
     /// Scroll so that the previous (`dir < 0`) or next block head is at the top of the view.
     /// `false` when there is none that way, or it is in view already.
     fn block_jump(&self, id: SessionId, dir: i32) -> Result<bool>;
+    /// Fold (`Some(true)`), show (`Some(false)`) or toggle (`None`) the output of the block
+    /// holding `line`, or of the newest finished block when `line` is `None`. Returns whether the
+    /// block is folded afterwards; `None` when there is no such block or nothing to fold.
+    fn block_fold(&self, id: SessionId, line: Option<u64>, fold: Option<bool>) -> Result<Option<bool>>;
     /// Drop the scrollback.
     fn clear_scrollback(&self, id: SessionId) -> Result<()>;
     /// The pane gained or lost the keyboard; reported to the application when it asked (1004).
@@ -165,22 +203,124 @@ struct Session {
     /// Line number of the top of the view while it is scrolled up; `None` follows the output.
     /// Holding a line number rather than an offset keeps the view still while output arrives.
     view_top: Mutex<Option<u64>>,
+    /// Folded block output (docs/03 §6.3), ascending by line, never overlapping.
+    folds: Mutex<Vec<Fold>>,
+    /// `TerminalOptions::fold_lines` when the session started.
+    fold_lines: usize,
     frame: FrameSignal,
     /// The shell's process id.
     pid: Option<u32>,
 }
 
 impl Session {
-    /// How far the view is scrolled up from the bottom, in lines.
-    fn view_offset(&self, term: &Terminal) -> usize {
+    /// The lines the view shows now: the scroll position applied to the lines that are not
+    /// folded away. Folds that fell out of the scrollback are dropped here.
+    fn view(&self, term: &Terminal) -> ViewData {
+        let rows = term.rows();
+        let base = term.history_base();
+        let screen_top = term.screen_top();
+        let mut folds = self.folds.lock().unwrap();
+        folds.retain(|f| f.end >= base);
         let mut top = self.view_top.lock().unwrap();
-        let Some(t) = *top else { return 0 };
-        let t = t.max(term.history_base());
-        let offset = term.screen_top().saturating_sub(t) as usize;
-        if offset == 0 {
-            *top = None;
+        if folds.is_empty() || term.modes().alt_screen {
+            let scrollback = term.scrollback().len();
+            let mut offset = 0;
+            if let Some(t) = *top {
+                offset = screen_top.saturating_sub(t.max(base)) as usize;
+                if offset == 0 {
+                    *top = None;
+                }
+            }
+            let first = screen_top - offset as u64;
+            let lines = (first..first + rows as u64).collect();
+            return ViewData { lines, visible: Vec::new(), scrollback, offset, folds: Vec::new() };
         }
-        offset
+        let last = screen_top + rows as u64 - 1;
+        let mut visible: Vec<u64> = Vec::with_capacity((last - base + 1) as usize);
+        let mut stand_ins: Vec<(u64, u32)> = Vec::new();
+        let mut line = base;
+        for f in folds.iter() {
+            let (start, end) = (f.start.max(base), f.end.min(last));
+            if start > end || start <= line {
+                continue;
+            }
+            visible.extend(line..start);
+            stand_ins.push((start - 1, (end - start + 1) as u32));
+            line = end + 1;
+        }
+        visible.extend(line..=last);
+        let total = visible.len();
+        let bottom = total.saturating_sub(rows);
+        let index = match *top {
+            Some(t) => {
+                let i = visible.partition_point(|&l| l < t).min(bottom);
+                if i == bottom {
+                    *top = None;
+                }
+                i
+            }
+            None => bottom,
+        };
+        let mut lines: Vec<u64> = visible[index..(index + rows).min(total)].to_vec();
+        lines.resize(rows, u64::MAX);
+        let in_view = stand_ins.into_iter().filter(|(l, _)| lines.contains(l)).collect();
+        ViewData { lines, visible, scrollback: bottom, offset: bottom - index, folds: in_view }
+    }
+
+    /// Scroll so that the view starts at visible line `index` (of `view`); the bottom follows
+    /// the output again.
+    fn scroll_to_index(&self, view: &ViewData, term: &Terminal, index: usize) {
+        let index = index.min(view.scrollback);
+        let line = if view.visible.is_empty() { term.history_base() + index as u64 } else { view.visible[index] };
+        *self.view_top.lock().unwrap() = (index < view.scrollback).then_some(line);
+        self.frame.notify(false);
+    }
+
+    /// Where `line` is among the visible lines of `view`, or where it would be.
+    fn index_of(view: &ViewData, term: &Terminal, line: u64) -> usize {
+        if view.visible.is_empty() {
+            line.saturating_sub(term.history_base()) as usize
+        } else {
+            view.visible.partition_point(|&l| l < line)
+        }
+    }
+
+    /// The output rows of the block at `range`: its first line and its last non-blank line.
+    fn output_rows(term: &Terminal, range: &otterm_vt::BlockRange) -> Option<(u64, u64)> {
+        let head = range.head;
+        if matches!(head.state, BlockState::Prompt | BlockState::Input) {
+            return None;
+        }
+        let from = head.output_line.unwrap_or(range.line + if head.has_bar() { 2 } else { 1 });
+        let mut end = range.end;
+        while end > from && term.line(end).is_none_or(|r| r.text().is_empty()) {
+            end -= 1;
+        }
+        (from <= end).then_some((from, end))
+    }
+
+    /// Fold the middle of a block's output when it is longer than `fold_lines` rows.
+    fn fold_long_output(&self, head: u64) {
+        if self.fold_lines == 0 {
+            return;
+        }
+        let term = self.term.lock().unwrap();
+        let Some(range) = term.block_at(head) else { return };
+        let Some((from, end)) = Self::output_rows(&term, &range) else { return };
+        let rows = (end - from + 1) as usize;
+        if rows <= self.fold_lines {
+            return;
+        }
+        // Keep half the limit at each end, so what is shown still reads as the start and the end.
+        let keep = (self.fold_lines / 2).max(1) as u64;
+        let fold = Fold { head: range.line, start: from + keep, end: end - keep };
+        if fold.start > fold.end {
+            return;
+        }
+        let mut folds = self.folds.lock().unwrap();
+        folds.retain(|f| f.head != fold.head);
+        folds.push(fold);
+        folds.sort_by_key(|f| f.start);
     }
 
     /// Go back to the live screen, e.g. when the user types.
@@ -304,6 +444,8 @@ impl SessionManager for LocalSessionManager {
             pty: Mutex::new(Some(pty)),
             term: Mutex::new(term),
             view_top: Mutex::new(None),
+            folds: Mutex::new(Vec::new()),
+            fold_lines: options.fold_lines,
             frame: FrameSignal::default(),
             pid: child.pid(),
         });
@@ -413,12 +555,9 @@ impl SessionManager for LocalSessionManager {
             let bytes = otterm_vt::encode_key(&key, &modes).expect("arrow keys have an encoding");
             return session.with_pty(|p| p.write(&bytes.repeat(lines.unsigned_abs().min(100) as usize)));
         }
-        let offset = session.view_offset(&term) as i64;
-        let target = (offset + lines as i64).clamp(0, term.scrollback().len() as i64) as u64;
-        let top = term.screen_top() - target;
-        drop(term);
-        *session.view_top.lock().unwrap() = (target > 0).then_some(top);
-        session.frame.notify(false);
+        let view = session.view(&term);
+        let index = (view.scrollback - view.offset) as i64 - lines as i64;
+        session.scroll_to_index(&view, &term, index.clamp(0, view.scrollback as i64) as usize);
         Ok(())
     }
 
@@ -448,17 +587,16 @@ impl SessionManager for LocalSessionManager {
     fn reveal(&self, id: SessionId, line: u64) -> Result<()> {
         let session = self.get(id)?;
         let term = session.term.lock().unwrap();
-        let rows = term.rows() as u64;
-        let offset = session.view_offset(&term) as u64;
-        let top = term.screen_top() - offset;
-        if (top..top + rows).contains(&line) {
+        // A line folded away (a search hit inside a fold) is shown again first.
+        session.folds.lock().unwrap().retain(|f| !(f.start..=f.end).contains(&line));
+        let view = session.view(&term);
+        if view.lines.contains(&line) {
+            session.frame.notify(false);
             return Ok(());
         }
         // Put the line a third of the way down, so some context above it shows too.
-        let wanted = line.saturating_sub(rows / 3).clamp(term.history_base(), term.screen_top());
-        drop(term);
-        *session.view_top.lock().unwrap() = Some(wanted);
-        session.frame.notify(false);
+        let index = Session::index_of(&view, &term, line).saturating_sub(term.rows() / 3);
+        session.scroll_to_index(&view, &term, index);
         Ok(())
     }
 
@@ -467,46 +605,82 @@ impl SessionManager for LocalSessionManager {
         let term = session.term.lock().unwrap();
         let Some(range) = term.block_at(line) else { return Ok(None) };
         let head = range.head;
-        // Without OSC 133 C the output starts after the prompt: the bar's row and the line typed
-        // under it, or the shell's own prompt line.
-        let from = head.output_line.unwrap_or(range.line + if head.has_bar() { 2 } else { 1 });
-        let ran = !matches!(head.state, BlockState::Prompt | BlockState::Input);
-        let output = if ran && from <= range.end {
-            let text = term.text_range((from, 0), (range.end, term.cols().saturating_sub(1)));
-            text.trim_end_matches(['\n', ' ']).to_owned()
-        } else {
-            String::new()
+        let rows = Session::output_rows(&term, &range);
+        let output = match rows {
+            Some((from, end)) => {
+                let text = term.text_range((from, 0), (end, term.cols().saturating_sub(1)));
+                text.trim_end_matches(['\n', ' ']).to_owned()
+            }
+            None => String::new(),
         };
+        let folded = session.folds.lock().unwrap().iter().any(|f| f.head == range.line);
         Ok(Some(BlockText {
             line: range.line,
+            end: range.end,
             command: head.command.as_deref().map(str::to_owned),
             state: head.state,
             info: head.info.to_string(),
             output,
+            foldable: rows.is_some_and(|(from, end)| end > from),
+            folded,
         }))
+    }
+
+    fn block_fold(&self, id: SessionId, line: Option<u64>, fold: Option<bool>) -> Result<Option<bool>> {
+        let session = self.get(id)?;
+        let term = session.term.lock().unwrap();
+        let cursor_line = term.screen_top() + term.cursor().row as u64;
+        let range = match line {
+            Some(l) => term.block_at(l),
+            // The newest finished block: the one at the cursor, or the one before it when the
+            // cursor's block is the prompt being typed at.
+            None => term.block_at(cursor_line).and_then(|r| {
+                if matches!(r.head.state, BlockState::Done { .. }) {
+                    Some(r)
+                } else {
+                    term.block_jump(r.line, -1).and_then(|l| term.block_at(l))
+                }
+            }),
+        };
+        let Some(range) = range else { return Ok(None) };
+        let Some((from, end)) = Session::output_rows(&term, &range) else { return Ok(None) };
+        if end <= from {
+            return Ok(None);
+        }
+        let mut folds = session.folds.lock().unwrap();
+        let was = folds.iter().any(|f| f.head == range.line);
+        let now = fold.unwrap_or(!was);
+        folds.retain(|f| f.head != range.line);
+        if now {
+            // The first output row stays as the stand-in; the rest is hidden.
+            folds.push(Fold { head: range.line, start: from + 1, end });
+            folds.sort_by_key(|f| f.start);
+        }
+        drop(folds);
+        drop(term);
+        session.frame.notify(false);
+        Ok(Some(now))
     }
 
     fn block_jump(&self, id: SessionId, dir: i32) -> Result<bool> {
         let session = self.get(id)?;
         let term = session.term.lock().unwrap();
-        let offset = session.view_offset(&term) as u64;
-        let screen_top = term.screen_top();
-        let top = screen_top - offset;
+        let view = session.view(&term);
+        let top = view.lines.first().copied().filter(|&l| l != u64::MAX).unwrap_or(term.screen_top());
         let Some(line) = term.block_jump(top, dir) else { return Ok(false) };
         // The view cannot go below the live screen: a head on it is in view already.
-        let wanted = line.clamp(term.history_base(), screen_top);
-        if wanted == top {
+        let index = Session::index_of(&view, &term, line).min(view.scrollback);
+        if index == view.scrollback - view.offset {
             return Ok(false);
         }
-        drop(term);
-        *session.view_top.lock().unwrap() = (wanted < screen_top).then_some(wanted);
-        session.frame.notify(false);
+        session.scroll_to_index(&view, &term, index);
         Ok(true)
     }
 
     fn clear_scrollback(&self, id: SessionId) -> Result<()> {
         let session = self.get(id)?;
         session.term.lock().unwrap().clear_scrollback();
+        session.folds.lock().unwrap().clear();
         *session.view_top.lock().unwrap() = None;
         session.frame.notify(false);
         Ok(())
@@ -594,7 +768,10 @@ fn apply_output(session: &Session, sink: &EventSink, bytes: &[u8]) {
             Event::Cwd(c) => SessionEvent::Cwd(c),
             Event::ClipboardWrite(d) => SessionEvent::ClipboardWrite(d),
             Event::BlockStart { command } => SessionEvent::BlockStart { command },
-            Event::BlockEnd { exit, ms } => SessionEvent::BlockEnd { exit, ms },
+            Event::BlockEnd { line, exit, ms } => {
+                session.fold_long_output(line);
+                SessionEvent::BlockEnd { exit, ms }
+            }
         });
     }
     session.frame.notify(false);
@@ -628,8 +805,10 @@ fn frame_loop(id: SessionId, session: &Session, sink: &EventSink) {
                 }
             }
             sync_since = None;
-            let offset = session.view_offset(&term);
-            otterm_vt::diff::encode_frame(&mut term, id as u32, offset, &mut last, &mut out);
+            let view = session.view(&term);
+            let spec =
+                View { lines: &view.lines, scrollback: view.scrollback, offset: view.offset, folds: &view.folds };
+            otterm_vt::diff::encode_frame(&mut term, id as u32, &spec, &mut last, &mut out);
         }
         if !out.is_empty() {
             last_gap = last_frame.elapsed();

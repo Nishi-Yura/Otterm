@@ -455,6 +455,12 @@ export function App() {
         void invoke("session_block_jump", { id, dir: action.dir }).catch(() => {});
         break;
       }
+      case "blockFold": {
+        const id = tab ? sessionOf.get(tab.active) : undefined;
+        if (id === undefined) return false;
+        void invoke("session_block_fold", { id, line: null, fold: null }).catch(() => {});
+        break;
+      }
     }
     return true;
   };

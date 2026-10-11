@@ -25,6 +25,7 @@ function defaults(): Bindings {
     // Blocks of the shell integration (docs/03 §6.3). Cmd+arrow is what Terminal.app uses for marks.
     "block.prev": [mac ? "cmd+arrowup" : "ctrl+arrowup"],
     "block.next": [mac ? "cmd+arrowdown" : "ctrl+arrowdown"],
+    "block.collapse": [mac ? "cmd+shift+[" : "ctrl+shift+["],
     // Opens config.toml until there is a settings screen.
     settings: [mac ? "cmd+," : "ctrl+,"],
   };
@@ -73,6 +74,8 @@ function action(id: string): AppAction | undefined {
       return { kind: "blockJump", dir: -1 };
     case "block.next":
       return { kind: "blockJump", dir: 1 };
+    case "block.collapse":
+      return { kind: "blockFold" };
     default:
       return undefined;
   }
@@ -115,15 +118,47 @@ export function parseChord(text: string): Chord | undefined {
   return chord;
 }
 
+/** Punctuation keys by their US-layout name: Shift changes `e.key` ("[" becomes "{"), not the code. */
+const PUNCTUATION: Record<string, string> = {
+  "[": "BracketLeft",
+  "]": "BracketRight",
+  ";": "Semicolon",
+  "'": "Quote",
+  ",": "Comma",
+  ".": "Period",
+  "/": "Slash",
+  "\\": "Backslash",
+  "`": "Backquote",
+  "-": "Minus",
+  "=": "Equal",
+};
+
+/** What Shift makes of a punctuation key on US and JIS layouts alike, for chords like ctrl+shift+[. */
+const SHIFTED: Record<string, string> = {
+  "[": "{",
+  "]": "}",
+  ";": ":",
+  "'": '"',
+  ",": "<",
+  ".": ">",
+  "/": "?",
+  "`": "~",
+  "-": "_",
+  "=": "+",
+  "\\": "|",
+};
+
 function matches(c: Chord, e: KeyboardEvent): boolean {
   if (c.ctrl !== e.ctrlKey || c.shift !== e.shiftKey || c.alt !== e.altKey || c.meta !== e.metaKey) return false;
   const key = e.key.toLowerCase();
   if (key === c.key) return true;
+  if (e.shiftKey && c.key in SHIFTED && e.key === SHIFTED[c.key]) return true;
   // A letter or digit key means what it says (Dvorak's "k" is not "t").
   if (/^[a-z0-9]$/.test(key)) return false;
   // Otherwise (Shift+digit gives a symbol, non-Latin layouts give other letters) go by position.
   if (/^[a-z]$/.test(c.key)) return e.code === `Key${c.key.toUpperCase()}`;
   if (/^[0-9]$/.test(c.key)) return e.code === `Digit${c.key}`;
+  if (c.key in PUNCTUATION) return e.code === PUNCTUATION[c.key];
   return false;
 }
 

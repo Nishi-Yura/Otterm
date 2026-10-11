@@ -384,6 +384,8 @@ pub struct Terminal {
     pub wheel_to_arrows_in_alt_screen: bool,
     /// Enable the Kitty keyboard protocol when an application requests it (decision I3).
     pub kitty_keyboard: bool,
+    /// Fold the middle of a command's output when it is longer than this many rows (docs/03 §6.3). 0 = never.
+    pub fold_lines: u32,
 }
 
 impl Default for Terminal {
@@ -404,6 +406,7 @@ impl Default for Terminal {
             right_click: Auto::default(),
             wheel_to_arrows_in_alt_screen: true,
             kitty_keyboard: true,
+            fold_lines: 200,
         }
     }
 }

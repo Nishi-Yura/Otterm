@@ -470,7 +470,7 @@ export class WebGLRenderer implements Renderer {
       return;
     }
     const y = row * ch;
-    const lineNo = this.model.topLine + row;
+    const lineNo = this.model.lineAt(row);
     const selected = this.selection?.colsOn(this.model, lineNo);
     const found = this.highlights?.colsOn(lineNo, cols) ?? [];
     const findColors = searchColors(theme.background);

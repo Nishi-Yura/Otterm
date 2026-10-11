@@ -16,8 +16,9 @@ export type SessionEvent =
 
 /** A block of the shell integration (docs/03 §6.3), as `session_block` returns it. */
 export interface Block {
-  /** Line number of its head row. */
+  /** Line numbers of its head row and its last row. */
   line: number;
+  end: number;
   command: string | null;
   running: boolean;
   exit: number | null;
@@ -25,6 +26,9 @@ export interface Block {
   /** The prompt bar's base64 JSON (cwd, home, branch); empty without a bar. */
   info: string;
   output: string;
+  /** The output has rows to fold; some of them are folded now. */
+  foldable: boolean;
+  folded: boolean;
 }
 
 export interface Session {
@@ -50,6 +54,11 @@ export interface Session {
   block(line: number): Promise<Block | null>;
   /** Scroll to the previous (-1) or next (1) block head; false when there is none that way. */
   blockJump(dir: -1 | 1): Promise<boolean>;
+  /**
+   * Fold or show (`fold`; null toggles) the output of the block holding `line`, or of the newest
+   * finished block when `line` is null. Resolves to the state afterwards, null if nothing to fold.
+   */
+  blockFold(line: number | null, fold: boolean | null): Promise<boolean | null>;
   clearScrollback(): Promise<void>;
   /** The pane gained or lost the keyboard (sent to the program if it asked, mode 1004). */
   focus(focused: boolean): Promise<void>;
@@ -117,6 +126,7 @@ export async function createSession(
     reveal: (line) => invoke("session_reveal", { id, line }),
     block: (line) => invoke<Block | null>("session_block", { id, line }),
     blockJump: (dir) => invoke<boolean>("session_block_jump", { id, dir }),
+    blockFold: (line, fold) => invoke<boolean | null>("session_block_fold", { id, line, fold }),
     clearScrollback: () => invoke("session_clear_scrollback", { id }),
     focus: (focused) => invoke("session_focus", { id, focused }),
     resetModes: () => invoke("session_reset_modes", { id }),

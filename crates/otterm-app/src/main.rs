@@ -65,8 +65,9 @@ enum UiEvent {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct BlockInfo {
-    /// Line number of its head row.
+    /// Line numbers of its head row and its last row.
     line: u64,
+    end: u64,
     command: Option<String>,
     /// The command runs (its output is still coming).
     running: bool,
@@ -76,6 +77,9 @@ struct BlockInfo {
     /// The prompt bar's base64 JSON (cwd, home, branch); empty without a bar.
     info: String,
     output: String,
+    /// The output has rows to fold; some of them are folded now.
+    foldable: bool,
+    folded: bool,
 }
 
 #[derive(Serialize)]
@@ -349,14 +353,29 @@ fn session_block(state: State<'_, AppState>, id: SessionId, line: u64) -> CmdRes
         };
         BlockInfo {
             line: b.line,
+            end: b.end,
             command: b.command,
             running: b.state == BlockState::Running,
             exit,
             ms,
             info: b.info,
             output: b.output,
+            foldable: b.foldable,
+            folded: b.folded,
         }
     }))
+}
+
+/// Fold, show (`fold`) or toggle (`None`) the output of the block holding `line`, or of the
+/// newest finished block when `line` is `None`. Returns whether it is folded now.
+#[tauri::command]
+fn session_block_fold(
+    state: State<'_, AppState>,
+    id: SessionId,
+    line: Option<u64>,
+    fold: Option<bool>,
+) -> CmdResult<Option<bool>> {
+    state.sessions.block_fold(id, line, fold).map_err(err)
 }
 
 /// Scroll to the previous (`dir < 0`) or next block head. `false` when there is none that way.
@@ -758,6 +777,7 @@ fn main() {
             session_reveal,
             session_block,
             session_block_jump,
+            session_block_fold,
             block_save,
             session_clear_scrollback,
             session_reset_modes,
@@ -821,6 +841,7 @@ fn main() {
             session_reveal,
             session_block,
             session_block_jump,
+            session_block_fold,
             block_save,
             session_clear_scrollback,
             session_reset_modes,

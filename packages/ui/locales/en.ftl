@@ -307,6 +307,10 @@ menu-copy-command = Copy command
 menu-copy-output = Copy output
 menu-save-output = Save output
 menu-copy-markdown = Copy as Markdown
+menu-fold = Fold output
+menu-unfold = Unfold output
+menu-select-block = Select block
+block-folded = { $n } lines folded (click to show)
 block-saved = Saved to { $path }
 block-running = running
 

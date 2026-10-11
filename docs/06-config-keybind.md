@@ -67,6 +67,7 @@ ambiguous_width = "narrow"          # narrow | wide
 osc52_clipboard = "ask"             # allow | deny | ask
 images = true
 close_behavior = "close"            # close | keep | restart
+fold_lines = 200                    # これより長い出力は中央を折りたたむ（docs/03 §6.3）。0 で無効
 
 [shell]
 default_profile = "pwsh"

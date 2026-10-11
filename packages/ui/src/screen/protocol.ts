@@ -44,8 +44,12 @@ export interface RowBlock {
 
 export interface FrameRow {
   index: number;
+  /** Line number of the row; -1 for a blank row below the last line in view. */
+  line: number;
   wrapped: boolean;
   block?: RowBlock;
+  /** Lines folded away after this row (docs/03 §6.3); the row stands in for them. */
+  folded?: number;
   /** Code points of the cells that were sent; cells beyond are blank. */
   codepoints: Uint32Array;
   attrs: Attr[];
@@ -77,6 +81,9 @@ export interface Frame {
   offset: number;
   /** The block row 0 is in: 0 none, 1 at its prompt, 2 running, 3 ended with 0, 4 failed. */
   topBlock: number;
+  /** The oldest line kept and the last line (the bottom of the live screen). */
+  firstLine: number;
+  lastLine: number;
   lines: FrameRow[];
   /** Targets of the OSC 8 hyperlinks used in this frame, by id. */
   links: Map<number, string>;
@@ -112,6 +119,10 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
   const scrollback = u32();
   const offset = u32();
   const topBlock = u8();
+  const firstLine = Number(v.getBigUint64(p, true));
+  p += 8;
+  const lastLine = Number(v.getBigUint64(p, true));
+  p += 8;
 
   const table: Attr[] = [];
   for (let n = u16(); n > 0; n--) {
@@ -121,6 +132,9 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
   const lines: FrameRow[] = [];
   for (let n = u16(); n > 0; n--) {
     const index = u16();
+    const lineNo = v.getBigUint64(p, true);
+    p += 8;
+    const line = lineNo === 0xffffffffffffffffn ? -1 : Number(lineNo);
     const rowFlags = u8();
     const wrapped = (rowFlags & 1) !== 0;
     const count = u16();
@@ -153,7 +167,8 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
         block.done = { exit, ms: u32() };
       }
     }
-    lines.push({ index, wrapped, block, codepoints, attrs, extras });
+    const folded = rowFlags & 4 ? u32() : undefined;
+    lines.push({ index, line, wrapped, block, folded, codepoints, attrs, extras });
   }
 
   const links = new Map<number, string>();
@@ -180,6 +195,8 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
     scrollback,
     offset,
     topBlock,
+    firstLine,
+    lastLine,
     lines,
     links,
   };

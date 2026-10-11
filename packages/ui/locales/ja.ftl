@@ -307,6 +307,10 @@ menu-copy-command = コマンドをコピー
 menu-copy-output = 出力をコピー
 menu-save-output = 出力を保存
 menu-copy-markdown = Markdown としてコピー
+menu-fold = 出力を折りたたむ
+menu-unfold = 出力を展開
+menu-select-block = ブロックを選択
+block-folded = { $n } 行を折りたたみ（クリックで展開）
 block-saved = { $path } に保存しました
 block-running = 実行中
 

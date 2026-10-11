@@ -3,11 +3,15 @@ import type { Attr, Frame, RowBlock } from "./protocol";
 export const DEFAULT_ATTR: Attr = Object.freeze({ fg: 0, bg: 0, underline: 0, flags: 0, link: 0 });
 
 export interface Line {
+  /** Line number, or -1 for a blank row below the last line in view. */
+  line: number;
   codepoints: Uint32Array;
   attrs: Attr[];
   extras: Map<number, string>;
   wrapped: boolean;
   block?: RowBlock;
+  /** Lines folded away after this row; it stands in for them (docs/03 §6.3). */
+  folded?: number;
 }
 
 /** The UI's copy of one session's screen, kept up to date by applying frames. */
@@ -29,6 +33,9 @@ export class ScreenModel {
   offset = 0;
   /** The block row 0 is in (see Frame.topBlock). */
   topBlock = 0;
+  /** The oldest line kept and the last line of the live screen. */
+  firstLine = 0;
+  lastLine = 0;
   /** OSC 8 hyperlink targets seen so far, by id (ids are stable for the session). */
   readonly links = new Map<number, string>();
   /** Rows changed since the renderer last drew. */
@@ -53,6 +60,8 @@ export class ScreenModel {
       line.extras = row.extras;
       line.wrapped = row.wrapped;
       line.block = row.block;
+      line.line = row.line;
+      line.folded = row.folded;
       this.lines[row.index] = line;
       this.dirty.add(row.index);
     }
@@ -68,14 +77,20 @@ export class ScreenModel {
     this.scrollback = f.scrollback;
     this.offset = f.offset;
     this.topBlock = f.topBlock;
+    this.firstLine = f.firstLine;
+    this.lastLine = f.lastLine;
     for (const [id, uri] of f.links) this.links.set(id, uri);
     this.dirty.add(this.cursorRow);
   }
 
-  /** Row of a line number in the view, or -1 when it is not visible. */
+  /** Line number of a row, or -1 for a blank row below the last line in view. */
+  lineAt(row: number): number {
+    return this.lines[row]?.line ?? -1;
+  }
+
+  /** Row of a line number in the view, or -1 when it is not visible (scrolled away or folded). */
   rowOf(line: number): number {
-    const row = line - this.topLine;
-    return row >= 0 && row < this.rows ? row : -1;
+    return this.lines.findIndex((l) => l.line === line);
   }
 
   /** Visible text of one row (for tests and copy). */
@@ -94,6 +109,7 @@ export class ScreenModel {
 
 function blankLine(cols: number): Line {
   return {
+    line: -1,
     codepoints: new Uint32Array(cols).fill(32),
     attrs: new Array<Attr>(cols).fill(DEFAULT_ATTR),
     extras: new Map(),

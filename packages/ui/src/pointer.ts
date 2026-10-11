@@ -79,7 +79,9 @@ export function attachPointer(h: PointerHost): () => void {
     }
     if (e.button !== 0) return;
     const { row, col } = cellOf(e);
-    const at = { line: model.topLine + row, col };
+    const line = model.lineAt(row);
+    if (line < 0) return;
+    const at = { line, col };
     const mode: SelectionMode = e.detail >= 3 ? "line" : e.detail === 2 ? "word" : e.altKey ? "block" : "char";
     if (e.shiftKey && selection.active && mode === "char") selection.extend(at);
     else selection.start(at, mode);
@@ -112,7 +114,9 @@ export function attachPointer(h: PointerHost): () => void {
       void h.session()?.scroll(edge);
     }
     const { row, col } = cellOf(e);
-    selection.extend({ line: model.topLine + row, col });
+    const line = model.lineAt(row);
+    if (line < 0) return;
+    selection.extend({ line, col });
     renderer.invalidate();
   };
 

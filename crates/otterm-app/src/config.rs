@@ -239,6 +239,7 @@ pub fn terminal_options(c: &Config) -> otterm_session::TerminalOptions {
         cursor_blink: c.terminal.cursor.blink,
         kitty_keyboard: c.terminal.kitty_keyboard,
         wheel_arrows: c.terminal.wheel_to_arrows_in_alt_screen,
+        fold_lines: c.terminal.fold_lines as usize,
     }
 }
 
