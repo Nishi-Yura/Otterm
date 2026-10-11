@@ -444,7 +444,8 @@ impl ConfigState {
                     || !ws.config.mods.is_empty()
                     || !ws.overrides.is_empty()
                     || !ws.config.settings.is_empty()
-                    || ws.config.outfit.is_some(),
+                    || ws.config.outfit.is_some()
+                    || has_workspace_mods(&ws.file),
                 tabs: ws.config.tabs.len(),
             }),
             config_path: self.path.as_ref().map(|p| p.display().to_string()),
@@ -527,6 +528,15 @@ fn read(path: Option<&PathBuf>, start: Option<&std::path::Path>) -> Loaded {
     let user_css = dir.and_then(|d| std::fs::read_to_string(d.join("user.css")).ok()).unwrap_or_default();
     let modified = newest_change(path).max(workspace.as_ref().and_then(|(ws, _)| mtime(&ws.file)));
     Loaded { config, file_config, themes, layouts, user_css, warnings, workspace, modified }
+}
+
+/// Whether `.otterm/mods/` next to the workspace file holds a mod: the workspace then asks for
+/// trust like one with settings, since its mods are offered only once it is trusted (docs/05 §4).
+fn has_workspace_mods(workspace_file: &std::path::Path) -> bool {
+    let Some(dir) = workspace_file.parent().map(|d| d.join("mods")) else { return false };
+    std::fs::read_dir(dir)
+        .map(|entries| entries.flatten().any(|e| e.path().join("otmod.toml").is_file()))
+        .unwrap_or(false)
 }
 
 /// The workspace above `start`, applied to `config` as far as its trust allows (K4): untrusted,

@@ -376,7 +376,12 @@ export interface SparklineNode extends BaseNode {
 
 /**
  * Sandboxed iframe. HTML/CSS only; scripts are blocked by CSP (decision D7).
- * Assets from the mod directory are addressable as `otmod:///assets/...`.
+ *
+ * Assets: reference files in the mod's own folder with the `otmod:` scheme, for example
+ * `<img src="otmod:images/logo.png">` or `background: url(otmod:images/bg.webp)`. The loadable
+ * types are png, jpg, jpeg, gif, webp, svg, avif, ico (images), css, woff, woff2, ttf, otf (fonts),
+ * and mp3, ogg, wav, m4a (audio). Paths outside the mod folder (`..`), other file types and
+ * external URLs do not load.
  */
 export interface CustomNode extends BaseNode {
   type: "custom";

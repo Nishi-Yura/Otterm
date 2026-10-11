@@ -11,6 +11,7 @@ import { createEffect, createMemo, createSignal, For, Match, Show, Switch } from
 import { Dynamic } from "solid-js/web";
 import { t } from "../i18n";
 import { Icon as SvgIcon } from "../icons";
+import { platform } from "../keys";
 import type {
   BadgeNode,
   BaseNode,
@@ -47,6 +48,8 @@ interface Ctx {
   readonly host: TreeHost;
   /** Status bar: everything inline and compact. Panels get block layout. */
   readonly status: boolean;
+  /** The mod that owns this tree: its `custom` views load their `otmod:` assets from its folder. */
+  readonly mod?: string;
 }
 
 type Props<N> = { node: N; ctx: Ctx };
@@ -59,6 +62,8 @@ export interface ModTreeProps {
   host: TreeHost;
   /** "status" for the status bar (inline, compact), "panel" for side/bottom panels (block layout). */
   context?: "status" | "panel";
+  /** The id of the mod that sent the tree (for `custom` views' `otmod:` assets). */
+  mod?: string;
 }
 
 /** Entry point: renders one serialized node (and everything below it). */
@@ -69,6 +74,9 @@ export function ModTree(props: ModTreeProps): JSX.Element {
     },
     get status() {
       return props.context === "status";
+    },
+    get mod() {
+      return props.mod;
     },
   };
   return (
@@ -542,17 +550,39 @@ function themeCss(): string {
   return `:root{${decls.join(";")}}`;
 }
 
-function buildSrcdoc(html: string): string {
+/**
+ * The content policy of a `custom` frame (docs/05 §5.4 B, decision D7): no scripts, and assets only from `otmod:`.
+ * On Windows WebView2 serves the scheme as `http://otmod.localhost`, so that origin is listed as well.
+ */
+function contentPolicy(): string {
+  const src = platform === "windows" ? "otmod: http://otmod.localhost" : "otmod:";
+  return `default-src 'none'; style-src 'unsafe-inline' ${src}; img-src data: ${src}; font-src ${src}; media-src ${src}`;
+}
+
+/** The address of a mod's assets: `otmod:` is served as `http://otmod.localhost/<mod>/` on Windows. */
+function assetBase(mod: string): string {
+  return platform === "windows"
+    ? `http://otmod.localhost/${encodeURIComponent(mod)}/`
+    : `otmod://${encodeURIComponent(mod)}/`;
+}
+
+/** Point `otmod:a.png`, `otmod:/a.png`, `otmod://a.png` and `url(otmod:...)` at the mod's asset address. */
+function resolveAssets(html: string, mod: string): string {
+  return html.replace(/otmod:(?:\/\/|\/)?([^\s"'()<>]*)/g, (_, path: string) => assetBase(mod) + path);
+}
+
+function buildSrcdoc(html: string, mod: string | undefined): string {
+  const body = mod === undefined ? html : resolveAssets(html, mod);
   return (
-    "<!doctype html><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; img-src data:\">" +
+    `<!doctype html><meta http-equiv="Content-Security-Policy" content="${contentPolicy()}">` +
     `<style>:root{color-scheme:light dark}${themeCss()}body{margin:0;font:12px system-ui;color:var(--fg);}</style>` +
-    html
+    body
   );
 }
 
 function CustomView(props: Props<CustomNode>): JSX.Element {
   // Recomputed only when the HTML changes, so an unrelated re-render does not reload the frame.
-  const doc = createMemo(() => buildSrcdoc(props.node.html));
+  const doc = createMemo(() => buildSrcdoc(props.node.html, props.ctx.mod));
   const height = () => {
     const h = props.node.height;
     if (typeof h === "number") return `${h}px`;

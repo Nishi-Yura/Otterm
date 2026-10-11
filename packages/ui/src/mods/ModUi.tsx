@@ -76,7 +76,12 @@ export function StatusBar(props: StatusBarProps) {
         return {
           id: `${it.mod}#${n}`,
           render: () => (
-            <ModTree node={it.node} host={treeHost(props.host, it.mod, props.insert, props.copy)} context="status" />
+            <ModTree
+              node={it.node}
+              host={treeHost(props.host, it.mod, props.insert, props.copy)}
+              context="status"
+              mod={it.mod}
+            />
           ),
         };
       });
@@ -307,7 +312,12 @@ export function Panels(props: PanelsProps) {
         <div class="side-panel-body" data-ot="panel-body">
           <Show when={current()} keyed>
             {(p) => (
-              <ModTree node={p.node} host={treeHost(props.host, p.mod, props.insert, props.copy)} context="panel" />
+              <ModTree
+                node={p.node}
+                host={treeHost(props.host, p.mod, props.insert, props.copy)}
+                context="panel"
+                mod={p.mod}
+              />
             )}
           </Show>
           <Show when={builtin()} keyed>
@@ -364,6 +374,11 @@ export function PermissionDialog(props: { entry: ModEntry; onAllow: () => void; 
           <Show when={!p().terminalWrite}>{t("mod-permission-none-write")} </Show>
           <Show when={!p().network.length}>{t("mod-permission-none-network")}</Show>
         </div>
+        <Show when={props.entry.source === "workspace"}>
+          <div class="mod-dialog-note" data-ot="mod-workspace-note">
+            {t("mod-workspace-note", { root: props.entry.workspaceRoot ?? "" })}
+          </div>
+        </Show>
         <div class="mod-dialog-buttons">
           <button type="button" class="mt-button mt-button-primary" onClick={() => props.onAllow()}>
             {t("mod-allow-enable")}
@@ -427,7 +442,12 @@ export function ModDialog(props: {
         <Show when={typeof body() === "object" ? tree() : undefined} keyed>
           {(h) => (
             <div class="mod-dialog-body">
-              <ModTree node={body() as Exclude<DialogRequest["body"], string | undefined>} host={h} context="panel" />
+              <ModTree
+                node={body() as Exclude<DialogRequest["body"], string | undefined>}
+                host={h}
+                context="panel"
+                mod={props.req.from}
+              />
             </div>
           )}
         </Show>
@@ -539,6 +559,9 @@ export function ModsPanel(props: { host: ModHost; developer: boolean; modsDir: s
                 <Show when={m.entry.linked}>
                   <span class="mt-badge mt-badge-neutral">{t("mod-linked")}</span>
                 </Show>
+                <Show when={m.entry.source === "workspace"}>
+                  <span class="mt-badge mt-badge-neutral">{t("mod-source-workspace")}</span>
+                </Show>
               </div>
               <span
                 class="mods-entry-status"
@@ -556,10 +579,14 @@ export function ModsPanel(props: { host: ModHost; developer: boolean; modsDir: s
             <Show when={m.message}>
               <pre class="mods-entry-message">{m.message}</pre>
             </Show>
+            <Show when={m.entry.source === "workspace" && m.entry.permissions.terminalWrite}>
+              <div class="mods-entry-desc muted">{t("mod-workspace-no-write")}</div>
+            </Show>
             <div class="mods-entry-actions">
               <button
                 type="button"
                 class="mt-button mt-button-small"
+                disabled={m.entry.source === "workspace" && m.entry.permissions.terminalWrite}
                 onClick={() => void props.host.setEnabled(m.entry.id, !m.entry.enabled)}
               >
                 {m.entry.enabled ? t("mod-disable") : t("mod-enable")}
@@ -577,7 +604,7 @@ export function ModsPanel(props: { host: ModHost; developer: boolean; modsDir: s
                 </button>
               </Show>
               {/* Mods that ship with otterm can be turned off but not removed (decision M8). */}
-              <Show when={!/[\\/]bundled-mods[\\/]/.test(m.entry.dir)}>
+              <Show when={m.entry.source === "user"}>
                 <button
                   type="button"
                   class="mt-button mt-button-small mt-button-ghost"

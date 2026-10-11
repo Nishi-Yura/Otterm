@@ -16,6 +16,7 @@ mod history;
 mod instance;
 mod launch;
 mod mascot;
+mod mod_assets;
 mod mod_io;
 mod mods;
 mod open;
@@ -1180,6 +1181,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
+        .register_asynchronous_uri_scheme_protocol("otmod", mod_assets::handle)
         .manage(app_state(launch))
         .manage(mods::ModsState::default())
         .manage(mod_io::ModStreams::default())
@@ -1270,6 +1272,7 @@ fn main() {
             mods::mod_grant,
             mods::mod_revoke,
             mods::mod_set_enabled,
+            mods::workspace_mod_set,
             mods::mod_install,
             mods::mod_uninstall,
             mods::store_consent,
@@ -1334,6 +1337,7 @@ fn main() {
         .manage(mods::ModsState::default())
         .manage(mod_io::ModStreams::default())
         .manage(bench::BenchState::default())
+        .register_asynchronous_uri_scheme_protocol("otmod", mod_assets::handle)
         .setup(|app| {
             watch_config(app);
             mods::extract_bundled();
@@ -1392,6 +1396,7 @@ fn main() {
             mods::mod_grant,
             mods::mod_revoke,
             mods::mod_set_enabled,
+            mods::workspace_mod_set,
             mods::mod_install,
             mods::mod_uninstall,
             mods::mod_setting_set,

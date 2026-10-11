@@ -1770,11 +1770,22 @@ function ModsPage(props: {
             <fieldset class="settings-group" data-ot="mod-settings">
               <legend>
                 {m.entry.name} <span class="muted">v{m.entry.version}</span>
+                <Show when={m.entry.source === "workspace"}>
+                  {" "}
+                  <span class="mt-badge mt-badge-neutral">{t("mod-source-workspace")}</span>
+                </Show>
               </legend>
               <div class="settings-row">
                 <div class="settings-label">
                   <label for={`mod-${m.entry.id}`}>{t("settings-mod-enabled")}</label>
                   <div class="settings-desc mono">{m.entry.id}</div>
+                  <Show when={m.entry.source === "workspace"}>
+                    <div class="settings-desc">
+                      {m.entry.permissions.terminalWrite
+                        ? t("mod-workspace-no-write")
+                        : t("mod-workspace-note", { root: m.entry.workspaceRoot ?? "" })}
+                    </div>
+                  </Show>
                 </div>
                 <div class="settings-control">
                   <input
@@ -1782,11 +1793,13 @@ function ModsPage(props: {
                     type="checkbox"
                     class="settings-switch"
                     checked={m.entry.enabled}
-                    onChange={(e) =>
-                      void invoke("mod_set_enabled", { id: m.entry.id, enabled: e.currentTarget.checked }).catch(
-                        (err) => props.notify(String(err)),
-                      )
-                    }
+                    disabled={m.entry.source === "workspace" && m.entry.permissions.terminalWrite}
+                    onChange={(e) => {
+                      const next = e.currentTarget.checked;
+                      // The switch follows the host's state: a workspace mod turns on only after its permission list.
+                      e.currentTarget.checked = m.entry.enabled;
+                      void props.host.setEnabled(m.entry.id, next).catch((err) => props.notify(String(err)));
+                    }}
                   />
                 </div>
               </div>

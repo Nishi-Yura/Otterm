@@ -23,7 +23,7 @@
     ],
     "macOSPrivateApi": true,
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; frame-src 'self' data: about:; connect-src 'self' ipc: http://ipc.localhost ws://127.0.0.1:*; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:"
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; frame-src 'self' data: about:; connect-src 'self' ipc: http://ipc.localhost ws://127.0.0.1:*; style-src 'self' 'unsafe-inline' otmod: http://otmod.localhost; img-src 'self' data: blob: otmod: http://otmod.localhost; font-src 'self' otmod: http://otmod.localhost; media-src 'self' otmod: http://otmod.localhost"
     }
   },
   "plugins": {

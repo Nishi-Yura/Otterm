@@ -51,6 +51,10 @@ pub struct ModEntry {
     linked: bool,
     /// Ships with otterm (docs/05 §9): pre-approved, can be disabled but not removed (decision M8).
     bundled: bool,
+    /// Where it was found: "user" (the mods folder), "bundled" or "workspace" (`.otterm/mods/`, docs/05 §4).
+    source: &'static str,
+    /// The workspace root a workspace mod comes from.
+    workspace_root: Option<String>,
     enabled: bool,
     granted: bool,
     problems: Vec<String>,
@@ -125,6 +129,22 @@ pub struct ModsState {
     /// Paths the user chose in a native dialog for each mod (`ctx.ui.pickPath`), and whether each was a save.
     /// They are readable (or writable, for a save) for the rest of the session, whatever the manifest says.
     picked: Mutex<BTreeMap<String, Vec<(PathBuf, bool)>>>,
+    /// The folder of every enabled mod, by id: the only mods whose `otmod:` assets are served (docs/05 §5.4 B).
+    servable: Mutex<BTreeMap<String, PathBuf>>,
+    /// The `.otterm/mods/` folder of the open trusted workspace, if any (docs/05 §4).
+    workspace_dir: Mutex<Option<PathBuf>>,
+}
+
+impl ModsState {
+    /// The folder of the enabled mod `id`, if it is enabled.
+    pub(crate) fn servable_dir(&self, id: &str) -> Option<PathBuf> {
+        self.servable.lock().unwrap().get(id).cloned()
+    }
+
+    /// Whether `m` comes from the open workspace's `.otterm/mods/`.
+    fn is_workspace_mod(&self, m: &Installed) -> bool {
+        self.workspace_dir.lock().unwrap().as_ref().is_some_and(|dir| m.dir.starts_with(dir))
+    }
 }
 
 /// Every mod folder, for other modules of the app (the mascot's outfits).
@@ -181,16 +201,111 @@ fn is_bundled(m: &Installed, data: &Path) -> bool {
     m.dir.starts_with(bundled_dir(data))
 }
 
+// ---- workspace mods (docs/05 §4, decision D6, trust K4) ------------------------------------------
+
+/// The `.otterm/mods/` folder beside the workspace file.
+fn workspace_mods_dir(ws: &otterm_config::Workspace) -> Option<PathBuf> {
+    ws.file.parent().map(|otterm| otterm.join("mods"))
+}
+
+/// The mods of the open workspace, when the user trusts it (K4): its root, its folder, and what it holds.
+/// An untrusted or missing workspace contributes nothing.
+fn workspace_mods(config: &ConfigState) -> Option<(String, PathBuf, Vec<Found>)> {
+    let (ws, trusted) = config.workspace()?;
+    if trusted != Some(true) {
+        return None;
+    }
+    let dir = workspace_mods_dir(&ws)?;
+    let found = otterm_modhost::discover_dir(&dir, Platform::current(), &host_version());
+    Some((ws.root.display().to_string(), dir, found))
+}
+
+/// What the user approved for one workspace mod: its version, and a digest of its manifest and entry file.
+/// A changed file asks again, even when the version did not change.
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
+struct Approval {
+    version: String,
+    digest: String,
+}
+
+/// Workspace root (lowercase on Windows, where case is ignored) → mod id → approval.
+type Approvals = BTreeMap<String, BTreeMap<String, Approval>>;
+
+fn root_key(root: &str) -> String {
+    if cfg!(windows) { root.to_lowercase() } else { root.to_owned() }
+}
+
+/// `state/workspace-mods.json` in the data folder. It is not in the repository, so a repo cannot approve itself.
+fn approvals_path() -> Option<PathBuf> {
+    data_dir().map(|d| d.join("state").join("workspace-mods.json"))
+}
+
+fn load_approvals() -> Approvals {
+    approvals_path()
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .and_then(|t| serde_json::from_str(&t).ok())
+        .unwrap_or_default()
+}
+
+fn save_approvals(all: &Approvals) -> CmdResult {
+    let path = approvals_path().ok_or("no data folder")?;
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir).map_err(err)?;
+    }
+    std::fs::write(path, serde_json::to_string_pretty(all).map_err(err)?).map_err(err)
+}
+
+/// A digest of the files a mod runs and asks permission for: its manifest and its entry file.
+fn digest(m: &Installed) -> Option<String> {
+    let manifest = otterm_modhost::sha256_file(&m.dir.join("otmod.toml")).ok()?;
+    let code = match &m.manifest.entry {
+        Some(entry) => otterm_modhost::sha256_file(&m.dir.join(&entry.main)).ok()?,
+        None => String::new(),
+    };
+    Some(format!("{manifest}:{code}"))
+}
+
+/// Whether the user approved exactly this workspace mod, in this workspace, at this version and digest.
+fn workspace_approved(root: &str, m: &Installed) -> bool {
+    let record = load_approvals().remove(&root_key(root)).and_then(|mut list| list.remove(&m.id));
+    record.is_some_and(|r| r.version == m.manifest.mod_.version && Some(r.digest) == digest(m))
+}
+
+fn source_of(workspace: bool, bundled: bool) -> &'static str {
+    if workspace {
+        "workspace"
+    } else if bundled {
+        "bundled"
+    } else {
+        "user"
+    }
+}
+
 impl ModsState {
     fn find(&self, id: &str) -> CmdResult<Installed> {
         self.installed.lock().unwrap().iter().find(|m| m.id == id).cloned().ok_or_else(|| format!("no mod {id}"))
     }
 }
 
-fn entry(m: &Installed, config: &otterm_config::Config, data: &Path) -> ModEntry {
+/// Describe one mod. `workspace` is the root of the workspace it comes from, for a workspace mod. A workspace
+/// mod is on only when the user approved it there (never from the config lists), and never when it types into
+/// the terminal (D6).
+fn entry(m: &Installed, config: &otterm_config::Config, data: &Path, workspace: Option<&str>) -> ModEntry {
     let mf = &m.manifest;
     let lists =
         otterm_modhost::EnabledLists { enabled: config.mods.enabled.clone(), disabled: config.mods.disabled.clone() };
+    let (enabled, granted) = match workspace {
+        Some(root) => {
+            let approved = !mf.permissions.terminal.write && workspace_approved(root, m);
+            (approved, approved)
+        }
+        None => (
+            // The AI mod follows `[ai] enabled` as well: off by default (docs/10 §5).
+            otterm_modhost::is_enabled(&lists, &m.id, mf.is_official())
+                && (m.id != "otterm.ai-assist" || config.ai.enabled),
+            is_bundled(m, data) || otterm_modhost::granted(data, &m.id, &mf.mod_.version),
+        ),
+    };
     let mut settings = mf.setting_defaults();
     if let Some(user) = config.mods.settings.get(&m.id) {
         for (k, v) in user {
@@ -217,10 +332,10 @@ fn entry(m: &Installed, config: &otterm_config::Config, data: &Path) -> ModEntry
         official: mf.is_official(),
         linked: m.linked,
         bundled: is_bundled(m, data),
-        // The AI mod follows `[ai] enabled` as well: off by default (docs/10 §5).
-        enabled: otterm_modhost::is_enabled(&lists, &m.id, mf.is_official())
-            && (m.id != "otterm.ai-assist" || config.ai.enabled),
-        granted: is_bundled(m, data) || otterm_modhost::granted(data, &m.id, &mf.mod_.version),
+        source: source_of(workspace.is_some(), is_bundled(m, data)),
+        workspace_root: workspace.map(str::to_owned),
+        enabled,
+        granted,
         problems: m.problems.iter().map(|p| p.message.clone()).collect(),
         permissions: UiPermissions {
             process: mf.permissions.process.clone(),
@@ -260,17 +375,41 @@ fn entry(m: &Installed, config: &otterm_config::Config, data: &Path) -> ModEntry
 pub fn mods_list(state: State<'_, AppState>, mods: State<'_, ModsState>) -> CmdResult<Vec<ModEntry>> {
     let data = data_dir().ok_or("no data folder")?;
     let config = state.config.config();
-    let mut installed = Vec::new();
+    let workspace = workspace_mods(state.config);
+    let (ws_root, ws_dir) = match &workspace {
+        Some((root, dir, _)) => (Some(root.clone()), Some(dir.clone())),
+        None => (None, None),
+    };
+    // The user's and the bundled mods first (a user copy wins), then the workspace's.
+    let mut found: Vec<(Option<String>, Found)> = discover_all(&data).into_iter().map(|f| (None, f)).collect();
+    if let (Some(root), Some((_, _, list))) = (&ws_root, workspace) {
+        found.extend(list.into_iter().map(|f| (Some(root.clone()), f)));
+    }
+    let mut installed: Vec<Installed> = Vec::new();
+    let mut servable = BTreeMap::new();
     let mut out = Vec::new();
-    for found in discover_all(&data) {
+    for (from_workspace, found) in found {
         match found {
             Found::Mod(m) => {
+                let clash = installed.iter().any(|x: &Installed| x.id == m.id);
                 // A user copy of a bundled mod wins (an update, or a fork); the bundled one is hidden.
-                if installed.iter().any(|x: &Installed| x.id == m.id) {
+                if clash && from_workspace.is_none() {
                     continue;
                 }
-                out.push(entry(&m, &config, &data));
-                installed.push(*m);
+                let mut e = entry(&m, &config, &data, from_workspace.as_deref());
+                if clash {
+                    // A workspace mod never takes the place of an installed one (docs/05 §4).
+                    e.enabled = false;
+                    e.granted = false;
+                    e.problems.push("a mod with this id is already installed".into());
+                }
+                if e.enabled {
+                    servable.insert(m.id.clone(), m.dir.clone());
+                }
+                out.push(e);
+                if !clash {
+                    installed.push(*m);
+                }
             }
             Found::Broken { dir, error } => out.push(ModEntry {
                 id: dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
@@ -283,6 +422,8 @@ pub fn mods_list(state: State<'_, AppState>, mods: State<'_, ModsState>) -> CmdR
                 official: false,
                 linked: false,
                 bundled: false,
+                source: source_of(from_workspace.is_some(), false),
+                workspace_root: from_workspace.clone(),
                 enabled: false,
                 granted: false,
                 problems: vec![error],
@@ -305,6 +446,8 @@ pub fn mods_list(state: State<'_, AppState>, mods: State<'_, ModsState>) -> CmdR
         }
     }
     *mods.installed.lock().unwrap() = installed;
+    *mods.servable.lock().unwrap() = servable;
+    *mods.workspace_dir.lock().unwrap() = ws_dir;
     Ok(out)
 }
 
@@ -317,8 +460,17 @@ pub struct ModSource {
 
 /// The bundle of a mod's entry and its translations, for the Worker.
 #[tauri::command]
-pub fn mod_source(mods: State<'_, ModsState>, id: String) -> CmdResult<ModSource> {
+pub fn mod_source(state: State<'_, AppState>, mods: State<'_, ModsState>, id: String) -> CmdResult<ModSource> {
     let m = mods.find(&id)?;
+    // A workspace mod's code is read again here, so a file changed since its approval must not run.
+    if mods.is_workspace_mod(&m) {
+        let approved = state.config.workspace().is_some_and(|(ws, trusted)| {
+            trusted == Some(true) && workspace_approved(&ws.root.display().to_string(), &m)
+        });
+        if !approved {
+            return Err(format!("the workspace mod {id} changed or is no longer approved"));
+        }
+    }
     let main = m.manifest.entry.as_ref().ok_or("the mod has no entry")?;
     let source = std::fs::read_to_string(m.dir.join(&main.main)).map_err(|e| format!("{}: {e}", main.main))?;
     let mut locales = BTreeMap::new();
@@ -340,6 +492,11 @@ pub fn mod_source(mods: State<'_, ModsState>, id: String) -> CmdResult<ModSource
 pub fn mod_grant(mods: State<'_, ModsState>, id: String) -> CmdResult {
     let data = data_dir().ok_or("no data folder")?;
     let m = mods.find(&id)?;
+    // A workspace mod is approved by `workspace_mod_set`. A user grant for its id would carry over to an
+    // installed mod with the same id.
+    if mods.is_workspace_mod(&m) {
+        return Err("a workspace mod is approved in its workspace".into());
+    }
     otterm_modhost::grant(&data, &id, &m.manifest.mod_.version).map_err(err)
 }
 
@@ -351,12 +508,48 @@ pub fn mod_revoke(id: String) -> CmdResult {
 
 /// Enable or disable in `config.toml` (`[mods] enabled / disabled`); the config watcher tells the UI.
 #[tauri::command]
-pub fn mod_set_enabled(state: State<'_, AppState>, id: String, enabled: bool) -> CmdResult {
+pub fn mod_set_enabled(state: State<'_, AppState>, mods: State<'_, ModsState>, id: String, enabled: bool) -> CmdResult {
+    // Workspace mods have their own switch (`workspace_mod_set`); a config entry would reach an installed mod later.
+    if mods.find(&id).is_ok_and(|m| mods.is_workspace_mod(&m)) {
+        return Err("a workspace mod is turned on from the mods list".into());
+    }
     let path = state.config.path().ok_or("no configuration folder")?;
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(err)?;
     }
     otterm_modhost::set_enabled(&path, &id, enabled).map_err(err)
+}
+
+/// Turn a workspace mod on or off (docs/05 §4, K4). The UI calls this only after the user read the mod's
+/// permission list. The approval records the version and digest, so a changed mod asks again.
+#[tauri::command]
+pub fn workspace_mod_set(
+    state: State<'_, AppState>,
+    mods: State<'_, ModsState>,
+    id: String,
+    enabled: bool,
+) -> CmdResult {
+    let (ws, trusted) = state.config.workspace().ok_or("no workspace is open")?;
+    if trusted != Some(true) {
+        return Err("the workspace is not trusted".into());
+    }
+    let m = mods.find(&id)?;
+    if workspace_mods_dir(&ws).is_none_or(|dir| !m.dir.starts_with(dir)) {
+        return Err(format!("{id} is not a mod of this workspace"));
+    }
+    let key = root_key(&ws.root.display().to_string());
+    let mut all = load_approvals();
+    if enabled {
+        if m.manifest.permissions.terminal.write {
+            return Err("a workspace mod cannot type into the terminal, so it cannot be turned on here".into());
+        }
+        let digest = digest(&m).ok_or("the mod's files cannot be read")?;
+        let approval = Approval { version: m.manifest.mod_.version.clone(), digest };
+        all.entry(key).or_default().insert(id, approval);
+    } else if let Some(list) = all.get_mut(&key) {
+        list.remove(&id);
+    }
+    save_approvals(&all)
 }
 
 /// The registry index URL: `[mods] registry`, else the official one.
@@ -453,6 +646,9 @@ pub fn mod_uninstall(mods: State<'_, ModsState>, id: String) -> CmdResult {
     let data = data_dir().ok_or("no data folder")?;
     if mods.find(&id).is_ok_and(|m| is_bundled(&m, &data)) {
         return Err("a bundled mod can be disabled, not removed".into());
+    }
+    if mods.find(&id).is_ok_and(|m| mods.is_workspace_mod(&m)) {
+        return Err("a workspace mod is removed by deleting its folder in the workspace".into());
     }
     otterm_modhost::uninstall(&data, &id).map_err(err)
 }
