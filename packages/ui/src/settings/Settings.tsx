@@ -1152,6 +1152,7 @@ function LayoutPage(props: SettingsProps & { form: Form; write: Write }) {
           {t("settings-layout-save")}
         </button>
       </div>
+      <StatusOrder {...props} />
       <h3>{t("settings-panels")}</h3>
       <p class="muted">{t("settings-panels-hint")}</p>
       <For each={props.panels} fallback={<p class="muted">{t("settings-panels-none")}</p>}>
@@ -1175,6 +1176,86 @@ function LayoutPage(props: SettingsProps & { form: Form; write: Write }) {
         )}
       </For>
     </section>
+  );
+}
+
+/**
+ * The status bar's items in order, with buttons to move them: the keyboard way of what dragging an
+ * item on the bar does (`appearance.statusbar.order`).
+ */
+function StatusOrder(props: SettingsProps & { write: Write }) {
+  const builtin: Record<string, string> = {
+    "otterm.folder": t("status-folder"),
+    "otterm.guide": t("status-guide"),
+    "otterm.exit": t("status-exit"),
+    "otterm.mods": t("status-mods"),
+  };
+  const items = createMemo(() => {
+    const seen = new Map<string, number>();
+    const mods = props.host.items().filter((i) => i.slot.startsWith("statusbar."));
+    const ids = [
+      "otterm.folder",
+      ...mods.map((i) => {
+        const n = seen.get(i.mod) ?? 0;
+        seen.set(i.mod, n + 1);
+        return `${i.mod}#${n}`;
+      }),
+      "otterm.guide",
+      "otterm.exit",
+      "otterm.mods",
+    ];
+    const order = props.config?.statusbarOrder ?? [];
+    const rank = (id: string) => (order.includes(id) ? order.indexOf(id) : order.length);
+    return ids
+      .map((id, i) => ({ id, i }))
+      .sort((a, b) => rank(a.id) - rank(b.id) || a.i - b.i)
+      .map((x) => x.id);
+  });
+  const name = (id: string) => {
+    if (builtin[id]) return builtin[id];
+    const mod = id.split("#")[0] ?? id;
+    return props.host.mods().find((m) => m.entry.id === mod)?.entry.name ?? mod;
+  };
+  const move = (i: number, d: number) => {
+    const a = [...items()];
+    const j = i + d;
+    if (j < 0 || j >= a.length) return;
+    [a[i], a[j]] = [a[j] as string, a[i] as string];
+    void props.write(["appearance", "statusbar", "order"], a);
+  };
+  return (
+    <>
+      <h3>{t("settings-statusbar-order")}</h3>
+      <p class="muted">{t("settings-statusbar-order-hint")}</p>
+      <ol class="status-order">
+        <For each={items()}>
+          {(id, i) => (
+            <li>
+              <span>{name(id)}</span>
+              <span class="muted mono">{id}</span>
+              <button
+                type="button"
+                class="settings-small"
+                aria-label={`${t("settings-move-up")}: ${name(id)}`}
+                disabled={i() === 0}
+                onClick={() => move(i(), -1)}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                class="settings-small"
+                aria-label={`${t("settings-move-down")}: ${name(id)}`}
+                disabled={i() === items().length - 1}
+                onClick={() => move(i(), 1)}
+              >
+                ↓
+              </button>
+            </li>
+          )}
+        </For>
+      </ol>
+    </>
   );
 }
 

@@ -20,6 +20,11 @@
   --ot-danger: #e06c75;
   --ot-success: #98c379;
   --ot-warning: #e5c07b;
+  /* The status colors as text: pulled toward the text color so they stay readable on light and
+     dark backgrounds alike (WCAG 4.5:1 for small text). */
+  --ot-success-text: color-mix(in srgb, var(--ot-success) 75%, var(--ot-fg));
+  --ot-warning-text: color-mix(in srgb, var(--ot-warning) 75%, var(--ot-fg));
+  --ot-danger-text: color-mix(in srgb, var(--ot-danger) 72%, var(--ot-fg));
   --ot-radius: 6px;
   --ot-shadow: 0 4px 16px rgb(0 0 0 / 0.4);
   --ot-font-ui: system-ui, "Segoe UI", "Noto Sans JP", sans-serif;
@@ -28,6 +33,12 @@
   --fg: var(--ot-fg);
   --muted: var(--ot-fg-muted);
   color-scheme: dark;
+}
+
+/* Thin scrollbars in the theme's colors, without arrow buttons (the terminal has its own). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ot-fg) 28%, transparent) transparent;
 }
 
 /* Keyboard focus is always visible (docs/04 §5). The terminal's hidden input and the terminal
@@ -180,6 +191,9 @@ body,
 
 .tab-close,
 .tab-new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 22px;
   height: 22px;
   padding: 0;
@@ -361,7 +375,12 @@ body,
 }
 
 .block-gutter.failed {
-  background: var(--ot-prompt-failed, var(--ot-term-ansi-1, #bf616a));
+  /* Dashed as well as red, so a failure does not depend on seeing red (decision I15). */
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--ot-prompt-failed, var(--ot-term-ansi-1, #bf616a)) 0 5px,
+    transparent 5px 7px
+  );
 }
 
 .block-gutter.running {
@@ -613,6 +632,9 @@ body,
 }
 
 .prompt-title {
+  display: flex;
+  gap: 6px;
+  align-items: center;
   font-weight: 600;
 }
 
@@ -663,10 +685,12 @@ body,
 }
 
 /* A window-level question (closing a tab with a running program), over the panes. */
+/* Over the terminal area (inside .body-center), above the assist bar and the status bar. */
 .app-prompt {
-  position: fixed;
+  position: absolute;
   inset: auto 0 0 0;
   z-index: 20;
+  padding: 0 14px;
 }
 
 .app-prompt .prompt {
@@ -674,7 +698,34 @@ body,
   right: auto;
   bottom: auto;
   left: auto;
-  margin: 0 auto 16px;
+  /* Above the status bar, not over it. */
+  margin: 0 auto 32px;
+}
+
+/* A risky command (danger-guard): an icon and a striped left edge, so it does not rely on red
+   alone (decision I15). */
+.prompt.danger {
+  border-color: color-mix(in srgb, var(--ot-danger) 55%, var(--ot-border));
+  border-left: 0;
+  padding-left: 18px;
+  background:
+    repeating-linear-gradient(-45deg, var(--ot-danger) 0 4px, transparent 4px 8px) left / 6px 100% no-repeat,
+    var(--ot-bg-elevated);
+}
+
+.prompt-icon {
+  color: var(--ot-danger-text);
+}
+
+.prompt-button.danger {
+  border-color: color-mix(in srgb, var(--ot-danger) 60%, transparent);
+  color: var(--ot-danger-text);
+}
+
+.prompt-button.primary {
+  border-color: var(--ot-accent);
+  background: var(--ot-accent);
+  color: var(--ot-bg);
 }
 
 /* One-off messages such as ignored configuration keys. */
@@ -686,7 +737,7 @@ body,
   padding: 6px 10px;
   border-radius: var(--ot-radius);
   background: color-mix(in srgb, var(--ot-bg) 75%, transparent);
-  color: var(--ot-warning);
+  color: var(--ot-warning-text);
   font: 12px var(--ot-font-ui);
   pointer-events: none;
 }
@@ -806,4 +857,50 @@ html.translucent .assist-bar {
 
 .app.blocks-cards .prompt-header {
   border-radius: 6px 6px 0 0;
+}
+
+/* Buttons on the block under the pointer (rerun, copy output, fold, more). */
+.block-actions {
+  position: absolute;
+  right: 6px;
+  z-index: 3;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  padding: 0 2px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: var(--ot-bg-elevated);
+  box-shadow: var(--ot-shadow);
+}
+
+.block-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 100%;
+  max-height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--ot-fg-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.block-actions button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ot-fg) 10%, transparent);
+  color: var(--ot-fg);
+}
+
+.block-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* On otterm's prompt bar, leave its result (✓ / ✗ and the time) visible at the right. */
+.block-actions.beside-header {
+  right: 120px;
 }

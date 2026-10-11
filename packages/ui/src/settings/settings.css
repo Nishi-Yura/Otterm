@@ -233,7 +233,7 @@
 
 .settings button.danger {
   border-color: var(--ot-danger);
-  color: var(--ot-danger);
+  color: var(--ot-danger-text);
 }
 
 .settings .settings-small {
@@ -466,7 +466,7 @@
 }
 
 .keys-conflict {
-  color: var(--ot-danger);
+  color: var(--ot-danger-text);
   font-size: 11px;
 }
 
@@ -478,4 +478,23 @@
 .keys-record {
   width: 160px;
   border-color: var(--ot-accent) !important;
+}
+
+/* Status bar order */
+.status-order {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.status-order li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ot-border) 60%, transparent);
+}
+
+.status-order li > span:first-child {
+  flex: 1;
 }

@@ -5,9 +5,10 @@
  */
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { t } from "../i18n";
+import { Icon } from "../icons";
 import type { DialogRequest, ModEntry, ModHost, ModState, ToastRequest } from "./host";
 import type { PanelItem } from "./protocol";
-import { iconGlyph, ModTree } from "./render";
+import { ModTree } from "./render";
 import type { TreeHost } from "./tree";
 import "./chrome.css";
 
@@ -40,69 +41,157 @@ export interface StatusBarProps {
   /** `general.guide_level`; a click cycles it (docs/03 §11.2). */
   guideLevel: number;
   onGuideClick: () => void;
+  /** `appearance.statusbar.order`: item ids in the user's order. */
+  order: string[];
+  /** An item was dragged onto another: the new order of every id. */
+  onReorder: (ids: string[]) => void;
+}
+
+interface BarItem {
+  id: string;
+  render: () => import("solid-js").JSX.Element;
 }
 
 export function StatusBar(props: StatusBarProps) {
-  const left = createMemo(() => props.host.items().filter((i) => i.slot === "statusbar.left"));
-  const right = createMemo(() => props.host.items().filter((i) => i.slot === "statusbar.right"));
   const summary = createMemo(() => {
     const mods = props.host.mods();
     const active = mods.filter((m) => m.status === "active").length;
     const broken = mods.filter((m) => m.status === "crashed" || m.status === "error").length;
     return { active, broken, pending: props.host.pendingGrants().length };
   });
+  /** A mod's items in a slot, as `<mod id>#<n>` in the order the mod added them. */
+  const modItems = (slot: string): BarItem[] => {
+    const seen = new Map<string, number>();
+    return props.host
+      .items()
+      .filter((i) => i.slot === slot)
+      .map((it) => {
+        const n = seen.get(it.mod) ?? 0;
+        seen.set(it.mod, n + 1);
+        return {
+          id: `${it.mod}#${n}`,
+          render: () => (
+            <ModTree node={it.node} host={treeHost(props.host, it.mod, props.insert, props.copy)} context="status" />
+          ),
+        };
+      });
+  };
+  /** Sorted by `order`; items it does not name keep their own order after the named ones. */
+  const sorted = (items: BarItem[]) => {
+    const rank = (id: string) => {
+      const i = props.order.indexOf(id);
+      return i < 0 ? props.order.length : i;
+    };
+    return items
+      .map((it, i) => ({ it, i }))
+      .sort((a, b) => rank(a.it.id) - rank(b.it.id) || a.i - b.i)
+      .map((x) => x.it);
+  };
+  const left = createMemo(() =>
+    sorted([
+      {
+        id: "otterm.folder",
+        render: () => (
+          <Show when={props.folder}>
+            <span title={t("status-folder")} class="statusbar-inline">
+              <Icon name="folder" class="mt-icon" />
+              {props.folder}
+            </span>
+          </Show>
+        ),
+      },
+      ...modItems("statusbar.left"),
+    ]),
+  );
+  const right = createMemo(() =>
+    sorted([
+      ...modItems("statusbar.right"),
+      {
+        id: "otterm.guide",
+        render: () => (
+          <button type="button" class="statusbar-button" title={t("status-guide")} onClick={() => props.onGuideClick()}>
+            {t("status-guide-level", { level: props.guideLevel })}
+          </button>
+        ),
+      },
+      {
+        id: "otterm.exit",
+        render: () => (
+          <Show when={props.lastExit !== undefined && props.lastExit !== 0}>
+            <span class="statusbar-inline failed" title={t("status-exit")}>
+              <Icon name="x-circle" class="mt-icon" /> {props.lastExit}
+            </span>
+          </Show>
+        ),
+      },
+      {
+        id: "otterm.mods",
+        render: () => (
+          <button
+            type="button"
+            class="statusbar-button"
+            classList={{ failed: summary().broken > 0, attention: summary().pending > 0 }}
+            title={t("status-mods")}
+            onClick={() => props.onModsClick()}
+          >
+            <Icon name="puzzle" class="mt-icon" /> {t("status-mods-count", { n: summary().active })}
+            {summary().broken > 0 ? ` · ${t("status-mods-broken", { n: summary().broken })}` : ""}
+          </button>
+        ),
+      },
+    ]),
+  );
+  const [dragging, setDragging] = createSignal<string>();
+  const [over, setOver] = createSignal<string>();
+  /** Put the dragged item before `target` on its side and report the whole order. */
+  const drop = (side: BarItem[], target: string) => {
+    const from = dragging();
+    setDragging(undefined);
+    setOver(undefined);
+    if (!from || from === target) return;
+    const ids = side.map((i) => i.id).filter((id) => id !== from);
+    if (!side.some((i) => i.id === from)) return;
+    ids.splice(ids.indexOf(target), 0, from);
+    const leftIds = side === left() ? ids : left().map((i) => i.id);
+    const rightIds = side === right() ? ids : right().map((i) => i.id);
+    props.onReorder([...leftIds, ...rightIds]);
+  };
+  const itemView = (side: () => BarItem[]) => (it: BarItem) => (
+    // biome-ignore lint/a11y/noStaticElementInteractions: dragging only reorders; every item stays usable as before
+    <span
+      class="statusbar-item"
+      classList={{ dragging: dragging() === it.id, "drop-before": over() === it.id && dragging() !== it.id }}
+      data-ot="statusbar-item"
+      data-item={it.id}
+      draggable={true}
+      onDragStart={(e) => {
+        e.dataTransfer?.setData("application/x-otterm-status", it.id);
+        setDragging(it.id);
+      }}
+      onDragEnd={() => {
+        setDragging(undefined);
+        setOver(undefined);
+      }}
+      onDragOver={(e) => {
+        if (!dragging()) return;
+        e.preventDefault();
+        setOver(it.id);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        drop(side(), it.id);
+      }}
+    >
+      {it.render()}
+    </span>
+  );
   return (
     <div class="statusbar" role="status" data-ot="statusbar">
       <div class="statusbar-side">
-        <Show when={props.folder}>
-          <span class="statusbar-item" data-ot="statusbar-item" title={t("status-folder")}>
-            <span class="mt-icon" aria-hidden="true">
-              {iconGlyph("folder")}
-            </span>
-            {props.folder}
-          </span>
-        </Show>
-        <For each={left()}>
-          {(it) => (
-            <span class="statusbar-item" data-ot="statusbar-item" data-mod={it.mod}>
-              <ModTree node={it.node} host={treeHost(props.host, it.mod, props.insert, props.copy)} context="status" />
-            </span>
-          )}
-        </For>
+        <For each={left()}>{itemView(left)}</For>
       </div>
       <div class="statusbar-side right">
-        <For each={right()}>
-          {(it) => (
-            <span class="statusbar-item" data-ot="statusbar-item" data-mod={it.mod}>
-              <ModTree node={it.node} host={treeHost(props.host, it.mod, props.insert, props.copy)} context="status" />
-            </span>
-          )}
-        </For>
-        <button
-          type="button"
-          class="statusbar-item statusbar-button"
-          data-ot="statusbar-item"
-          title={t("status-guide")}
-          onClick={() => props.onGuideClick()}
-        >
-          {t("status-guide-level", { level: props.guideLevel })}
-        </button>
-        <Show when={props.lastExit !== undefined && props.lastExit !== 0}>
-          <span class="statusbar-item failed" data-ot="statusbar-item" title={t("status-exit")}>
-            ✗ {props.lastExit}
-          </span>
-        </Show>
-        <button
-          type="button"
-          class="statusbar-item statusbar-button"
-          data-ot="statusbar-item"
-          classList={{ failed: summary().broken > 0, attention: summary().pending > 0 }}
-          title={t("status-mods")}
-          onClick={() => props.onModsClick()}
-        >
-          ⚙ {t("status-mods-count", { n: summary().active })}
-          {summary().broken > 0 ? ` · ${t("status-mods-broken", { n: summary().broken })}` : ""}
-        </button>
+        <For each={right()}>{itemView(right)}</For>
       </div>
     </div>
   );
@@ -172,9 +261,7 @@ export function Panels(props: PanelsProps) {
                 onClick={() => props.onShow(p.id)}
               >
                 <Show when={p.icon}>
-                  <span class="mt-icon" aria-hidden="true">
-                    {iconGlyph(p.icon ?? "")}
-                  </span>
+                  <Icon name={p.icon ?? ""} class="mt-icon" />
                 </Show>
                 {titleOf(p)}
                 <Show when={p.badge}>
@@ -409,8 +496,12 @@ export function ModsPanel(props: { host: ModHost; developer: boolean; modsDir: s
                   <span class="mt-badge mt-badge-neutral">{t("mod-linked")}</span>
                 </Show>
               </div>
-              <span class="mods-entry-status" classList={{ [m.status]: true }}>
-                {t(STATUS_KEY[m.status])}
+              <span
+                class="mods-entry-status"
+                classList={{ [m.status]: true, active: !m.entry.hasEntry && m.entry.enabled }}
+              >
+                {/* Mods without code (dictionaries, themes) have nothing to run: they are on or off. */}
+                {!m.entry.hasEntry && m.entry.enabled ? t("mod-status-enabled") : t(STATUS_KEY[m.status])}
                 <Show when={m.activateMs !== undefined && props.developer}> · {m.activateMs} ms</Show>
               </span>
             </div>
@@ -441,13 +532,16 @@ export function ModsPanel(props: { host: ModHost; developer: boolean; modsDir: s
                   {t("mod-logs", { n: m.logs.length })}
                 </button>
               </Show>
-              <button
-                type="button"
-                class="mt-button mt-button-small mt-button-ghost"
-                onClick={() => void props.host.uninstall(m.entry.id)}
-              >
-                {t("mod-uninstall")}
-              </button>
+              {/* Mods that ship with otterm can be turned off but not removed (decision M8). */}
+              <Show when={!/[\\/]bundled-mods[\\/]/.test(m.entry.dir)}>
+                <button
+                  type="button"
+                  class="mt-button mt-button-small mt-button-ghost"
+                  onClick={() => void props.host.uninstall(m.entry.id)}
+                >
+                  {t("mod-uninstall")}
+                </button>
+              </Show>
             </div>
             <Show when={props.developer && open() === m.entry.id}>
               <div class="mods-calls">

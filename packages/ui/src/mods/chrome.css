@@ -34,11 +34,35 @@
   white-space: nowrap;
 }
 
-.statusbar-item.failed {
-  color: var(--ot-danger);
+/* An item with nothing to show (no folder yet, last command succeeded) takes no gap. */
+.statusbar-item:empty {
+  display: none;
+}
+
+/* Items can be dragged into another order (appearance.statusbar.order). */
+.statusbar-item.dragging {
+  opacity: 0.4;
+}
+
+.statusbar-item.drop-before {
+  box-shadow: inset 2px 0 0 var(--ot-accent);
+}
+
+.statusbar-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.statusbar-inline.failed,
+.statusbar-button.failed {
+  color: var(--ot-danger-text);
 }
 
 .statusbar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 2px 6px;
   border: 0;
   border-radius: 4px;
@@ -53,7 +77,7 @@
 }
 
 .statusbar-button.attention {
-  color: var(--ot-warning);
+  color: var(--ot-warning-text);
 }
 
 /* The window body: panels left and right of the tabs and panes, a panel below. */
@@ -64,6 +88,7 @@
 }
 
 .body-center {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -81,21 +106,19 @@
   font: 13px var(--ot-font-ui);
 }
 
-.side-panel[data-slot="sidebar.left"],
-.side-panel[data-slot="sidebar.right"] {
-  width: 280px;
-}
-
 .side-panel[data-slot="sidebar.left"] {
+  /* appearance.sidebar.*.width and panel.bottom.height (set on :root by config.ts). */
+  width: var(--ot-sidebar-left-width, 260px);
   border-right: 1px solid var(--ot-border);
 }
 
 .side-panel[data-slot="sidebar.right"] {
+  width: var(--ot-sidebar-right-width, 260px);
   border-left: 1px solid var(--ot-border);
 }
 
 .side-panel[data-slot="panel.bottom"] {
-  height: 220px;
+  height: var(--ot-panel-bottom-height, 220px);
   border-top: 1px solid var(--ot-border);
 }
 
@@ -209,7 +232,7 @@
 }
 
 .mod-permissions li.danger {
-  color: var(--ot-danger);
+  color: var(--ot-danger-text);
   font-weight: 600;
 }
 
@@ -322,12 +345,12 @@
 }
 
 .mods-entry-status.active {
-  color: var(--ot-success);
+  color: var(--ot-success-text);
 }
 
 .mods-entry-status.crashed,
 .mods-entry-status.error {
-  color: var(--ot-danger);
+  color: var(--ot-danger-text);
 }
 
 .mods-entry-id {

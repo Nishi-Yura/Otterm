@@ -35,6 +35,7 @@ The Japanese specification in [`docs/`](docs/) is the source of truth; English t
 | [docs/09-performance.md](docs/09-performance.md) | Latency budget, renderer backends, benchmarks |
 | [docs/10-ai-assist.md](docs/10-ai-assist.md) | Three-tier AI assist, privacy, step mode |
 | [docs/11-decisions.md](docs/11-decisions.md) | Decision log (108 decisions) |
+| [docs/12-design-system.md](docs/12-design-system.md) | Design system: UI tokens, type, spacing, icons, states, `data-ot` attributes |
 | [packages/api/](packages/api/) | `@otterm/api` type definitions (source of truth for the mod API), dictionary JSON Schema |
 | [mods/dictionary-core/](mods/dictionary-core/) | Built-in command dictionary (164 commands) and danger rules |
 | [crates/otterm-config/](crates/otterm-config/) | Config model in Rust |

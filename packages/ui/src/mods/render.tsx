@@ -10,6 +10,7 @@ import type { JSX } from "solid-js";
 import { createEffect, createMemo, createSignal, For, Match, Show, Switch } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { t } from "../i18n";
+import { Icon as SvgIcon } from "../icons";
 import type {
   BadgeNode,
   BaseNode,
@@ -112,37 +113,13 @@ function styleOf(s: BaseNode["style"]): JSX.CSSProperties | undefined {
   };
 }
 
-const GLYPHS = new Map<string, string>([
-  ["git-branch", ""],
-  ["git", "⎇"],
-  ["refresh-cw", "↻"],
-  ["folder", "▤"],
-  ["file", "▯"],
-  ["check", "✓"],
-  ["x", "✗"],
-  ["warning", "⚠"],
-  ["alert-triangle", "⚠"],
-  ["info", "ℹ"],
-  ["circle", "●"],
-  ["chevron-right", "▸"],
-  ["chevron-down", "▾"],
-  ["play", "▶"],
-  ["plus", "+"],
-  ["minus", "−"],
-  ["terminal", ">_"],
-]);
-
-/** Glyph for a Lucide icon name. A stopgap until the real icon set lands; unknown names get a dot. */
-export function iconGlyph(name: string): string {
-  return GLYPHS.get(name) ?? "•";
-}
-
+/** A mod's icon by its Lucide name, from otterm's own set (icons.tsx). */
 function Icon(props: { name?: string }): JSX.Element {
   return (
     <Show when={props.name}>
       {(name) => (
         <span class="mt-icon" data-icon={name()} aria-hidden="true">
-          {iconGlyph(name())}
+          <SvgIcon name={name()} />
         </span>
       )}
     </Show>
@@ -286,13 +263,17 @@ function ButtonView(props: Props<ButtonNode>): JSX.Element {
     <button
       type="button"
       class={`mt-button mt-button-${props.node.variant ?? "default"}`}
+      classList={{ "mt-button-icon": !!props.node.iconOnly && !!props.node.icon }}
       disabled={props.node.disabled === true}
-      title={props.node.tooltip}
+      title={props.node.tooltip ?? (props.node.iconOnly ? props.node.text : undefined)}
+      aria-label={props.node.iconOnly ? props.node.text : undefined}
       style={styleOf(props.node.style)}
       onClick={() => invoke(props.ctx.host, props.node.onClick)}
     >
       <Icon name={props.node.icon} />
-      <span>{props.node.text}</span>
+      <Show when={!props.node.iconOnly || !props.node.icon}>
+        <span>{props.node.text}</span>
+      </Show>
     </button>
   );
 }

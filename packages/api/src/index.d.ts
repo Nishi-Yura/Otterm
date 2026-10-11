@@ -314,6 +314,8 @@ export interface ButtonNode extends BaseNode {
   icon?: IconName;
   variant?: "primary" | "danger" | "default" | "ghost";
   disabled?: Reactive<boolean>;
+  /** Show only the icon; `text` becomes the button's tooltip and accessible name. Needs `icon`. */
+  iconOnly?: boolean;
   onClick(): void;
 }
 export interface InputNode extends BaseNode {

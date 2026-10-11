@@ -28,6 +28,7 @@ otterm はシェルを解きほぐして、使う人のそばに寄り添いま�
 | [docs/09-performance.md](docs/09-performance.md) | 性能戦略（遅延の予算、レンダラ差し替え、ベンチマークと CI ゲート） |
 | [docs/10-ai-assist.md](docs/10-ai-assist.md) | AI 補助の仕様（3 層構造、機能、送信内容の扱い、コツメとの統合） |
 | [docs/11-decisions.md](docs/11-decisions.md) | 判断一覧（未決事項の選択肢と推奨、決定の記録） |
+| [docs/12-design-system.md](docs/12-design-system.md) | デザイン基盤（UI トークン、文字、間隔、アイコン、状態の見せ方、`data-ot` 属性） |
 
 ## 状態
 

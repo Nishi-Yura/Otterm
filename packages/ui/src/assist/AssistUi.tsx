@@ -6,6 +6,7 @@
  */
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { t } from "../i18n";
+import { Icon } from "../icons";
 import type { CompletionItem, ErrorHint, Explanation } from "../mods/host";
 import "./assist.css";
 
@@ -76,9 +77,7 @@ export function AssistBar(props: AssistBarProps) {
           {(x) => (
             <div class="assist-explain" classList={{ danger: !!x.danger }} data-ot="assist-explain">
               <Show when={x.danger}>
-                <span class="assist-danger-mark" aria-hidden="true">
-                  ⚠
-                </span>
+                <Icon name="alert-triangle" class="assist-danger-mark" />
               </Show>
               <span>{x.summary}</span>
             </div>
@@ -92,9 +91,10 @@ export function AssistBar(props: AssistBarProps) {
 export interface CompletionPopupProps {
   items: CompletionItem[];
   selected: number;
-  /** Position above the prompt row, in CSS pixels of the terminal. */
+  /** Where it goes, in CSS pixels of the panes area: under the cursor (`top`) or above it (`bottom`). */
   x: number;
-  y: number;
+  top?: number;
+  bottom?: number;
   onPick: (item: CompletionItem) => void;
   onHover: (index: number) => void;
 }
@@ -112,7 +112,11 @@ export function CompletionPopup(props: CompletionPopupProps) {
       class="completion"
       role="listbox"
       data-ot="completion"
-      style={{ left: `${props.x}px`, bottom: `${props.y}px` }}
+      style={{
+        left: `${props.x}px`,
+        top: props.top === undefined ? undefined : `${props.top}px`,
+        bottom: props.bottom === undefined ? undefined : `${props.bottom}px`,
+      }}
       onMouseDown={(e) => e.preventDefault()}
     >
       <For each={props.items}>

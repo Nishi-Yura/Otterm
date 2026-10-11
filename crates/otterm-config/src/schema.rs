@@ -294,6 +294,9 @@ impl Default for Panel {
 pub struct Statusbar {
     /// `auto` follows the layout.
     pub visible: Auto<bool>,
+    /// Order of the items, by id (`otterm.folder`, `otterm.guide`, `otterm.exit`, `otterm.mods`,
+    /// `<mod id>#<n>`). Set by dragging an item; items not listed keep their place after these.
+    pub order: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

@@ -53,6 +53,8 @@ export interface UiConfig {
   layout: Layout;
   /** `appearance.ui_scale`. */
   uiScale: number;
+  /** Left and right side panel widths and the bottom panel's height, CSS pixels. */
+  panelSizes: [number, number, number];
   window: {
     opacity: number;
     blur: boolean;
@@ -99,6 +101,8 @@ export interface UiConfig {
   };
   /** Whether the status bar shows, the layout resolved. */
   statusbar: boolean;
+  /** `appearance.statusbar.order`: item ids in the order the user dragged them. */
+  statusbarOrder: string[];
   /** `[mods] developer_mode`: logs and timings per mod. */
   developerMode: boolean;
   /** Where installed mods live, to tell the user. */
@@ -233,6 +237,10 @@ export async function applyWindow(c: UiConfig, osReduceMotion: boolean): Promise
   root.classList.toggle("translucent", translucent);
   root.style.setProperty("--ot-window-alpha", String(w.opacity));
   root.style.setProperty("--ot-ui-scale", String(c.uiScale));
+  const [left, right, bottom] = c.panelSizes;
+  root.style.setProperty("--ot-sidebar-left-width", `${left}px`);
+  root.style.setProperty("--ot-sidebar-right-width", `${right}px`);
+  root.style.setProperty("--ot-panel-bottom-height", `${bottom}px`);
   const reduce = c.accessibility.reduceMotion ?? osReduceMotion;
   root.classList.toggle("reduce-motion", reduce);
   root.classList.toggle("allow-motion", c.accessibility.reduceMotion === false);

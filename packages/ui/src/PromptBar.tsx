@@ -1,8 +1,11 @@
 import { For, onMount, Show } from "solid-js";
+import { Icon } from "./icons";
 
 export interface PromptButton {
   label: string;
   action: () => void;
+  /** `danger` for the choice that does the risky thing, `primary` for the suggested one. */
+  kind?: "danger" | "primary";
 }
 
 export interface PromptProps {
@@ -15,6 +18,8 @@ export interface PromptProps {
   /** Index of the button that gets the focus (the safe choice); default 0. */
   focus?: number;
   cancel: () => void;
+  /** `danger` marks a risky command (an icon and a striped edge, not only color: decision I15). */
+  tone?: "danger";
 }
 
 /** A question about the terminal, above its bottom edge: paste confirmation, clipboard requests. */
@@ -30,8 +35,21 @@ export function PromptBar(props: PromptProps) {
     }
   };
   return (
-    <div ref={bar} class="prompt" role="alertdialog" aria-label={props.title} data-ot="prompt" onKeyDown={onKeyDown}>
-      <div class="prompt-title">{props.title}</div>
+    <div
+      ref={bar}
+      class="prompt"
+      classList={{ danger: props.tone === "danger" }}
+      role="alertdialog"
+      aria-label={props.title}
+      data-ot="prompt"
+      onKeyDown={onKeyDown}
+    >
+      <div class="prompt-title">
+        <Show when={props.tone === "danger"}>
+          <Icon name="alert-triangle" class="prompt-icon" />
+        </Show>
+        {props.title}
+      </div>
       <Show when={props.body}>
         <div class="prompt-body">{props.body}</div>
       </Show>
@@ -41,7 +59,13 @@ export function PromptBar(props: PromptProps) {
       <div class="prompt-buttons">
         <For each={props.buttons}>
           {(b) => (
-            <button type="button" class="prompt-button" data-ot="prompt-button" onClick={() => b.action()}>
+            <button
+              type="button"
+              class="prompt-button"
+              classList={{ danger: b.kind === "danger", primary: b.kind === "primary" }}
+              data-ot="prompt-button"
+              onClick={() => b.action()}
+            >
               {b.label}
             </button>
           )}

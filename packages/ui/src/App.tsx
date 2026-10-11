@@ -15,7 +15,8 @@ import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInter
 import { ContextMenu, type MenuItem } from "./ContextMenu";
 import { applyThemeCss, applyWindow, loadConfig, onConfigChanged, type UiConfig, uiTokens } from "./config";
 import { language, setLanguage, t } from "./i18n";
-import { Keymap } from "./keymap";
+import { Icon } from "./icons";
+import { defaults as defaultKeys, Keymap } from "./keymap";
 import { type AppAction, platform } from "./keys";
 import {
   type Divider,
@@ -102,6 +103,12 @@ export function commandName(command: string): string {
   const word = first.replace(/^["']|["']$/g, "");
   const base = word.split(/[\\/]/).pop() ?? "";
   return base.replace(/\.exe$/i, "");
+}
+
+/** A title that is only a program's path, like `C:\…\pwsh.exe` or `/usr/bin/zsh`. */
+export function isProgramPath(title: string): boolean {
+  const t = title.trim();
+  return /^([a-zA-Z]:[\\/]|\/)/.test(t) && /(\.exe|[\\/](ba|z|fi|nu)?sh|[\\/]pwsh|[\\/]cmd)$/i.test(t);
 }
 
 /** The window: a tab bar and, per tab, panes laid out by a split tree (docs/03 §3). */
@@ -536,11 +543,13 @@ export function App() {
             title: verdict.title || t("danger-title-confirm"),
             body: verdict.body,
             preview: line,
+            tone: "danger",
             buttons: [
-              { label: t("danger-run"), action: () => done(() => true) },
-              ...verdict.alternatives.map((a) => ({
+              { label: t("danger-run"), action: () => done(() => true), kind: "danger" },
+              ...verdict.alternatives.map((a, i) => ({
                 label: a.label || t("danger-alternative-label", { command: a.command }),
                 action: () => done(() => replace(a.command).then(() => true)),
+                kind: i === 0 ? ("primary" as const) : undefined,
               })),
               { label: t("danger-cancel"), action: () => done(() => false) },
             ],
@@ -585,6 +594,16 @@ export function App() {
     const h = await host.errorHint(block).catch(() => undefined);
     if (h && currentTab()?.active === pane.id) setHint({ hint: h, command: b.command });
   };
+  /** The first key bound to an action, written for people (`Ctrl+Shift+T`). */
+  const keyHint = (id: string): string | undefined => {
+    const chord = (config()?.keybindings[id] ?? defaultKeys()[id])?.[0];
+    if (!chord) return undefined;
+    return chord
+      .split("+")
+      .map((p) => (p === "cmd" ? "⌘" : p.replace(/^arrow/, "").replace(/^./, (c) => c.toUpperCase())))
+      .join("+");
+  };
+
   /** The palette (docs/03 §7): otterm's own actions, profiles, and every mod command. */
   const openPalette = async () => {
     const list = await invoke<{ id: string; name: string; detected: boolean }[]>("profiles_list").catch(() => []);
@@ -602,6 +621,16 @@ export function App() {
         run: () => run({ kind: "split", dir: "column" }),
       },
       { id: "settings", title: t("palette-cmd-settings"), run: () => run({ kind: "settings" }) },
+      {
+        id: "settings.file",
+        title: t("palette-cmd-settings-file"),
+        run: () => void invoke("config_open").catch((e) => showNotice(String(e))),
+      },
+      ...(["sidebar.left", "sidebar.right", "panel.bottom"] as const).map((slot) => ({
+        id: `${slot}.toggle`,
+        title: t(`keyact-${slot.replace(".", "-")}-toggle`),
+        run: () => run({ kind: "togglePanel", slot }),
+      })),
       { id: "mods", title: t("palette-cmd-mods"), run: () => env.runHostCommand("otterm.mods.show", undefined) },
       { id: "history", title: t("palette-cmd-history"), run: () => run({ kind: "history" }) },
       ...[0, 1, 2, 3].map((level) => ({
@@ -637,6 +666,8 @@ export function App() {
       run: () => void invoke("config_set", { key: "open.editor", value: ed.id }).catch((e) => showNotice(String(e))),
     }));
     setPalette(undefined);
+    // The key of each of otterm's own actions, at the right (docs/03 §7).
+    for (const e of mine) e.hint ??= keyHint(e.id);
     setPalette({
       title: t("palette-title"),
       placeholder: t("palette-placeholder"),
@@ -810,6 +841,7 @@ export function App() {
   const motionMode = window.matchMedia("(prefers-reduced-motion: reduce)");
   /** The terminal's default background alpha (window opacity, background image). */
   let terminalAlpha = 1;
+  let appliedAppearance: string | undefined;
 
   /**
    * Pick `theme` or `themeLight` for the OS appearance (appearance.follow_system), High Contrast
@@ -824,6 +856,13 @@ export function App() {
     const preview = previewTheme();
     if (preview) c = { ...c, theme: preview };
     applyThemeCss(c.theme);
+    // The OS title bar follows the theme (otherwise it stays white over a dark window on Windows).
+    if (c.theme.appearance !== appliedAppearance) {
+      appliedAppearance = c.theme.appearance;
+      void getCurrentWindow()
+        .setTheme(c.theme.appearance)
+        .catch(() => {});
+    }
     void applyWindow(c, motionMode.matches).then((alpha) => {
       if (alpha === terminalAlpha) return;
       terminalAlpha = alpha;
@@ -1285,7 +1324,10 @@ export function App() {
    * command runs, else the folder name.
    */
   const paneTitle = (pane: number) => {
-    if (titles()[pane]) return titles()[pane] as string;
+    const set = titles()[pane];
+    // A shell that titles its window with its own program path (pwsh after a command, cmd) says
+    // nothing useful; the folder and the command do (decision I10).
+    if (set && !isProgramPath(set)) return set;
     const folder = folders()[pane] || panes().find((p) => p.id === pane)?.profileName || "";
     const command = commandName(running()[pane] ?? "");
     return command ? (folder ? `${command} · ${folder}` : command) : folder;
@@ -1427,6 +1469,19 @@ export function App() {
           },
         ]
       : [];
+
+  /**
+   * Under the cursor, or above it when the cursor is near the bottom. The terminal's hidden input
+   * sits at the cursor (it anchors the IME), so its box is the cursor's.
+   */
+  const completionPlace = (): { x: number; top?: number; bottom?: number } => {
+    const caret = document.querySelector(".terminal.active .input")?.getBoundingClientRect();
+    if (!caret || !area) return { x: 16, bottom: 8 };
+    const box = area.getBoundingClientRect();
+    const x = Math.max(4, Math.min(caret.left - box.left - 8, box.width - 320));
+    if (box.bottom - caret.bottom >= 250) return { x, top: caret.bottom - box.top + 2 };
+    return { x, bottom: box.bottom - caret.top + 2 };
+  };
 
   /** Panel ids that go in a slot, built-in ones included. */
   const panelsIn = (slot: string): string[] => [
@@ -1583,8 +1638,9 @@ export function App() {
                 title={t("tab-close")}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => void askThenClose(leaves(tab.root), () => closeTab(tab.id))}
+                aria-label={t("tab-close")}
               >
-                ×
+                <Icon name="x" />
               </button>
             </div>
           )}
@@ -1594,8 +1650,9 @@ export function App() {
           class="tab-new"
           title={`${t("tab-new")} (${newTabHint})`}
           onClick={() => run({ kind: "newTab" })}
+          aria-label={t("tab-new")}
         >
-          +
+          <Icon name="plus" />
         </button>
         <button
           ref={newButton}
@@ -1603,8 +1660,9 @@ export function App() {
           class="tab-new tab-profiles"
           title={t("tab-new-profile")}
           onClick={() => void openProfileMenu()}
+          aria-label={t("tab-new-profile")}
         >
-          ⌄
+          <Icon name="chevron-down" />
         </button>
       </div>
       <div class="body">
@@ -1627,6 +1685,7 @@ export function App() {
                 return (
                   <div
                     class="pane"
+                    data-ot="pane"
                     classList={{ hidden: !paneVisible(p), "drop-target": dropTarget() === p.id }}
                     data-pane={p.id}
                     style={{
@@ -1709,8 +1768,7 @@ export function App() {
                 <CompletionPopup
                   items={c.items}
                   selected={c.selected}
-                  x={16}
-                  y={8}
+                  {...completionPlace()}
                   onPick={acceptCompletion}
                   onHover={(i) => setCompletion({ ...c, selected: i })}
                 />
@@ -1753,6 +1811,13 @@ export function App() {
               }}
             />
           </Show>
+          <Show when={confirm()} keyed>
+            {(c) => (
+              <div class="app-prompt">
+                <PromptBar {...c} />
+              </div>
+            )}
+          </Show>
           <AssistBar
             explanation={config()?.layout.assist_bar === false ? undefined : explanation()}
             hint={hint()?.hint}
@@ -1790,6 +1855,12 @@ export function App() {
               copy={copyText}
               guideLevel={config()?.guideLevel ?? 2}
               onGuideClick={cycleGuide}
+              order={config()?.statusbarOrder ?? []}
+              onReorder={(ids) =>
+                void invoke("config_write", { path: ["appearance", "statusbar", "order"], value: ids }).catch((e) =>
+                  showNotice(String(e)),
+                )
+              }
               onModsClick={() => {
                 const slot = slotOf(MODS_PANEL, "sidebar.right");
                 const open = shownPanel()[slot] === MODS_PANEL;
@@ -1895,13 +1966,6 @@ export function App() {
               refocus();
             }}
           />
-        )}
-      </Show>
-      <Show when={confirm()} keyed>
-        {(c) => (
-          <div class="app-prompt">
-            <PromptBar {...c} />
-          </div>
         )}
       </Show>
       {notice() && (

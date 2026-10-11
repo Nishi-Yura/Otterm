@@ -573,24 +573,32 @@ export async function activate(ctx: ModContext): Promise<void> {
         gap: "s",
         align: "space-between",
         children: [
-          { type: "text", text: () => breadcrumb(rootPath.get(), home), icon: "folder-open" },
-          { type: "button", text: t("up-button"), icon: "arrow-up", variant: "ghost", onClick: () => void goUp() },
+          { type: "text", text: () => breadcrumb(rootPath.get(), home), icon: "folder-open", style: { flex: "1" } },
+          {
+            type: "button",
+            text: t("up-button"),
+            icon: "arrow-up",
+            iconOnly: true,
+            variant: "ghost",
+            onClick: () => void goUp(),
+          },
+          {
+            type: "button",
+            text: t("reveal-button"),
+            icon: "locate-fixed",
+            iconOnly: true,
+            variant: "ghost",
+            onClick: () => void revealCwd(),
+          },
         ],
       },
       {
         type: "row",
         gap: "m",
         children: [
-          { type: "toggle", value: pinned, label: t("pin-label") },
+          { type: "toggle", value: pinned, label: t("pin-label"), tooltip: t("pin-tooltip") },
           { type: "toggle", value: showHidden, label: t("hidden-label") },
         ],
-      },
-      {
-        type: "button",
-        text: t("reveal-button"),
-        icon: "locate-fixed",
-        variant: "ghost",
-        onClick: () => void revealCwd(),
       },
       {
         type: "tree",
@@ -642,7 +650,7 @@ export async function activate(ctx: ModContext): Promise<void> {
     title: t("cmd-reveal"),
     icon: "locate-fixed",
   });
-  ctx.keybindings.suggest("file-tree.toggle", "ctrl+shift+b");
+  // No key of its own: otterm's sidebar.left.toggle (Ctrl+Shift+B, decision M12) shows and hides it.
 
   ctx.session.onCwdChanged((e) => {
     followEvent(e).catch(fail);

@@ -81,7 +81,8 @@ export async function activate(ctx: ModContext): Promise<void> {
       }
     }
 
-    return { summary: sentences.join(" "), parts, danger };
+    // One line each: what the command does, then each option (the bar keeps line breaks).
+    return { summary: sentences.join("\n"), parts, danger };
   }
 
   ctx.assist.explain.provide({

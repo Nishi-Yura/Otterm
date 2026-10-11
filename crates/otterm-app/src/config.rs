@@ -58,6 +58,8 @@ pub struct UiConfig {
     pub layout: Layout,
     /// `appearance.ui_scale` for tabs, panels and dialogs.
     pub ui_scale: f32,
+    /// Panel sizes in CSS pixels: left and right side panel widths, bottom panel height.
+    pub panel_sizes: [u32; 3],
     pub window: UiWindow,
     /// Style overrides (docs/04 §2.3): `<config>/user.css` when `appearance.custom_css` is on.
     pub user_css: String,
@@ -88,6 +90,8 @@ pub struct UiConfig {
     pub assist: UiAssist,
     /// Whether the status bar shows (the layout resolved).
     pub statusbar: bool,
+    /// `appearance.statusbar.order`.
+    pub statusbar_order: Vec<String>,
     /// `[mods] developer_mode`: per-mod logs and timings in the mods panel (docs/05 §8.2).
     pub developer_mode: bool,
     /// Where installed mods live, to tell the user.
@@ -230,6 +234,11 @@ impl ConfigState {
             default_profile: c.shell.default_profile.clone(),
             tabbar: layout.tabbar,
             ui_scale: c.appearance.ui_scale.clamp(0.8, 2.0),
+            panel_sizes: [
+                c.appearance.sidebar.left.width.clamp(160, 800),
+                c.appearance.sidebar.right.width.clamp(160, 800),
+                c.appearance.panel.bottom.height.clamp(100, 800),
+            ],
             window,
             user_css: if c.appearance.custom_css { l.user_css.clone() } else { String::new() },
             accessibility: UiAccessibility {
@@ -272,6 +281,7 @@ impl ConfigState {
                 learn_hints: effective.learn_hints,
             },
             statusbar: layout.statusbar,
+            statusbar_order: c.appearance.statusbar.order.clone(),
             layout,
             developer_mode: c.mods.developer_mode,
             mods_dir: otterm_config::data_dir().map(|d| otterm_modhost::mods_dir(&d).display().to_string()),

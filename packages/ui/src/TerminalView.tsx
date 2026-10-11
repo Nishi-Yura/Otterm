@@ -4,6 +4,7 @@ import { exposeInternals, startupMark } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
 import type { UiConfig } from "./config";
 import { t } from "./i18n";
+import { Icon } from "./icons";
 import { isCopyShortcut, isSearchShortcut, platform, scrollKey, terminalKey, zoomKey } from "./keys";
 import { PromptBar, type PromptProps } from "./PromptBar";
 import { decodeInfo, duration, type FoldRow, type HeaderRow, PromptHeaders } from "./PromptHeaders";
@@ -494,6 +495,35 @@ export function TerminalView(props: TerminalViewProps) {
     }
   };
 
+  /**
+   * The block under the pointer, for the small toolbar at its first row (docs/03 §6.3: rerun, copy,
+   * fold without opening the menu). Looked up once the pointer rests on a new row.
+   */
+  const [hoverBlock, setHoverBlock] = createSignal<{ row: number; block: Block }>();
+  let hoverRow = -1;
+  let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+  const onHoverMove = (e: MouseEvent) => {
+    if (e.buttons !== 0 || (e.target as HTMLElement).closest(".block-actions")) return;
+    const c = canvas.getBoundingClientRect();
+    const cell = renderer?.cellAt(e.clientX - c.left, e.clientY - c.top);
+    if (!cell || cell.row === hoverRow) return;
+    hoverRow = cell.row;
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(async () => {
+      const line = model.lineAt(hoverRow);
+      const b = session && !model.altScreen && line >= 0 ? await session.block(line).catch(() => null) : null;
+      if (!b || b.command === null) return setHoverBlock(undefined);
+      // The block's first row, or the top of the view when it starts above it.
+      setHoverBlock({ row: Math.max(0, model.rowOf(b.line)), block: b });
+    }, 150);
+  };
+  const clearHover = () => {
+    clearTimeout(hoverTimer);
+    hoverRow = -1;
+    setHoverBlock(undefined);
+  };
+  onCleanup(() => clearTimeout(hoverTimer));
+
   /** Menu items for the block under the pointer, if the shell integration made one there. */
   const blockItems = async (row: number): Promise<MenuItem[]> => {
     const line = model.lineAt(row);
@@ -916,6 +946,7 @@ export function TerminalView(props: TerminalViewProps) {
     <div
       ref={host}
       class="terminal"
+      data-ot="terminal"
       classList={{ active: props.active(), flash: flash() }}
       role="application"
       aria-label={t("terminal-label")}
@@ -936,8 +967,69 @@ export function TerminalView(props: TerminalViewProps) {
           {spoken()}
         </div>
       </Show>
-      <div ref={viewport} id={viewportId} class="viewport">
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: the pointer only decides which block's toolbar shows; the same actions are in the menu and the palette */}
+      <div
+        ref={viewport}
+        id={viewportId}
+        class="viewport"
+        onMouseMove={onHoverMove}
+        onMouseLeave={clearHover}
+        onWheel={clearHover}
+      >
         <canvas ref={canvas} />
+        <Show when={hoverBlock()} keyed>
+          {(h) => (
+            <div
+              class="block-actions"
+              role="toolbar"
+              aria-label={t("block-actions")}
+              data-ot="block-actions"
+              classList={{ "beside-header": headers().rows.some((r) => r.row === h.row && r.block.info !== "") }}
+              style={{ top: `${h.row * headers().lineHeight}px`, height: `${headers().lineHeight}px` }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                title={t("menu-rerun", { command: h.block.command ?? "" })}
+                aria-label={t("menu-rerun", { command: h.block.command ?? "" })}
+                disabled={h.block.running}
+                onClick={() => void session?.write(`${h.block.command}\r`)}
+              >
+                <Icon name="play" />
+              </button>
+              <button
+                type="button"
+                title={t("menu-copy-output")}
+                aria-label={t("menu-copy-output")}
+                disabled={!h.block.output}
+                onClick={() => void clipboard.write(h.block.output)}
+              >
+                <Icon name="copy" />
+              </button>
+              <Show when={h.block.foldable}>
+                <button
+                  type="button"
+                  title={t(h.block.folded ? "menu-unfold" : "menu-fold")}
+                  aria-label={t(h.block.folded ? "menu-unfold" : "menu-fold")}
+                  onClick={() => {
+                    void session?.blockFold(h.block.line, !h.block.folded);
+                    clearHover();
+                  }}
+                >
+                  <Icon name={h.block.folded ? "chevron-down" : "chevron-up"} />
+                </button>
+              </Show>
+              <button
+                type="button"
+                title={t("block-more")}
+                aria-label={t("block-more")}
+                onClick={(e) => void openMenu(e.clientX, e.clientY)}
+              >
+                <Icon name="more-horizontal" />
+              </button>
+            </div>
+          )}
+        </Show>
         <PromptHeaders
           rows={headers().rows}
           lineHeight={headers().lineHeight}

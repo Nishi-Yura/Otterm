@@ -21,7 +21,7 @@
 }
 
 .assist-explain.danger {
-  color: var(--ot-danger);
+  color: var(--ot-danger-text);
 }
 
 .assist-danger-mark {
@@ -264,7 +264,7 @@
 }
 
 .multiline-problems:not(:empty) {
-  color: var(--ot-warning);
+  color: var(--ot-warning-text);
 }
 
 .multiline-area {

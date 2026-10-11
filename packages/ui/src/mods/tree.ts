@@ -136,6 +136,8 @@ export interface ButtonNode extends BaseNode {
   icon?: string;
   variant?: "primary" | "danger" | "default" | "ghost";
   disabled?: boolean;
+  /** Only the icon shows; `text` is the tooltip and accessible name. */
+  iconOnly?: boolean;
   onClick: FnRef;
 }
 export interface InputNode extends BaseNode {

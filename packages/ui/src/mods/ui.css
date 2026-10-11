@@ -46,11 +46,12 @@
   outline-offset: 1px;
 }
 .mt-icon {
-  display: inline-block;
+  display: inline-flex;
   flex: none;
+  align-items: center;
+  justify-content: center;
   width: 1em;
-  text-align: center;
-  font-family: "Symbols Nerd Font Mono", system-ui, sans-serif;
+  height: 1em;
 }
 .mt-text {
   display: inline-flex;
@@ -266,6 +267,10 @@
 }
 .mt-button-ghost:hover:not(:disabled) {
   background: var(--mt-hover);
+}
+.mt-button-icon {
+  width: 26px;
+  padding: 0;
 }
 .mt-button-small {
   min-height: 20px;
