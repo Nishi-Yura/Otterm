@@ -5,6 +5,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod ai;
 mod assist;
 mod config;
 mod config_tools;
@@ -932,6 +933,7 @@ fn app_state(launch: launch::Launch) -> AppState {
     });
     let history = std::sync::Arc::new(history::History::open(otterm_config::data_dir()));
     history.prune(config.config().history.retention_days);
+    ai::prune_log(config.config().ai.log_retention_days);
     AppState {
         sessions: Box::new(LocalSessionManager::new()),
         screen: std::sync::Arc::new(ScreenServer::start().expect("start the screen socket")),
@@ -1191,6 +1193,14 @@ fn main() {
             workspace_trust,
             workspace_tabs,
             instance_reply,
+            ai::ai_available,
+            ai::ai_preview,
+            ai::ai_preview_seen,
+            ai::ai_complete,
+            ai::ai_key_set,
+            ai::ai_key_present,
+            ai::ai_detect_local,
+            ai::ai_workspace_off,
             mascot::mascot_seen,
             mascot::mascot_seen_add,
             mascot::mascot_seen_reset,

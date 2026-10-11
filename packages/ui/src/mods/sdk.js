@@ -157,6 +157,8 @@
   const panels = new Map();
   const menus = new Map();
 
+  /** Open dialogs whose body is a function, by registration. */
+  const dialogBodies = new Map();
   const render = () => {
     renderScheduled = false;
     if (!active) return;
@@ -178,7 +180,10 @@
         node: ser(def.content, "content"),
       });
     }
-    post({ t: "ui", items, panels: ps });
+    // Dialog bodies given as a function re-render like panels while the dialog is open.
+    const ds = [];
+    for (const [reg, f] of dialogBodies) ds.push({ reg, node: ser(f(), "content") });
+    post({ t: "ui", items, panels: ps, dialogs: ds });
     for (const [reg, m] of menus) post({ t: "contextMenu", target: m.target, reg, items: serMenu(m.items) });
   };
 
@@ -216,11 +221,17 @@
     dialog(opts) {
       const plain = opts.body === undefined || typeof opts.body === "string" || isLocalized(opts.body);
       const body = opts.body === undefined ? undefined : plain ? resolve(opts.body) : ser(opts.body, "content");
+      const live = typeof opts.body === "function";
+      const reg = live ? nextReg++ : undefined;
+      if (live) dialogBodies.set(reg, opts.body);
       return call("ui.dialog", {
         title: resolve(opts.title),
         body,
         buttons: opts.buttons.map((b) => ({ id: b.id, label: resolve(b.label), variant: b.variant })),
         cancelId: opts.cancelId,
+        reg,
+      }).finally(() => {
+        if (live) dialogBodies.delete(reg);
       });
     },
     pickPath(opts) {
@@ -483,6 +494,22 @@
       if (p.events.includes("output")) ctx.terminal.onOutput = (cb) => on("output", cb);
     }
     if (p.terminalWrite) ctx.terminal.write = (id, text) => call("terminal.write", id, text);
+    // The user's AI provider (docs/10 §7). Keys, the preview and the log stay with the host.
+    if (p.ai) {
+      const plain = (req) => ({
+        purpose: resolve(req.purpose),
+        prompt: String(req.prompt ?? ""),
+        system: req.system,
+        context: req.context,
+        maxTokens: req.maxTokens,
+        json: !!req.json,
+      });
+      ctx.ai = {
+        complete: (req) => call("ai.complete", plain(req), null),
+        stream: (req, onChunk) => call("ai.complete", plain(req), ref(onChunk, true).$fn),
+        available: () => call("ai.available"),
+      };
+    }
     if (p.fsRead.length > 0 || p.fsWrite.length > 0) {
       ctx.fs = {
         readText: (path, opts) => call("fs.readText", path, opts?.maxBytes),

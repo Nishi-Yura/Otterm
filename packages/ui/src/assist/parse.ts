@@ -133,7 +133,7 @@ export function parseCommand(line: string, cwd = "", shellKind = "other"): Parse
   const segments: ParsedSegment[] = [];
   let current: Word[] = [];
   const flush = () => {
-    if (current.length > 0) segments.push(segment(current));
+    if (current.length > 0) segments.push(segment(current, shellKind));
     current = [];
   };
   for (const w of all) {
@@ -144,7 +144,7 @@ export function parseCommand(line: string, cwd = "", shellKind = "other"): Parse
   return { raw: line, segments, cwd, shellKind };
 }
 
-function segment(ws: Word[]): ParsedSegment {
+function segment(ws: Word[], shellKind: string): ParsedSegment {
   const first = ws[0] as Word;
   const last = ws[ws.length - 1] as Word;
   let i = 0;
@@ -160,6 +160,9 @@ function segment(ws: Word[]): ParsedSegment {
   i++;
   const seg: ParsedSegment = { name, options: [], args: [], range: [first.start, last.end] };
   const takesSub = SUBCOMMAND_COMMANDS.has(name.toLowerCase());
+  // `Get-ChildItem`, or `get-childitem` typed in PowerShell.
+  const pwsh = shellKind === "pwsh" || shellKind === "powershell";
+  const cmdlet = /^[A-Za-z]+-[A-Za-z]+$/.test(name) && (pwsh || /^[A-Z][a-z]+-[A-Z]/.test(name));
   for (; i < ws.length; i++) {
     const w = ws[i] as Word;
     const t = w.text;
@@ -167,6 +170,10 @@ function segment(ws: Word[]): ParsedSegment {
       const eq = t.indexOf("=");
       if (eq > 0) seg.options.push({ flag: t.slice(0, eq), value: t.slice(eq + 1) });
       else seg.options.push({ flag: t });
+    } else if (!w.quoted && /^-[A-Za-z]{2,}$/.test(t) && cmdlet) {
+      // PowerShell cmdlets (Verb-Noun): `-Recurse`, `-Filter` are one option each. Checked before
+      // the short-flag rule below, which would read `-Filter` as `-F -i -l ...`.
+      seg.options.push({ flag: t });
     } else if (!w.quoted && /^-[A-Za-z]/.test(t)) {
       // `-rf` is `-r` and `-f`; `-p 8080` keeps a value only for single letters followed by a non-option.
       if (t.length === 2) {
@@ -181,9 +188,6 @@ function segment(ws: Word[]): ParsedSegment {
         for (const ch of t.slice(1)) seg.options.push({ flag: `-${ch}` });
       }
     } else if (!w.quoted && /^\/[A-Za-z?]/.test(t) && name.toLowerCase().endsWith(".exe")) {
-      seg.options.push({ flag: t });
-    } else if (!w.quoted && /^-[A-Za-z]{2,}$/i.test(t) && /^[A-Z][a-z]+-[A-Z]/.test(name)) {
-      // PowerShell: `-Recurse`, `-Force` are one option each.
       seg.options.push({ flag: t });
     } else if (
       takesSub &&

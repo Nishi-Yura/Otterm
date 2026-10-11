@@ -214,7 +214,9 @@ fn entry(m: &Installed, config: &otterm_config::Config, data: &Path) -> ModEntry
         official: mf.is_official(),
         linked: m.linked,
         bundled: is_bundled(m, data),
-        enabled: otterm_modhost::is_enabled(&lists, &m.id, mf.is_official()),
+        // The AI mod follows `[ai] enabled` as well: off by default (docs/10 §5).
+        enabled: otterm_modhost::is_enabled(&lists, &m.id, mf.is_official())
+            && (m.id != "otterm.ai-assist" || config.ai.enabled),
         granted: is_bundled(m, data) || otterm_modhost::granted(data, &m.id, &mf.mod_.version),
         problems: m.problems.iter().map(|p| p.message.clone()).collect(),
         permissions: UiPermissions {

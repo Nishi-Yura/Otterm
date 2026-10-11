@@ -1,0 +1,42 @@
+[mod]
+id = "otterm.ai-assist"
+name = "Ask Pebble (AI assist)"
+version = "0.0.0"
+description = "コツメに聞きます。自然文からコマンドを作り、失敗の原因を説明し、出力について答えます。既定オフ。 / Ask Pebble: natural language to commands, failure explanations, and questions about output. Off by default."
+author = "otterm"
+license = "Apache-2.0"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+# Every request goes through the provider the user chose; the host shows the preview and redacts secrets.
+# Reads blocks (command, exit code, cwd) and the selection. Never writes to the PTY: insert only.
+[permissions]
+ai = true
+terminal.read = true
+events = ["block-end", "before-execute"]
+
+[[adds]]
+command = "ai.ask"
+label = "コツメに聞く / Ask Pebble"
+
+[[adds]]
+command = "ai.fix"
+label = "直前のコマンドを直す / Fix the last command"
+
+[[adds]]
+command = "ai.summary"
+label = "今なにしてた？ / What was I doing?"
+
+[[adds]]
+panel = "ai-assist.answer"
+label = "コツメの回答 / Pebble's answer"
+
+[dependencies]
+"otterm.dictionary-core" = ">=1.0.0"

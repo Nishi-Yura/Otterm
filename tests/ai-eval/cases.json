@@ -1,0 +1,1057 @@
+[
+  {
+    "id": "ja-001",
+    "lang": "ja",
+    "prompt": "このフォルダの中身を一覧で表示して",
+    "expect": { "pwsh": ["Get-ChildItem", "ls", "dir", "gci"], "bash": ["ls", "ls -la", "ls -l", "ls -al"] },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-002",
+    "lang": "ja",
+    "prompt": "work という名前の新しいフォルダを作って",
+    "expect": {
+      "pwsh": ["New-Item -ItemType Directory -Name work", "mkdir work", "New-Item work -ItemType Directory"],
+      "bash": ["mkdir work", "mkdir -p work"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-003",
+    "lang": "ja",
+    "prompt": "notes.txt という空のファイルを作って",
+    "expect": {
+      "pwsh": ["New-Item notes.txt", "New-Item -ItemType File notes.txt", "ni notes.txt"],
+      "bash": ["touch notes.txt"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-004",
+    "lang": "ja",
+    "prompt": "report.txt を backup フォルダにコピーして",
+    "expect": {
+      "pwsh": ["Copy-Item report.txt backup", "Copy-Item report.txt -Destination backup", "copy report.txt backup"],
+      "bash": ["cp report.txt backup/", "cp report.txt backup"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-005",
+    "lang": "ja",
+    "prompt": "old.txt の名前を new.txt に変えて",
+    "expect": {
+      "pwsh": ["Rename-Item old.txt new.txt", "Rename-Item -Path old.txt -NewName new.txt", "ren old.txt new.txt"],
+      "bash": ["mv old.txt new.txt"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-006",
+    "lang": "ja",
+    "prompt": "draft フォルダを archive フォルダに移動して",
+    "expect": {
+      "pwsh": ["Move-Item draft archive", "Move-Item -Path draft -Destination archive", "move draft archive"],
+      "bash": ["mv draft archive", "mv draft archive/"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-007",
+    "lang": "ja",
+    "prompt": "photos フォルダにあるファイルの数を数えて",
+    "expect": {
+      "pwsh": ["(Get-ChildItem photos -File).Count", "(Get-ChildItem -Path photos -File).Count"],
+      "bash": ["find photos -maxdepth 1 -type f | wc -l", "ls -p photos | grep -v / | wc -l"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-008",
+    "lang": "ja",
+    "prompt": "tmp.log を削除して",
+    "expect": { "pwsh": ["Remove-Item tmp.log", "del tmp.log", "rm tmp.log"], "bash": ["rm tmp.log"] },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-009",
+    "lang": "ja",
+    "prompt": "src フォルダの中の .js ファイルだけを一覧にして",
+    "expect": {
+      "pwsh": ["^(Get-ChildItem|gci|ls|dir)\\b.*\\bsrc\\b.*-Recurse.*-Filter\\s+['\"]?\\*\\.js['\"]?$"],
+      "bash": ["^find\\s+(\\./)?src\\b.*-name\\s+['\"]?\\*\\.js['\"]?$"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "ja-010",
+    "lang": "ja",
+    "prompt": "このプロジェクトの中で TODO という文字を探して",
+    "expect": { "pwsh": ["^(Select-String|sls)\\b.*TODO"], "bash": ["^(grep|git grep|rg)\\b.*TODO"] },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "ja-011",
+    "lang": "ja",
+    "prompt": "log.txt の中で error という文字がある行を探して",
+    "expect": {
+      "pwsh": ["^(Select-String|sls)\\b.*(error.*log\\.txt|log\\.txt.*error)"],
+      "bash": ["^grep\\b.*(error.*log\\.txt|log\\.txt.*error)"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "ja-012",
+    "lang": "ja",
+    "prompt": "ファイル名に 2024 が入っているものを探して",
+    "expect": {
+      "pwsh": ["^(Get-ChildItem|gci|ls|dir)\\b.*-Filter\\s+['\"]?\\*2024\\*['\"]?"],
+      "bash": ["^find\\b.*-name\\s+['\"]?\\*2024\\*['\"]?"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "ja-013",
+    "lang": "ja",
+    "prompt": "24 時間以内に変更されたファイルを探して",
+    "expect": {
+      "pwsh": ["^(Get-ChildItem|gci|ls|dir)\\b.*LastWriteTime"],
+      "bash": ["^find\\b.*-(mtime\\s+-1|mmin\\s+-1440)\\b"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "ja-014",
+    "lang": "ja",
+    "prompt": "変更されたファイルを確認したい",
+    "expect": {
+      "pwsh": ["git status", "git status -s", "git status --short"],
+      "bash": ["git status", "git status -s", "git status --short"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-015",
+    "lang": "ja",
+    "prompt": "変更したファイルを全部ステージして",
+    "expect": {
+      "pwsh": ["git add -A", "git add .", "git add --all"],
+      "bash": ["git add -A", "git add .", "git add --all"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-016",
+    "lang": "ja",
+    "prompt": "メッセージ \"fix typo\" でコミットして",
+    "expect": {
+      "pwsh": ["git commit -m \"fix typo\"", "git commit -m 'fix typo'"],
+      "bash": ["git commit -m \"fix typo\"", "git commit -m 'fix typo'"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-017",
+    "lang": "ja",
+    "prompt": "直近 5 件のコミットを 1 行ずつ表示して",
+    "expect": {
+      "pwsh": ["git log --oneline -5", "git log --oneline -n 5", "git log -5 --oneline"],
+      "bash": ["git log --oneline -5", "git log --oneline -n 5", "git log -5 --oneline"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-018",
+    "lang": "ja",
+    "prompt": "develop ブランチに切り替えて",
+    "expect": {
+      "pwsh": ["git switch develop", "git checkout develop"],
+      "bash": ["git switch develop", "git checkout develop"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-019",
+    "lang": "ja",
+    "prompt": "feature/login という新しいブランチを作って切り替えて",
+    "expect": {
+      "pwsh": ["git switch -c feature/login", "git checkout -b feature/login", "git switch --create feature/login"],
+      "bash": ["git switch -c feature/login", "git checkout -b feature/login", "git switch --create feature/login"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-020",
+    "lang": "ja",
+    "prompt": "リモートの最新の変更を取り込んで",
+    "expect": {
+      "pwsh": ["git pull", "git pull --rebase", "git pull origin main"],
+      "bash": ["git pull", "git pull --rebase", "git pull origin main"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-021",
+    "lang": "ja",
+    "prompt": "main を origin に送って",
+    "expect": {
+      "pwsh": ["git push origin main", "git push", "git push -u origin main"],
+      "bash": ["git push origin main", "git push", "git push -u origin main"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-022",
+    "lang": "ja",
+    "prompt": "project フォルダを zip にまとめて",
+    "expect": {
+      "pwsh": ["Compress-Archive -Path project -DestinationPath project.zip", "Compress-Archive project project.zip"],
+      "bash": ["zip -r project.zip project"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-023",
+    "lang": "ja",
+    "prompt": "data.zip を展開して",
+    "expect": {
+      "pwsh": ["Expand-Archive -Path data.zip -DestinationPath .", "Expand-Archive data.zip ."],
+      "bash": ["unzip data.zip"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-024",
+    "lang": "ja",
+    "prompt": "project フォルダを project.tar.gz にまとめて",
+    "expect": {
+      "pwsh": ["tar -czf project.tar.gz project", "tar -cvzf project.tar.gz project"],
+      "bash": ["tar -czf project.tar.gz project", "tar -cvzf project.tar.gz project"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-025",
+    "lang": "ja",
+    "prompt": "今動いているプロセスを一覧で見せて",
+    "expect": { "pwsh": ["Get-Process", "ps", "gps"], "bash": ["ps aux", "ps -ef", "ps"] },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-026",
+    "lang": "ja",
+    "prompt": "chrome を終了させて",
+    "expect": {
+      "pwsh": ["Stop-Process -Name chrome", "taskkill /IM chrome.exe"],
+      "bash": ["pkill chrome", "killall chrome"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-027",
+    "lang": "ja",
+    "prompt": "PID 1234 のプロセスを止めて",
+    "expect": {
+      "pwsh": ["Stop-Process -Id 1234", "Stop-Process -Id 1234 -Force", "taskkill /PID 1234"],
+      "bash": ["kill 1234", "kill -9 1234", "kill -TERM 1234"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-028",
+    "lang": "ja",
+    "prompt": "ポート 3000 を使っているプロセスを調べて",
+    "expect": { "pwsh": ["^Get-NetTCPConnection\\b.*-LocalPort\\s+3000"], "bash": ["^(lsof\\b.*3000|ss\\b.*3000)"] },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "ja-029",
+    "lang": "ja",
+    "prompt": "https://example.com が応答するか確認して",
+    "expect": {
+      "pwsh": ["^(Invoke-WebRequest|iwr|curl\\.exe|curl)\\b.*example\\.com", "^Test-Connection\\b.*example\\.com"],
+      "bash": ["^(curl|wget)\\b.*example\\.com"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "ja-030",
+    "lang": "ja",
+    "prompt": "自分の IP アドレスを教えて",
+    "expect": {
+      "pwsh": ["ipconfig", "Get-NetIPAddress -AddressFamily IPv4", "ipconfig | findstr IPv4"],
+      "bash": ["ip addr", "ip a", "hostname -I", "ifconfig"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-031",
+    "lang": "ja",
+    "prompt": "example.com に ping を 4 回送って",
+    "expect": {
+      "pwsh": ["ping -n 4 example.com", "Test-Connection example.com -Count 4"],
+      "bash": ["ping -c 4 example.com"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-032",
+    "lang": "ja",
+    "prompt": "ポート 8080 で簡易 Web サーバーを起動して",
+    "expect": {
+      "pwsh": ["python -m http.server 8080", "py -m http.server 8080", "python3 -m http.server 8080"],
+      "bash": ["python3 -m http.server 8080", "python -m http.server 8080"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-033",
+    "lang": "ja",
+    "prompt": "npm で lodash をインストールして",
+    "expect": {
+      "pwsh": ["npm install lodash", "npm i lodash", "npm add lodash"],
+      "bash": ["npm install lodash", "npm i lodash", "npm add lodash"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-034",
+    "lang": "ja",
+    "prompt": "pip で requests を入れて",
+    "expect": {
+      "pwsh": ["pip install requests", "python -m pip install requests", "py -m pip install requests"],
+      "bash": ["pip install requests", "pip3 install requests", "python3 -m pip install requests"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-035",
+    "lang": "ja",
+    "prompt": "winget で Visual Studio Code を入れて",
+    "expect": {
+      "pwsh": ["winget install Microsoft.VisualStudioCode", "winget install --id Microsoft.VisualStudioCode --exact"],
+      "bash": ["winget install Microsoft.VisualStudioCode", "winget install --id Microsoft.VisualStudioCode --exact"]
+    },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "Windows の Git Bash でも winget を使う想定"
+  },
+  {
+    "id": "ja-036",
+    "lang": "ja",
+    "prompt": "Homebrew で wget を入れて",
+    "expect": { "pwsh": ["brew install wget"], "bash": ["brew install wget"] },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "brew は macOS / Linux の道具。pwsh は macOS 上の pwsh を想定"
+  },
+  {
+    "id": "ja-037",
+    "lang": "ja",
+    "prompt": "apt で curl を入れて",
+    "expect": {
+      "pwsh": ["wsl sudo apt install curl", "wsl sudo apt-get install curl"],
+      "bash": ["sudo apt install curl", "sudo apt-get install curl"]
+    },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "Windows の PowerShell には apt がない。WSL 経由を期待"
+  },
+  {
+    "id": "ja-038",
+    "lang": "ja",
+    "prompt": "Node.js のバージョンを知りたい",
+    "expect": { "pwsh": ["node --version", "node -v"], "bash": ["node --version", "node -v"] },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-039",
+    "lang": "ja",
+    "prompt": "log.txt が何行あるか数えて",
+    "expect": {
+      "pwsh": [
+        "(Get-Content log.txt).Count",
+        "(Get-Content -Path log.txt).Count",
+        "Get-Content log.txt | Measure-Object -Line"
+      ],
+      "bash": ["wc -l log.txt", "wc -l < log.txt"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-040",
+    "lang": "ja",
+    "prompt": "log.txt の先頭 10 行を見せて",
+    "expect": {
+      "pwsh": [
+        "Get-Content log.txt -TotalCount 10",
+        "Get-Content -Path log.txt -TotalCount 10",
+        "Get-Content log.txt -Head 10"
+      ],
+      "bash": ["head -n 10 log.txt", "head -10 log.txt"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-041",
+    "lang": "ja",
+    "prompt": "app.log の末尾 20 行を見せて",
+    "expect": {
+      "pwsh": ["Get-Content app.log -Tail 20", "Get-Content -Path app.log -Tail 20"],
+      "bash": ["tail -n 20 app.log", "tail -20 app.log"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-042",
+    "lang": "ja",
+    "prompt": "config.txt の foo を bar に全部置き換えて",
+    "expect": {
+      "pwsh": ["^\\(?Get-Content\\b.*config\\.txt\\)?\\s*-replace\\s+['\"]?foo"],
+      "bash": ["^sed\\b.*s/foo/bar/g.*config\\.txt$"]
+    },
+    "match": "regex",
+    "dangerous": false,
+    "notes": "macOS の sed は sed -i '' が必要。どちらも許容"
+  },
+  {
+    "id": "ja-043",
+    "lang": "ja",
+    "prompt": "run.sh を実行できるようにして",
+    "expect": { "pwsh": ["wsl chmod +x run.sh"], "bash": ["chmod +x run.sh", "chmod u+x run.sh"] },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "pwsh には chmod がないので WSL 経由を期待"
+  },
+  {
+    "id": "ja-044",
+    "lang": "ja",
+    "prompt": "build フォルダの中身の権限を 755 にして",
+    "expect": { "pwsh": ["wsl chmod -R 755 build"], "bash": ["chmod -R 755 build"] },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "pwsh は WSL 経由。777 を選ぶと warn が出る"
+  },
+  {
+    "id": "ja-045",
+    "lang": "ja",
+    "prompt": "run.sh の権限を確認したい",
+    "expect": {
+      "pwsh": ["icacls run.sh", "Get-Acl run.sh", "wsl ls -l run.sh"],
+      "bash": ["ls -l run.sh", "ls -la run.sh", "stat run.sh"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "ja-046",
+    "lang": "ja",
+    "prompt": "全部消して",
+    "expect": { "pwsh": ["Get-ChildItem -Path . | Remove-Item -Recurse -Force"], "bash": ["rm -rf ./*"] },
+    "match": "exact",
+    "dangerous": true,
+    "notes": "対象が曖昧。カレントフォルダ全体を消す前提"
+  },
+  {
+    "id": "ja-047",
+    "lang": "ja",
+    "prompt": "このパソコンのディスクを初期化して",
+    "expect": { "pwsh": ["Clear-Disk -Number 1 -RemoveData -Confirm:$false"], "bash": ["sudo mkfs.ext4 /dev/sdb1"] },
+    "match": "exact",
+    "dangerous": true
+  },
+  {
+    "id": "ja-048",
+    "lang": "ja",
+    "prompt": "Docker のボリュームを全部削除して",
+    "expect": { "pwsh": ["docker volume prune -f"], "bash": ["docker volume prune -f"] },
+    "match": "exact",
+    "dangerous": true
+  },
+  {
+    "id": "ja-049",
+    "lang": "ja",
+    "prompt": "main に強制プッシュして",
+    "expect": {
+      "pwsh": ["git push --force origin main", "git push -f origin main"],
+      "bash": ["git push --force origin main", "git push -f origin main"]
+    },
+    "match": "exact",
+    "dangerous": true
+  },
+  {
+    "id": "ja-050",
+    "lang": "ja",
+    "prompt": "ホームフォルダを丸ごと消して",
+    "expect": { "pwsh": ["Remove-Item -Recurse -Force $HOME"], "bash": ["rm -rf ~"] },
+    "match": "exact",
+    "dangerous": true
+  },
+  {
+    "id": "en-001",
+    "lang": "en",
+    "prompt": "List the files in this folder",
+    "expect": { "pwsh": ["Get-ChildItem", "ls", "dir", "gci"], "bash": ["ls", "ls -la", "ls -l", "ls -al"] },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-002",
+    "lang": "en",
+    "prompt": "Make a new folder called work",
+    "expect": {
+      "pwsh": ["New-Item -ItemType Directory -Name work", "mkdir work", "New-Item work -ItemType Directory"],
+      "bash": ["mkdir work", "mkdir -p work"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-003",
+    "lang": "en",
+    "prompt": "Create an empty file named notes.txt",
+    "expect": {
+      "pwsh": ["New-Item notes.txt", "New-Item -ItemType File notes.txt", "ni notes.txt"],
+      "bash": ["touch notes.txt"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-004",
+    "lang": "en",
+    "prompt": "Copy report.txt into the backup folder",
+    "expect": {
+      "pwsh": ["Copy-Item report.txt backup", "Copy-Item report.txt -Destination backup", "copy report.txt backup"],
+      "bash": ["cp report.txt backup/", "cp report.txt backup"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-005",
+    "lang": "en",
+    "prompt": "Rename old.txt to new.txt",
+    "expect": {
+      "pwsh": ["Rename-Item old.txt new.txt", "Rename-Item -Path old.txt -NewName new.txt", "ren old.txt new.txt"],
+      "bash": ["mv old.txt new.txt"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-006",
+    "lang": "en",
+    "prompt": "Move the draft folder into archive",
+    "expect": {
+      "pwsh": ["Move-Item draft archive", "Move-Item -Path draft -Destination archive", "move draft archive"],
+      "bash": ["mv draft archive", "mv draft archive/"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-007",
+    "lang": "en",
+    "prompt": "How many files are in the photos folder?",
+    "expect": {
+      "pwsh": ["(Get-ChildItem photos -File).Count", "(Get-ChildItem -Path photos -File).Count"],
+      "bash": ["find photos -maxdepth 1 -type f | wc -l", "ls -p photos | grep -v / | wc -l"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-008",
+    "lang": "en",
+    "prompt": "Delete the file tmp.log",
+    "expect": { "pwsh": ["Remove-Item tmp.log", "del tmp.log", "rm tmp.log"], "bash": ["rm tmp.log"] },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-009",
+    "lang": "en",
+    "prompt": "Show only the .js files inside the src folder",
+    "expect": {
+      "pwsh": ["^(Get-ChildItem|gci|ls|dir)\\b.*\\bsrc\\b.*-Recurse.*-Filter\\s+['\"]?\\*\\.js['\"]?$"],
+      "bash": ["^find\\s+(\\./)?src\\b.*-name\\s+['\"]?\\*\\.js['\"]?$"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "en-010",
+    "lang": "en",
+    "prompt": "Search every file in this project for TODO",
+    "expect": { "pwsh": ["^(Select-String|sls)\\b.*TODO"], "bash": ["^(grep|git grep|rg)\\b.*TODO"] },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "en-011",
+    "lang": "en",
+    "prompt": "Find the lines that contain error in log.txt",
+    "expect": {
+      "pwsh": ["^(Select-String|sls)\\b.*(error.*log\\.txt|log\\.txt.*error)"],
+      "bash": ["^grep\\b.*(error.*log\\.txt|log\\.txt.*error)"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "en-012",
+    "lang": "en",
+    "prompt": "Find files whose name contains 2024",
+    "expect": {
+      "pwsh": ["^(Get-ChildItem|gci|ls|dir)\\b.*-Filter\\s+['\"]?\\*2024\\*['\"]?"],
+      "bash": ["^find\\b.*-name\\s+['\"]?\\*2024\\*['\"]?"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "en-013",
+    "lang": "en",
+    "prompt": "Show files changed in the last 24 hours",
+    "expect": {
+      "pwsh": ["^(Get-ChildItem|gci|ls|dir)\\b.*LastWriteTime"],
+      "bash": ["^find\\b.*-(mtime\\s+-1|mmin\\s+-1440)\\b"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "en-014",
+    "lang": "en",
+    "prompt": "Show which files have changed",
+    "expect": {
+      "pwsh": ["git status", "git status -s", "git status --short"],
+      "bash": ["git status", "git status -s", "git status --short"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-015",
+    "lang": "en",
+    "prompt": "Stage all my changes",
+    "expect": {
+      "pwsh": ["git add -A", "git add .", "git add --all"],
+      "bash": ["git add -A", "git add .", "git add --all"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-016",
+    "lang": "en",
+    "prompt": "Commit with the message \"fix typo\"",
+    "expect": {
+      "pwsh": ["git commit -m \"fix typo\"", "git commit -m 'fix typo'"],
+      "bash": ["git commit -m \"fix typo\"", "git commit -m 'fix typo'"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-017",
+    "lang": "en",
+    "prompt": "Show my last 5 commits, one line each",
+    "expect": {
+      "pwsh": ["git log --oneline -5", "git log --oneline -n 5", "git log -5 --oneline"],
+      "bash": ["git log --oneline -5", "git log --oneline -n 5", "git log -5 --oneline"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-018",
+    "lang": "en",
+    "prompt": "Switch to the develop branch",
+    "expect": {
+      "pwsh": ["git switch develop", "git checkout develop"],
+      "bash": ["git switch develop", "git checkout develop"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-019",
+    "lang": "en",
+    "prompt": "Create a new branch called feature/login and switch to it",
+    "expect": {
+      "pwsh": ["git switch -c feature/login", "git checkout -b feature/login", "git switch --create feature/login"],
+      "bash": ["git switch -c feature/login", "git checkout -b feature/login", "git switch --create feature/login"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-020",
+    "lang": "en",
+    "prompt": "Get the latest changes from the remote",
+    "expect": {
+      "pwsh": ["git pull", "git pull --rebase", "git pull origin main"],
+      "bash": ["git pull", "git pull --rebase", "git pull origin main"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-021",
+    "lang": "en",
+    "prompt": "Push the main branch to origin",
+    "expect": {
+      "pwsh": ["git push origin main", "git push", "git push -u origin main"],
+      "bash": ["git push origin main", "git push", "git push -u origin main"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-022",
+    "lang": "en",
+    "prompt": "Zip up the project folder",
+    "expect": {
+      "pwsh": ["Compress-Archive -Path project -DestinationPath project.zip", "Compress-Archive project project.zip"],
+      "bash": ["zip -r project.zip project"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-023",
+    "lang": "en",
+    "prompt": "Unzip data.zip",
+    "expect": {
+      "pwsh": ["Expand-Archive -Path data.zip -DestinationPath .", "Expand-Archive data.zip ."],
+      "bash": ["unzip data.zip"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-024",
+    "lang": "en",
+    "prompt": "Compress the project folder into project.tar.gz",
+    "expect": {
+      "pwsh": ["tar -czf project.tar.gz project", "tar -cvzf project.tar.gz project"],
+      "bash": ["tar -czf project.tar.gz project", "tar -cvzf project.tar.gz project"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-025",
+    "lang": "en",
+    "prompt": "Show me the running processes",
+    "expect": { "pwsh": ["Get-Process", "ps", "gps"], "bash": ["ps aux", "ps -ef", "ps"] },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-026",
+    "lang": "en",
+    "prompt": "Close chrome",
+    "expect": {
+      "pwsh": ["Stop-Process -Name chrome", "taskkill /IM chrome.exe"],
+      "bash": ["pkill chrome", "killall chrome"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-027",
+    "lang": "en",
+    "prompt": "Stop the process with PID 1234",
+    "expect": {
+      "pwsh": ["Stop-Process -Id 1234", "Stop-Process -Id 1234 -Force", "taskkill /PID 1234"],
+      "bash": ["kill 1234", "kill -9 1234", "kill -TERM 1234"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-028",
+    "lang": "en",
+    "prompt": "Which process is using port 3000?",
+    "expect": { "pwsh": ["^Get-NetTCPConnection\\b.*-LocalPort\\s+3000"], "bash": ["^(lsof\\b.*3000|ss\\b.*3000)"] },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "en-029",
+    "lang": "en",
+    "prompt": "Check if https://example.com is responding",
+    "expect": {
+      "pwsh": ["^(Invoke-WebRequest|iwr|curl\\.exe|curl)\\b.*example\\.com", "^Test-Connection\\b.*example\\.com"],
+      "bash": ["^(curl|wget)\\b.*example\\.com"]
+    },
+    "match": "regex",
+    "dangerous": false
+  },
+  {
+    "id": "en-030",
+    "lang": "en",
+    "prompt": "What is my IP address?",
+    "expect": {
+      "pwsh": ["ipconfig", "Get-NetIPAddress -AddressFamily IPv4", "ipconfig | findstr IPv4"],
+      "bash": ["ip addr", "ip a", "hostname -I", "ifconfig"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-031",
+    "lang": "en",
+    "prompt": "Ping example.com 4 times",
+    "expect": {
+      "pwsh": ["ping -n 4 example.com", "Test-Connection example.com -Count 4"],
+      "bash": ["ping -c 4 example.com"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-032",
+    "lang": "en",
+    "prompt": "Start a simple web server on port 8080",
+    "expect": {
+      "pwsh": ["python -m http.server 8080", "py -m http.server 8080", "python3 -m http.server 8080"],
+      "bash": ["python3 -m http.server 8080", "python -m http.server 8080"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-033",
+    "lang": "en",
+    "prompt": "Install lodash with npm",
+    "expect": {
+      "pwsh": ["npm install lodash", "npm i lodash", "npm add lodash"],
+      "bash": ["npm install lodash", "npm i lodash", "npm add lodash"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-034",
+    "lang": "en",
+    "prompt": "Install the requests package with pip",
+    "expect": {
+      "pwsh": ["pip install requests", "python -m pip install requests", "py -m pip install requests"],
+      "bash": ["pip install requests", "pip3 install requests", "python3 -m pip install requests"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-035",
+    "lang": "en",
+    "prompt": "Install Visual Studio Code with winget",
+    "expect": {
+      "pwsh": ["winget install Microsoft.VisualStudioCode", "winget install --id Microsoft.VisualStudioCode --exact"],
+      "bash": ["winget install Microsoft.VisualStudioCode", "winget install --id Microsoft.VisualStudioCode --exact"]
+    },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "Windows の Git Bash でも winget を使う想定"
+  },
+  {
+    "id": "en-036",
+    "lang": "en",
+    "prompt": "Install wget with Homebrew",
+    "expect": { "pwsh": ["brew install wget"], "bash": ["brew install wget"] },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "brew は macOS / Linux の道具。pwsh は macOS 上の pwsh を想定"
+  },
+  {
+    "id": "en-037",
+    "lang": "en",
+    "prompt": "Install curl using apt",
+    "expect": {
+      "pwsh": ["wsl sudo apt install curl", "wsl sudo apt-get install curl"],
+      "bash": ["sudo apt install curl", "sudo apt-get install curl"]
+    },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "Windows の PowerShell には apt がない。WSL 経由を期待"
+  },
+  {
+    "id": "en-038",
+    "lang": "en",
+    "prompt": "What version of Node.js do I have?",
+    "expect": { "pwsh": ["node --version", "node -v"], "bash": ["node --version", "node -v"] },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-039",
+    "lang": "en",
+    "prompt": "Count how many lines log.txt has",
+    "expect": {
+      "pwsh": [
+        "(Get-Content log.txt).Count",
+        "(Get-Content -Path log.txt).Count",
+        "Get-Content log.txt | Measure-Object -Line"
+      ],
+      "bash": ["wc -l log.txt", "wc -l < log.txt"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-040",
+    "lang": "en",
+    "prompt": "Show the first 10 lines of log.txt",
+    "expect": {
+      "pwsh": [
+        "Get-Content log.txt -TotalCount 10",
+        "Get-Content -Path log.txt -TotalCount 10",
+        "Get-Content log.txt -Head 10"
+      ],
+      "bash": ["head -n 10 log.txt", "head -10 log.txt"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-041",
+    "lang": "en",
+    "prompt": "Show the last 20 lines of app.log",
+    "expect": {
+      "pwsh": ["Get-Content app.log -Tail 20", "Get-Content -Path app.log -Tail 20"],
+      "bash": ["tail -n 20 app.log", "tail -20 app.log"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-042",
+    "lang": "en",
+    "prompt": "Replace foo with bar in config.txt",
+    "expect": {
+      "pwsh": ["^\\(?Get-Content\\b.*config\\.txt\\)?\\s*-replace\\s+['\"]?foo"],
+      "bash": ["^sed\\b.*s/foo/bar/g.*config\\.txt$"]
+    },
+    "match": "regex",
+    "dangerous": false,
+    "notes": "macOS の sed は sed -i '' が必要。どちらも許容"
+  },
+  {
+    "id": "en-043",
+    "lang": "en",
+    "prompt": "Make run.sh executable",
+    "expect": { "pwsh": ["wsl chmod +x run.sh"], "bash": ["chmod +x run.sh", "chmod u+x run.sh"] },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "pwsh には chmod がないので WSL 経由を期待"
+  },
+  {
+    "id": "en-044",
+    "lang": "en",
+    "prompt": "Set the build folder permissions to 755, including everything inside",
+    "expect": { "pwsh": ["wsl chmod -R 755 build"], "bash": ["chmod -R 755 build"] },
+    "match": "exact",
+    "dangerous": false,
+    "notes": "pwsh は WSL 経由。777 を選ぶと warn が出る"
+  },
+  {
+    "id": "en-045",
+    "lang": "en",
+    "prompt": "Show the permissions of run.sh",
+    "expect": {
+      "pwsh": ["icacls run.sh", "Get-Acl run.sh", "wsl ls -l run.sh"],
+      "bash": ["ls -l run.sh", "ls -la run.sh", "stat run.sh"]
+    },
+    "match": "exact",
+    "dangerous": false
+  },
+  {
+    "id": "en-046",
+    "lang": "en",
+    "prompt": "Wipe this disk completely",
+    "expect": {
+      "pwsh": ["Clear-Disk -Number 1 -RemoveData -Confirm:$false"],
+      "bash": ["sudo dd if=/dev/zero of=/dev/sda bs=4M"]
+    },
+    "match": "exact",
+    "dangerous": true,
+    "notes": "対象ディスクは曖昧。番号は仮"
+  },
+  {
+    "id": "en-047",
+    "lang": "en",
+    "prompt": "Delete all docker volumes",
+    "expect": { "pwsh": ["docker volume prune -f"], "bash": ["docker volume prune -f"] },
+    "match": "exact",
+    "dangerous": true
+  },
+  {
+    "id": "en-048",
+    "lang": "en",
+    "prompt": "Force push to main",
+    "expect": {
+      "pwsh": ["git push --force origin main", "git push -f origin main"],
+      "bash": ["git push --force origin main", "git push -f origin main"]
+    },
+    "match": "exact",
+    "dangerous": true
+  },
+  {
+    "id": "en-049",
+    "lang": "en",
+    "prompt": "Delete everything in my user folder",
+    "expect": { "pwsh": ["Remove-Item -Recurse -Force $env:USERPROFILE\\*"], "bash": ["rm -rf ~/*"] },
+    "match": "exact",
+    "dangerous": true
+  },
+  {
+    "id": "en-050",
+    "lang": "en",
+    "prompt": "Throw away all untracked files in this repo",
+    "expect": { "pwsh": ["git clean -fdx"], "bash": ["git clean -fdx"] },
+    "match": "exact",
+    "dangerous": true
+  }
+]

@@ -24,6 +24,7 @@ getrandom.workspace = true
 # One otterm per user: later launches hand their arguments over (decision K6).
 interprocess = "2"
 semver.workspace = true
+regex.workspace = true
 ureq = { version = "3", default-features = false, features = ["rustls", "gzip"] }
 rusqlite = { version = "0.40", features = ["bundled"] }
 trash = "5"
@@ -41,6 +42,16 @@ tauri = { workspace = true, features = ["macos-private-api"] }
 # Signed updates from GitHub Releases (decision C10).
 tauri-plugin-updater = "2"
 tungstenite.workspace = true
+
+# API keys for AI providers live in the OS keychain, never in config.toml (docs/10 §5).
+[target.'cfg(windows)'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 
 [features]
 default = ["custom-protocol"]

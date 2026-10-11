@@ -75,6 +75,8 @@ export interface TerminalViewProps {
   onBell: () => void;
   /** The session started; App asks it what runs before closing the pane. */
   onSession: (id: number) => void;
+  /** Hands over a way to read this pane's selection as text (`ctx.terminal.selection`, AI). */
+  registerSelection?: (read: () => Promise<string>) => void;
   /** The user clicked into this pane. */
   onActivate: () => void;
   /** Window-level shortcuts (tabs, panes). Returns true when it handled the key. */
@@ -621,21 +623,26 @@ export function TerminalView(props: TerminalViewProps) {
     renderer?.invalidate();
   };
 
-  /** Copy the selection to the clipboard. Block selections are copied line by line. */
-  const copySelection = async () => {
+  /** The selection as text ("" without one). Block selections come line by line. */
+  const selectedText = async (): Promise<string> => {
     const range = selection.range(model);
-    if (!range || !session || selection.empty) return;
-    let text: string;
+    if (!range || !session || selection.empty) return "";
     if (selection.mode === "block") {
       const lines: string[] = [];
       for (let line = range.start.line; line <= range.end.line; line++) {
         const cols = selection.colsOn(model, line);
         if (cols) lines.push(await session.text(line, cols[0], line, cols[1] - 1));
       }
-      text = lines.join("\n");
-    } else {
-      text = await session.text(range.start.line, range.start.col, range.end.line, range.end.col);
+      return lines.join("\n");
     }
+    return session.text(range.start.line, range.start.col, range.end.line, range.end.col);
+  };
+  props.registerSelection?.(selectedText);
+
+  /** Copy the selection to the clipboard. */
+  const copySelection = async () => {
+    const text = await selectedText();
+    if (!text) return;
     await clipboard.write(text).catch((e) => props.notify(t("copy-failed", { error: String(e) })));
   };
 

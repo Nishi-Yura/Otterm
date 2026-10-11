@@ -794,6 +794,7 @@ export type HostSettingKey =
   | "appearance.theme"
   | "appearance.follow_system"
   | "general.check_updates"
+  | "ai.question_prefix"
   | "shell.default_profile"
   | "font.size";
 

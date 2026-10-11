@@ -124,6 +124,8 @@ pub struct UiConfig {
     pub check_updates: bool,
     /// `[mascot]` with `auto` resolved against the guide level (docs/08 §4.3).
     pub mascot: UiMascot,
+    /// `[ai] question_prefix`: a line starting with `? ` asks the AI mod (decision F1).
+    pub ai_question_prefix: bool,
     /// Where installed mods live, to tell the user.
     pub mods_dir: Option<String>,
     /// Keys that were ignored, to show once.
@@ -420,6 +422,7 @@ impl ConfigState {
             developer_mode: c.mods.developer_mode,
             safe_mode: safe,
             check_updates: c.general.check_updates,
+            ai_question_prefix: c.ai.question_prefix,
             mascot: UiMascot {
                 visible: effective.mascot_visible,
                 position: c.mascot.position,

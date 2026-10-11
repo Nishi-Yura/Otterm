@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -45,6 +45,8 @@ import { MascotDock, MascotFloat, MascotLive, MascotSprite, MascotStatus } from 
 import { clearSpriteCache, MOODS, type Mood, type OutfitInfo } from "./mascot/sprite";
 import { MascotStore, type SpeechAction, type SpeechKind } from "./mascot/store";
 import {
+  type AiRequest,
+  type AiResult,
   type BlockPayload,
   type CompletionItem,
   type DialogRequest,
@@ -73,7 +75,11 @@ const RESIZE_STEP = 0.05;
 /** The update check waits until the window has settled (docs/09: startup comes first). */
 const UPDATE_DELAY_MS = 10_000;
 /** A command running this long makes Kotsume wait with it (docs/08 §5.1). */
+/** The AI mod's ask command (docs/10 §3.1); mods' command ids carry their mod id. */
+const AI_ASK = "otterm.ai-assist.ai.ask";
 const LONG_RUN_MS = 3000;
+/** Lines of a block's output an AI request may carry (docs/10 §3.2). */
+const AI_OUTPUT_LINES = 200;
 /** Completions or help taking this long show Kotsume thinking; quicker ones would only flicker. */
 const THINKING_DELAY_MS = 300;
 /** Actions the focused terminal runs itself: they need its selection, search bar or font. */
@@ -253,12 +259,121 @@ export function App() {
       .then((s) => setSeen(new Set(s)))
       .catch(() => {});
   };
+  /** Each pane's way to read its selection (TerminalView registers it). */
+  const selectionReaders = new Map<number, () => Promise<string>>();
+
+  /**
+   * The context a mod asked for (docs/10 §4.1), put in front of its prompt by the host: the mod
+   * cannot add session data any other way. Output is the last block's tail only, never the
+   * whole scrollback.
+   */
+  const aiContext = async (include: string[]): Promise<string> => {
+    const s = env.activeSession();
+    const lines: string[] = [];
+    if (include.includes("os")) lines.push(`OS: ${platform}`);
+    if (include.includes("shell") && s) lines.push(`Shell: ${shellKindOf(s)}`);
+    if (include.includes("cwd") && s?.cwd) lines.push(`Current folder: ${s.cwd}`);
+    if (include.includes("lastBlock") && s) {
+      const blocks = await invoke<{ line: number; command: string | null; exit: number | null }[]>("session_blocks", {
+        id: s.id,
+      }).catch(() => []);
+      const last = [...blocks].reverse().find((b) => b.exit !== null);
+      const info = last
+        ? await invoke<{ command: string | null; exit: number | null; output: string } | null>("session_block", {
+            id: s.id,
+            line: last.line,
+          }).catch(() => null)
+        : null;
+      if (info) {
+        const tail = info.output.split("\n").slice(-AI_OUTPUT_LINES).join("\n");
+        lines.push(`Last command: ${info.command ?? ""}`, `Exit code: ${info.exit ?? ""}`, `Output:\n${tail}`);
+      }
+    }
+    if (include.includes("selection")) {
+      const text = await env.selection();
+      if (text) lines.push(`Selected text:\n${text}`);
+    }
+    return lines.length > 0 ? `${lines.join("\n")}\n\n` : "";
+  };
+
+  /**
+   * `ctx.ai` (docs/10 §4.3, §7): show what goes where, ask, then send. Mods other than otterm's
+   * own ask every time; otterm's AI mod shows the full preview for the first requests only
+   * (`[ai] preview_first_n`). Kotsume thinks while the answer comes.
+   */
+  const askAi = async (
+    mod: string,
+    official: boolean,
+    req: AiRequest,
+    onChunk?: (text: string) => void,
+  ): Promise<AiResult> => {
+    const prompt = (await aiContext(req.context?.include ?? [])) + req.prompt;
+    const preview = await invoke<{
+      provider: string;
+      host: string;
+      model: string;
+      prompt: string;
+      redactions: number;
+      full: boolean;
+    }>("ai_preview", { prompt });
+    if (!official || preview.full) {
+      const workspace = config()?.workspace;
+      const answer = await env.dialog({
+        title: t("ai-preview-title", { purpose: req.purpose }),
+        body: [
+          t("ai-preview-where", { provider: preview.provider, host: preview.host, model: preview.model }),
+          official ? "" : t("ai-preview-mod", { mod }),
+          preview.redactions > 0 ? t("ai-preview-redacted", { count: preview.redactions }) : "",
+          "",
+          preview.prompt,
+        ]
+          .filter((l, i) => l !== "" || i === 3)
+          .join("\n"),
+        buttons: [
+          { id: "send", label: t("ai-preview-send"), variant: "primary" },
+          ...(workspace ? [{ id: "off", label: t("ai-preview-workspace-off") }] : []),
+          { id: "cancel", label: t("action-cancel") },
+        ],
+        cancelId: "cancel",
+        from: "otterm",
+      });
+      if (answer === "off") {
+        await invoke("ai_workspace_off", { off: true }).catch(() => {});
+        throw new Error(t("ai-workspace-off-done"));
+      }
+      if (answer !== "send") throw new Error(t("ai-cancelled"));
+      if (official) void invoke("ai_preview_seen").catch(() => {});
+    }
+    const events = new Channel<{ kind: "delta"; text: string }>();
+    events.onmessage = (e) => onChunk?.(e.text);
+    mascot.setReason("ai", "thinking");
+    try {
+      return await invoke<AiResult>("ai_complete", {
+        modId: mod,
+        purpose: req.purpose,
+        system: req.system ?? null,
+        prompt,
+        maxTokens: req.maxTokens ?? null,
+        jsonOut: req.json,
+        events,
+      });
+    } finally {
+      mascot.clearReason("ai");
+    }
+  };
+
   const mascotClick = () => {
     // Clicking Kotsume asks the AI when the AI mod is there (decision F1), else opens the palette.
-    if (host.hasCommand("ai.ask")) void host.runCommand("ai.ask");
+    if (host.hasCommand(AI_ASK)) void host.runCommand(AI_ASK);
     else void openPalette();
   };
-  const [modDialog, setModDialog] = createSignal<{ req: DialogRequest; done: (id: string | null) => void }>();
+  /** Open dialogs, newest last: a dialog opened over another (the AI send preview over the
+   * answer it is about to fill) hands the screen back when it closes. */
+  const [dialogs, setDialogs] = createSignal<{ key: number; req: DialogRequest; done: (id: string | null) => void }[]>(
+    [],
+  );
+  let nextDialog = 1;
+  const modDialog = () => dialogs()[dialogs().length - 1];
   /** The panel open in each panel slot, by panel id. */
   const [shownPanel, setShownPanel] = createSignal<Record<string, string | undefined>>({});
   const MODS_PANEL = "otterm.mods";
@@ -356,19 +471,29 @@ export function App() {
       if (m) mascot.setReason(`mod:${mod}`, m, Math.min(forMs ?? 3000, 60_000));
     },
     mascotMood: () => mascot.mood(),
+    selection: () => selectionReaders.get(currentTab()?.active ?? -1)?.() ?? Promise.resolve(""),
+    aiAvailable: () => invoke<boolean>("ai_available").catch(() => false),
+    aiComplete: (mod, official, req, onChunk) => askAi(mod, official, req, onChunk),
     mascotOutfit: () => mascotConf()?.outfit ?? "default",
     mascotOutfits: () => ["default", ...outfits().map((o) => o.id)],
     dialog: (req) =>
       new Promise((resolve) => {
-        setModDialog({
+        const key = nextDialog++;
+        const entry = {
+          key,
           req,
-          done: (id) => {
-            setModDialog(undefined);
-            refocus();
+          done: (id: string | null) => {
+            setDialogs(dialogs().filter((d) => d.key !== key));
+            if (dialogs().length === 0) refocus();
             resolve(id);
           },
-        });
+        };
+        setDialogs([...dialogs(), entry]);
       }),
+    dialogBody: (mod, reg, body) =>
+      setDialogs(
+        dialogs().map((d) => (d.req.from === mod && d.req.reg === reg ? { ...d, req: { ...d.req, body } } : d)),
+      ),
     confirm: (title, body) =>
       new Promise((resolve) => {
         const done = (answer: boolean) => {
@@ -400,6 +525,8 @@ export function App() {
           return c?.theme.name;
         case "font.size":
           return c?.font.size;
+        case "ai.question_prefix":
+          return c?.aiQuestionPrefix ?? false;
         default:
           return undefined;
       }
@@ -1111,9 +1238,9 @@ export function App() {
       }),
       listen<{ id: number; question: string | null }>("instance-ask", (e) => {
         const q = e.payload.question;
-        const ok = host.hasCommand("ai.ask");
+        const ok = host.hasCommand(AI_ASK);
         void reply(e.payload.id, ok, ok ? "" : "the AI mod (otterm.ai-assist) is not running");
-        if (ok) void host.runCommand("ai.ask", q ? { question: q } : undefined);
+        if (ok) void host.runCommand(AI_ASK, q ? { question: q } : undefined);
         else showNotice(t("ai-unavailable"));
       }),
     ]);
@@ -1743,7 +1870,7 @@ export function App() {
       // Commands of mods that may not be there (the AI mod, the mascot, the guide); without one
       // the key goes on to the terminal.
       case "aiAsk":
-        return runModCommand("ai.ask");
+        return runModCommand(AI_ASK);
       case "mascotToggle": {
         const show = !mascotShown();
         void invoke("config_write", { path: ["mascot", "visible"], value: show }).catch((e) => showNotice(String(e)));
@@ -2214,6 +2341,7 @@ export function App() {
                         if (s) host.emit("session-closed", { sessionId: String(s.id), exitCode: code ?? undefined });
                         paneExited(p.id);
                       }}
+                      registerSelection={(read) => selectionReaders.set(p.id, read)}
                       onSession={(id) => {
                         sessionOf.set(p.id, id);
                         void invoke<{ shell: string; wsl: string | null }>("session_info", { id })

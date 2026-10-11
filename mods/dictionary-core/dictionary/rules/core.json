@@ -92,6 +92,10 @@
       "platforms": ["windows"],
       "match": { "regex": "\\b(Stop-Process\\s+-Name\\s+explorer|taskkill\\s+/f\\s+/im\\s+explorer\\.exe)" },
       "message": { "ja": "デスクトップとタスクバーが一時的に消えます", "en": "The desktop and taskbar will disappear temporarily" }
-    }
+    },
+    {"id": "core.rm-everything-here", "level": "confirm", "match": {"regex": "\\brm\\s+(-[a-zA-Z]*r[a-zA-Z]*f?|-[a-zA-Z]*f[a-zA-Z]*r)[a-zA-Z]*\\s+(\\./\\*|\\*|~/\\*|\\$HOME/\\*|\\.)\\s*$"}, "message": {"ja": "フォルダの中身をまとめて消します。ゴミ箱に入らず、元に戻せません", "en": "Deletes everything in the folder. It skips the trash and cannot be undone"}, "alternatives": [{"label": {"ja": "ゴミ箱に送る", "en": "Send to the trash"}, "command": "otterm trash {args}"}]},
+    {"id": "core.remove-item-pipeline", "level": "confirm", "match": {"regex": "\\|\\s*(Remove-Item|ri|rm|del|erase)\\b[^|]*-Recurse"}, "message": {"ja": "一覧したものを全部、中身ごと消します。ゴミ箱に入らず、元に戻せません", "en": "Deletes everything listed, with its contents. It skips the trash and cannot be undone"}},
+    {"id": "core.docker-volume-prune", "level": "confirm", "match": {"regex": "\\bdocker\\s+(volume\\s+prune\\b|system\\s+prune\\b[^|]*--volumes\\b|volume\\s+rm\\s+[^|]*\\$\\(docker\\s+volume\\s+ls)"}, "message": {"ja": "Docker のボリュームを消します。データベースなどの保存データも消え、元に戻せません", "en": "Deletes Docker volumes, including saved data such as databases. It cannot be undone"}, "alternatives": [{"label": {"ja": "消えるボリュームを見る", "en": "List the volumes first"}, "command": "docker volume ls"}]},
+    {"id": "core.git-force-push-main", "level": "confirm", "match": {"regex": "\\bgit\\s+push\\b(?=[^|]*\\s(--force|-f)(\\s|$))(?=[^|]*\\b(main|master)\\b)"}, "message": {"ja": "main を強制的に上書きします。ほかの人の変更が消えることがあります", "en": "Overwrites main by force. Other people's changes can be lost"}, "alternatives": [{"label": {"ja": "--force-with-lease を使う", "en": "Use --force-with-lease"}, "command": "git push --force-with-lease {args}"}]}
   ]
 }

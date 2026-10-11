@@ -227,6 +227,15 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  mods/ai-assist:
+    devDependencies:
+      '@otterm/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
   mods/cmd-explain:
     devDependencies:
       '@otterm/api':

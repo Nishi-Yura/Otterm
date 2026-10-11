@@ -68,7 +68,7 @@ const SPECIAL = new Set([
 interface Category {
   id: string;
   paths: string[][];
-  page?: "theme" | "layout" | "font" | "keys" | "mods" | "advanced" | "mascot";
+  page?: "theme" | "layout" | "font" | "keys" | "mods" | "advanced" | "mascot" | "ai";
 }
 
 const CATEGORIES: Category[] = [
@@ -103,7 +103,7 @@ const CATEGORIES: Category[] = [
   { id: "mascot", page: "mascot", paths: [["mascot"]] },
   { id: "keys", page: "keys", paths: [["keybindings"]] },
   { id: "mods", page: "mods", paths: [["mods"]] },
-  { id: "ai", paths: [["ai"]] },
+  { id: "ai", page: "ai", paths: [["ai"]] },
   { id: "accessibility", paths: [["accessibility"], ["appearance", "ui_scale"]] },
   { id: "advanced", page: "advanced", paths: [["appearance", "custom_css"]] },
 ];
@@ -309,6 +309,9 @@ export function Settings(props: SettingsProps) {
                 </Show>
                 <Show when={current().page === "mascot"}>
                   <MascotPage {...props} write={write} />
+                </Show>
+                <Show when={current().page === "ai"}>
+                  <AiPage {...props} form={f()} write={write} />
                 </Show>
                 <For each={current().paths}>{(p) => <FieldView form={f()} path={p} write={write} />}</For>
                 <Show when={current().page === "theme"}>
@@ -2020,6 +2023,106 @@ function MascotPage(props: SettingsProps & { write: Write }) {
           {t("mascot-hints-again")}
         </button>
       </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AI (docs/10 §5): the key goes to the OS keychain; Ollama is looked for only here (decision F2)
+// ---------------------------------------------------------------------------
+
+function AiPage(props: SettingsProps & { form: Form; write: Write }) {
+  const provider = () => String(valueAt(props.form.values, ["ai", "provider"]) ?? "local");
+  const [stored, setStored] = createSignal(false);
+  const [key, setKey] = createSignal("");
+  const [models, setModels] = createSignal<string[]>();
+  const [detectError, setDetectError] = createSignal<string>();
+  const refresh = () =>
+    void invoke<boolean>("ai_key_present", { provider: provider() })
+      .then(setStored)
+      .catch(() => setStored(false));
+  createEffect(() => {
+    provider();
+    refresh();
+  });
+  const needsKey = () => provider() !== "local";
+  return (
+    <section class="settings-section" data-ot="settings-ai">
+      <p class="muted">{t("ai-settings-intro")}</p>
+      <Show when={needsKey()}>
+        <h3>{t("ai-key")}</h3>
+        <p class="muted">{t(stored() ? "ai-key-stored" : "ai-key-missing", { provider: provider() })}</p>
+        <div class="settings-actions">
+          <input
+            type="password"
+            class="settings-filter"
+            autocomplete="off"
+            placeholder={t("ai-key-placeholder")}
+            aria-label={t("ai-key")}
+            value={key()}
+            onInput={(e) => setKey(e.currentTarget.value)}
+          />
+          <button
+            type="button"
+            class="primary"
+            disabled={!key().trim()}
+            onClick={() =>
+              void invoke("ai_key_set", { provider: provider(), key: key() })
+                .then(() => {
+                  setKey("");
+                  refresh();
+                  props.notify(t("ai-key-saved"));
+                })
+                .catch((e) => props.notify(String(e)))
+            }
+          >
+            {t("ai-key-save")}
+          </button>
+          <Show when={stored()}>
+            <button
+              type="button"
+              onClick={() =>
+                void invoke("ai_key_set", { provider: provider(), key: "" })
+                  .then(refresh)
+                  .catch((e) => props.notify(String(e)))
+              }
+            >
+              {t("ai-key-delete")}
+            </button>
+          </Show>
+        </div>
+      </Show>
+      <Show when={provider() === "local"}>
+        <h3>{t("ai-local")}</h3>
+        <p class="muted">{t("ai-local-hint")}</p>
+        <div class="settings-actions">
+          <button
+            type="button"
+            onClick={() => {
+              setDetectError(undefined);
+              void invoke<string[]>("ai_detect_local")
+                .then(setModels)
+                .catch((e) => setDetectError(String(e)));
+            }}
+          >
+            {t("ai-local-detect")}
+          </button>
+        </div>
+        <Show when={detectError()}>
+          <p class="muted">{detectError()}</p>
+        </Show>
+        <Show when={models()}>
+          <div class="settings-actions">
+            <For each={models()} fallback={<span class="muted">{t("ai-local-none")}</span>}>
+              {(m) => (
+                <button type="button" onClick={() => void props.write(["ai", "model"], m)}>
+                  {m}
+                </button>
+              )}
+            </For>
+          </div>
+        </Show>
+      </Show>
     </section>
   );
 }

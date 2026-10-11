@@ -196,6 +196,8 @@ export interface DialogRequest {
   buttons: { id: string; label: string; variant?: string }[];
   cancelId?: string;
   from: string;
+  /** Set when the body is live: later renders update it (`dialogBody`). */
+  reg?: number;
   /** The renderer needs a host for a `body` tree. */
   tree?: TreeHostFor;
 }
@@ -214,6 +216,8 @@ export interface HostEnv {
   write(sessionId: number, text: string): Promise<void>;
   toast(req: ToastRequest): void;
   dialog(req: DialogRequest): Promise<string | null>;
+  /** A mod's open dialog re-rendered its body (a function body, e.g. a streaming answer). */
+  dialogBody(mod: string, reg: number, body: SerializedNode): void;
   /** Yes / no question for permission confirmations (decision D5). */
   confirm(title: string, body: string): Promise<boolean>;
   theme(): ThemeInfo;
@@ -229,6 +233,27 @@ export interface HostEnv {
   mascotMood(): string;
   mascotOutfit(): string;
   mascotOutfits(): string[];
+  /** `ctx.ai` (docs/10 §7): preview, consent and the request; chunks go to `onChunk`. */
+  aiComplete(mod: string, official: boolean, req: AiRequest, onChunk?: (text: string) => void): Promise<AiResult>;
+  aiAvailable(): Promise<boolean>;
+  /** The active pane's selection as text, "" without one. */
+  selection(): Promise<string>;
+}
+
+export interface AiRequest {
+  purpose: string;
+  prompt: string;
+  system?: string;
+  context?: { include?: string[] };
+  maxTokens?: number;
+  json: boolean;
+}
+
+export interface AiResult {
+  text: string;
+  provider: "local" | "cloud";
+  model: string;
+  truncated: boolean;
 }
 
 /** `ctx.mascot.say` as it reaches the host. */
@@ -1000,6 +1025,7 @@ export class ModHost {
       case "ui":
         this.uiByMod.set(id, { items: msg.items, panels: msg.panels });
         this.publishUi();
+        for (const d of msg.dialogs ?? []) this.env.dialogBody(id, d.reg, d.node);
         break;
       case "result": {
         const p = r.pending.get(msg.id);
@@ -1228,7 +1254,16 @@ export class ModHost {
           }));
       }
       case "terminal.selection":
-        throw new Error("terminal.selection is not available yet");
+        return this.env.selection();
+      // --- AI (docs/10 §7): only with the manifest's `ai` permission
+      case "ai.complete": {
+        if (!state.entry.permissions.ai) throw new Error("the ai permission is not granted");
+        const [req, fn] = a as unknown as [AiRequest, number | null];
+        const onChunk = fn === null ? undefined : (text: string) => void this.invoke(id, fn, [text]).catch(() => {});
+        return this.env.aiComplete(id, state.entry.official, req, onChunk);
+      }
+      case "ai.available":
+        return state.entry.permissions.ai ? this.env.aiAvailable() : false;
       // --- settings and storage
       case "settings.set": {
         const [key, value] = a as unknown as [string, unknown];
@@ -1376,6 +1411,7 @@ const HOST_KEYS = [
   "appearance.theme",
   "appearance.follow_system",
   "general.check_updates",
+  "ai.question_prefix",
   "shell.default_profile",
   "font.size",
 ];

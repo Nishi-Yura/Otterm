@@ -121,6 +121,11 @@
 - ステップ実行モードは v1.x に回す
 - **完了条件**: AI をオフにしても UI に空欄が生まれない。生成コマンドに danger-guard が 100 % 反応する
 
+- 進み具合（2026-10-12）:
+  - 済み: プロバイダとの橋渡し（`crates/otterm-app/src/ai.rs`。Ollama・Claude・OpenAI・Gemini・OpenAI 互換、ストリーミング、API キーは OS のキーチェーン、秘密情報の自動マスク、`ai-log.jsonl` と保持期間、mod ごとに 1 分 10 回、ワークスペース単位のオフ）、`ctx.ai`（complete・stream・available、文脈はホストが `context.include` から付ける、送信前のプレビューと同意。otterm 以外の mod は毎回、`otterm.ai-assist` は最初の 5 回）、同梱 mod `otterm.ai-assist`（既定オフ、`[ai] enabled` で起動。自然文 → コマンドと危険バッジ・辞書にないオプションの注記、エラーの説明（辞書の助言がないときだけ「コツメに聞く」）、`ai.fix`、選択範囲について聞く、今なにしてた？、長い回答は下パネル、`?` プレフィックス）、設定画面の AI ページ（キーの保存、Ollama の検出はボタンを押したときだけ）、評価セット 100 問（`tests/ai-eval/`、ローカルの OpenAI 互換で回す）、評価セットで見つかった危険ルールの穴（`rm -rf ./*`、`docker volume prune`、main への force push、パイプ経由の `Remove-Item -Recurse`）
+  - 確認済み（Windows、開発機、料金のかからない模擬サーバー）: コツメのクリック → 質問 → 送信前のプレビュー → ストリーミング表示 → 提案と挿入ボタン
+  - 残り: 実際のプロバイダでの評価（Claude・OpenAI・Gemini は料金がかかるため未実施。Ollama なら無料）、ステップ実行モード（v1.x）、推奨ローカルモデルのレジストリ配信
+
 ### M6: 配布（目安 3〜4 週）→ v1.0
 
 - インストーラ（v1.0 は winget / Homebrew cask / AppImage の 3 チャネル。deb / rpm / Flatpak は v1.1）、Tauri updater による自動更新、署名（判断 A9、C10）

@@ -85,6 +85,8 @@ export interface UiConfig {
   workspace: UiWorkspace | null;
   /** `general.check_updates` (decision K5). */
   checkUpdates: boolean;
+  /** `[ai] question_prefix` (decision F1). */
+  aiQuestionPrefix: boolean;
   /** `[mascot]`, resolved against the guide level (docs/08 §4.3). */
   mascot: {
     visible: boolean;

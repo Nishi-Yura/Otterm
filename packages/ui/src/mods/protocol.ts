@@ -96,7 +96,7 @@ export type WorkerToHost =
   /** A host API call that needs an answer (`reply`). `ns.method` such as "fs.readText". */
   | { t: "call"; id: number; method: string; args: unknown[] }
   /** The mod's slot items and panels, whole, after a render. */
-  | { t: "ui"; items: UiItem[]; panels: PanelItem[] }
+  | { t: "ui"; items: UiItem[]; panels: PanelItem[]; dialogs?: { reg: number; node: SerializedNode }[] }
   | { t: "result"; id: number; ok: boolean; value?: unknown; error?: string }
   | { t: "pong"; id: number }
   /** Registrations without UI. */

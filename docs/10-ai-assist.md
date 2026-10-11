@@ -155,6 +155,14 @@ ctx.terminal.insert(`git commit -m "${res.text}"`);
 - 捏造オプション検出率: 辞書と照合して存在しないフラグを含む回答の割合を追跡
 - 遅延: Tier 2 で初回トークンまで 2 秒以内（UI 側の目標。モデル側は制御できないため、超えたら「時間がかかっています」を出す）
 
+## 8.1 実装（2026-10-12）
+
+- 橋渡しはホスト（判断 M22）: `crates/otterm-app/src/ai.rs` が各プロバイダへのストリーミング、OS のキーチェーン（keyring、サービス名 `otterm-ai`）、自動マスク、`<データ>/logs/ai-log.jsonl`、1 分 10 回の制限、ワークスペース単位のオフ（`state/ai-off-workspaces.json`）を受け持つ
+- Claude は既定で `claude-opus-5-5`（`[ai] model` で変更可）、`output_config.effort = "low"`、拒否時の自動切り替え（`fallbacks: "default"`）を付ける。OpenAI・Gemini・OpenAI 互換はモデル名の設定が必須。Ollama の既定は `qwen2.5-coder:7b`
+- 送信前のプレビューは UI が出す。otterm 以外の mod は毎回、`otterm.ai-assist` は `[ai] preview_first_n` 回まで。プレビューから「このワークスペースでは AI を使わない」を選べる
+- `context.include` の `lastBlock` は直前に終わったブロックのコマンド・終了コード・出力の末尾 200 行、`selection` はアクティブなペインの選択範囲
+- 評価セットは `tests/ai-eval/`（100 問、判断 F3）。ローカルの OpenAI 互換サーバー（Ollama）を既定にし、それ以外の送り先では課金の警告を出す
+
 ## 9. やらないこと
 
 - AI がユーザーの代わりにコマンドを実行すること（ステップ実行モードでもクリックは人間）

@@ -18,13 +18,19 @@ const ids = (file) => {
   const parsed = new Set(res.body.map((m) => m.id));
   const declared = [...text.matchAll(/^(-?[a-zA-Z][\w-]*)\s*=/gm)].map((m) => m[1]);
   const broken = declared.filter((id) => !parsed.has(id));
-  return { parsed, broken };
+  // A second definition is silently ignored by Fluent: the first one wins.
+  const dupes = declared.filter((id, i) => declared.indexOf(id) !== i);
+  return { parsed, broken, dupes };
 };
 
 let failed = false;
 const reference = ids("ja.ftl");
 for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".ftl"))) {
-  const { parsed, broken } = ids(file);
+  const { parsed, broken, dupes } = ids(file);
+  if (dupes.length) {
+    failed = true;
+    console.error(`${file}: defined twice: ${[...new Set(dupes)].join(", ")}`);
+  }
   if (broken.length) {
     failed = true;
     console.error(`${file}: could not parse ${broken.join(", ")}`);
