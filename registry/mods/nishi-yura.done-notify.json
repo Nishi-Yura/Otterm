@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.done-notify",
+  "name": "完了通知 / Done notify",
+  "description": "時間のかかったコマンドが終わったときに通知を出します。出力は読みません。 / Shows a toast when a long-running command finishes. Output is never read.",
+  "author": "nishi-yura",
+  "kind": "extension",
+  "categories": ["workflow"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/done-notify",
+  "permissions": ["terminal.read"],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.done-notify-1.0.0.otmod",
+      "sha256": "fef467de9666c3c016a93274c013db419cf3c90b52b4ab575f3cd7061e777d7b",
+      "size": 4905,
+      "published": "2026-10-11"
+    }
+  ]
+}

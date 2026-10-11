@@ -1,0 +1,79 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "vitest",
+  "summary": {
+    "ja": "Vite の仕組みで JavaScript・TypeScript のテストを実行します",
+    "en": "Runs JavaScript and TypeScript tests with Vite's tooling"
+  },
+  "description": {
+    "ja": "引数なしで実行すると、対話的なターミナルでは変更を監視して再実行します。1 回だけ実行して終わらせるには vitest run を使います（CI でも同じ）",
+    "en": "Run without arguments to watch and rerun tests on change in an interactive terminal. Use vitest run for a single run, as in CI"
+  },
+  "install": { "npm": "npm install -D vitest", "url": "https://vitest.dev/guide/" },
+  "options": [
+    {
+      "flags": ["--ui"],
+      "summary": { "ja": "テスト結果をブラウザで見られる画面を開く", "en": "Open the test results UI in a browser" }
+    }
+  ],
+  "subcommands": [
+    {
+      "name": "run",
+      "summary": { "ja": "テストを 1 回だけ実行して終了します", "en": "Runs the tests once and exits" },
+      "options": [
+        {
+          "flags": ["-t", "--testNamePattern"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "テスト名で絞り込む（正規表現）", "en": "Only run tests whose name matches (regex)" }
+        },
+        {
+          "flags": ["--coverage"],
+          "summary": {
+            "ja": "カバレッジを表示する（@vitest/coverage-v8 などの追加パッケージが必要）",
+            "en": "Report coverage (needs a coverage package such as @vitest/coverage-v8)"
+          }
+        },
+        {
+          "flags": ["--bail"],
+          "takesValue": true,
+          "valueType": "number",
+          "summary": { "ja": "指定した数の失敗で止める", "en": "Stop after this many failures" }
+        },
+        {
+          "flags": ["--reporter"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "結果の表示形式（verbose、json など）", "en": "Output format (verbose, json, etc.)" }
+        },
+        {
+          "flags": ["--passWithNoTests"],
+          "summary": { "ja": "テストが 1 つもなくても成功にする", "en": "Pass when no tests are found" }
+        },
+        {
+          "flags": ["-u", "--update"],
+          "summary": {
+            "ja": "スナップショットを今の出力で書き換える",
+            "en": "Rewrite snapshots to match the current output"
+          },
+          "danger": "warn",
+          "dangerMessage": {
+            "ja": "スナップショットを今の出力で上書きします。意図しない変化まで正しい結果になってしまうおそれがあります",
+            "en": "Overwrites snapshots with the current output. Unintended changes will be accepted as correct"
+          }
+        }
+      ],
+      "examples": [
+        { "command": "vitest run", "summary": { "ja": "全テストを 1 回実行する", "en": "Run all tests once" } }
+      ]
+    },
+    {
+      "name": "related",
+      "summary": {
+        "ja": "指定したソースファイルに関係するテストだけを実行します",
+        "en": "Runs only the tests related to the given source files"
+      },
+      "args": [{ "name": "file", "type": "path", "variadic": true }]
+    }
+  ]
+}

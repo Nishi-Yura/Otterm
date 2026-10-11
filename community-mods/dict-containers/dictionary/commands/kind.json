@@ -1,0 +1,142 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "kind",
+  "summary": {
+    "ja": "Docker の中に Kubernetes のクラスターを作ります（テスト用）",
+    "en": "Runs Kubernetes clusters inside Docker containers, for testing"
+  },
+  "description": {
+    "ja": "kind（Kubernetes IN Docker）は、クラスターの各ノードを Docker のコンテナとして動かします。Docker が動いている必要があります。作ったクラスターは kubectl で操作します",
+    "en": "kind (Kubernetes IN Docker) runs each cluster node as a Docker container, so Docker must be running. Control the cluster with kubectl"
+  },
+  "install": {
+    "winget": "winget install Kubernetes.kind",
+    "brew": "brew install kind",
+    "url": "https://kind.sigs.k8s.io/docs/user/quick-start/"
+  },
+  "subcommands": [
+    {
+      "name": "create",
+      "summary": {
+        "ja": "クラスターを作ります（kind create cluster）",
+        "en": "Creates a cluster (kind create cluster)"
+      },
+      "options": [
+        {
+          "flags": ["--name"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "クラスターの名前（省略時は kind）", "en": "Cluster name (default kind)" }
+        },
+        {
+          "flags": ["--config"],
+          "takesValue": true,
+          "valueType": "file",
+          "summary": {
+            "ja": "設定 YAML でノード数などを指定して作る",
+            "en": "Create from a YAML config (e.g. node count)"
+          }
+        },
+        {
+          "flags": ["--image"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": {
+            "ja": "ノードに使うイメージ（Kubernetes の版を指定）",
+            "en": "Node image (sets the Kubernetes version)"
+          }
+        }
+      ],
+      "examples": [
+        {
+          "command": "kind create cluster --name dev",
+          "summary": { "ja": "dev という名前のクラスターを作る", "en": "Create a cluster named dev" }
+        }
+      ],
+      "errors": [
+        {
+          "pattern": "already exist for a cluster with the name",
+          "hint": {
+            "ja": "同じ名前のクラスターがあります。--name を変えるか、kind get clusters で確認してください",
+            "en": "A cluster with that name exists. Change --name, or check with kind get clusters"
+          }
+        },
+        {
+          "pattern": "Cannot connect to the Docker daemon",
+          "hint": {
+            "ja": "Docker が起動していません。Docker を起動してからもう一度実行してください",
+            "en": "Docker is not running. Start Docker and try again"
+          }
+        }
+      ]
+    },
+    {
+      "name": "delete",
+      "summary": {
+        "ja": "クラスターを削除します（kind delete cluster）",
+        "en": "Deletes a cluster (kind delete cluster)"
+      },
+      "options": [
+        {
+          "flags": ["--name"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "削除するクラスターの名前", "en": "Name of the cluster to delete" }
+        }
+      ]
+    },
+    {
+      "name": "get",
+      "summary": {
+        "ja": "クラスターやノードの一覧を表示します（kind get clusters）",
+        "en": "Lists clusters or nodes (kind get clusters)"
+      },
+      "examples": [
+        {
+          "command": "kind get clusters",
+          "summary": { "ja": "作成済みのクラスター名を一覧する", "en": "List the clusters that exist" }
+        }
+      ]
+    },
+    {
+      "name": "load",
+      "summary": {
+        "ja": "手元の Docker イメージをクラスターに読み込みます（kind load docker-image）",
+        "en": "Loads a local Docker image into the cluster (kind load docker-image)"
+      },
+      "options": [
+        {
+          "flags": ["--name"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "対象のクラスター名", "en": "Target cluster name" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "kind load docker-image myapp:1.0 --name dev",
+          "summary": { "ja": "myapp:1.0 を dev クラスターに読み込む", "en": "Load myapp:1.0 into the dev cluster" }
+        }
+      ]
+    },
+    {
+      "name": "export",
+      "summary": {
+        "ja": "kubectl が使う接続設定を書き出します（kind export kubeconfig）",
+        "en": "Writes kubeconfig for the cluster (kind export kubeconfig)"
+      },
+      "options": [
+        {
+          "flags": ["--name"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "対象のクラスター名", "en": "Target cluster name" }
+        }
+      ]
+    },
+    {
+      "name": "version",
+      "summary": { "ja": "kind のバージョンを表示します", "en": "Shows the kind version" }
+    }
+  ]
+}

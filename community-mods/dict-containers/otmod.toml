@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.dict-containers"
+name = "コンテナ周りの辞書 / Container tools dictionary"
+version = "1.0.0"
+description = "podman、docker-compose、minikube、kind の主な使い方と、データを消す操作への注意 / Main usage of podman, docker-compose, minikube and kind, with warnings for operations that delete data"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-containers"
+kind = "dictionary"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

@@ -1,0 +1,22 @@
+[theme]
+name = "Sakura"
+appearance = "light"
+
+[theme.terminal]
+foreground = "#4a3b42"
+background = "#fffaf7"
+cursor = "#d6557a"
+selection = "#f6d5df"
+ansi = ["#4a3b42", "#c2445e", "#5f8f5a", "#a8742a", "#5b7fb5", "#b5588f", "#3f8488", "#e8d6dc"]
+bright = ["#8a7780", "#d9708a", "#7aa874", "#c9965a", "#7f9fcc", "#cc7aa8", "#6aa9ad", "#fffaf7"]
+
+[theme.ui]
+bg = "#fffaf7"
+bg-elevated = "#fdeef3"
+fg = "#4a3b42"
+fg-muted = "#7a6670"
+accent = "#b8456a"
+border = "#ecd6de"
+danger = "#b42d3f"
+success = "#3d7a45"
+warning = "#95620f"

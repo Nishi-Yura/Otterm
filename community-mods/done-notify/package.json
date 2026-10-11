@@ -1,0 +1,13 @@
+{
+  "name": "@otterm/community-done-notify",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../scripts/build-mod.mjs",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@otterm/api": "workspace:*",
+    "typescript": "^7.0.2"
+  }
+}

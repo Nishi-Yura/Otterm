@@ -1,0 +1,68 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "black",
+  "summary": {
+    "ja": "Python のコードを決まった書式に自動で整えます",
+    "en": "Reformats Python code into one consistent style"
+  },
+  "description": {
+    "ja": "書式の細かい設定がほとんどないため、どのプロジェクトでも同じ見た目にそろいます。--check を使うと、書式が揃っているかだけを確認できます",
+    "en": "Has few style settings, so projects look the same. --check only verifies the formatting"
+  },
+  "install": {
+    "pip": "pip install black",
+    "brew": "brew install black",
+    "url": "https://black.readthedocs.io/en/stable/getting_started.html"
+  },
+  "args": [
+    {
+      "name": "path",
+      "type": "path",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "整えるファイルやフォルダ", "en": "Files or folders to format" }
+    }
+  ],
+  "options": [
+    {
+      "flags": ["--check"],
+      "summary": {
+        "ja": "書き換えず、整形が必要なら失敗にする（CI 向け）",
+        "en": "Don't write; fail if reformatting is needed (for CI)"
+      }
+    },
+    {
+      "flags": ["--diff"],
+      "summary": { "ja": "書き換えず、変更内容を差分で表示する", "en": "Show changes as a diff without writing" }
+    },
+    {
+      "flags": ["-l", "--line-length"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "1 行の最大文字数（既定 88）", "en": "Maximum line length (default 88)" }
+    },
+    {
+      "flags": ["-S", "--skip-string-normalization"],
+      "summary": { "ja": "文字列の引用符を変えない", "en": "Keep string quotes as they are" }
+    },
+    {
+      "flags": ["--target-version"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "対象の Python 版（例 py312）", "en": "Target Python version (e.g. py312)" }
+    },
+    {
+      "flags": ["-c", "--code"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "ファイルの代わりに、渡した文字列を整える", "en": "Format the given string instead of files" }
+    },
+    { "flags": ["-q", "--quiet"], "summary": { "ja": "メッセージを表示しない", "en": "Suppress messages" } }
+  ],
+  "examples": [
+    {
+      "command": "black --check .",
+      "summary": { "ja": "書式が揃っているかを確認する", "en": "Check that the formatting is consistent" }
+    }
+  ]
+}

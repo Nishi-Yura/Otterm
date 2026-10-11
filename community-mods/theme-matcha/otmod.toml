@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.theme-matcha"
+name = "抹茶 / Matcha"
+version = "1.0.0"
+description = "深い抹茶色の暗いテーマ / A dark green-tea theme in deep matcha greens"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-matcha"
+kind = "theme"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

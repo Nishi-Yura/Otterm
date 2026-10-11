@@ -1,0 +1,65 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "prettier",
+  "summary": {
+    "ja": "コードの書式（インデントや改行など）をそろえます",
+    "en": "Formats code consistently (indentation, line breaks, etc.)"
+  },
+  "description": {
+    "ja": "決まった書式にファイルを書き直します。--check を使うと、書式がそろっているかだけを確認できます（ファイルは変わりません）",
+    "en": "Rewrites files in one consistent style. --check only verifies the formatting and changes nothing"
+  },
+  "install": { "npm": "npm install -D prettier", "url": "https://prettier.io/docs/install" },
+  "args": [
+    {
+      "name": "path",
+      "type": "path",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "対象のファイルやフォルダ", "en": "Files or folders to format" }
+    }
+  ],
+  "options": [
+    {
+      "flags": ["-w", "--write"],
+      "summary": { "ja": "整形した内容でファイルを上書きする", "en": "Format the files in place" }
+    },
+    {
+      "flags": ["-c", "--check"],
+      "summary": {
+        "ja": "書式が違えば失敗にする（書き換えない・CI 向け）",
+        "en": "Fail if formatting differs, without writing (for CI)"
+      }
+    },
+    {
+      "flags": ["-l", "--list-different"],
+      "summary": { "ja": "書式が違うファイルの名前だけを表示する", "en": "List only files whose formatting differs" }
+    },
+    {
+      "flags": ["-u", "--ignore-unknown"],
+      "summary": { "ja": "対応していない形式のファイルを無視する", "en": "Ignore files Prettier does not support" }
+    },
+    {
+      "flags": ["--config"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "使う設定ファイルを指定", "en": "Use this config file" }
+    },
+    { "flags": ["--no-config"], "summary": { "ja": "設定ファイルを読まない", "en": "Do not read config files" } },
+    {
+      "flags": ["--ignore-path"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": {
+        "ja": "除外するパスの一覧ファイル（既定は .prettierignore）",
+        "en": "File listing paths to ignore (default .prettierignore)"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "command": "prettier --write src",
+      "summary": { "ja": "src の中のファイルを整形する", "en": "Format the files under src" }
+    }
+  ]
+}

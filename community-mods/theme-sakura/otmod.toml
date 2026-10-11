@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.theme-sakura"
+name = "桜 / Sakura"
+version = "1.0.0"
+description = "桜色のやわらかい配色の明るいテーマ / A light theme in soft cherry-blossom pinks on warm white"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-sakura"
+kind = "theme"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.theme-sakura",
+  "name": "桜 / Sakura",
+  "description": "桜色のやわらかい配色の明るいテーマ / A light theme in soft cherry-blossom pinks on warm white",
+  "author": "nishi-yura",
+  "kind": "theme",
+  "categories": ["theme"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-sakura",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-sakura-1.0.0.otmod",
+      "sha256": "93845f71818d7c3bc1bbef7bfb07c6ae1e5fb480ee43245fd0c928a63f9ab554",
+      "size": 1292,
+      "published": "2026-10-11"
+    }
+  ]
+}

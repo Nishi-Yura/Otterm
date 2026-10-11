@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.clock",
+  "name": "時計 / Clock",
+  "description": "ステータスバーに現在時刻を表示します（日付も表示できます） / Shows the current time in the status bar, optionally with the date.",
+  "author": "nishi-yura",
+  "kind": "extension",
+  "categories": ["fun"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/clock",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.clock-1.0.0.otmod",
+      "sha256": "170cc5cc7899088562c62fcbb20d4a8544be3bfd829ade64f6c09549ee971e1f",
+      "size": 4180,
+      "published": "2026-10-11"
+    }
+  ]
+}

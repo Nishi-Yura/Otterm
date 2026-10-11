@@ -1,5 +1,281 @@
 {
   "schema": 1,
-  "generated": "2026-10-11T15:21:08.598Z",
-  "mods": []
+  "generated": "2026-10-11T16:06:44.269Z",
+  "mods": [
+    {
+      "id": "nishi-yura.cheatsheet",
+      "name": "キー早見表 / Key cheatsheet",
+      "description": "otterm の主な既定キーを、サイドパネルで一覧できます。 / A sidebar panel listing otterm's main default shortcuts.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["input"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/cheatsheet",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.cheatsheet-1.0.0.otmod",
+          "sha256": "e704930cccd6830e80a2097f3088249236f1199b37849a765fe7ad8f62f9c9c9",
+          "size": 6357,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.clock",
+      "name": "時計 / Clock",
+      "description": "ステータスバーに現在時刻を表示します（日付も表示できます） / Shows the current time in the status bar, optionally with the date.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["fun"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/clock",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.clock-1.0.0.otmod",
+          "sha256": "170cc5cc7899088562c62fcbb20d4a8544be3bfd829ade64f6c09549ee971e1f",
+          "size": 4180,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.dict-containers",
+      "name": "コンテナ周りの辞書 / Container tools dictionary",
+      "description": "podman、docker-compose、minikube、kind の主な使い方と、データを消す操作への注意 / Main usage of podman, docker-compose, minikube and kind, with warnings for operations that delete data",
+      "author": "nishi-yura",
+      "kind": "dictionary",
+      "categories": ["input", "docker"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-containers",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-containers-1.0.0.otmod",
+          "sha256": "e74ecee60f5844442c15b530a0223001268b31bea25d6b6ffce8c16cb5abea1b",
+          "size": 11725,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.dict-js-tools",
+      "name": "JS 開発ツールの辞書 / JS dev tools dictionary",
+      "description": "vite、eslint、prettier、jest、vitest、tsx、turbo の主な使い方 / Main usage of vite, eslint, prettier, jest, vitest, tsx and turbo",
+      "author": "nishi-yura",
+      "kind": "dictionary",
+      "categories": ["input", "language"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-js-tools",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-js-tools-1.0.0.otmod",
+          "sha256": "270ac9d04089f1a3785978e0cbd78ceeedd21c3a0775e381fced66e12f70f664",
+          "size": 10901,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.dict-python-tools",
+      "name": "Python 開発ツールの辞書 / Python dev tools dictionary",
+      "description": "pytest、ruff、black、mypy、jupyter、pre-commit の主な使い方 / Main usage of pytest, ruff, black, mypy, jupyter and pre-commit",
+      "author": "nishi-yura",
+      "kind": "dictionary",
+      "categories": ["input", "language"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-python-tools",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-python-tools-1.0.0.otmod",
+          "sha256": "220662bbc3faf68281d42a37ffca6f4dae0f8aaad528887ee76ce6140d8c9158",
+          "size": 9432,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.done-notify",
+      "name": "完了通知 / Done notify",
+      "description": "時間のかかったコマンドが終わったときに通知を出します。出力は読みません。 / Shows a toast when a long-running command finishes. Output is never read.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["workflow"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/done-notify",
+      "permissions": ["terminal.read"],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.done-notify-1.0.0.otmod",
+          "sha256": "fef467de9666c3c016a93274c013db419cf3c90b52b4ab575f3cd7061e777d7b",
+          "size": 4905,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.git-status-bar",
+      "name": "Git ブランチと変更数 / Git branch and changes",
+      "description": "ステータスバーに現在の Git ブランチと変更ファイル数を表示します / Shows the Git branch and changed file count in the status bar.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["git"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/git-status-bar",
+      "permissions": ["process:git", "fs.read:${cwd}/**", "terminal.read"],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.git-status-bar-1.0.0.otmod",
+          "sha256": "fa267118183d1a77c826023f03539ff818d2917d4d88d155feeb948a280659e1",
+          "size": 6832,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.pomodoro",
+      "name": "ポモドーロタイマー / Pomodoro timer",
+      "description": "ステータスバーのポモドーロタイマー。作業と休憩の終わりを通知します / Pomodoro timer in the status bar. Notifies you when a work or break period ends.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["fun", "workflow"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/pomodoro",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.pomodoro-1.0.0.otmod",
+          "sha256": "e18e91d02ddb74b15eb7ebc2c7631b83f15a541413fe3c8d5f838aa8c19a66f6",
+          "size": 6228,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.theme-kawauso-night",
+      "name": "カワウソの夜 / Kawauso Night",
+      "description": "夜の川辺のカワウソをイメージした暗いテーマ（茶色の毛並みと川の青緑）/ A dark theme inspired by a river otter at night: warm fur browns and river teal",
+      "author": "nishi-yura",
+      "kind": "theme",
+      "categories": ["theme"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-kawauso-night",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-kawauso-night-1.0.0.otmod",
+          "sha256": "ee468b9b612833a553ac81eedf2eb56652cd4bd71b949b7f6a2aa8d6b79542d3",
+          "size": 1444,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.theme-matcha",
+      "name": "抹茶 / Matcha",
+      "description": "深い抹茶色の暗いテーマ / A dark green-tea theme in deep matcha greens",
+      "author": "nishi-yura",
+      "kind": "theme",
+      "categories": ["theme"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-matcha",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-matcha-1.0.0.otmod",
+          "sha256": "3a13fc9d422d9583c2cd30067d3b2274b24a1b2f2bdd3d9f11c91831ac012cb6",
+          "size": 1209,
+          "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.theme-sakura",
+      "name": "桜 / Sakura",
+      "description": "桜色のやわらかい配色の明るいテーマ / A light theme in soft cherry-blossom pinks on warm white",
+      "author": "nishi-yura",
+      "kind": "theme",
+      "categories": ["theme"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-sakura",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-sakura-1.0.0.otmod",
+          "sha256": "93845f71818d7c3bc1bbef7bfb07c6ae1e5fb480ee43245fd0c928a63f9ab554",
+          "size": 1292,
+          "published": "2026-10-11"
+        }
+      ]
+    }
+  ]
 }

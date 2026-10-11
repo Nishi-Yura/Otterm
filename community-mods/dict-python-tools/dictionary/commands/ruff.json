@@ -1,0 +1,95 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "ruff",
+  "summary": {
+    "ja": "高速な Python の lint（問題の検出）と整形のツールです",
+    "en": "Fast Python linter and formatter"
+  },
+  "description": {
+    "ja": "ruff check でコードの問題を調べ、--fix で直せるものは直します。ruff format はコードの書式を整えます",
+    "en": "ruff check finds code problems, and --fix repairs the ones it can. ruff format formats code"
+  },
+  "install": { "pip": "pip install ruff", "brew": "brew install ruff", "url": "https://docs.astral.sh/ruff/" },
+  "subcommands": [
+    {
+      "name": "check",
+      "summary": { "ja": "コードの問題を調べます（lint）", "en": "Finds problems in code (lint)" },
+      "args": [{ "name": "path", "type": "path", "optional": true, "variadic": true }],
+      "options": [
+        {
+          "flags": ["--fix"],
+          "summary": {
+            "ja": "直せる問題を自動で修正する（ファイルを書き換えます）",
+            "en": "Auto-fix fixable problems (writes files)"
+          }
+        },
+        {
+          "flags": ["--diff"],
+          "summary": {
+            "ja": "書き換えず、直す内容を差分で表示する",
+            "en": "Show the fixes as a diff without writing files"
+          }
+        },
+        {
+          "flags": ["-w", "--watch"],
+          "summary": { "ja": "ファイルの変更を監視して、再チェックする", "en": "Re-check when files change" }
+        },
+        {
+          "flags": ["--select"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "調べるルールを指定（例 E,F）", "en": "Rules to enable (e.g. E,F)" }
+        },
+        {
+          "flags": ["--ignore"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "無視するルールを指定", "en": "Rules to ignore" }
+        },
+        {
+          "flags": ["--statistics"],
+          "summary": { "ja": "ルールごとの問題数を表示する", "en": "Count problems per rule" }
+        },
+        {
+          "flags": ["--output-format"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "表示形式（concise、json など）", "en": "Output format (concise, json, etc.)" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "ruff check --fix .",
+          "summary": {
+            "ja": "このフォルダ以下の直せる問題を自動で直す",
+            "en": "Auto-fix fixable problems under this folder"
+          }
+        }
+      ]
+    },
+    {
+      "name": "format",
+      "summary": { "ja": "コードの書式を整えます", "en": "Formats code" },
+      "args": [{ "name": "path", "type": "path", "optional": true, "variadic": true }],
+      "options": [
+        {
+          "flags": ["--check"],
+          "summary": {
+            "ja": "書式が違えば失敗にする（書き換えない）",
+            "en": "Fail if formatting differs, without writing"
+          }
+        },
+        {
+          "flags": ["--diff"],
+          "summary": { "ja": "書き換えず、変更内容を差分で表示する", "en": "Show changes as a diff without writing" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "ruff format --check .",
+          "summary": { "ja": "書式が揃っているかだけ確認する", "en": "Only check that formatting is consistent" }
+        }
+      ]
+    }
+  ]
+}

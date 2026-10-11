@@ -1,0 +1,19 @@
+name: Registry
+
+# Checks registry/ (the mod registry, docs/05 §7.2). Manual only, like the other workflows; the
+# same check runs locally with `node registry/scripts/validate.mjs`.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node registry/scripts/validate.mjs

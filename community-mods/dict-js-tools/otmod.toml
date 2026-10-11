@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.dict-js-tools"
+name = "JS 開発ツールの辞書 / JS dev tools dictionary"
+version = "1.0.0"
+description = "vite、eslint、prettier、jest、vitest、tsx、turbo の主な使い方 / Main usage of vite, eslint, prettier, jest, vitest, tsx and turbo"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-js-tools"
+kind = "dictionary"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

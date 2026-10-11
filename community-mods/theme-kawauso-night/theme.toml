@@ -1,0 +1,22 @@
+[theme]
+name = "Kawauso Night"
+appearance = "dark"
+
+[theme.terminal]
+foreground = "#e8dccb"
+background = "#1f1a17"
+cursor = "#3fb8b0"
+selection = "#2b4a4b"
+ansi = ["#2a2320", "#d2715f", "#8fb573", "#d9ad5b", "#5fa3b8", "#b98aa6", "#3fb8b0", "#d8c8b2"]
+bright = ["#6e6259", "#e58b78", "#a5c98a", "#e8c27a", "#7fbdd0", "#cca2bb", "#5fd0c8", "#f4ead9"]
+
+[theme.ui]
+bg = "#1f1a17"
+bg-elevated = "#2b241f"
+fg = "#e8dccb"
+fg-muted = "#a8998a"
+accent = "#3fb8b0"
+border = "#3d332c"
+danger = "#e8806a"
+success = "#9cc27a"
+warning = "#e3b65e"

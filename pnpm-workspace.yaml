@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "mods/*"
+  - "community-mods/*"
   - "site"
 allowBuilds:
   esbuild: true

@@ -1,0 +1,239 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "podman",
+  "summary": {
+    "ja": "docker と似た書き方で使える、デーモン不要のコンテナツールです",
+    "en": "Container tool with a docker-like CLI that needs no background daemon"
+  },
+  "description": {
+    "ja": "docker と多くのコマンドが同じ書き方で使えます。常駐するデーモンがなく、root 権限なしでも動かせます。Windows と macOS では、コンテナを動かす仮想マシン（machine）を先に起動してください",
+    "en": "Most commands match docker. It has no background daemon and can run rootless. On Windows and macOS, start the virtual machine (machine) that runs containers first"
+  },
+  "install": {
+    "winget": "winget install RedHat.Podman",
+    "brew": "brew install podman",
+    "url": "https://podman.io/docs/installation"
+  },
+  "subcommands": [
+    {
+      "name": "run",
+      "summary": {
+        "ja": "イメージから新しいコンテナを作って起動します",
+        "en": "Creates and starts a new container from an image"
+      },
+      "args": [{ "name": "image", "type": "image" }, { "name": "command", "type": "command", "optional": true }],
+      "options": [
+        {
+          "flags": ["-it"],
+          "summary": {
+            "ja": "対話モードで端末をつなぐ（中でシェルを使うとき）",
+            "en": "Interactive with a terminal, for running a shell inside"
+          }
+        },
+        { "flags": ["-d", "--detach"], "summary": { "ja": "バックグラウンドで起動", "en": "Run in the background" } },
+        {
+          "flags": ["-p", "--publish"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "ポートを公開（ホスト側:コンテナ側）", "en": "Publish a port (host:container)" }
+        },
+        {
+          "flags": ["-v", "--volume"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "フォルダを共有（ホスト側:コンテナ側）", "en": "Mount a folder (host:container)" }
+        },
+        {
+          "flags": ["-e", "--env"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "環境変数を設定（NAME=value）", "en": "Set an environment variable (NAME=value)" }
+        },
+        {
+          "flags": ["--name"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "コンテナに名前を付ける", "en": "Name the container" }
+        },
+        {
+          "flags": ["--rm"],
+          "summary": { "ja": "終了したらコンテナを自動で削除", "en": "Remove the container when it exits" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "podman run -it --rm ubuntu bash",
+          "summary": {
+            "ja": "Ubuntu を一時的に起動し、中でシェルを使う（終了すると消える）",
+            "en": "Start a throwaway Ubuntu with a shell; it is removed on exit"
+          }
+        }
+      ],
+      "errors": [
+        {
+          "pattern": "Cannot connect to Podman",
+          "hint": {
+            "ja": "Podman が起動していません。Windows と macOS では podman machine start を実行してからもう一度試してください",
+            "en": "Podman is not running. On Windows or macOS, run podman machine start and try again"
+          }
+        },
+        {
+          "pattern": "address already in use",
+          "hint": {
+            "ja": "そのポートは使用中です。-p の左側（ホスト側）を別の番号にしてください",
+            "en": "That port is in use. Change the host side of -p"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ps",
+      "summary": {
+        "ja": "コンテナの一覧を表示します（既定は動作中のものだけ）",
+        "en": "Lists containers (running ones by default)"
+      },
+      "options": [
+        {
+          "flags": ["-a", "--all"],
+          "summary": { "ja": "停止中のコンテナも含める", "en": "Include stopped containers" }
+        },
+        {
+          "flags": ["-q", "--quiet"],
+          "summary": { "ja": "ID だけを表示（スクリプト向け）", "en": "Show only container IDs (for scripts)" }
+        }
+      ]
+    },
+    {
+      "name": "exec",
+      "summary": {
+        "ja": "動いているコンテナの中でコマンドを実行します",
+        "en": "Runs a command inside a running container"
+      },
+      "args": [{ "name": "container", "type": "container" }, { "name": "command", "type": "command" }],
+      "options": [
+        { "flags": ["-it"], "summary": { "ja": "対話モードで端末をつなぐ", "en": "Interactive with a terminal" } },
+        {
+          "flags": ["-u", "--user"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "指定したユーザーとして実行", "en": "Run as the given user" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "podman exec -it web sh",
+          "summary": { "ja": "web コンテナの中でシェルを開く", "en": "Open a shell inside the web container" }
+        }
+      ]
+    },
+    {
+      "name": "logs",
+      "summary": { "ja": "コンテナの出力ログを表示します", "en": "Shows a container's output logs" },
+      "args": [{ "name": "container", "type": "container" }],
+      "options": [
+        {
+          "flags": ["-f", "--follow"],
+          "summary": {
+            "ja": "新しいログを流し続ける（Ctrl+C はログ表示だけを止めます）",
+            "en": "Keep streaming new output (Ctrl+C stops only the log view)"
+          }
+        },
+        {
+          "flags": ["--tail"],
+          "takesValue": true,
+          "valueType": "number",
+          "summary": { "ja": "末尾の N 行だけ表示", "en": "Show only the last N lines" }
+        }
+      ]
+    },
+    {
+      "name": "build",
+      "summary": {
+        "ja": "Containerfile（Dockerfile）からイメージを作ります",
+        "en": "Builds an image from a Containerfile (or Dockerfile)"
+      },
+      "args": [{ "name": "context", "type": "dir" }],
+      "options": [
+        {
+          "flags": ["-t", "--tag"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": {
+            "ja": "イメージに名前:タグを付ける（例 myapp:1.0）",
+            "en": "Name and tag the image, such as myapp:1.0"
+          }
+        },
+        {
+          "flags": ["-f", "--file"],
+          "takesValue": true,
+          "valueType": "file",
+          "summary": { "ja": "Containerfile の場所を指定", "en": "Path to the Containerfile" }
+        },
+        {
+          "flags": ["--no-cache"],
+          "summary": { "ja": "キャッシュを使わず最初から作る", "en": "Build without using the cache" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "podman build -t myapp:1.0 .",
+          "summary": {
+            "ja": "今のフォルダの Containerfile から myapp:1.0 を作る",
+            "en": "Build myapp:1.0 from the Containerfile in this folder"
+          }
+        }
+      ]
+    },
+    {
+      "name": "images",
+      "summary": { "ja": "ローカルにあるイメージの一覧を表示します", "en": "Lists images stored locally" }
+    },
+    {
+      "name": "pull",
+      "summary": { "ja": "レジストリからイメージをダウンロードします", "en": "Downloads an image from a registry" },
+      "args": [{ "name": "image", "type": "image" }]
+    },
+    {
+      "name": "machine",
+      "summary": {
+        "ja": "Windows と macOS でコンテナを動かす仮想マシンを管理します（init、start、stop、list）",
+        "en": "Manages the virtual machine that runs containers on Windows and macOS (init, start, stop, list)"
+      },
+      "examples": [
+        {
+          "command": "podman machine start",
+          "summary": { "ja": "仮想マシンを起動する", "en": "Start the virtual machine" }
+        }
+      ]
+    },
+    {
+      "name": "system",
+      "summary": {
+        "ja": "使われていないデータの掃除（prune）と、使用量の確認（df）をします",
+        "en": "Cleans up unused data (prune) and shows disk usage (df)"
+      },
+      "examples": [
+        {
+          "command": "podman system df",
+          "summary": {
+            "ja": "イメージやコンテナが使っている容量を表示する（削除はしない）",
+            "en": "Show space used by images and containers (deletes nothing)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "volume",
+      "summary": {
+        "ja": "ボリュームの一覧を表示し、使われていないものを削除します（ls、prune）",
+        "en": "Lists volumes and removes unused ones (ls, prune)"
+      },
+      "examples": [
+        {
+          "command": "podman volume ls",
+          "summary": { "ja": "ボリュームの一覧を表示する（削除はしない）", "en": "List volumes (deletes nothing)" }
+        }
+      ]
+    }
+  ]
+}

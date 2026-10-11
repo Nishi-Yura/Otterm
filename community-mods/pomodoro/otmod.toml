@@ -1,0 +1,38 @@
+[mod]
+id = "nishi-yura.pomodoro"
+name = "ポモドーロタイマー / Pomodoro timer"
+version = "1.0.0"
+description = "ステータスバーのポモドーロタイマー。作業と休憩の終わりを通知します / Pomodoro timer in the status bar. Notifies you when a work or break period ends."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/pomodoro"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+slot = "statusbar.right"
+label = "ポモドーロの残り時間 / Pomodoro countdown"
+
+[[adds]]
+command = "nishi-yura.pomodoro.start"
+label = "ポモドーロ: 開始 / Pomodoro: start"
+
+[[adds]]
+command = "nishi-yura.pomodoro.pause"
+label = "ポモドーロ: 一時停止 / Pomodoro: pause"
+
+[[adds]]
+command = "nishi-yura.pomodoro.reset"
+label = "ポモドーロ: リセット / Pomodoro: reset"
+
+# No permissions: timers, the status bar, commands and toasts only.
+
+[settings.schema]
+work_minutes = { type = "integer", default = 25, min = 1, max = 180, label = "作業時間（分） / Work minutes" }
+break_minutes = { type = "integer", default = 5, min = 1, max = 60, label = "休憩時間（分） / Break minutes" }

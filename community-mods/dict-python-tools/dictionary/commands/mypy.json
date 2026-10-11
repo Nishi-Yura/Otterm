@@ -1,0 +1,82 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "mypy",
+  "summary": {
+    "ja": "Python の型ヒントを、実行せずに調べる型チェッカーです",
+    "en": "Static type checker for Python type hints"
+  },
+  "description": {
+    "ja": "def f(x: int) のような型ヒントと合わないコードを、実行しないで見つけます。設定は mypy.ini か pyproject.toml に書きます",
+    "en": "Finds code that does not match its type hints, without running it. Configure it in mypy.ini or pyproject.toml"
+  },
+  "install": {
+    "pip": "pip install mypy",
+    "brew": "brew install mypy",
+    "url": "https://mypy.readthedocs.io/en/stable/getting_started.html"
+  },
+  "args": [
+    {
+      "name": "path",
+      "type": "path",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "調べるファイルやフォルダ", "en": "Files or folders to check" }
+    }
+  ],
+  "options": [
+    {
+      "flags": ["--strict"],
+      "summary": { "ja": "厳しい型チェックのオプションをまとめて有効にする", "en": "Turn on all strict checks" }
+    },
+    {
+      "flags": ["--check-untyped-defs"],
+      "summary": { "ja": "型ヒントのない関数の中も調べる", "en": "Also check functions without type hints" }
+    },
+    {
+      "flags": ["--ignore-missing-imports"],
+      "summary": {
+        "ja": "型情報のないライブラリの import 警告を無視する",
+        "en": "Ignore imports of packages with no type information"
+      }
+    },
+    {
+      "flags": ["--python-version"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "対象の Python 版（例 3.12）", "en": "Target Python version (e.g. 3.12)" }
+    },
+    {
+      "flags": ["--install-types"],
+      "summary": {
+        "ja": "足りない型スタブ（型情報のパッケージ）を入れる（--non-interactive と使う）",
+        "en": "Install missing type stub packages (use with --non-interactive)"
+      }
+    },
+    {
+      "flags": ["--config-file"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": {
+        "ja": "設定ファイル（mypy.ini、pyproject.toml）を指定",
+        "en": "Config file to use (mypy.ini, pyproject.toml)"
+      }
+    },
+    {
+      "flags": ["--pretty"],
+      "summary": {
+        "ja": "エラーの場所を色付きで、該当コードと一緒に表示する",
+        "en": "Show errors with colors and the source code around them"
+      }
+    },
+    {
+      "flags": ["--show-error-codes"],
+      "summary": { "ja": "エラーの種類（例 [arg-type]）を表示する", "en": "Show error codes such as [arg-type]" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "mypy --strict src",
+      "summary": { "ja": "src の中を厳しく型チェックする", "en": "Type-check src in strict mode" }
+    }
+  ]
+}

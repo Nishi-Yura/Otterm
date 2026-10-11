@@ -1,0 +1,110 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "vite",
+  "summary": {
+    "ja": "フロントエンドの開発サーバーと、本番用ビルドのためのツールです",
+    "en": "Dev server and build tool for front-end projects"
+  },
+  "description": {
+    "ja": "vite で開発サーバーを起動し、保存した内容をすぐ画面に反映します。vite build は本番用ファイルを作ります。出力先の中身は、ビルド前に消えます。サブコマンドを省略すると vite dev と同じく開発サーバーが起動します",
+    "en": "vite starts a dev server that updates the page as you save. vite build creates production files. The output folder is emptied before the build. Without a subcommand, vite starts the dev server, same as vite dev"
+  },
+  "install": { "npm": "npm install -D vite", "url": "https://vite.dev/guide/" },
+  "subcommands": [
+    {
+      "name": "dev",
+      "summary": {
+        "ja": "開発サーバーを起動します（保存するとすぐ反映）",
+        "en": "Starts the dev server, with instant updates on save"
+      },
+      "options": [
+        {
+          "flags": ["--port"],
+          "takesValue": true,
+          "valueType": "number",
+          "summary": { "ja": "ポート番号を指定（既定 5173）", "en": "Port number (default 5173)" }
+        },
+        {
+          "flags": ["--strictPort"],
+          "summary": {
+            "ja": "ポートが使用中ならエラーにする（別の番号に移らない）",
+            "en": "Fail if the port is in use, instead of trying another"
+          }
+        },
+        {
+          "flags": ["--host"],
+          "summary": {
+            "ja": "同じネットワークの他の端末からも見えるようにする",
+            "en": "Expose to other devices on the network"
+          }
+        },
+        { "flags": ["--open"], "summary": { "ja": "起動したときにブラウザを開く", "en": "Open the browser on start" } },
+        {
+          "flags": ["--mode"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "モードを指定（.env.<モード> を読み込む）", "en": "Mode to load .env.<mode> files for" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "vite --port 3000",
+          "summary": { "ja": "ポート 3000 で開発サーバーを起動する", "en": "Start the dev server on port 3000" }
+        }
+      ]
+    },
+    {
+      "name": "build",
+      "summary": {
+        "ja": "本番用のファイルを作ります（既定は dist フォルダ）",
+        "en": "Builds production files (default folder dist)"
+      },
+      "options": [
+        {
+          "flags": ["--outDir"],
+          "takesValue": true,
+          "valueType": "dir",
+          "summary": {
+            "ja": "出力先のフォルダ（中身は先に消えます）",
+            "en": "Output folder (its contents are removed first)"
+          }
+        },
+        {
+          "flags": ["--mode"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "モードを指定（.env.<モード> を読み込む）", "en": "Mode to load .env.<mode> files for" }
+        },
+        {
+          "flags": ["--sourcemap"],
+          "summary": { "ja": "デバッグ用のソースマップも作る", "en": "Also generate source maps for debugging" }
+        },
+        {
+          "flags": ["-w", "--watch"],
+          "summary": { "ja": "ファイルの変更を監視して作り直す", "en": "Rebuild when files change" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "vite build",
+          "summary": { "ja": "dist フォルダに本番用ファイルを作る", "en": "Build production files into dist" }
+        }
+      ]
+    },
+    {
+      "name": "preview",
+      "summary": {
+        "ja": "作ったビルドの結果を、ローカルのサーバーで確認します",
+        "en": "Serves the built output locally to check it"
+      },
+      "options": [
+        {
+          "flags": ["--port"],
+          "takesValue": true,
+          "valueType": "number",
+          "summary": { "ja": "ポート番号を指定", "en": "Port number" }
+        }
+      ]
+    }
+  ]
+}

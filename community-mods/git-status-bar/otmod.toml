@@ -1,0 +1,36 @@
+[mod]
+id = "nishi-yura.git-status-bar"
+name = "Git ブランチと変更数 / Git branch and changes"
+version = "1.0.0"
+description = "ステータスバーに現在の Git ブランチと変更ファイル数を表示します / Shows the Git branch and changed file count in the status bar."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/git-status-bar"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+slot = "statusbar.left"
+label = "Git ブランチと変更数 / Git branch and changed files"
+
+[[adds]]
+command = "nishi-yura.git-status-bar.refresh"
+label = "Git の状態を今すぐ更新 / Refresh Git status now"
+
+# git only: `rev-parse` and `status`, run in the terminal's folder (process.run needs that folder in fs.read).
+# terminal.read is needed to hear block-end. Nothing is written to the terminal.
+[permissions]
+process = ["git"]
+fs.read = ["${cwd}/**"]
+terminal.read = true
+events = ["cwd-changed", "focus-changed", "block-end"]
+
+[settings.schema]
+show_dirty_count = { type = "boolean", default = true, label = "変更ファイル数を表示する / Show changed file count" }
+refresh_interval = { type = "integer", default = 10, min = 3, max = 600, label = "更新間隔（秒） / Refresh interval (seconds)" }

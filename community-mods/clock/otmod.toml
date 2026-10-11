@@ -1,0 +1,26 @@
+[mod]
+id = "nishi-yura.clock"
+name = "時計 / Clock"
+version = "1.0.0"
+description = "ステータスバーに現在時刻を表示します（日付も表示できます） / Shows the current time in the status bar, optionally with the date."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/clock"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+slot = "statusbar.right"
+label = "現在時刻 / Current time"
+
+# No permissions: the clock only reads the time and draws in the status bar.
+
+[settings.schema]
+format = { type = "enum", default = "HH:mm", label = "表示形式 / Format", values = [{ value = "HH:mm", label = "HH:mm" }, { value = "HH:mm:ss", label = "HH:mm:ss" }, { value = "h:mm a", label = "h:mm a" }] }
+show_date = { type = "boolean", default = false, label = "日付も表示する / Show the date" }

@@ -1,0 +1,82 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "eslint",
+  "summary": {
+    "ja": "JavaScript と TypeScript のコードの問題を見つけます",
+    "en": "Finds problems in JavaScript and TypeScript code"
+  },
+  "description": {
+    "ja": "ルールに違反したコードを報告します。--fix で自動修正できるものは直します。設定は eslint.config.js（フラット設定）に書きます",
+    "en": "Reports code that breaks its rules. --fix repairs the problems it can fix automatically. Configure it in eslint.config.js (flat config)"
+  },
+  "install": { "npm": "npm install -D eslint", "url": "https://eslint.org/docs/latest/use/getting-started" },
+  "args": [
+    {
+      "name": "path",
+      "type": "path",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "調べるファイルやフォルダ（例 src/）", "en": "Files or folders to check (e.g. src/)" }
+    }
+  ],
+  "options": [
+    {
+      "flags": ["--fix"],
+      "summary": {
+        "ja": "直せる問題を自動で修正し、ファイルを書き換える",
+        "en": "Auto-fix fixable problems (writes files)"
+      }
+    },
+    {
+      "flags": ["--fix-dry-run"],
+      "summary": {
+        "ja": "ファイルを書き換えず、--fix で何が変わるかだけ確認する",
+        "en": "Show what --fix would change without writing files"
+      }
+    },
+    {
+      "flags": ["--cache"],
+      "summary": {
+        "ja": "前回から変わったファイルだけ調べる（速くなる）",
+        "en": "Check only files changed since the last run (faster)"
+      }
+    },
+    {
+      "flags": ["--max-warnings"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": {
+        "ja": "警告がこの数を超えたら失敗にする（CI 向け）",
+        "en": "Fail when warnings exceed this count (for CI)"
+      }
+    },
+    {
+      "flags": ["-f", "--format"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "結果の表示形式（stylish、json など）", "en": "Output format (stylish, json, etc.)" }
+    },
+    {
+      "flags": ["-q", "--quiet"],
+      "summary": { "ja": "エラーだけを表示し、警告は表示しない", "en": "Report errors only, not warnings" }
+    },
+    {
+      "flags": ["--print-config"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "そのファイルに適用される設定を表示する", "en": "Print the effective config for a file" }
+    },
+    {
+      "flags": ["--ignore-pattern"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "調べないパターンを追加する", "en": "Add a pattern to ignore" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "eslint src --fix",
+      "summary": { "ja": "src の中の直せる問題を自動で直す", "en": "Auto-fix problems under src" }
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "pytest",
+  "summary": { "ja": "Python のテストを探して実行します", "en": "Finds and runs Python tests" },
+  "description": {
+    "ja": "test_*.py や *_test.py のテストを探して実行し、結果を表示します。失敗の詳しい情報や、失敗箇所でデバッガーを開く --pdb もあります",
+    "en": "Finds and runs test_*.py and *_test.py tests and reports the results. Shows details for failures, and --pdb opens the debugger at the failure"
+  },
+  "install": { "pip": "pip install pytest", "url": "https://docs.pytest.org/en/stable/getting-started.html" },
+  "args": [
+    {
+      "name": "path",
+      "type": "path",
+      "optional": true,
+      "variadic": true,
+      "summary": {
+        "ja": "調べるファイルやフォルダ（省略時はプロジェクト全体）",
+        "en": "Files or folders to test (default: whole project)"
+      }
+    }
+  ],
+  "options": [
+    {
+      "flags": ["-k"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "名前で絞り込む式（例 -k login）",
+        "en": "Only run tests whose name matches this expression (e.g. -k login)"
+      }
+    },
+    {
+      "flags": ["-m"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "マーカーで絞り込む（例 -m slow）", "en": "Only run tests with this marker (e.g. -m slow)" }
+    },
+    { "flags": ["-x"], "summary": { "ja": "最初に失敗したところで止める", "en": "Stop at the first failure" } },
+    { "flags": ["-v", "--verbose"], "summary": { "ja": "テスト名を 1 件ずつ表示する", "en": "Show each test name" } },
+    {
+      "flags": ["-s"],
+      "summary": {
+        "ja": "print の出力も表示する（キャプチャしない）",
+        "en": "Show print output (disable output capture)"
+      }
+    },
+    {
+      "flags": ["--lf", "--last-failed"],
+      "summary": { "ja": "前回失敗したテストだけを実行する", "en": "Run only the tests that failed last time" }
+    },
+    {
+      "flags": ["--ff", "--failed-first"],
+      "summary": {
+        "ja": "前回失敗したテストを先に、残りを後に実行する",
+        "en": "Run last failures first, then the rest"
+      }
+    },
+    {
+      "flags": ["--pdb"],
+      "summary": { "ja": "失敗したときデバッガー（pdb）を開く", "en": "Open the debugger (pdb) on failure" }
+    },
+    {
+      "flags": ["--collect-only"],
+      "summary": { "ja": "実行せず、テストの一覧だけを表示する", "en": "List the tests without running them" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "pytest -k login -x",
+      "summary": {
+        "ja": "名前に login を含むテストを実行し、最初の失敗で止める",
+        "en": "Run tests with login in their name; stop at the first failure"
+      }
+    }
+  ]
+}

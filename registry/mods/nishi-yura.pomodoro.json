@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.pomodoro",
+  "name": "ポモドーロタイマー / Pomodoro timer",
+  "description": "ステータスバーのポモドーロタイマー。作業と休憩の終わりを通知します / Pomodoro timer in the status bar. Notifies you when a work or break period ends.",
+  "author": "nishi-yura",
+  "kind": "extension",
+  "categories": ["fun", "workflow"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/pomodoro",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.pomodoro-1.0.0.otmod",
+      "sha256": "e18e91d02ddb74b15eb7ebc2c7631b83f15a541413fe3c8d5f838aa8c19a66f6",
+      "size": 6228,
+      "published": "2026-10-11"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ otterm の公式 mod レジストリのテンプレートです。GitHub 上の�
 ## mod を登録する（作者向け）
 
 1. mod のフォルダで `otterm mod publish` を実行する。`<id>-<version>.otmod` と `<id>.json` が生成される
-2. `.otmod` を自分のリポジトリの GitHub Release にアップロードする。`versions[].url` がその URL と一致していることを確認する
+2. `.otmod` を自分のリポジトリの GitHub Release にアップロードする。`versions[].url` がその URL と一致していることを確認する（このリポジトリのメンテナが作る mod は `community-mods/` に置き、配布物は `registry/packages/` から配る）
 3. `<id>.json` を `mods/<id>.json` として置き、PR を開く。既存の mod に新しいバージョンを追加する場合は `versions` に追記する
 4. PR の作者（GitHub ユーザー）は、mod ID の名前空間（`<github-user>.<name>` の `<github-user>`）と一致している必要がある
 5. `otterm.*` は公式のみ使える

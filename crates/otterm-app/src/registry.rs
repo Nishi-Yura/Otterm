@@ -16,7 +16,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 
 /// Where the index is unless `[mods] registry` says otherwise.
-pub const DEFAULT_INDEX: &str = "https://raw.githubusercontent.com/Nishi-Yura/otterm-registry/main/index.json";
+pub const DEFAULT_INDEX: &str = "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/index.json";
 /// A cached index younger than this is used without asking the network.
 const FRESH: Duration = Duration::from_secs(60 * 60);
 /// Largest `.otmod` the client downloads (K7).

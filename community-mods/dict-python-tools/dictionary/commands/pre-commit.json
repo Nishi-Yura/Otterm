@@ -1,0 +1,94 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "pre-commit",
+  "summary": {
+    "ja": "git commit の前に、自動チェックを走らせる仕組みです",
+    "en": "Runs automatic checks before each git commit"
+  },
+  "description": {
+    "ja": ".pre-commit-config.yaml に書いたフック（lint や整形など）を、commit のときに自動で実行します。pre-commit install で git に登録します",
+    "en": "Runs the hooks listed in .pre-commit-config.yaml (lint, formatting, etc.) when you commit. pre-commit install registers them with git"
+  },
+  "install": {
+    "pip": "pip install pre-commit",
+    "brew": "brew install pre-commit",
+    "url": "https://pre-commit.com/#install"
+  },
+  "subcommands": [
+    {
+      "name": "install",
+      "summary": {
+        "ja": "git の hook に登録します（commit のとき自動で実行される）",
+        "en": "Registers the hooks with git, so they run on commit"
+      },
+      "options": [
+        {
+          "flags": ["-t", "--hook-type"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": {
+            "ja": "実行するタイミング（pre-push など）を指定",
+            "en": "Hook stage to install, such as pre-push"
+          }
+        },
+        {
+          "flags": ["-f", "--overwrite"],
+          "summary": { "ja": "既存の git hook を上書きする", "en": "Overwrite an existing git hook" },
+          "danger": "warn",
+          "dangerMessage": {
+            "ja": "今ある git hook を置き換えます。元の hook の内容は失われます",
+            "en": "Replaces the existing git hook. Its current contents are lost"
+          }
+        }
+      ]
+    },
+    {
+      "name": "uninstall",
+      "summary": { "ja": "git の hook から外します", "en": "Removes the hooks from git" }
+    },
+    {
+      "name": "run",
+      "summary": {
+        "ja": "フックを手動で実行します（既定は変更されたファイルだけ）",
+        "en": "Runs hooks manually (by default, only changed files)"
+      },
+      "args": [
+        {
+          "name": "hook",
+          "type": "string",
+          "optional": true,
+          "summary": { "ja": "実行するフックの ID（省略時はすべて）", "en": "Hook ID to run (default: all hooks)" }
+        }
+      ],
+      "options": [
+        {
+          "flags": ["-a", "--all-files"],
+          "summary": {
+            "ja": "リポジトリ内のすべてのファイルに対して実行する",
+            "en": "Run on every file in the repository"
+          }
+        }
+      ],
+      "examples": [
+        {
+          "command": "pre-commit run --all-files",
+          "summary": { "ja": "全ファイルに対して全フックを実行する", "en": "Run all hooks on all files" }
+        }
+      ]
+    },
+    {
+      "name": "autoupdate",
+      "summary": {
+        "ja": "設定に書いたフックのバージョンを最新に更新します（設定ファイルを書き換えます）",
+        "en": "Updates hook versions in the config to the latest (rewrites the config file)"
+      }
+    },
+    {
+      "name": "clean",
+      "summary": {
+        "ja": "フックの作業用キャッシュを消します（次回は再度取得します）",
+        "en": "Deletes the cached hook environments (fetched again next time)"
+      }
+    }
+  ]
+}

@@ -182,6 +182,51 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  community-mods/cheatsheet:
+    devDependencies:
+      '@otterm/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  community-mods/clock:
+    devDependencies:
+      '@otterm/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  community-mods/done-notify:
+    devDependencies:
+      '@otterm/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  community-mods/git-status-bar:
+    devDependencies:
+      '@otterm/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
+  community-mods/pomodoro:
+    devDependencies:
+      '@otterm/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
   mods/cmd-explain:
     devDependencies:
       '@otterm/api':

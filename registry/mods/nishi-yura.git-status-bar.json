@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.git-status-bar",
+  "name": "Git ブランチと変更数 / Git branch and changes",
+  "description": "ステータスバーに現在の Git ブランチと変更ファイル数を表示します / Shows the Git branch and changed file count in the status bar.",
+  "author": "nishi-yura",
+  "kind": "extension",
+  "categories": ["git"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/git-status-bar",
+  "permissions": ["process:git", "fs.read:${cwd}/**", "terminal.read"],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.git-status-bar-1.0.0.otmod",
+      "sha256": "fa267118183d1a77c826023f03539ff818d2917d4d88d155feeb948a280659e1",
+      "size": 6832,
+      "published": "2026-10-11"
+    }
+  ]
+}

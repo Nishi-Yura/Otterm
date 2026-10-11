@@ -1,0 +1,25 @@
+[mod]
+id = "nishi-yura.done-notify"
+name = "完了通知 / Done notify"
+version = "1.0.0"
+description = "時間のかかったコマンドが終わったときに通知を出します。出力は読みません。 / Shows a toast when a long-running command finishes. Output is never read."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/done-notify"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+# block-end gives the finished block (command line, duration, exit code). Output is not read.
+[permissions]
+terminal.read = true
+events = ["block-end"]
+
+[settings.schema]
+min_seconds = { type = "integer", default = 10, min = 1, max = 86400, label = "通知する最短の実行時間（秒） / Shortest run time to notify (seconds)" }

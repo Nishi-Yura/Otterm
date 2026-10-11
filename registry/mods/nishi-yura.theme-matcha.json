@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.theme-matcha",
+  "name": "抹茶 / Matcha",
+  "description": "深い抹茶色の暗いテーマ / A dark green-tea theme in deep matcha greens",
+  "author": "nishi-yura",
+  "kind": "theme",
+  "categories": ["theme"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-matcha",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-matcha-1.0.0.otmod",
+      "sha256": "3a13fc9d422d9583c2cd30067d3b2274b24a1b2f2bdd3d9f11c91831ac012cb6",
+      "size": 1209,
+      "published": "2026-10-11"
+    }
+  ]
+}

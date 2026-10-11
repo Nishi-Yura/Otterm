@@ -1,0 +1,80 @@
+{
+  "$comment": "Danger rules for danger-guard. Shape mirrors DangerRule in packages/api/src/index.d.ts.",
+  "rules": [
+    {
+      "id": "dict-containers.podman-system-prune-all",
+      "level": "confirm",
+      "match": { "regex": "\\bpodman\\s+system\\s+prune\\b.*(\\s-[a-zA-Z]*a[a-zA-Z]*\\b|\\s--all\\b)" },
+      "message": {
+        "ja": "使われていないイメージをすべて削除します（-a）。次に使うとき再ダウンロードが必要になります",
+        "en": "Removes all unused images, not only dangling ones (-a). You will need to download them again"
+      },
+      "alternatives": [
+        { "label": { "ja": "使用量を先に確認", "en": "Check disk usage first" }, "command": "podman system df" }
+      ]
+    },
+    {
+      "id": "dict-containers.podman-system-prune-volumes",
+      "level": "confirm",
+      "match": { "regex": "\\bpodman\\s+system\\s+prune\\b.*--volumes\\b" },
+      "message": {
+        "ja": "使われていないボリュームも削除します。ボリュームのデータは戻りません",
+        "en": "Also deletes unused volumes. Their data cannot be recovered"
+      },
+      "alternatives": [
+        { "label": { "ja": "ボリュームを残して掃除", "en": "Prune without volumes" }, "command": "podman system prune" }
+      ]
+    },
+    {
+      "id": "dict-containers.podman-volume-prune",
+      "level": "confirm",
+      "match": { "regex": "\\bpodman\\s+volume\\s+prune\\b" },
+      "message": {
+        "ja": "どのコンテナからも使われていないボリュームをすべて削除します。データは戻りません",
+        "en": "Deletes every volume no container uses. The data cannot be recovered"
+      },
+      "alternatives": [
+        { "label": { "ja": "まず一覧を確認", "en": "List volumes first" }, "command": "podman volume ls" }
+      ]
+    },
+    {
+      "id": "dict-containers.compose-down-volumes",
+      "level": "confirm",
+      "match": { "regex": "\\bdocker-compose\\s+down\\b.*(\\s-v\\b|\\s--volumes\\b)" },
+      "message": {
+        "ja": "compose.yaml のボリュームと匿名ボリュームを削除します。データベースなどのデータが消えます",
+        "en": "Deletes the volumes from compose.yaml and anonymous volumes. Database data and similar will be lost"
+      },
+      "alternatives": [
+        {
+          "label": { "ja": "ボリュームを残して停止", "en": "Stop and remove, keep volumes" },
+          "command": "docker-compose down"
+        }
+      ]
+    },
+    {
+      "id": "dict-containers.minikube-delete-all",
+      "level": "confirm",
+      "match": { "regex": "\\bminikube\\s+delete\\b.*--all\\b" },
+      "message": {
+        "ja": "すべての minikube クラスターを削除します。中のデータは戻りません",
+        "en": "Deletes every minikube cluster and everything in them. This cannot be undone"
+      },
+      "alternatives": [
+        { "label": { "ja": "削除せず停止する", "en": "Stop instead of deleting" }, "command": "minikube stop" }
+      ]
+    },
+    {
+      "id": "dict-containers.kind-delete-all",
+      "level": "confirm",
+      "match": { "regex": "\\bkind\\s+delete\\s+clusters?\\b.*--all\\b" },
+      "message": {
+        "ja": "すべての kind クラスターを削除します。中のデータは戻りません",
+        "en": "Deletes every kind cluster and everything in them. This cannot be undone"
+      },
+      "alternatives": [
+        { "label": { "ja": "まず一覧を確認", "en": "List clusters first" }, "command": "kind get clusters" }
+      ]
+    }
+  ]
+}

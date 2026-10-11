@@ -1,0 +1,22 @@
+[theme]
+name = "Matcha"
+appearance = "dark"
+
+[theme.terminal]
+foreground = "#e3ead2"
+background = "#1e2a22"
+cursor = "#b5d88a"
+selection = "#3a4f3e"
+ansi = ["#243128", "#d47b6f", "#9bc26a", "#d9c27a", "#7aa7b8", "#b99bc4", "#7fbfae", "#cfd9bd"]
+bright = ["#5f7364", "#e5968b", "#b3d685", "#ead694", "#94bdcd", "#cdb3d6", "#9bd6c4", "#f2f7e8"]
+
+[theme.ui]
+bg = "#1e2a22"
+bg-elevated = "#27362c"
+fg = "#e3ead2"
+fg-muted = "#a2b096"
+accent = "#9bc26a"
+border = "#3b4c40"
+danger = "#e5887b"
+success = "#a8d27a"
+warning = "#e0c46d"

@@ -22,7 +22,8 @@ const SEMVER_RE =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/;
 const SHA256_RE = /^[0-9a-f]{64}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const PERMISSION_RE = /^[a-z]+(\.[a-z]+)*(:[a-z0-9.*-]+)?$/;
+// The form `otterm mod publish` writes (permission_list in crates/otterm-app/src/registry.rs).
+const PERMISSION_RE = /^(clipboard|ai|terminal\.read|terminal\.write|(process|fs\.read|fs\.write|network):\S+)$/;
 
 const MOD_FIELDS = [
   "id",

@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.dict-python-tools",
+  "name": "Python 開発ツールの辞書 / Python dev tools dictionary",
+  "description": "pytest、ruff、black、mypy、jupyter、pre-commit の主な使い方 / Main usage of pytest, ruff, black, mypy, jupyter and pre-commit",
+  "author": "nishi-yura",
+  "kind": "dictionary",
+  "categories": ["input", "language"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-python-tools",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-python-tools-1.0.0.otmod",
+      "sha256": "220662bbc3faf68281d42a37ffca6f4dae0f8aaad528887ee76ce6140d8c9158",
+      "size": 9432,
+      "published": "2026-10-11"
+    }
+  ]
+}

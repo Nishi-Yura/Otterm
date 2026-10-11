@@ -1,0 +1,99 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "turbo",
+  "summary": {
+    "ja": "モノレポ（1 つのリポジトリに複数のパッケージ）のタスクを、並列かつキャッシュ付きで実行します",
+    "en": "Runs tasks across a monorepo in parallel, with caching"
+  },
+  "description": {
+    "ja": "turbo run build のように書くと、各パッケージの build や test などを依存の順に実行し、結果をキャッシュします。--filter で対象を絞れます",
+    "en": "turbo run build runs tasks such as build or test across packages in dependency order and caches the results. Use --filter to narrow the targets"
+  },
+  "install": { "npm": "npm install -D turbo", "url": "https://turbo.build/repo" },
+  "subcommands": [
+    {
+      "name": "run",
+      "summary": {
+        "ja": "各パッケージでタスクを実行します（例: turbo run build）",
+        "en": "Runs a task across packages (e.g. turbo run build)"
+      },
+      "args": [
+        {
+          "name": "task",
+          "type": "string",
+          "summary": { "ja": "実行するタスク名（build、test など）", "en": "Task name (build, test, etc.)" }
+        }
+      ],
+      "options": [
+        {
+          "flags": ["-F", "--filter"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "対象のパッケージを絞る（例 --filter=web）", "en": "Select packages (e.g. --filter=web)" }
+        },
+        {
+          "flags": ["--force"],
+          "summary": { "ja": "キャッシュを使わず、すべて実行し直す", "en": "Ignore the cache and run everything again" }
+        },
+        {
+          "flags": ["--no-cache"],
+          "summary": { "ja": "キャッシュを読み書きしない", "en": "Do not read or write the cache" }
+        },
+        {
+          "flags": ["--dry-run"],
+          "summary": {
+            "ja": "実行せず、対象と順番だけを表示する",
+            "en": "Show which tasks would run, without running them"
+          }
+        },
+        {
+          "flags": ["--continue"],
+          "summary": {
+            "ja": "失敗しても、依存しない他のタスクは実行を続ける",
+            "en": "Keep running tasks that do not depend on a failure"
+          }
+        }
+      ],
+      "examples": [
+        {
+          "command": "turbo run build --filter=web",
+          "summary": {
+            "ja": "web パッケージだけ build する（依存先も含む）",
+            "en": "Build only the web package (and its dependencies)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "prune",
+      "summary": {
+        "ja": "1 つのパッケージに必要なファイルだけを out フォルダに取り出します",
+        "en": "Copies only what one package needs into an out folder"
+      },
+      "args": [{ "name": "scope", "type": "string", "summary": { "ja": "対象のパッケージ名", "en": "Package name" } }],
+      "options": [
+        {
+          "flags": ["--docker"],
+          "summary": {
+            "ja": "Docker のビルド用に、json と全ファイルを分けて出力する",
+            "en": "Split output into json and full folders for Docker builds"
+          }
+        }
+      ]
+    },
+    {
+      "name": "watch",
+      "summary": {
+        "ja": "ファイルの変更を監視し、タスクを実行し直します",
+        "en": "Watches files and reruns tasks when they change"
+      }
+    },
+    {
+      "name": "ls",
+      "summary": {
+        "ja": "ワークスペースにあるパッケージの一覧を表示します",
+        "en": "Lists the packages in the workspace"
+      }
+    }
+  ]
+}

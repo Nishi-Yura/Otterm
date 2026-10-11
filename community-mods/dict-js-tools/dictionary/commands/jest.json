@@ -1,0 +1,77 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "jest",
+  "summary": { "ja": "JavaScript のテストを探して実行します", "en": "Finds and runs JavaScript tests" },
+  "description": {
+    "ja": "*.test.js などのテストファイルを探して実行し、結果を表示します。--watch を付けると、変更されたファイルに関係するテストを再実行します（git の管理下が必要です）",
+    "en": "Finds and runs test files such as *.test.js and reports the results. --watch reruns the related tests on each change (needs a git repository)"
+  },
+  "install": { "npm": "npm install -D jest", "url": "https://jestjs.io/docs/getting-started" },
+  "args": [
+    {
+      "name": "pattern",
+      "type": "pattern",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "ファイル名で絞り込む文字列", "en": "Text to filter test file paths" }
+    }
+  ],
+  "options": [
+    {
+      "flags": ["-t", "--testNamePattern"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "テスト名で絞り込む（正規表現）", "en": "Only run tests whose name matches (regex)" }
+    },
+    {
+      "flags": ["--watch"],
+      "summary": {
+        "ja": "変更されたファイルに関係するテストを再実行する",
+        "en": "Rerun related tests when files change"
+      }
+    },
+    {
+      "flags": ["--coverage"],
+      "summary": { "ja": "コードがテストで通った割合（カバレッジ）を表示する", "en": "Report code coverage" }
+    },
+    {
+      "flags": ["-i", "--runInBand"],
+      "summary": {
+        "ja": "並列にせず、テストを 1 つずつ実行する",
+        "en": "Run tests one at a time instead of in parallel"
+      }
+    },
+    {
+      "flags": ["--bail"],
+      "summary": { "ja": "最初に失敗したテストで止める", "en": "Stop after the first failing test" }
+    },
+    {
+      "flags": ["-u", "--updateSnapshot"],
+      "summary": {
+        "ja": "スナップショットを今の出力で書き換える",
+        "en": "Rewrite snapshots to match the current output"
+      },
+      "danger": "warn",
+      "dangerMessage": {
+        "ja": "スナップショットを今の出力で上書きします。意図しない変化まで正しい結果になってしまうおそれがあります",
+        "en": "Overwrites snapshots with the current output. Unintended changes will be accepted as correct"
+      }
+    },
+    {
+      "flags": ["--ci"],
+      "summary": {
+        "ja": "CI 向け: 新しいスナップショットを作らず、足りなければ失敗にする",
+        "en": "CI mode: do not write new snapshots; fail if any are missing"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "command": "jest --watch -t login",
+      "summary": {
+        "ja": "名前に login を含むテストを、変更のたびに再実行する",
+        "en": "Rerun tests with login in their name on each change"
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.theme-kawauso-night",
+  "name": "カワウソの夜 / Kawauso Night",
+  "description": "夜の川辺のカワウソをイメージした暗いテーマ（茶色の毛並みと川の青緑）/ A dark theme inspired by a river otter at night: warm fur browns and river teal",
+  "author": "nishi-yura",
+  "kind": "theme",
+  "categories": ["theme"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-kawauso-night",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-kawauso-night-1.0.0.otmod",
+      "sha256": "ee468b9b612833a553ac81eedf2eb56652cd4bd71b949b7f6a2aa8d6b79542d3",
+      "size": 1444,
+      "published": "2026-10-11"
+    }
+  ]
+}

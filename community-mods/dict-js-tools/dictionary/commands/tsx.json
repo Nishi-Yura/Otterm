@@ -1,0 +1,61 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "tsx",
+  "summary": {
+    "ja": "TypeScript のファイルを、ビルドせずにそのまま実行します",
+    "en": "Runs TypeScript files directly, without a separate build step"
+  },
+  "description": {
+    "ja": "tsx file.ts でファイルを実行できます。tsx watch は保存のたびに実行し直します。Node.js の実行環境の上で動きます",
+    "en": "tsx file.ts runs a file. tsx watch reruns it on each save. It runs on top of Node.js"
+  },
+  "install": { "npm": "npm install -D tsx", "url": "https://github.com/privatenumber/tsx" },
+  "args": [
+    {
+      "name": "file",
+      "type": "file",
+      "optional": true,
+      "summary": { "ja": "実行する TypeScript ファイル", "en": "TypeScript file to run" }
+    },
+    {
+      "name": "args",
+      "type": "string",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "プログラムに渡す引数", "en": "Arguments passed to the program" }
+    }
+  ],
+  "options": [
+    {
+      "flags": ["-e", "--eval"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "ファイルの代わりに、渡したコードを実行する", "en": "Run the given code instead of a file" }
+    },
+    {
+      "flags": ["-p", "--print"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "-e の結果を表示する", "en": "Print the result of -e" }
+    },
+    {
+      "flags": ["--tsconfig"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "使う tsconfig.json を指定", "en": "tsconfig.json to use" }
+    }
+  ],
+  "subcommands": [
+    {
+      "name": "watch",
+      "summary": { "ja": "ファイルを保存するたびに実行し直します", "en": "Reruns the file each time it changes" },
+      "args": [{ "name": "file", "type": "file" }]
+    }
+  ],
+  "examples": [
+    {
+      "command": "tsx scripts/seed.ts",
+      "summary": { "ja": "scripts/seed.ts をそのまま実行する", "en": "Run scripts/seed.ts directly" }
+    }
+  ]
+}

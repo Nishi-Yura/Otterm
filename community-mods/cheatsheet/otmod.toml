@@ -1,0 +1,25 @@
+[mod]
+id = "nishi-yura.cheatsheet"
+name = "キー早見表 / Key cheatsheet"
+version = "1.0.0"
+description = "otterm の主な既定キーを、サイドパネルで一覧できます。 / A sidebar panel listing otterm's main default shortcuts."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/cheatsheet"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+panel = "cheatsheet.panel"
+label = "キー早見表 / Key cheatsheet"
+
+[[adds]]
+command = "cheatsheet.open"
+label = "キー早見表を開く / Open key cheatsheet"

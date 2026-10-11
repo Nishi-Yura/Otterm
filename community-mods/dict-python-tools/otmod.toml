@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.dict-python-tools"
+name = "Python 開発ツールの辞書 / Python dev tools dictionary"
+version = "1.0.0"
+description = "pytest、ruff、black、mypy、jupyter、pre-commit の主な使い方 / Main usage of pytest, ruff, black, mypy, jupyter and pre-commit"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-python-tools"
+kind = "dictionary"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

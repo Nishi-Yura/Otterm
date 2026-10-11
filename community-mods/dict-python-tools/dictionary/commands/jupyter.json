@@ -1,0 +1,92 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "jupyter",
+  "summary": {
+    "ja": "コードと結果を一緒に書けるノートブック（.ipynb）を扱うツールです",
+    "en": "Tools for notebooks (.ipynb) that mix code and results"
+  },
+  "description": {
+    "ja": "jupyter lab でブラウザ上のノートブック環境を起動します。nbconvert で .ipynb を HTML などに変換できます。起動中のサーバーは、ターミナルで Ctrl+C を押すと止まります",
+    "en": "jupyter lab starts a notebook environment in your browser. nbconvert converts .ipynb files to HTML and other formats. Press Ctrl+C in the terminal to stop the server"
+  },
+  "install": { "pip": "pip install jupyterlab", "url": "https://jupyter.org/install" },
+  "subcommands": [
+    {
+      "name": "lab",
+      "summary": { "ja": "JupyterLab をブラウザで起動します", "en": "Starts JupyterLab in the browser" },
+      "options": [
+        {
+          "flags": ["--port"],
+          "takesValue": true,
+          "valueType": "number",
+          "summary": { "ja": "ポート番号を指定", "en": "Port number" }
+        },
+        { "flags": ["--no-browser"], "summary": { "ja": "ブラウザを自動で開かない", "en": "Do not open a browser" } },
+        {
+          "flags": ["--ip"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": {
+            "ja": "待ち受けるアドレス（0.0.0.0 にすると他の端末からも見えます）",
+            "en": "Address to listen on (0.0.0.0 makes it visible to other devices)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "notebook",
+      "summary": { "ja": "従来の Notebook の画面を起動します", "en": "Starts the classic Notebook interface" },
+      "options": [
+        {
+          "flags": ["--port"],
+          "takesValue": true,
+          "valueType": "number",
+          "summary": { "ja": "ポート番号を指定", "en": "Port number" }
+        },
+        { "flags": ["--no-browser"], "summary": { "ja": "ブラウザを自動で開かない", "en": "Do not open a browser" } }
+      ]
+    },
+    {
+      "name": "nbconvert",
+      "summary": {
+        "ja": "ノートブックを HTML や PDF などに変換します",
+        "en": "Converts notebooks to HTML, PDF and other formats"
+      },
+      "args": [{ "name": "notebook", "type": "file" }],
+      "options": [
+        {
+          "flags": ["--to"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "出力形式（html、pdf、script など）", "en": "Output format (html, pdf, script, etc.)" }
+        },
+        {
+          "flags": ["--execute"],
+          "summary": {
+            "ja": "変換する前にノートブックを実行し、結果を含める",
+            "en": "Run the notebook before converting, so results are included"
+          }
+        }
+      ],
+      "examples": [
+        {
+          "command": "jupyter nbconvert --to html analysis.ipynb",
+          "summary": { "ja": "analysis.ipynb を HTML に変換する", "en": "Convert analysis.ipynb to HTML" }
+        }
+      ]
+    },
+    {
+      "name": "kernelspec",
+      "summary": {
+        "ja": "使えるカーネル（Python などの実行環境）の一覧を表示します（kernelspec list）",
+        "en": "Lists the installed kernels, such as Python environments (kernelspec list)"
+      },
+      "examples": [
+        {
+          "command": "jupyter kernelspec list",
+          "summary": { "ja": "使えるカーネルの一覧を表示する", "en": "List the available kernels" }
+        }
+      ]
+    }
+  ]
+}

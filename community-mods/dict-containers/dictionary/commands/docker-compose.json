@@ -1,0 +1,164 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "docker-compose",
+  "summary": {
+    "ja": "複数のコンテナを 1 つのファイルでまとめて動かす、旧版（v1）のツールです",
+    "en": "Legacy v1 tool that runs several containers together from one file"
+  },
+  "description": {
+    "ja": "compose.yaml（または docker-compose.yml）に書いたサービスをまとめて起動・停止します。これは旧版（v1）の独立したコマンドで、保守は終了しています。新しい環境では、スペースで区切る docker compose（Docker に同梱される v2）を使ってください",
+    "en": "Starts and stops the services defined in compose.yaml (or docker-compose.yml) together. This is the legacy v1 standalone command, which is no longer maintained. In new setups, use docker compose (with a space; v2, bundled with Docker)"
+  },
+  "install": { "url": "https://docs.docker.com/compose/install/" },
+  "options": [
+    {
+      "flags": ["-f", "--file"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "使う compose ファイルを指定", "en": "Use this compose file" }
+    },
+    {
+      "flags": ["-p", "--project-name"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "プロジェクト名を指定（コンテナ名の前につく）",
+        "en": "Project name (prefixed to container names)"
+      }
+    }
+  ],
+  "subcommands": [
+    {
+      "name": "up",
+      "summary": {
+        "ja": "サービスを作って起動します（必要なイメージは取得します）",
+        "en": "Creates and starts services, pulling images if needed"
+      },
+      "options": [
+        { "flags": ["-d", "--detach"], "summary": { "ja": "バックグラウンドで起動", "en": "Run in the background" } },
+        {
+          "flags": ["--build"],
+          "summary": { "ja": "起動する前にイメージを作り直す", "en": "Rebuild images before starting" }
+        },
+        {
+          "flags": ["--force-recreate"],
+          "summary": {
+            "ja": "設定が変わっていなくてもコンテナを作り直す",
+            "en": "Recreate containers even if config is unchanged"
+          }
+        }
+      ],
+      "examples": [
+        {
+          "command": "docker-compose up -d",
+          "summary": { "ja": "全サービスをバックグラウンドで起動する", "en": "Start all services in the background" }
+        }
+      ]
+    },
+    {
+      "name": "down",
+      "summary": {
+        "ja": "コンテナとネットワークを止めて削除します（名前付きボリュームは残します）",
+        "en": "Stops and removes containers and networks (named volumes are kept)"
+      },
+      "options": [
+        {
+          "flags": ["-v", "--volumes"],
+          "summary": { "ja": "ボリュームも削除する（データが消えます）", "en": "Also remove volumes (data is lost)" }
+        },
+        {
+          "flags": ["--rmi"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "イメージも削除（all か local）", "en": "Also remove images (all or local)" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "docker-compose down",
+          "summary": { "ja": "停止して削除する。データは残る", "en": "Stop and remove; data stays" }
+        }
+      ]
+    },
+    {
+      "name": "ps",
+      "summary": { "ja": "このプロジェクトのコンテナの一覧を表示します", "en": "Lists this project's containers" }
+    },
+    {
+      "name": "logs",
+      "summary": { "ja": "サービスの出力ログを表示します", "en": "Shows service output logs" },
+      "args": [{ "name": "service", "type": "string", "optional": true }],
+      "options": [
+        {
+          "flags": ["-f", "--follow"],
+          "summary": {
+            "ja": "新しいログを流し続ける（Ctrl+C はログ表示だけを止めます）",
+            "en": "Keep streaming new output (Ctrl+C stops only the log view)"
+          }
+        },
+        {
+          "flags": ["--tail"],
+          "takesValue": true,
+          "valueType": "number",
+          "summary": { "ja": "末尾の N 行だけ表示", "en": "Show only the last N lines" }
+        }
+      ]
+    },
+    {
+      "name": "exec",
+      "summary": {
+        "ja": "動いているサービスの中でコマンドを実行します",
+        "en": "Runs a command inside a running service"
+      },
+      "args": [{ "name": "service", "type": "string" }, { "name": "command", "type": "command" }],
+      "options": [
+        {
+          "flags": ["-T"],
+          "summary": { "ja": "擬似端末を使わない（スクリプト向け）", "en": "Disable pseudo-tty (for scripts)" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "docker-compose exec web sh",
+          "summary": { "ja": "web サービスの中でシェルを開く", "en": "Open a shell in the web service" }
+        }
+      ]
+    },
+    {
+      "name": "build",
+      "summary": { "ja": "サービスのイメージを作ります", "en": "Builds images for services" },
+      "options": [
+        {
+          "flags": ["--no-cache"],
+          "summary": { "ja": "キャッシュを使わず最初から作る", "en": "Build without using the cache" }
+        }
+      ]
+    },
+    {
+      "name": "stop",
+      "summary": { "ja": "サービスを停止します（削除はしません）", "en": "Stops services without removing them" }
+    },
+    {
+      "name": "config",
+      "summary": {
+        "ja": "compose ファイルを検査し、展開後の設定を表示します",
+        "en": "Validates the compose file and prints the resolved config"
+      },
+      "examples": [
+        {
+          "command": "docker-compose config",
+          "summary": { "ja": "設定ファイルに間違いがないか確認する", "en": "Check the file for mistakes" }
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "Couldn't connect to Docker daemon",
+      "hint": {
+        "ja": "Docker が起動していません。Docker を起動してからもう一度実行してください",
+        "en": "Docker is not running. Start Docker and try again"
+      }
+    }
+  ]
+}

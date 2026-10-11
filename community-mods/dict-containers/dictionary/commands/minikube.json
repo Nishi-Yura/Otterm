@@ -1,0 +1,162 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "minikube",
+  "summary": {
+    "ja": "パソコンの中に Kubernetes のクラスターを作って動かします",
+    "en": "Runs a local Kubernetes cluster on your machine"
+  },
+  "description": {
+    "ja": "開発用に 1 台のマシンへ Kubernetes を作ります。start で作成・起動、stop で停止（クラスターは残る）、delete で削除します。delete を実行すると中のデータも消えます",
+    "en": "Creates a single-machine Kubernetes cluster for development. start creates and starts it, stop halts it but keeps it, and delete removes it along with its data"
+  },
+  "install": {
+    "winget": "winget install Kubernetes.minikube",
+    "brew": "brew install minikube",
+    "url": "https://minikube.sigs.k8s.io/docs/start/"
+  },
+  "subcommands": [
+    {
+      "name": "start",
+      "summary": {
+        "ja": "クラスターを作って起動します（初回は時間がかかります）",
+        "en": "Creates and starts the cluster (the first run takes a while)"
+      },
+      "options": [
+        {
+          "flags": ["--driver"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": {
+            "ja": "動かす方式を指定（docker、hyperv など）",
+            "en": "Driver to run on (docker, hyperv, etc.)"
+          }
+        },
+        {
+          "flags": ["--cpus"],
+          "takesValue": true,
+          "valueType": "number",
+          "summary": { "ja": "使う CPU の数", "en": "Number of CPUs to use" }
+        },
+        {
+          "flags": ["--memory"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "使うメモリ量（例 4096、MB 単位）", "en": "Memory to use (e.g. 4096, in MB)" }
+        },
+        {
+          "flags": ["-p", "--profile"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "クラスターの名前（プロファイル）を指定", "en": "Cluster name (profile)" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "minikube start --driver=docker --cpus=2 --memory=4096",
+          "summary": {
+            "ja": "Docker を使い、CPU 2 個・メモリ 4GB で起動",
+            "en": "Start with Docker, 2 CPUs and 4 GB of memory"
+          }
+        }
+      ]
+    },
+    {
+      "name": "stop",
+      "summary": { "ja": "クラスターを停止します（削除はしません）", "en": "Stops the cluster without deleting it" }
+    },
+    {
+      "name": "status",
+      "summary": {
+        "ja": "クラスターが動いているか、kubectl の接続先が正しいかを表示します",
+        "en": "Shows whether the cluster is running and how kubectl is set up"
+      }
+    },
+    {
+      "name": "delete",
+      "summary": {
+        "ja": "クラスターを削除します（中のデータも消えます）",
+        "en": "Deletes the cluster and all data in it"
+      },
+      "options": [
+        {
+          "flags": ["--all"],
+          "summary": { "ja": "すべてのプロファイル（クラスター）を削除", "en": "Delete every profile (cluster)" }
+        },
+        {
+          "flags": ["-p", "--profile"],
+          "takesValue": true,
+          "valueType": "string",
+          "summary": { "ja": "削除するクラスターの名前を指定", "en": "Name of the cluster to delete" }
+        }
+      ]
+    },
+    {
+      "name": "dashboard",
+      "summary": {
+        "ja": "Kubernetes の管理画面（ダッシュボード）をブラウザで開きます",
+        "en": "Opens the Kubernetes dashboard in a browser"
+      },
+      "description": {
+        "ja": "このコマンドは開いている間ターミナルを使います。Ctrl+C で止めてください",
+        "en": "The command keeps running while the dashboard is open. Stop it with Ctrl+C"
+      }
+    },
+    {
+      "name": "service",
+      "summary": {
+        "ja": "サービスをブラウザで開くか、接続先の URL を表示します",
+        "en": "Opens a service in the browser or prints its URL"
+      },
+      "args": [{ "name": "name", "type": "string" }],
+      "options": [
+        {
+          "flags": ["--url"],
+          "summary": {
+            "ja": "URL だけを表示（ブラウザは開かない）",
+            "en": "Print only the URL (do not open a browser)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "tunnel",
+      "summary": {
+        "ja": "LoadBalancer のサービスを、パソコンから届くようにします",
+        "en": "Makes LoadBalancer services reachable from your computer"
+      },
+      "description": {
+        "ja": "起動している間だけ有効です。環境によっては管理者権限が必要です",
+        "en": "Works only while it runs. Some systems require administrator rights"
+      }
+    },
+    {
+      "name": "addons",
+      "summary": {
+        "ja": "追加機能（ingress、metrics-server など）を一覧し、有効にします",
+        "en": "Lists add-ons such as ingress and metrics-server, and enables them"
+      },
+      "examples": [
+        {
+          "command": "minikube addons enable ingress",
+          "summary": { "ja": "ingress 機能を有効にする", "en": "Enable the ingress add-on" }
+        }
+      ]
+    },
+    {
+      "name": "kubectl",
+      "summary": {
+        "ja": "クラスターの版に合わせた kubectl を実行します",
+        "en": "Runs a kubectl that matches the cluster version"
+      },
+      "examples": [
+        {
+          "command": "minikube kubectl -- get pods -A",
+          "summary": {
+            "ja": "すべての Pod を一覧する（-- の後が kubectl へ渡る）",
+            "en": "List every Pod (arguments after -- go to kubectl)"
+          }
+        }
+      ]
+    }
+  ]
+}
