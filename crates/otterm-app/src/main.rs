@@ -16,8 +16,8 @@ mod text;
 mod window_state;
 
 use otterm_session::{
-    Key, LocalSessionManager, Mouse, MouseAction, MouseButton, PtySize, SearchOptions, SessionEvent, SessionId,
-    SessionManager, SpawnOptions,
+    BlockState, Key, LocalSessionManager, Mouse, MouseAction, MouseButton, PtySize, SearchOptions, SessionEvent,
+    SessionId, SessionManager, SpawnOptions,
 };
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -47,7 +47,8 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
-/// Session events other than frames, for the UI.
+/// Session events other than frames, for the UI. `BlockStart` / `BlockEnd` are a command of the
+/// shell integration starting and ending; the tab title shows it while it runs (decision I10).
 #[derive(Clone, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 enum UiEvent {
@@ -55,7 +56,26 @@ enum UiEvent {
     Bell,
     Cwd { url: String },
     Clipboard { data: String },
+    BlockStart { command: String },
+    BlockEnd { exit: i32, ms: u32 },
     Exited { code: Option<u32> },
+}
+
+/// A block of the shell integration (docs/03 §6.3) for the block menu: re-run, copy, save.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BlockInfo {
+    /// Line number of its head row.
+    line: u64,
+    command: Option<String>,
+    /// The command runs (its output is still coming).
+    running: bool,
+    /// Exit code and duration once it ended.
+    exit: Option<i32>,
+    ms: Option<u32>,
+    /// The prompt bar's base64 JSON (cwd, home, branch); empty without a bar.
+    info: String,
+    output: String,
 }
 
 #[derive(Serialize)]
@@ -110,22 +130,27 @@ fn session_create(
     let config = state.config.config();
     state.sessions.set_terminal_options(config::terminal_options(&config));
     let mut opts = SpawnOptions { size: PtySize { cols, rows }, ..Default::default() };
-    // A profile picked in the new-tab menu, else the configured default.
-    let chosen = profile.as_deref().and_then(|id| profiles::find(&config, id));
-    if let Some(p) = chosen.as_ref().or(config::default_profile(&config)) {
+    // A profile picked in the new-tab menu, else the configured default (a configured profile or
+    // a detected one, by id).
+    let chosen = profile
+        .as_deref()
+        .or(Some(config.shell.default_profile.as_str()).filter(|id| !id.is_empty()))
+        .and_then(|id| profiles::find(&config, id));
+    if let Some(p) = chosen.as_ref() {
         opts.program = Some(p.command.clone());
         opts.args = p.args.clone();
-        // A profile without arguments of its own still gets the shell integration (B6).
-        if opts.args.is_empty() && config.shell.integration {
-            opts.args = shell::integration_args(&p.command, config.shell.prompt);
-        }
         opts.cwd = p.cwd.as_deref().filter(|c| !c.is_empty()).map(expand_home);
         opts.env = p.env.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-    } else if config.shell.integration {
-        // The platform shell, with otterm's integration loaded through its arguments (B6).
-        let program = otterm_session::default_shell();
-        opts.args = shell::integration_args(&program, config.shell.prompt);
-        opts.program = Some(program);
+    } else {
+        opts.program = Some(otterm_session::default_shell());
+    }
+    // otterm's integration, loaded through the shell's arguments and environment (B6).
+    if config.shell.integration
+        && let Some(program) = opts.program.as_deref()
+    {
+        let shell::Integration { args, env } = shell::integrate(program, opts.args.clone(), config.shell.prompt);
+        opts.args = args;
+        opts.env.extend(env);
     }
     // The folder of the pane this one came from, unless the profile names its own. That folder
     // comes from the shell's output (OSC 7), so a network share is not followed: even checking it
@@ -171,6 +196,8 @@ fn session_create(
                         Some(data) => events.send(UiEvent::Clipboard { data }),
                         None => Ok(()),
                     },
+                    SessionEvent::BlockStart { command } => events.send(UiEvent::BlockStart { command }),
+                    SessionEvent::BlockEnd { exit, ms } => events.send(UiEvent::BlockEnd { exit, ms }),
                     SessionEvent::Exited { code } => events.send(UiEvent::Exited { code }),
                     SessionEvent::Output(_) => Ok(()),
                 };
@@ -309,6 +336,57 @@ fn session_reveal(state: State<'_, AppState>, id: SessionId, line: u64) -> CmdRe
 #[tauri::command]
 fn session_clear_scrollback(state: State<'_, AppState>, id: SessionId) -> CmdResult {
     state.sessions.clear_scrollback(id).map_err(err)
+}
+
+/// The block (docs/03 §6.3) that holds a line of the frames, if the shell integration made one.
+#[tauri::command]
+fn session_block(state: State<'_, AppState>, id: SessionId, line: u64) -> CmdResult<Option<BlockInfo>> {
+    let block = state.sessions.block(id, line).map_err(err)?;
+    Ok(block.map(|b| {
+        let (exit, ms) = match b.state {
+            BlockState::Done { exit, ms } => (Some(exit), Some(ms)),
+            _ => (None, None),
+        };
+        BlockInfo {
+            line: b.line,
+            command: b.command,
+            running: b.state == BlockState::Running,
+            exit,
+            ms,
+            info: b.info,
+            output: b.output,
+        }
+    }))
+}
+
+/// Scroll to the previous (`dir < 0`) or next block head. `false` when there is none that way.
+#[tauri::command]
+fn session_block_jump(state: State<'_, AppState>, id: SessionId, dir: i32) -> CmdResult<bool> {
+    state.sessions.block_jump(id, dir).map_err(err)
+}
+
+/// Save a block's output as `name` in the Downloads folder (decision I12); returns the path.
+/// The UI names the file (`otterm-<command>-<date>.txt`); only a plain file name is accepted.
+#[tauri::command]
+async fn block_save(name: String, text: String) -> CmdResult<String> {
+    let name: String = name.chars().filter(|c| c.is_alphanumeric() || matches!(c, '-' | '_' | '.')).take(120).collect();
+    if name.is_empty() || name.starts_with('.') {
+        return Err("bad file name".into());
+    }
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).ok_or("no home folder")?;
+    let downloads = std::path::PathBuf::from(home).join("Downloads");
+    let dir = if downloads.is_dir() { downloads } else { downloads.parent().map(Into::into).unwrap_or(downloads) };
+    let (stem, ext) = name.rsplit_once('.').unwrap_or((&name, "txt"));
+    // Never overwrite: a second save of the same command in the same second gets a suffix.
+    let mut path = dir.join(&name);
+    for n in 2.. {
+        if !path.exists() {
+            break;
+        }
+        path = dir.join(format!("{stem}-{n}.{ext}"));
+    }
+    std::fs::write(&path, text).map_err(err)?;
+    Ok(path.display().to_string())
 }
 
 /// Run a clipboard operation, retrying for a moment: on Windows the clipboard is unavailable while
@@ -678,6 +756,9 @@ fn main() {
             session_text,
             session_search,
             session_reveal,
+            session_block,
+            session_block_jump,
+            block_save,
             session_clear_scrollback,
             session_reset_modes,
             session_running,
@@ -738,6 +819,9 @@ fn main() {
             session_text,
             session_search,
             session_reveal,
+            session_block,
+            session_block_jump,
+            block_save,
             session_clear_scrollback,
             session_reset_modes,
             session_running,

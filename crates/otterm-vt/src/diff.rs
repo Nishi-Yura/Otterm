@@ -13,17 +13,22 @@
 //! u64  line number of row 0 (see `Terminal::line`); rows are viewport rows
 //! u32  scrollback length in lines
 //! u32  view offset: how many lines the view is scrolled up from the bottom (0 = live screen)
+//! u8   block of row 0 (the newest head at or above it): 0 none, 1 at its prompt, 2 running,
+//!      3 ended with 0, 4 ended with another code
 //! u16  attribute count, then per attribute:
 //!        u32 fg, u32 bg, u32 underline color, u16 flags   (see `encode_color`),
 //!        u16 hyperlink id (0 none)
 //! u16  row count, then per row:
 //!        u16 row index
-//!        u8  bit0 wrapped, bit1 prompt bar, bit2 the bar's command finished
+//!        u8  bit0 wrapped, bit1 a block starts here (docs/03 §6.3)
 //!        u16 cell count (trailing default cells are omitted; missing cells are blank)
 //!        per cell: u32 code point, u16 attribute index
 //!        u16 extra count, then per extra: u16 col, u16 byte length, UTF-8 bytes
-//!        with bit1: u16 byte length, prompt bar info (base64 JSON, decision M4)
-//!        with bit2: i32 exit code, u32 duration in ms
+//!        with bit1: u8 state (0 prompt, 1 input, 2 running, 3 done),
+//!                   u16 byte length, prompt bar info (base64 JSON, decision M4; empty when the
+//!                   shell prints its own prompt on this row),
+//!                   u16 byte length, command line (UTF-8; empty until entered),
+//!                   with state 3: i32 exit code, u32 duration in ms
 //! u16  link count, then per link used by the attributes above: u16 id, u16 byte length, UTF-8 URI
 //! ```
 //!
@@ -35,7 +40,7 @@
 
 use std::collections::HashMap;
 
-use crate::cell::{Attrs, Cell, Color, Row};
+use crate::cell::{Attrs, BlockState, Cell, Color, Row};
 use crate::term::{CursorShape, MouseMode, Terminal};
 
 pub const FRAME: u8 = 1;
@@ -124,6 +129,13 @@ pub fn encode_frame(
     out.extend_from_slice(&top.to_le_bytes());
     out.extend_from_slice(&(term.scrollback().len() as u32).to_le_bytes());
     out.extend_from_slice(&(offset as u32).to_le_bytes());
+    out.push(match term.block_head_at(top).map(|(_, h)| h.state) {
+        None => 0,
+        Some(BlockState::Prompt | BlockState::Input) => 1,
+        Some(BlockState::Running) => 2,
+        Some(BlockState::Done { exit: 0, .. }) => 3,
+        Some(BlockState::Done { .. }) => 4,
+    });
 
     put_u16(out, attrs.len());
     for a in &attrs {
@@ -138,9 +150,8 @@ pub fn encode_frame(
     for (&r, row) in rows.iter().zip(&lines) {
         let n = used_len(row);
         put_u16(out, r);
-        let bar = row.bar.as_deref();
-        let done = bar.and_then(|b| b.done);
-        out.push(row.wrapped as u8 | (bar.is_some() as u8) << 1 | (done.is_some() as u8) << 2);
+        let block = row.block.as_deref();
+        out.push(row.wrapped as u8 | (block.is_some() as u8) << 1);
         put_u16(out, n);
         out.reserve(n * 6);
         for cell in &row.cells[..n] {
@@ -153,13 +164,22 @@ pub fn encode_frame(
             put_u16(out, text.len());
             out.extend_from_slice(text.as_bytes());
         }
-        if let Some(bar) = bar {
-            put_u16(out, bar.info.len());
-            out.extend_from_slice(bar.info.as_bytes());
-        }
-        if let Some((code, ms)) = done {
-            out.extend_from_slice(&code.to_le_bytes());
-            out.extend_from_slice(&ms.to_le_bytes());
+        if let Some(block) = block {
+            out.push(match block.state {
+                BlockState::Prompt => 0,
+                BlockState::Input => 1,
+                BlockState::Running => 2,
+                BlockState::Done { .. } => 3,
+            });
+            put_u16(out, block.info.len());
+            out.extend_from_slice(block.info.as_bytes());
+            let command = block.command.as_deref().unwrap_or_default();
+            put_u16(out, command.len());
+            out.extend_from_slice(command.as_bytes());
+            if let BlockState::Done { exit, ms } = block.state {
+                out.extend_from_slice(&exit.to_le_bytes());
+                out.extend_from_slice(&ms.to_le_bytes());
+            }
         }
     }
     // Targets of the hyperlinks in this frame's attributes.

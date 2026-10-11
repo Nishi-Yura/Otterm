@@ -6,7 +6,7 @@ import type { UiConfig } from "./config";
 import { t } from "./i18n";
 import { isCopyShortcut, isSearchShortcut, platform, scrollKey, terminalKey, zoomKey } from "./keys";
 import { PromptBar, type PromptProps } from "./PromptBar";
-import { type HeaderRow, PromptHeaders } from "./PromptHeaders";
+import { decodeInfo, duration, type HeaderRow, PromptHeaders } from "./PromptHeaders";
 import { attachPointer } from "./pointer";
 import { SearchBar } from "./SearchBar";
 import { CanvasRenderer } from "./screen/canvasRenderer";
@@ -20,6 +20,7 @@ import { Selection } from "./screen/selection";
 import { textMetrics } from "./screen/text";
 import { WebGLRenderer } from "./screen/webglRenderer";
 import {
+  type Block,
   clipboard,
   createSession,
   openUrl,
@@ -27,6 +28,7 @@ import {
   SCROLL_TOP,
   type SearchOptions,
   type Session,
+  saveDownload,
 } from "./session";
 
 /** PTY resizes are debounced (docs/03 §1.2). */
@@ -47,6 +49,8 @@ export interface TerminalViewProps {
   /** Profile to start (new-tab menu); the default when absent. */
   profile?: string;
   onTitle: (title: string) => void;
+  /** A command started (its line, maybe empty) or ended (""), from the shell integration. */
+  onRunning: (command: string) => void;
   onCwd: (url: string) => void;
   onExit: (code: number | null) => void;
   /** The program rang the bell (BEL). */
@@ -75,8 +79,13 @@ export function TerminalView(props: TerminalViewProps) {
   const [menu, setMenu] = createSignal<{ x: number; y: number; items: MenuItem[] }>();
   const [prompt, setPrompt] = createSignal<PromptProps>();
   const [flash, setFlash] = createSignal(false);
-  /** otterm's prompt bars in view (decision M4) and the row height they are placed with. */
-  const [headers, setHeaders] = createSignal<{ rows: HeaderRow[]; lineHeight: number }>({ rows: [], lineHeight: 0 });
+  /** Block heads in view (docs/03 §6.3), the block row 0 is in, and the row height to place them. */
+  const [headers, setHeaders] = createSignal<{
+    rows: HeaderRow[];
+    lineHeight: number;
+    topBlock: number;
+    lastRow: number;
+  }>({ rows: [], lineHeight: 0, topBlock: 0, lastRow: 0 });
   let lastBell = 0;
   /** The user chose "always allow" for OSC 52 in this pane. */
   let osc52Allowed = false;
@@ -200,6 +209,8 @@ export function TerminalView(props: TerminalViewProps) {
           }
           if (e.kind === "clipboard") clipboardRequest(e.data);
           if (e.kind === "bell") bell();
+          if (e.kind === "blockStart") props.onRunning(e.command);
+          if (e.kind === "blockEnd") props.onRunning("");
           // A view that is gone (its pane was closed) has nothing left to report.
           if (e.kind === "exited" && !closed) {
             setStatus(t("process-exited", { code: e.code ?? "none" }));
@@ -365,19 +376,78 @@ export function TerminalView(props: TerminalViewProps) {
   const updateHeaders = () => {
     const rows: HeaderRow[] = [];
     for (let row = 0; row < model.rows; row++) {
-      const bar = model.lines[row]?.bar;
-      if (bar) rows.push({ row, bar });
+      const block = model.lines[row]?.block;
+      if (block) rows.push({ row, block });
     }
     const lineHeight = renderer?.lineHeightCss ?? 0;
+    // Scrolled up, the view shows history only, which the blocks fill to the bottom.
+    const lastRow = model.offset > 0 ? model.rows - 1 : model.cursorRow;
     const old = headers();
     const same =
       old.lineHeight === lineHeight &&
+      old.topBlock === model.topBlock &&
+      old.lastRow === lastRow &&
       old.rows.length === rows.length &&
       rows.every((h, i) => {
         const o = old.rows[i];
-        return o?.row === h.row && o.bar.info === h.bar.info && o.bar.done?.exit === h.bar.done?.exit;
+        return (
+          o?.row === h.row &&
+          o.block.info === h.block.info &&
+          o.block.state === h.block.state &&
+          o.block.done?.exit === h.block.done?.exit
+        );
       });
-    if (!same) setHeaders({ rows, lineHeight });
+    if (!same) setHeaders({ rows, lineHeight, topBlock: model.topBlock, lastRow });
+  };
+
+  /** The block (docs/03 §6.3) as Markdown: command and output in code blocks, the rest as a line. */
+  const blockMarkdown = (b: Block) => {
+    const meta = [b.exit !== null ? `exit ${b.exit}` : b.running ? t("block-running") : ""];
+    if (b.ms !== null) meta.push(duration(b.ms));
+    const cwd = decodeInfo(b.info)?.cwd;
+    if (cwd) meta.push(cwd);
+    const parts = [`\`\`\`sh\n$ ${b.command ?? ""}\n\`\`\``];
+    if (b.output) parts.push(`\`\`\`\n${b.output}\n\`\`\``);
+    parts.push(meta.filter(Boolean).join(" · "));
+    return parts.join("\n\n");
+  };
+
+  /** Save the output as otterm-<command>-<date>.txt in Downloads (decision I12). */
+  const saveOutput = async (b: Block) => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    const name =
+      (b.command ?? "")
+        .trim()
+        .split(/\s+/)[0]
+        ?.replace(/[^\w.-]/g, "") || "output";
+    try {
+      const path = await saveDownload(`otterm-${name}-${stamp}.txt`, b.output);
+      props.notify(t("block-saved", { path }));
+    } catch (e) {
+      props.notify(String(e));
+    }
+  };
+
+  /** Menu items for the block under the pointer, if the shell integration made one there. */
+  const blockItems = async (row: number): Promise<MenuItem[]> => {
+    if (!session || model.altScreen) return [];
+    const b = await session.block(model.topLine + row).catch(() => null);
+    if (!b || b.command === null) return [];
+    const command = b.command;
+    const short = command.length > 40 ? `${command.slice(0, 40)}…` : command;
+    return [
+      {
+        label: t("menu-rerun", { command: short }),
+        disabled: b.running,
+        action: () => void session?.write(`${command}\r`),
+      },
+      { label: t("menu-copy-command"), action: () => void clipboard.write(command) },
+      { label: t("menu-copy-output"), disabled: !b.output, action: () => void clipboard.write(b.output) },
+      { label: t("menu-save-output"), disabled: !b.output, action: () => void saveOutput(b) },
+      { label: t("menu-copy-markdown"), action: () => void clipboard.write(blockMarkdown(b)) },
+    ];
   };
 
   const updateThumb = () => {
@@ -567,7 +637,7 @@ export function TerminalView(props: TerminalViewProps) {
     } else if (mode === "copy-or-paste") {
       void pasteClipboard();
     } else {
-      openMenu(x, y);
+      void openMenu(x, y);
     }
   };
 
@@ -583,14 +653,16 @@ export function TerminalView(props: TerminalViewProps) {
   const shortcut = (key: string, shift = false) =>
     platform === "macos" ? `⌘${key}` : `Ctrl+${shift ? "Shift+" : ""}${key}`;
 
-  const openMenu = (clientX: number, clientY: number) => {
+  const openMenu = async (clientX: number, clientY: number) => {
     props.onActivate();
     const box = host.getBoundingClientRect();
     const c = canvas.getBoundingClientRect();
     const cell = renderer?.cellAt(clientX - c.left, clientY - c.top);
     const link = cell ? knownLinkAt(cell.row, cell.col) : undefined;
     const hasSelection = selection.active && !selection.empty;
+    const block = cell ? await blockItems(cell.row) : [];
     const items: MenuItem[] = [
+      ...block,
       {
         label: t("menu-copy"),
         hint: shortcut("C", platform === "linux"),
@@ -750,7 +822,14 @@ export function TerminalView(props: TerminalViewProps) {
     >
       <div ref={viewport} id={viewportId} class="viewport">
         <canvas ref={canvas} />
-        <PromptHeaders rows={headers().rows} lineHeight={headers().lineHeight} fontSize={font().size} />
+        <PromptHeaders
+          rows={headers().rows}
+          lineHeight={headers().lineHeight}
+          fontSize={font().size}
+          topBlock={headers().topBlock}
+          viewRows={model.rows}
+          lastRow={headers().lastRow}
+        />
         <textarea
           ref={input}
           class="input"

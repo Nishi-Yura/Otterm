@@ -60,10 +60,16 @@ fn rewrap(
 ) {
     let local =
         if (start..start + run.len()).contains(&cursor.0) { (cursor.0 - start, cursor.1) } else { (usize::MAX, 0) };
+    // A block head (docs/03 §6.3) on the first row of the line stays on its first row.
+    let block = run.first_mut().and_then(|r| r.block.take());
+    let first = out.len();
     for line in join(std::mem::take(run), local) {
         if let Some(pos) = split(line, cols, out) {
             *new_cursor = pos;
         }
+    }
+    if let Some(row) = out.get_mut(first) {
+        row.block = block;
     }
 }
 

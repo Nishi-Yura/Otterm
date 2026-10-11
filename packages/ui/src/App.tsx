@@ -57,6 +57,14 @@ interface Pane {
   started?: number;
 }
 
+/** The program a command line starts: its first word without a path or quotes ("git", "npm"). */
+export function commandName(command: string): string {
+  const first = command.trim().split(/\s+/)[0] ?? "";
+  const word = first.replace(/^["']|["']$/g, "");
+  const base = word.split(/[\\/]/).pop() ?? "";
+  return base.replace(/\.exe$/i, "");
+}
+
 /** The window: a tab bar and, per tab, panes laid out by a split tree (docs/03 §3). */
 export function App() {
   const [ready, setReady] = createSignal(false);
@@ -73,6 +81,8 @@ export function App() {
   const cwds = new Map<number, string>();
   /** Folder name of each pane, from OSC 7, for tab titles when the shell sets none. */
   const [folders, setFolders] = createSignal<Record<number, string>>({});
+  /** The command each pane is running (shell integration), for the title while it runs. */
+  const [running, setRunning] = createSignal<Record<number, string>>({});
   /** Session id of each pane, once started. */
   const sessionOf = new Map<number, number>();
   const [confirm, setConfirm] = createSignal<PromptProps>();
@@ -439,6 +449,12 @@ export function App() {
       case "settings":
         void invoke("config_open").catch((e) => showNotice(String(e)));
         break;
+      case "blockJump": {
+        const id = tab ? sessionOf.get(tab.active) : undefined;
+        if (id === undefined) return false;
+        void invoke("session_block_jump", { id, dir: action.dir }).catch(() => {});
+        break;
+      }
     }
     return true;
   };
@@ -465,9 +481,16 @@ export function App() {
   };
   const paneActive = (p: Pane) => paneVisible(p) && currentTab()?.active === p.id;
 
-  /** Decision I10: the program's title (OSC 0/2) if it set one, else the folder name. */
-  const paneTitle = (pane: number) =>
-    titles()[pane] || folders()[pane] || panes().find((p) => p.id === pane)?.profileName || "";
+  /**
+   * Decision I10: the program's title (OSC 0/2) if it set one, else "command · folder" while a
+   * command runs, else the folder name.
+   */
+  const paneTitle = (pane: number) => {
+    if (titles()[pane]) return titles()[pane] as string;
+    const folder = folders()[pane] || panes().find((p) => p.id === pane)?.profileName || "";
+    const command = commandName(running()[pane] ?? "");
+    return command ? (folder ? `${command} · ${folder}` : command) : folder;
+  };
   /** The color of the profile the tab's active pane runs, if it has one (`profiles.color`). */
   const tabAccent = (tab: Tab) => {
     const c = config();
@@ -694,6 +717,7 @@ export function App() {
                   cwd={p.cwd}
                   profile={p.profile}
                   onTitle={(title) => setTitles({ ...titles(), [p.id]: title })}
+                  onRunning={(command) => setRunning({ ...running(), [p.id]: command })}
                   onCwd={(url) => {
                     cwds.set(p.id, url);
                     setFolders({ ...folders(), [p.id]: folderName(url) });

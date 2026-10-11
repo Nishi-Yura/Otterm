@@ -29,18 +29,23 @@ export const Flags = {
   WIDE_SPACER: 1 << 12,
 } as const;
 
-/** otterm's prompt bar on a row (decision M4). */
-export interface RowBar {
-  /** Base64 of the JSON the shell integration sent (cwd, home, branch). */
+/** A block of the shell integration starts on this row (docs/03 §6.3). */
+export interface RowBlock {
+  /** Base64 of the JSON otterm's prompt bar shows (cwd, home, branch; decision M4); empty when
+   * the shell prints its own prompt on the row. */
   info: string;
-  /** The command run at this prompt ended. */
+  /** The command line, once entered. */
+  command: string;
+  /** 0 at its prompt, 1 the user types, 2 running, 3 done. */
+  state: number;
+  /** The command's result, with state 3. */
   done?: { exit: number; ms: number };
 }
 
 export interface FrameRow {
   index: number;
   wrapped: boolean;
-  bar?: RowBar;
+  block?: RowBlock;
   /** Code points of the cells that were sent; cells beyond are blank. */
   codepoints: Uint32Array;
   attrs: Attr[];
@@ -70,6 +75,8 @@ export interface Frame {
   scrollback: number;
   /** How many lines the view is scrolled up from the live screen. */
   offset: number;
+  /** The block row 0 is in: 0 none, 1 at its prompt, 2 running, 3 ended with 0, 4 failed. */
+  topBlock: number;
   lines: FrameRow[];
   /** Targets of the OSC 8 hyperlinks used in this frame, by id. */
   links: Map<number, string>;
@@ -104,6 +111,7 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
   p += 8;
   const scrollback = u32();
   const offset = u32();
+  const topBlock = u8();
 
   const table: Attr[] = [];
   for (let n = u16(); n > 0; n--) {
@@ -129,18 +137,23 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
       extras.set(col, utf8.decode(new Uint8Array(buf, p, len)));
       p += len;
     }
-    let bar: RowBar | undefined;
+    let block: RowBlock | undefined;
     if (rowFlags & 2) {
-      const len = u16();
-      bar = { info: utf8.decode(new Uint8Array(buf, p, len)) };
+      const state = u8();
+      let len = u16();
+      const info = utf8.decode(new Uint8Array(buf, p, len));
       p += len;
-      if (rowFlags & 4) {
+      len = u16();
+      const command = utf8.decode(new Uint8Array(buf, p, len));
+      p += len;
+      block = { info, command, state };
+      if (state === 3) {
         const exit = v.getInt32(p, true);
         p += 4;
-        bar.done = { exit, ms: u32() };
+        block.done = { exit, ms: u32() };
       }
     }
-    lines.push({ index, wrapped, bar, codepoints, attrs, extras });
+    lines.push({ index, wrapped, block, codepoints, attrs, extras });
   }
 
   const links = new Map<number, string>();
@@ -166,6 +179,7 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
     topLine,
     scrollback,
     offset,
+    topBlock,
     lines,
     links,
   };

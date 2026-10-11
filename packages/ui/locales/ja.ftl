@@ -302,6 +302,13 @@ menu-open-config = 設定ファイルを開く
 menu-search = 検索
 menu-open-link = リンクを開く
 menu-copy-link = リンクをコピー
+menu-rerun = もう一度実行: { $command }
+menu-copy-command = コマンドをコピー
+menu-copy-output = 出力をコピー
+menu-save-output = 出力を保存
+menu-copy-markdown = Markdown としてコピー
+block-saved = { $path } に保存しました
+block-running = 実行中
 
 ## タブとペイン
 

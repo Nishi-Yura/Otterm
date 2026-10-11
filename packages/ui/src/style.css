@@ -278,6 +278,40 @@ body,
   box-shadow: inset 2px 0 0 var(--ot-prompt-failed, var(--ot-term-ansi-1, #bf616a));
 }
 
+.prompt-header .ph-running {
+  color: var(--ot-prompt-edge, var(--ot-term-ansi-4, #81a1c1));
+}
+
+/* The block gutter (docs/03 §6.3): a thin line at the left edge of every block; a failure is
+   red, a running command pulses blue. Success stays neutral. */
+.block-gutter {
+  position: absolute;
+  left: 0;
+  width: 2px;
+  background: var(--ot-gutter, color-mix(in srgb, var(--fg) 12%, transparent));
+}
+
+.block-gutter.failed {
+  background: var(--ot-prompt-failed, var(--ot-term-ansi-1, #bf616a));
+}
+
+.block-gutter.running {
+  background: var(--ot-prompt-edge, var(--ot-term-ansi-4, #81a1c1));
+  animation: gutter-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes gutter-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block-gutter.running {
+    animation: none;
+  }
+}
+
 .prompt-header .ph-icon {
   margin-right: 0.4em;
   font-family: "Symbols Nerd Font Mono", monospace;

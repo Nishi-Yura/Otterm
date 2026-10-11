@@ -83,13 +83,44 @@ impl Cell {
     }
 }
 
-/// What the shell reported for a prompt bar (OSC 7777 `bar` and `done`).
+/// Where a command of the shell integration stands (OSC 133, docs/03 §6).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BlockState {
+    /// The prompt is being printed (OSC 133 A).
+    Prompt,
+    /// The user is typing (OSC 133 B).
+    Input,
+    /// The command runs; its output follows (OSC 133 C).
+    Running,
+    /// The command ended (OSC 133 D or OSC 7777 done) with this exit code after `ms`.
+    Done { exit: i32, ms: u32 },
+}
+
+/// The head of a block (docs/03 §6.3): the row where a prompt started, with what the shell
+/// integration reported about the command run there.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PromptBar {
-    /// Opaque to the terminal: base64 of a JSON object the UI reads (cwd, Git branch).
+pub struct BlockHead {
+    /// otterm's prompt bar (decision M4): base64 of a JSON object the UI reads (cwd, Git branch).
+    /// Empty when the shell prints its own prompt on this row.
     pub info: Box<str>,
-    /// Exit code and duration in milliseconds of the command run at this prompt, once it ended.
-    pub done: Option<(i32, u32)>,
+    /// The command line, once the user pressed Enter (OSC 7777 cmd).
+    pub command: Option<Box<str>>,
+    pub state: BlockState,
+    /// Line number of the first row of output (OSC 133 C), for copying the output.
+    pub output_line: Option<u64>,
+    /// When the command started, to measure its duration when the shell reports none.
+    pub started: Option<std::time::Instant>,
+}
+
+impl BlockHead {
+    pub fn new(info: Box<str>) -> Self {
+        Self { info, command: None, state: BlockState::Prompt, output_line: None, started: None }
+    }
+
+    /// otterm draws a prompt bar over this row (the row itself is blank).
+    pub fn has_bar(&self) -> bool {
+        !self.info.is_empty()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,8 +130,8 @@ pub struct Row {
     pub extra: Vec<(u16, Box<str>)>,
     /// The line continues on the next row because of autowrap (needed for copy and reflow).
     pub wrapped: bool,
-    /// otterm's prompt bar sits on this row (decision M4). The row itself stays blank.
-    pub bar: Option<Box<PromptBar>>,
+    /// A block starts on this row (docs/03 §6.3). With a prompt bar the row itself stays blank.
+    pub block: Option<Box<BlockHead>>,
     /// Every cell at or after this column is `Cell::default()`. Lets clearing and trimming skip
     /// the unused tail, which is most of a row in typical output.
     pub(crate) used: usize,
@@ -109,7 +140,7 @@ pub struct Row {
 impl Row {
     pub fn new(cols: usize, pen: &Attrs) -> Self {
         let used = if pen.bg == Color::Default { 0 } else { cols };
-        Self { cells: vec![Cell::blank(pen); cols], extra: Vec::new(), wrapped: false, bar: None, used }
+        Self { cells: vec![Cell::blank(pen); cols], extra: Vec::new(), wrapped: false, block: None, used }
     }
 
     /// Record that cells before `to` may no longer be default.
@@ -124,7 +155,7 @@ impl Row {
             cells: self.cells[..used].to_vec(),
             extra: self.extra.clone(),
             wrapped: self.wrapped,
-            bar: self.bar.clone(),
+            block: self.block.clone(),
             used,
         }
     }
@@ -160,7 +191,7 @@ impl Row {
         }
         self.extra.clear();
         self.wrapped = false;
-        self.bar = None;
+        self.block = None;
     }
 
     pub fn resize(&mut self, cols: usize) {

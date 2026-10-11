@@ -1,30 +1,44 @@
 # otterm shell integration for PowerShell (decision B6: loaded through the start arguments; no
-# user file is changed). It reports the working directory (OSC 7), so new tabs and splits open
-# where you are, and resets the Kitty keyboard flags at each prompt. OSC 133 comes with M2.
+# user file is changed; docs/03 §6). It sends:
+#   OSC 133 A / B      the prompt starts / the user types from here
+#   OSC 7777 cmd, 133 C  the command line, then the command runs (needs PSReadLine)
+#   OSC 7777 done      the command ended: exit code and duration (from the history entry)
+#   OSC 7              the working directory, so new tabs and splits open where you are
+# and resets the Kitty keyboard flags at each prompt.
 #
-# It runs after your profile. With shell.prompt = "otterm" (decision M4) it replaces the prompt:
+# It runs after your profile. With OTTERM_PROMPT=otterm (decision M4) it replaces the prompt:
 # otterm draws the folder and the Git branch as a bar of its own UI, and the shell prints only ❯.
-# With "shell" it wraps whatever prompt the profile set up (oh-my-posh too).
-# otterm puts `$global:__OttermPromptMode = 'otterm' | 'shell'` in front of this script.
+# With OTTERM_PROMPT=shell it wraps whatever prompt the profile set up (oh-my-posh too).
 
-if ($env:OTTERM -and -not $global:__OttermIntegration) {
-    $global:__OttermIntegration = $true
+if ($env:OTTERM -and -not $env:OTTERM_SHELL_INTEGRATION) {
+    $env:OTTERM_SHELL_INTEGRATION = '1'
+    $global:__OttermPromptMode = if ($env:OTTERM_PROMPT -eq 'otterm') { 'otterm' } else { 'shell' }
     $global:__OttermOriginalPrompt = $function:prompt
     $global:__OttermLastHistory = (Get-History -Count 1).Id
 
-    # OSC 7 and the Kitty reset, in front of every prompt.
-    function global:__OttermReport {
+    # What goes in front of every prompt: the end of the last command, OSC 133 A, OSC 7 and the
+    # Kitty reset. $ok and $code are $? and $LASTEXITCODE as the prompt function saw them.
+    function global:__OttermPrefix([bool]$ok, $code) {
         $esc = [char]27
-        $report = ''
+        $out = ''
+        # The command that just ended, if one ran (an empty Enter adds no history).
+        $last = Get-History -Count 1
+        if ($last -and $last.Id -ne $global:__OttermLastHistory) {
+            $global:__OttermLastHistory = $last.Id
+            $exit = if ($ok) { 0 } elseif ($code) { $code } else { 1 }
+            $ms = [uint32][Math]::Min([uint32]::MaxValue, ($last.EndExecutionTime - $last.StartExecutionTime).TotalMilliseconds)
+            $out += "$esc]7777;done;$exit;$ms$esc\"
+        }
+        $out += "$esc]133;A$esc\"
         $location = $executionContext.SessionState.Path.CurrentLocation
         if ($location.Provider.Name -eq 'FileSystem') {
             # file:///C:/Users/you/project, percent-encoded.
             $uri = ([System.Uri]$location.ProviderPath).AbsoluteUri
-            $report = "$esc]7;$uri$esc\"
+            $out += "$esc]7;$uri$esc\"
         }
         # A program that crashed with the Kitty keyboard protocol on would leave Ctrl+C and friends
         # encoded for it (issue #6); PowerShell never turns it on, so drop whatever is left.
-        $report + "$esc[<99u"
+        $out + "$esc[<99u"
     }
 
     # The branch (or the short commit when detached) of the repository holding $dir. Reads
@@ -70,15 +84,7 @@ if ($env:OTTERM -and -not $global:__OttermIntegration) {
             $ok = $?
             $code = $global:LASTEXITCODE
             $esc = [char]27
-            $out = ''
-            # The command that just ended, if one ran (an empty Enter adds no history).
-            $last = Get-History -Count 1
-            if ($last -and $last.Id -ne $global:__OttermLastHistory) {
-                $global:__OttermLastHistory = $last.Id
-                $exit = if ($ok) { 0 } elseif ($code) { $code } else { 1 }
-                $ms = [uint32][Math]::Min([uint32]::MaxValue, ($last.EndExecutionTime - $last.StartExecutionTime).TotalMilliseconds)
-                $out += "$esc]7777;done;$exit;$ms$esc\"
-            }
+            $out = __OttermPrefix $ok $code
             $location = $executionContext.SessionState.Path.CurrentLocation
             $info = @{ cwd = $location.Path; home = $HOME; branch = '' }
             if ($location.Provider.Name -eq 'FileSystem') {
@@ -87,14 +93,34 @@ if ($env:OTTERM -and -not $global:__OttermIntegration) {
             }
             $json = ConvertTo-Json $info -Compress
             $b64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($json))
-            $out += (__OttermReport) + "$esc]7777;bar;$b64$esc\"
+            $out += "$esc]7777;bar;$b64$esc\"
             # The bar's row, then the line you type on.
             $color = if ($ok) { '36' } else { '31' }
-            $out + "`r`n$esc[1;${color}m❯$esc[0m "
+            $out + "`r`n$esc[1;${color}m❯$esc[0m $esc]133;B$esc\"
         }
     } else {
         function global:prompt {
-            (__OttermReport) + (& $global:__OttermOriginalPrompt)
+            $ok = $?
+            $code = $global:LASTEXITCODE
+            $esc = [char]27
+            (__OttermPrefix $ok $code) + (& $global:__OttermOriginalPrompt) + "$esc]133;B$esc\"
+        }
+    }
+
+    # The console host reads each line through PSConsoleHostReadLine when PSReadLine defines it;
+    # wrapping it is the one place that sees the line right before it runs. Windows PowerShell
+    # without PSReadLine gets no 133 C; the block still ends with 7777 done.
+    if (Get-Module PSReadLine) {
+        $global:__OttermOriginalReadLine = $function:PSConsoleHostReadLine
+        function global:PSConsoleHostReadLine {
+            $line = & $global:__OttermOriginalReadLine
+            if ($line -and $line.Trim()) {
+                $esc = [char]27
+                $b64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($line))
+                # Straight to the console: Write-Host would add a newline.
+                [Console]::Write("$esc]7777;cmd;$b64$esc\$esc]133;C$esc\")
+            }
+            $line
         }
     }
 }

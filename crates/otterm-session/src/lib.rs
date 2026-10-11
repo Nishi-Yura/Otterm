@@ -17,7 +17,7 @@ use otterm_pty::{Pty, Spawned};
 pub use otterm_pty::{PtySize, SpawnOptions, default_shell};
 use otterm_vt::diff::FrameState;
 pub use otterm_vt::search::{Match, SearchOptions};
-pub use otterm_vt::{CursorShape, Key, Mouse, MouseAction, MouseButton};
+pub use otterm_vt::{BlockState, CursorShape, Key, Mouse, MouseAction, MouseButton};
 use otterm_vt::{Event, Terminal};
 
 pub type SessionId = u64;
@@ -45,10 +45,32 @@ pub enum SessionEvent {
     Cwd(String),
     /// OSC 52 request; the UI applies the clipboard policy (decision H2).
     ClipboardWrite(String),
+    /// A command of the shell integration started (OSC 133 C); `command` may be empty.
+    BlockStart {
+        command: String,
+    },
+    /// That command ended (OSC 133 D).
+    BlockEnd {
+        exit: i32,
+        ms: u32,
+    },
     /// The process exited. Always the last event for a session. `None` if the exit code was unavailable.
     Exited {
         code: Option<u32>,
     },
+}
+
+/// A block of the shell integration (docs/03 §6.3), as the block menu needs it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BlockText {
+    /// Line number of the head row.
+    pub line: u64,
+    pub command: Option<String>,
+    pub state: BlockState,
+    /// The prompt bar's info (base64 JSON), empty when the shell printed its own prompt.
+    pub info: String,
+    /// The command's output so far, without trailing blank lines.
+    pub output: String,
 }
 
 /// Settings for each new session's terminal.
@@ -110,6 +132,11 @@ pub trait SessionManager: Send + Sync {
     fn search(&self, id: SessionId, query: &str, opts: SearchOptions) -> Result<Vec<Match>>;
     /// Scroll so that `line` is in view, if it is not already.
     fn reveal(&self, id: SessionId, line: u64) -> Result<()>;
+    /// The block (docs/03 §6.3) that holds `line`, a line number of the frames.
+    fn block(&self, id: SessionId, line: u64) -> Result<Option<BlockText>>;
+    /// Scroll so that the previous (`dir < 0`) or next block head is at the top of the view.
+    /// `false` when there is none that way, or it is in view already.
+    fn block_jump(&self, id: SessionId, dir: i32) -> Result<bool>;
     /// Drop the scrollback.
     fn clear_scrollback(&self, id: SessionId) -> Result<()>;
     /// The pane gained or lost the keyboard; reported to the application when it asked (1004).
@@ -435,6 +462,48 @@ impl SessionManager for LocalSessionManager {
         Ok(())
     }
 
+    fn block(&self, id: SessionId, line: u64) -> Result<Option<BlockText>> {
+        let session = self.get(id)?;
+        let term = session.term.lock().unwrap();
+        let Some(range) = term.block_at(line) else { return Ok(None) };
+        let head = range.head;
+        // Without OSC 133 C the output starts after the prompt: the bar's row and the line typed
+        // under it, or the shell's own prompt line.
+        let from = head.output_line.unwrap_or(range.line + if head.has_bar() { 2 } else { 1 });
+        let ran = !matches!(head.state, BlockState::Prompt | BlockState::Input);
+        let output = if ran && from <= range.end {
+            let text = term.text_range((from, 0), (range.end, term.cols().saturating_sub(1)));
+            text.trim_end_matches(['\n', ' ']).to_owned()
+        } else {
+            String::new()
+        };
+        Ok(Some(BlockText {
+            line: range.line,
+            command: head.command.as_deref().map(str::to_owned),
+            state: head.state,
+            info: head.info.to_string(),
+            output,
+        }))
+    }
+
+    fn block_jump(&self, id: SessionId, dir: i32) -> Result<bool> {
+        let session = self.get(id)?;
+        let term = session.term.lock().unwrap();
+        let offset = session.view_offset(&term) as u64;
+        let screen_top = term.screen_top();
+        let top = screen_top - offset;
+        let Some(line) = term.block_jump(top, dir) else { return Ok(false) };
+        // The view cannot go below the live screen: a head on it is in view already.
+        let wanted = line.clamp(term.history_base(), screen_top);
+        if wanted == top {
+            return Ok(false);
+        }
+        drop(term);
+        *session.view_top.lock().unwrap() = (wanted < screen_top).then_some(wanted);
+        session.frame.notify(false);
+        Ok(true)
+    }
+
     fn clear_scrollback(&self, id: SessionId) -> Result<()> {
         let session = self.get(id)?;
         session.term.lock().unwrap().clear_scrollback();
@@ -524,6 +593,8 @@ fn apply_output(session: &Session, sink: &EventSink, bytes: &[u8]) {
             Event::Title(t) => SessionEvent::Title(t),
             Event::Cwd(c) => SessionEvent::Cwd(c),
             Event::ClipboardWrite(d) => SessionEvent::ClipboardWrite(d),
+            Event::BlockStart { command } => SessionEvent::BlockStart { command },
+            Event::BlockEnd { exit, ms } => SessionEvent::BlockEnd { exit, ms },
         });
     }
     session.frame.notify(false);

@@ -302,6 +302,13 @@ menu-open-config = Open settings file
 menu-search = Find
 menu-open-link = Open link
 menu-copy-link = Copy link
+menu-rerun = Run again: { $command }
+menu-copy-command = Copy command
+menu-copy-output = Copy output
+menu-save-output = Save output
+menu-copy-markdown = Copy as Markdown
+block-saved = Saved to { $path }
+block-running = running
 
 ## Tabs and panes
 

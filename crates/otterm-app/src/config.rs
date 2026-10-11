@@ -248,11 +248,6 @@ fn is_hex_color(s: &str) -> bool {
 }
 
 /// The program, arguments, directory and environment of the default profile, if one is set.
-pub fn default_profile(c: &Config) -> Option<&otterm_config::Profile> {
-    let id = &c.shell.default_profile;
-    if id.is_empty() { None } else { c.profiles.iter().find(|p| &p.id == id) }
-}
-
 fn font_family(c: &Config) -> String {
     let mut css: Vec<String> = font_names(c).iter().map(|n| format!("\"{}\"", n.replace('"', ""))).collect();
     css.push("monospace".into());

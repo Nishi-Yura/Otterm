@@ -9,7 +9,23 @@ export type SessionEvent =
   | { kind: "bell" }
   | { kind: "cwd"; url: string }
   | { kind: "clipboard"; data: string }
+  /** A command of the shell integration started (docs/03 §6); `command` may be empty. */
+  | { kind: "blockStart"; command: string }
+  | { kind: "blockEnd"; exit: number; ms: number }
   | { kind: "exited"; code: number | null };
+
+/** A block of the shell integration (docs/03 §6.3), as `session_block` returns it. */
+export interface Block {
+  /** Line number of its head row. */
+  line: number;
+  command: string | null;
+  running: boolean;
+  exit: number | null;
+  ms: number | null;
+  /** The prompt bar's base64 JSON (cwd, home, branch); empty without a bar. */
+  info: string;
+  output: string;
+}
 
 export interface Session {
   readonly id: number;
@@ -30,6 +46,10 @@ export interface Session {
   search(query: string, opts: SearchOptions): Promise<[number, number, number, number][]>;
   /** Scroll so that a line is in view. */
   reveal(line: number): Promise<void>;
+  /** The block that holds a line, if the shell integration made one. */
+  block(line: number): Promise<Block | null>;
+  /** Scroll to the previous (-1) or next (1) block head; false when there is none that way. */
+  blockJump(dir: -1 | 1): Promise<boolean>;
   clearScrollback(): Promise<void>;
   /** The pane gained or lost the keyboard (sent to the program if it asked, mode 1004). */
   focus(focused: boolean): Promise<void>;
@@ -59,6 +79,9 @@ export const clipboard = {
   read: () => invoke<string>("clipboard_read"),
   write: (text: string) => invoke<void>("clipboard_write", { text }),
 };
+
+/** Save text as `name` in the Downloads folder (decision I12); resolves to the path written. */
+export const saveDownload = (name: string, text: string) => invoke<string>("block_save", { name, text });
 
 /** Open an http(s) link in the default browser. */
 export const openUrl = (url: string) => invoke<void>("open_url", { url });
@@ -92,6 +115,8 @@ export async function createSession(
       invoke<string>("session_text", { id, startLine, startCol, endLine, endCol }),
     search: (query, opts) => invoke("session_search", { id, query, ...opts }),
     reveal: (line) => invoke("session_reveal", { id, line }),
+    block: (line) => invoke<Block | null>("session_block", { id, line }),
+    blockJump: (dir) => invoke<boolean>("session_block_jump", { id, dir }),
     clearScrollback: () => invoke("session_clear_scrollback", { id }),
     focus: (focused) => invoke("session_focus", { id, focused }),
     resetModes: () => invoke("session_reset_modes", { id }),

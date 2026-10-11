@@ -22,6 +22,9 @@ function defaults(): Bindings {
     "pane.zoom": [mac ? "cmd+shift+enter" : "ctrl+shift+z"],
     "pane.close": [mac ? "cmd+shift+w" : "ctrl+shift+q"],
     "window.fullscreen": [mac ? "ctrl+cmd+f" : "f11"],
+    // Blocks of the shell integration (docs/03 §6.3). Cmd+arrow is what Terminal.app uses for marks.
+    "block.prev": [mac ? "cmd+arrowup" : "ctrl+arrowup"],
+    "block.next": [mac ? "cmd+arrowdown" : "ctrl+arrowdown"],
     // Opens config.toml until there is a settings screen.
     settings: [mac ? "cmd+," : "ctrl+,"],
   };
@@ -66,6 +69,10 @@ function action(id: string): AppAction | undefined {
       return { kind: "closePane" };
     case "window.fullscreen":
       return { kind: "fullscreen" };
+    case "block.prev":
+      return { kind: "blockJump", dir: -1 };
+    case "block.next":
+      return { kind: "blockJump", dir: 1 };
     default:
       return undefined;
   }

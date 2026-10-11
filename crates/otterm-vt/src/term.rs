@@ -6,7 +6,7 @@ use std::collections::VecDeque;
 use unicode_width::UnicodeWidthChar;
 use vte::{Params, Perform};
 
-use crate::cell::{Attrs, Cell, Color, PromptBar, Row, flags};
+use crate::cell::{Attrs, BlockHead, BlockState, Cell, Color, Row, flags};
 
 /// Mouse tracking requested by the application (DECSET 1000/1002/1003).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -142,6 +142,32 @@ pub enum Event {
     Cwd(String),
     /// OSC 52 write request. The host decides whether to allow it (decision H2).
     ClipboardWrite(String),
+    /// A command of the shell integration started (OSC 133 C); `command` may be empty.
+    BlockStart {
+        command: String,
+    },
+    /// That command ended with this exit code after `ms` (OSC 133 D).
+    BlockEnd {
+        exit: i32,
+        ms: u32,
+    },
+}
+
+/// Where a block head is: a row of the primary screen, or an index into the scrollback.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum HeadAt {
+    Screen(usize),
+    History(usize),
+}
+
+/// A block (docs/03 §6.3): the lines from its head to the row before the next head.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BlockRange<'a> {
+    /// Line number of the head row.
+    pub line: u64,
+    pub head: &'a BlockHead,
+    /// Line number of the block's last row, inclusive.
+    pub end: u64,
 }
 
 pub struct Terminal {
@@ -566,9 +592,9 @@ impl Terminal {
         let to = if to < cols && r.cells[to].is_spacer() { to + 1 } else { to };
         r.cells[from..to].fill(Cell::blank(&pen));
         r.clear_extra(from, to);
-        // Clearing the whole row (`cls`, a redraw) takes the prompt bar with it.
+        // Clearing the whole row (`cls`, a redraw) takes the block head with it.
         if from == 0 && to == cols {
-            r.bar = None;
+            r.block = None;
         }
         if pen.bg != Color::Default {
             r.touch_to(to);
@@ -576,41 +602,196 @@ impl Terminal {
         self.touch(row);
     }
 
-    /// Put a prompt bar on a blank row of its own at the cursor: a new line first unless the
-    /// cursor is at the start of one (output that did not end in a newline).
-    fn start_bar(&mut self, info: String) {
+    // --- blocks (shell integration, docs/03 §6) -----------------------------------
+
+    /// Line number of the cursor row.
+    fn cursor_line(&self) -> u64 {
+        self.screen_top() + self.cursor.row as u64
+    }
+
+    /// The newest block head at or above primary screen row `row`, looking into the scrollback
+    /// when the screen has none.
+    fn find_head(&self, row: usize) -> Option<HeadAt> {
+        if let Some(r) = (0..=row.min(self.rows - 1)).rev().find(|&r| self.primary[r].block.is_some()) {
+            return Some(HeadAt::Screen(r));
+        }
+        self.scrollback.iter().rposition(|r| r.block.is_some()).map(HeadAt::History)
+    }
+
+    fn head_mut(&mut self, at: HeadAt) -> &mut BlockHead {
+        let row = match at {
+            HeadAt::Screen(r) => &mut self.primary[r],
+            HeadAt::History(i) => &mut self.scrollback[i],
+        };
+        row.block.as_deref_mut().expect("a head was found there")
+    }
+
+    fn touch_head(&mut self, at: HeadAt) {
+        match at {
+            HeadAt::Screen(r) => self.touch(r),
+            // A view scrolled up may show it.
+            HeadAt::History(_) => self.full_damage = true,
+        }
+    }
+
+    /// OSC 133 A: a prompt starts at the cursor. The row becomes a block head, unless it is one
+    /// still at its prompt (the prompt redrawn after Ctrl+C or a resize).
+    fn block_prompt_start(&mut self) {
+        if self.modes.alt_screen {
+            return;
+        }
+        let row = self.cursor.row;
+        match self.primary[row].block.as_deref() {
+            Some(h) if matches!(h.state, BlockState::Prompt | BlockState::Input) => {}
+            _ => self.primary[row].block = Some(Box::new(BlockHead::new("".into()))),
+        }
+        self.touch(row);
+    }
+
+    /// OSC 7777 bar: otterm's prompt bar (decision M4) on a blank row of its own at the cursor; a
+    /// new line first unless the cursor is at the start of one (output that did not end in a
+    /// newline). The head OSC 133 A put where the prompt started moves onto the bar's row.
+    fn block_bar(&mut self, info: String) {
         /// More than a path and a branch name need.
         const MAX_INFO: usize = 8192;
         if self.modes.alt_screen || info.is_empty() || info.len() > MAX_INFO {
             return;
         }
+        let from = self.cursor.row;
+        let mut head = match self.primary[from].block.take() {
+            Some(h) if h.state == BlockState::Prompt => h,
+            other => {
+                self.primary[from].block = other;
+                Box::new(BlockHead::new("".into()))
+            }
+        };
         if self.cursor.col > 0 || self.cursor.pending_wrap {
             self.cursor.col = 0;
             self.linefeed();
         }
         let (row, cols) = (self.cursor.row, self.cols);
         self.erase_cells(row, 0, cols);
-        self.grid()[row].bar = Some(Box::new(PromptBar { info: info.into(), done: None }));
+        head.info = info.into();
+        self.primary[row].block = Some(head);
+        self.touch(row);
     }
 
-    /// Record the result of the command run at the nearest prompt bar above the cursor.
-    fn finish_bar(&mut self, code: i32, ms: u32) {
+    /// OSC 133 B: the prompt is printed; the user types from here.
+    fn block_input_start(&mut self) {
         if self.modes.alt_screen {
             return;
         }
-        let done = Some((code, ms));
-        for r in (0..=self.cursor.row).rev() {
-            if let Some(bar) = self.primary[r].bar.as_mut() {
-                bar.done = done;
-                self.touch(r);
-                return;
+        if let Some(at) = self.find_head(self.cursor.row) {
+            let h = self.head_mut(at);
+            if h.state == BlockState::Prompt {
+                h.state = BlockState::Input;
+                self.touch_head(at);
             }
         }
-        if let Some(bar) = self.scrollback.iter_mut().rev().find_map(|row| row.bar.as_mut()) {
-            bar.done = done;
-            // A view scrolled up may show it.
-            self.full_damage = true;
+    }
+
+    /// OSC 7777 cmd: the command line the user entered.
+    fn block_command(&mut self, command: String) {
+        /// Longer than any command line worth keeping.
+        const MAX_COMMAND: usize = 1 << 16;
+        if self.modes.alt_screen || command.len() > MAX_COMMAND {
+            return;
         }
+        if let Some(at) = self.find_head(self.cursor.row) {
+            let h = self.head_mut(at);
+            if matches!(h.state, BlockState::Prompt | BlockState::Input) {
+                h.command = Some(command.into_boxed_str());
+                self.touch_head(at);
+            }
+        }
+    }
+
+    /// OSC 133 C: the command runs; its output starts at the cursor.
+    fn block_command_start(&mut self) {
+        if self.modes.alt_screen {
+            return;
+        }
+        let line = self.cursor_line();
+        if let Some(at) = self.find_head(self.cursor.row) {
+            let h = self.head_mut(at);
+            if matches!(h.state, BlockState::Prompt | BlockState::Input) {
+                h.state = BlockState::Running;
+                h.output_line = Some(line);
+                h.started = Some(std::time::Instant::now());
+                let command = h.command.as_deref().unwrap_or_default().to_owned();
+                self.events.push(Event::BlockStart { command });
+                self.touch_head(at);
+            }
+        }
+    }
+
+    /// OSC 133 D (the terminal measured the duration) or OSC 7777 done (the shell reports it):
+    /// the command at the newest block head ended. `D` without a code after a prompt that ran
+    /// nothing (Ctrl+C, a bare Enter) ends nothing.
+    fn block_end(&mut self, exit: Option<i32>, ms: Option<u32>) {
+        if self.modes.alt_screen {
+            return;
+        }
+        let Some(at) = self.find_head(self.cursor.row) else { return };
+        let h = self.head_mut(at);
+        let ran = h.state == BlockState::Running;
+        if matches!(h.state, BlockState::Done { .. }) || (!ran && exit.is_none()) {
+            return;
+        }
+        let measured = h.started.map(|t| t.elapsed().as_millis().min(u32::MAX as u128) as u32);
+        let ms = ms.or(measured).unwrap_or(0);
+        let exit = exit.unwrap_or(0);
+        h.state = BlockState::Done { exit, ms };
+        self.events.push(Event::BlockEnd { exit, ms });
+        self.touch_head(at);
+    }
+
+    /// The newest block head at or above `line`: its line number and the head. `None` before the
+    /// first block or on the alternate screen.
+    pub fn block_head_at(&self, line: u64) -> Option<(u64, &BlockHead)> {
+        if self.modes.alt_screen {
+            return None;
+        }
+        let base = self.history_base;
+        let i = usize::try_from(line.checked_sub(base)?).ok()?;
+        let history = self.scrollback.len();
+        let on_screen = if i >= history {
+            let r = (i - history).min(self.rows - 1);
+            (0..=r).rev().find(|&r| self.primary[r].block.is_some()).map(HeadAt::Screen)
+        } else {
+            None
+        };
+        let at = on_screen.or_else(|| {
+            let upto = if i >= history { history } else { i + 1 };
+            self.scrollback.iter().take(upto).rposition(|r| r.block.is_some()).map(HeadAt::History)
+        })?;
+        Some(match at {
+            HeadAt::Screen(r) => (base + (history + r) as u64, self.primary[r].block.as_deref()?),
+            HeadAt::History(j) => (base + j as u64, self.scrollback[j].block.as_deref()?),
+        })
+    }
+
+    /// The block `line` is in (docs/03 §6.3). A block that is still running ends at the cursor.
+    pub fn block_at(&self, line: u64) -> Option<BlockRange<'_>> {
+        let (start, head) = self.block_head_at(line)?;
+        let end = self.block_jump(start, 1).map_or(self.cursor_line(), |next| next - 1);
+        Some(BlockRange { line: start, head, end })
+    }
+
+    /// The line of the nearest block head strictly above (`dir < 0`) or below (`dir > 0`) `line`.
+    pub fn block_jump(&self, line: u64, dir: i32) -> Option<u64> {
+        if self.modes.alt_screen {
+            return None;
+        }
+        let base = self.history_base;
+        let mut heads = self
+            .scrollback
+            .iter()
+            .chain(self.primary.iter())
+            .enumerate()
+            .filter(|(_, r)| r.block.is_some())
+            .map(|(i, _)| base + i as u64);
+        if dir < 0 { heads.take_while(|&l| l < line).last() } else { heads.find(|&l| l > line) }
     }
 
     /// Scroll the region up by `n`: lines leave at the top, blanks enter at the bottom.
@@ -1545,13 +1726,28 @@ impl Perform for Terminal {
                 let s = format!("\x1b]1{which};rgb:{r:02x}{r:02x}/{g:02x}{g:02x}/{b:02x}{b:02x}\x1b\\");
                 self.respond(&s);
             }
-            // otterm's prompt bar (decision M4): `7777;bar;<base64 JSON>` starts one at the cursor,
-            // `7777;done;<exit code>;<ms>` finishes the last one with the command's result.
+            // Shell integration (docs/03 §6.1): the prompt starts (A), the user types (B), the
+            // command runs (C) and ends with an exit code (D).
+            b"133" => match params.get(1).copied() {
+                Some(b"A") => self.block_prompt_start(),
+                Some(b"B") => self.block_input_start(),
+                Some(b"C") => self.block_command_start(),
+                Some(b"D") => self.block_end(text(2).parse().ok(), None),
+                _ => {}
+            },
+            // otterm's extension: `7777;cmd;<base64>` is the command line, `7777;bar;<base64
+            // JSON>` starts a prompt bar at the cursor (decision M4), `7777;done;<exit>;<ms>` ends
+            // the command with a duration the shell measured.
             b"7777" => match params.get(1).copied() {
-                Some(b"bar") => self.start_bar(text(2)),
+                Some(b"cmd") => {
+                    if let Some(command) = decode_base64(&text(2)) {
+                        self.block_command(command);
+                    }
+                }
+                Some(b"bar") => self.block_bar(text(2)),
                 Some(b"done") => {
-                    if let (Ok(code), Ok(ms)) = (text(2).parse(), text(3).parse()) {
-                        self.finish_bar(code, ms);
+                    if let (Ok(code), Ok(ms)) = (text(2).parse::<i32>(), text(3).parse::<u32>()) {
+                        self.block_end(Some(code), Some(ms));
                     }
                 }
                 _ => {}
@@ -1565,4 +1761,28 @@ impl Perform for Terminal {
             _ => {}
         }
     }
+}
+
+/// Standard base64 (padding optional) to UTF-8 text; `None` for anything else.
+fn decode_base64(s: &str) -> Option<String> {
+    let mut out = Vec::with_capacity(s.len() / 4 * 3);
+    let (mut acc, mut bits) = (0u32, 0);
+    for c in s.bytes().filter(|c| !c.is_ascii_whitespace()) {
+        let v = match c {
+            b'A'..=b'Z' => c - b'A',
+            b'a'..=b'z' => c - b'a' + 26,
+            b'0'..=b'9' => c - b'0' + 52,
+            b'+' | b'-' => 62,
+            b'/' | b'_' => 63,
+            b'=' => break,
+            _ => return None,
+        };
+        acc = acc << 6 | v as u32;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((acc >> bits) as u8);
+        }
+    }
+    String::from_utf8(out).ok()
 }

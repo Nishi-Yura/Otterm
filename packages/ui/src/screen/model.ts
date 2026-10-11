@@ -1,4 +1,4 @@
-import type { Attr, Frame, RowBar } from "./protocol";
+import type { Attr, Frame, RowBlock } from "./protocol";
 
 export const DEFAULT_ATTR: Attr = Object.freeze({ fg: 0, bg: 0, underline: 0, flags: 0, link: 0 });
 
@@ -7,7 +7,7 @@ export interface Line {
   attrs: Attr[];
   extras: Map<number, string>;
   wrapped: boolean;
-  bar?: RowBar;
+  block?: RowBlock;
 }
 
 /** The UI's copy of one session's screen, kept up to date by applying frames. */
@@ -27,6 +27,8 @@ export class ScreenModel {
   scrollback = 0;
   /** Lines the view is scrolled up; 0 is the live screen. */
   offset = 0;
+  /** The block row 0 is in (see Frame.topBlock). */
+  topBlock = 0;
   /** OSC 8 hyperlink targets seen so far, by id (ids are stable for the session). */
   readonly links = new Map<number, string>();
   /** Rows changed since the renderer last drew. */
@@ -50,7 +52,7 @@ export class ScreenModel {
       for (let c = 0; c < n; c++) line.attrs[c] = row.attrs[c] ?? DEFAULT_ATTR;
       line.extras = row.extras;
       line.wrapped = row.wrapped;
-      line.bar = row.bar;
+      line.block = row.block;
       this.lines[row.index] = line;
       this.dirty.add(row.index);
     }
@@ -65,6 +67,7 @@ export class ScreenModel {
     this.topLine = f.topLine;
     this.scrollback = f.scrollback;
     this.offset = f.offset;
+    this.topBlock = f.topBlock;
     for (const [id, uri] of f.links) this.links.set(id, uri);
     this.dirty.add(this.cursorRow);
   }
