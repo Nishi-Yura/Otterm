@@ -39,3 +39,5 @@ tests/bench/results/
 
 # Bundled ConPTY binaries, fetched by scripts/fetch-conpty.js
 crates/otterm-app/resources/windows/
+dist-release/
+dist-otmod/

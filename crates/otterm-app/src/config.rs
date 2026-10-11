@@ -120,6 +120,8 @@ pub struct UiConfig {
     pub developer_mode: bool,
     /// Started with `--safe-mode`: mods are not started and a banner says so.
     pub safe_mode: bool,
+    /// `general.check_updates`: look for a new version a little after startup (decision K5).
+    pub check_updates: bool,
     /// Where installed mods live, to tell the user.
     pub mods_dir: Option<String>,
     /// Keys that were ignored, to show once.
@@ -402,6 +404,7 @@ impl ConfigState {
             layout,
             developer_mode: c.mods.developer_mode,
             safe_mode: safe,
+            check_updates: c.general.check_updates,
             mods_dir: otterm_config::data_dir().map(|d| otterm_modhost::mods_dir(&d).display().to_string()),
             warnings,
             workspace: l.workspace.as_ref().map(|(ws, trusted)| UiWorkspace {

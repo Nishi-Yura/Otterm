@@ -114,10 +114,15 @@ pub fn reset_all(config: &ConfigState) -> Result<PathBuf, String> {
 }
 
 pub fn default_export_name() -> String {
+    format!("otterm-settings-{}.zip", today().replace('-', ""))
+}
+
+/// Today's date (UTC) as `YYYY-MM-DD`.
+pub fn today() -> String {
     let days =
         std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() / 86_400).unwrap_or(0);
     let (y, m, d) = civil(days as i64);
-    format!("otterm-settings-{y:04}{m:02}{d:02}.zip")
+    format!("{y:04}-{m:02}-{d:02}")
 }
 
 /// Days since 1970-01-01 to a calendar date (Howard Hinnant's algorithm).

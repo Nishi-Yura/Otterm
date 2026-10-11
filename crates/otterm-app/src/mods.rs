@@ -13,6 +13,7 @@ use serde_json::Value;
 use tauri::State;
 
 use crate::config::ConfigState;
+use crate::registry;
 use crate::{AppState, CmdResult, err};
 
 /// How often the mods folder is checked for changes (hot reload of linked mods, docs/05 §8.1).
@@ -21,7 +22,7 @@ const WATCH_INTERVAL: Duration = Duration::from_secs(1);
 const HTTP_BODY_LIMIT: u64 = 16 * 1024 * 1024;
 
 /// The host's own version as mods see it (`compat.otterm`; 0.0.0 matches anything in development).
-fn host_version() -> semver::Version {
+pub(crate) fn host_version() -> semver::Version {
     semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap_or_else(|_| semver::Version::new(0, 0, 0))
 }
 
@@ -346,6 +347,86 @@ pub fn mod_set_enabled(state: State<'_, AppState>, id: String, enabled: bool) ->
         std::fs::create_dir_all(dir).map_err(err)?;
     }
     otterm_modhost::set_enabled(&path, &id, enabled).map_err(err)
+}
+
+/// The registry index URL: `[mods] registry`, else the official one.
+fn registry_source(config_path: &Path) -> String {
+    let (config, _) = otterm_config::load(config_path);
+    config.mods.registry.filter(|s| !s.trim().is_empty()).unwrap_or_else(|| registry::DEFAULT_INDEX.to_owned())
+}
+
+/// A registry mod as the store lists it.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StoreEntry {
+    #[serde(flatten)]
+    entry: registry::Entry,
+    /// The release this platform would get.
+    latest: Option<String>,
+    /// It says it runs on this otterm.
+    compatible: bool,
+    /// The installed version, if any.
+    installed: Option<String>,
+}
+
+/// Whether the store may connect (decision K5); `allow` records a yes.
+#[tauri::command]
+pub fn store_consent(allow: bool) -> CmdResult<bool> {
+    let data = data_dir().ok_or("no data folder")?;
+    if allow {
+        registry::set_consent(&data)?;
+    }
+    Ok(registry::consent(&data))
+}
+
+/// The registry's mods for the store screen. Refuses before the user agreed to connect.
+#[tauri::command]
+pub async fn store_list(state: State<'_, AppState>, refresh: bool) -> CmdResult<Vec<StoreEntry>> {
+    let data = data_dir().ok_or("no data folder")?;
+    if !registry::consent(&data) {
+        return Err("the store has not been allowed to connect".into());
+    }
+    let source = state.config.config().mods.registry.filter(|s| !s.trim().is_empty());
+    let source = source.unwrap_or_else(|| registry::DEFAULT_INDEX.to_owned());
+    tauri::async_runtime::spawn_blocking(move || {
+        let index = registry::index(&data, &source, refresh)?;
+        let host = host_version();
+        let installed: BTreeMap<String, String> = discover_all(&data)
+            .into_iter()
+            .filter_map(|f| match f {
+                Found::Mod(m) => Some((m.id.clone(), m.manifest.mod_.version.clone())),
+                Found::Broken { .. } => None,
+            })
+            .collect();
+        Ok(registry::search(&index, "")
+            .into_iter()
+            .map(|e| {
+                let best = e.best(&host, Platform::current());
+                StoreEntry {
+                    latest: best.map(|(r, _)| r.version.clone()),
+                    compatible: best.is_some_and(|(_, ok)| ok),
+                    installed: installed.get(&e.id).cloned(),
+                    entry: e.clone(),
+                }
+            })
+            .collect())
+    })
+    .await
+    .map_err(err)?
+}
+
+/// Install or update a mod from the registry; it stays off until the user grants its permissions.
+#[tauri::command]
+pub async fn store_install(state: State<'_, AppState>, id: String) -> CmdResult<String> {
+    let data = data_dir().ok_or("no data folder")?;
+    if !registry::consent(&data) {
+        return Err("the store has not been allowed to connect".into());
+    }
+    let source = state.config.config().mods.registry.filter(|s| !s.trim().is_empty());
+    let source = source.unwrap_or_else(|| registry::DEFAULT_INDEX.to_owned());
+    tauri::async_runtime::spawn_blocking(move || registry::install(&data, &source, &id, &host_version()))
+        .await
+        .map_err(err)?
 }
 
 /// Copy (or with `link`, link) a mod folder into the mods folder (docs/05 §7.1).
@@ -793,8 +874,49 @@ pub fn cli(args: &[String]) -> Result<String, String> {
             }
             Ok(out)
         }
+        Some("install")
+            if args.get(1).is_some_and(|s| s.ends_with(".otmod") && Path::new(s).is_file()) =>
+        {
+            let m = otterm_modhost::install_package(&data, Path::new(&args[1]), platform, &version).map_err(err)?;
+            Ok(format!("installed {} {} → {}\n", m.id, m.manifest.mod_.version, m.dir.display()))
+        }
+        // Not a folder: an id from the registry (docs/05 §7.1).
+        Some("install") if args.get(1).is_some_and(|s| !Path::new(s).exists() && otterm_modhost::valid_id(s)) => {
+            registry::install(&data, &registry_source(&config_path), &args[1], &version)
+        }
+        Some("search") => {
+            let index = registry::index(&data, &registry_source(&config_path), args.iter().any(|a| a == "--refresh"))?;
+            let query: Vec<&str> = args[1..].iter().map(String::as_str).filter(|a| *a != "--refresh").collect();
+            let hits = registry::search(&index, &query.join(" "));
+            if hits.is_empty() {
+                return Ok("no mods found\n".into());
+            }
+            Ok(hits
+                .iter()
+                .map(|m| {
+                    let newest = m.versions.first().map(|r| r.version.as_str()).unwrap_or("");
+                    format!("{}\t{newest}\t{}\t{}\n", m.id, m.name, m.description)
+                })
+                .collect())
+        }
+        Some("update") => {
+            let source = registry_source(&config_path);
+            if args.iter().any(|a| a == "--check") {
+                let list = registry::updates(&data, &source, &version, true)?;
+                if list.is_empty() {
+                    return Ok("every mod is up to date\n".into());
+                }
+                return Ok(list.iter().map(|(id, have, new)| format!("{id}\t{have} → {new}\n")).collect());
+            }
+            let ids: Vec<String> = args[1..].iter().filter(|a| !a.starts_with('-')).cloned().collect();
+            registry::update(&data, &source, &version, &ids)
+        }
+        Some("publish") => {
+            let dir = args.get(1).filter(|a| !a.starts_with('-')).map_or_else(|| std::env::current_dir().unwrap_or_default(), PathBuf::from);
+            registry::publish(&dir, &dir.join("dist-otmod"))
+        }
         Some(verb @ ("install" | "link")) => {
-            let source = args.get(1).ok_or("usage: otterm mod install <path> [--link]")?;
+            let source = args.get(1).ok_or("usage: otterm mod install <path|file.otmod|id> [--link]")?;
             let link = verb == "link" || args.iter().any(|a| a == "--link");
             let m = otterm_modhost::install(&data, Path::new(source), link, platform, &version).map_err(err)?;
             let mut out = format!("{} {} → {}\n", if link { "linked" } else { "installed" }, m.id, m.dir.display());
@@ -827,6 +949,6 @@ pub fn cli(args: &[String]) -> Result<String, String> {
                 Ok(problems.iter().map(|p| format!("{}: {}\n", p.code, p.message)).collect())
             }
         }
-        _ => Err("usage: otterm mod list | install <path> [--link] | link <path> | remove <id> | enable <id> | disable <id> | doctor [dir]".into()),
+        _ => Err("usage: otterm mod list | search [words] | install <path|file.otmod|id> [--link] | link <path> | update [id...] [--check] | publish [dir] | remove <id> | enable <id> | disable <id> | doctor [dir]".into()),
     }
 }

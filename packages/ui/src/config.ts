@@ -83,6 +83,8 @@ export interface UiConfig {
   customKeys: { key: string; command: string; args: Record<string, unknown>; when?: string }[];
   /** `.otterm/workspace.toml` above the folder otterm opened in (docs/06 §1). */
   workspace: UiWorkspace | null;
+  /** `general.check_updates` (decision K5). */
+  checkUpdates: boolean;
   altScreenPassthrough: boolean;
   confirmMultilinePaste: boolean;
   rightClick: "context-menu" | "paste" | "copy-or-paste";

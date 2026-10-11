@@ -126,7 +126,9 @@
 - 進み具合（2026-10-11）:
   - 済み（06 の残り）: 単一インスタンス（名前付きパイプ / Unix ソケットと起動ごとのトークン、判断 K6）と `--profile`・`--new-window`、`otterm config get|set|path|reset|export|import`、`otterm workflow run`、`otterm ask`、ポータブル版、`schema` のマイグレーションの枠、ワークスペースファイルと信頼の確認（判断 K4）、設定の zip 書き出し・読み込み、カテゴリ単位と全体のリセット、キーバインドのチョード・`mod` 表記・`[[keybindings.custom]]` と `when` 式、コピー・貼り付け・検索・文字サイズの割当変更、mod の提案キーの競合表示
   - 確認済み（Windows、開発機）: ワークスペースの信頼ダイアログとタブ展開、2 回目の起動の引き継ぎ、`Ctrl+K Ctrl+T` のチョード、custom キー、`otterm workflow run`、CLI の `config` 一式
-  - 残り: インストーラ、自動更新、署名、mod レジストリとストア画面、`otterm mod update|publish`、ドキュメントサイト、クラッシュログ
+  - 済み（配布、2026-10-12。費用のかかることはしない方針で、判断 M18）: Windows の NSIS インストーラ（`otterm.com` 同梱、ユーザーの PATH に追加）と `scripts/release.mjs`（配布物・SHA256SUMS・updater 用 `latest.json`・winget と Homebrew のマニフェストを作る。アップロードはしない）、Tauri updater（公開鍵はビルド時に埋め込み、パレットの「更新を確認」と起動 10 秒後の確認）、`.otmod` パッケージ（作成・K7 の検査付き展開）、mod レジストリのクライアント（`otterm mod search|install <id>|update|publish`、SHA-256 の検証、ストア画面と初回の接続確認）とレジストリのひな形（`registry/`）、ドキュメントサイト（`site/`、Starlight、日英、TypeDoc の API リファレンス）、クラッシュログと「Issue を作る」、リリース手順（[release.md](release.md)）
+  - 確認済み（Windows、開発機）: ローカルのレジストリで publish → 検索 → インストール → 更新、改ざんしたチェックサムの拒否、インストーラのビルド
+  - 残り: 公開（リポジトリを public にするかの判断、GitHub Releases、winget への PR、Homebrew の tap、レジストリとドキュメントサイトの置き場所）、updater の鍵の生成、macOS / Linux でのビルド、sigstore（D2）、レジストリに同梱以外の mod を 10 以上
 
 ### v1.x
 

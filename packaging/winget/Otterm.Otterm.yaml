@@ -1,0 +1,7 @@
+# Filled in by scripts/release.mjs. Submit the three files to microsoft/winget-pkgs under
+# manifests/o/Otterm/Otterm/<version>/ (docs/release.md).
+PackageIdentifier: Otterm.Otterm
+PackageVersion: {{version}}
+DefaultLocale: ja-JP
+ManifestType: version
+ManifestVersion: 1.6.0

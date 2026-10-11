@@ -131,7 +131,7 @@ fn load_dir(dir: &Path, platform: Platform, host: &Version) -> Found {
 }
 
 /// Read and parse `otmod.toml` in `dir`.
-fn read_manifest(dir: &Path) -> Result<Manifest> {
+pub(crate) fn read_manifest(dir: &Path) -> Result<Manifest> {
     let path = dir.join(MANIFEST_FILE);
     let text = fs::read_to_string(&path).with_context(|| format!("cannot read {}", path.display()))?;
     Ok(parse_manifest(&text)?)
@@ -141,7 +141,7 @@ fn read_manifest(dir: &Path) -> Result<Manifest> {
 ///
 /// When the answer cannot be determined, this returns `true`. Removal then takes the link itself, and never
 /// follows it into a dev checkout.
-fn is_link_like(path: &Path) -> bool {
+pub(crate) fn is_link_like(path: &Path) -> bool {
     if fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink()) {
         return true;
     }

@@ -9,6 +9,7 @@
 
 mod broker;
 mod manifest;
+mod package;
 mod paths;
 mod store;
 
@@ -18,6 +19,7 @@ pub use manifest::{
     Adds, Compat, Entry, FsPermissions, MANIFEST_EVENTS, ManifestError, ModInfo, ModKind, Permissions, Platform,
     Problem, SETTING_TYPES, SLOT_NAMES, Settings, TerminalPermissions, parse_manifest, valid_id,
 };
+pub use package::{install_package, pack, sha256_file, unpack};
 pub use paths::{PathVars, VARIABLES, expand, expand_glob};
 pub use store::{
     EnabledLists, Found, Installed, STORAGE_QUOTA, Storage, data_dir_of, discover, discover_dir, grant, granted,

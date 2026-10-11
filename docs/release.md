@@ -1,0 +1,71 @@
+# リリース手順（Release）
+
+M6（配布）の手順。v1.0 のチャネルは winget、Homebrew cask、AppImage（判断 A9）。
+
+**お金のかかることはしない。** 有料のコード署名証明書、Apple Developer Program、private リポジトリでの GitHub Actions の実行、有料のホスティングは使わない。この制約で何ができないかは §6 にまとめた。
+
+## 1. 前提
+
+- バージョンは `Cargo.toml` の `[workspace.package] version` と `crates/otterm-app/tauri.conf.json` の `version` の 2 か所。同じ値にする（`scripts/release.mjs` が確かめる）
+- 公開にはソースと配布物を置く **公開** リポジトリが要る。winget と Homebrew は誰でもダウンロードできる URL を求め、GitHub Releases は public リポジトリなら無料。いま（2026-10-12）のリポジトリは private なので、公開する前に「リポジトリを public にする」か「配布物だけの public リポジトリを作る」かを決める
+- 更新の署名鍵（§2）を作ってある
+
+## 2. 更新の署名鍵（判断 C10）
+
+Tauri updater は minisign の鍵で `latest.json` の配布物を検証する。鍵は無料で作れる。
+
+```bash
+pnpm tauri signer generate -w ~/.tauri/otterm-updater.key
+```
+
+- 公開鍵（`~/.tauri/otterm-updater.key.pub` の中身）を `packaging/updater.pub` に置いてコミットする。リリースビルドに `OTTERM_UPDATER_PUBKEY` として埋め込まれる
+- 秘密鍵とパスワードはリポジトリに入れない。C10 のとおり、リポジトリを public にしたら GitHub Actions のシークレット（`TAURI_SIGNING_PRIVATE_KEY`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。無料）に入れ、メンテナの端末からは消す。それまではパスワード付きでオフラインの媒体に保管する
+- ローテーション: 新しい鍵を作り、**古い鍵で署名した版** に新しい公開鍵を入れて出す。利用者がその版に更新したあと、新しい鍵での署名に切り替える。古い鍵を失ったときは自動更新が途切れるので、リリースノートと Web ページで手動の入れ直しを案内する
+- 鍵がないビルドは動くが、自動更新はできない（「この版の otterm は自動更新できません」）
+
+## 3. ビルド（OS ごと）
+
+```bash
+pnpm install --frozen-lockfile
+node scripts/fetch-conpty.js          # Windows のみ（判断 M3）
+node scripts/release.mjs --notes notes.md
+```
+
+`dist-release/<version>/` にできるもの:
+
+| OS | 配布物 | 自動更新に使うもの |
+| --- | --- | --- |
+| Windows | `otterm_<version>_x64-setup.exe`（NSIS、ユーザー単位のインストール） | 同じ `.exe` と `.sig` |
+| macOS | `otterm_<version>_<arch>.dmg` | `otterm.app.tar.gz` と `.sig` |
+| Linux | `otterm_<version>_amd64.AppImage` | 同じ `.AppImage` と `.sig` |
+
+あわせて `SHA256SUMS.txt`、`latest.json`（鍵があるとき）、`winget/<version>/*.yaml`、`otterm.rb`（macOS で作ったとき）ができる。OS ごとに実行すると `latest.json` と `SHA256SUMS.txt` に追記していく。
+
+Windows のインストーラは `otterm.exe` の隣に `otterm.com`（docs/06 §4）を入れ、インストール先をユーザーの PATH に足す（`crates/otterm-app/windows/hooks.nsh`）。アンインストールで PATH から外す。
+
+macOS と Linux はこの開発機ではビルドできない。Mac と Linux の手元の機械で同じスクリプトを実行する（Linux の準備は `packaging/linux/README.md`）。`.github/workflows/release.yml` は 3 OS をまとめてビルドするが、**手動実行のみ** で、private リポジトリのうちは実行しない（Actions の分数に課金されるため）。
+
+## 4. 公開（手作業）
+
+1. GitHub で `v<version>` のリリースを作り、`dist-release/<version>/` の配布物、`.sig`、`SHA256SUMS.txt`、`latest.json` を添付する。安定版は通常のリリース、ベータは prerelease にして、`latest.json` を `beta` タグのリリースにも置く（`general.update_channel = "beta"` の取得先）
+2. winget: `dist-release/<version>/winget/<version>/` の 3 ファイルを microsoft/winget-pkgs の `manifests/o/Otterm/Otterm/<version>/` に置いて PR を出す（`winget validate` で確かめてから）
+3. Homebrew: まず自前の tap（`homebrew-otterm` リポジトリの `Casks/otterm.rb`）に置く。`brew install --cask <user>/otterm/otterm`
+4. ドキュメントサイト: `pnpm --filter @otterm/site build` の `site/dist/` を置く。置き場所（GitHub Pages は public リポジトリなら無料）は未定
+5. mod レジストリ: `registry/` を public リポジトリ `otterm-registry` に複製し、`index.json` を `main` に置く。本体の既定の取得先は `https://raw.githubusercontent.com/Nishi-Yura/otterm-registry/main/index.json`（`[mods] registry` で変えられる）
+
+## 5. リリース前の確認
+
+- `just check` が通る
+- Windows のインストーラで: インストール → 新しい PowerShell で `otterm config path` が出力される → `otterm` でウィンドウが開く → アンインストールで PATH から消える
+- 自動更新: 1 つ前の版を入れ、パレットの「更新を確認」で新しい版が見つかり、更新して再起動できる
+- クラッシュログ: 異常終了後の次回起動で「Issue を作る」が出る
+
+## 6. お金をかけないことで、できないこと
+
+| 項目 | 費用がかかる理由 | v1.0 での扱い |
+| --- | --- | --- |
+| Windows のコード署名（Authenticode） | 証明書が年額で有料 | 署名しない。初回は SmartScreen の警告が出る。winget は未署名のインストーラも受け付ける。OSS 向けの無料署名（SignPath Foundation など）は public リポジトリが条件で、申請はメンテナが行う |
+| macOS の署名と公証 | Apple Developer Program が年額で有料 | 署名しない。初回は Gatekeeper に止められ、「右クリック → 開く」が要る。homebrew/cask 本体には載らないので自前の tap で配る |
+| 3 OS の自動ビルド | private リポジトリの Actions は無料枠を超えると有料 | 各 OS の手元で `scripts/release.mjs` を実行。public にしたら `release.yml` を使える |
+| ドキュメントサイトのホスティング | private リポジトリの GitHub Pages は有料プラン | ローカルでビルドだけする |
+| sigstore による mod の署名（判断 D2） | 署名は GitHub Actions（public なら無料）で行う設計 | レジストリが public になるまでは、インデックスの SHA-256 で配布物を検証する |

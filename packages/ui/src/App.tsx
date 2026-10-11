@@ -66,6 +66,8 @@ import type { WhenContext } from "./when";
 const NOTICE_MS = 10_000;
 /** How far Alt+Shift+arrow moves a divider, as a fraction of the split. */
 const RESIZE_STEP = 0.05;
+/** The update check waits until the window has settled (docs/09: startup comes first). */
+const UPDATE_DELAY_MS = 10_000;
 /** Actions the focused terminal runs itself: they need its selection, search bar or font. */
 const PANE_ACTIONS = new Set<AppAction["kind"]>(["copy", "paste", "search", "font", "clear"]);
 
@@ -654,6 +656,7 @@ export function App() {
         title: t(config()?.safeMode ? "palette-cmd-restart-normal" : "palette-cmd-restart-safe"),
         run: () => restart(!config()?.safeMode),
       },
+      { id: "app.update", title: t("palette-cmd-update"), run: () => void checkForUpdate(true) },
       {
         id: "settings.file",
         title: t("palette-cmd-settings-file"),
@@ -974,6 +977,9 @@ export function App() {
     }
     await openFirstTabs();
     setReady(true);
+    void offerCrashLog();
+    // The only connection otterm makes by itself, when the user allowed it (decision K5).
+    if (config()?.checkUpdates) setTimeout(() => void checkForUpdate(false), UPDATE_DELAY_MS);
     // A later `otterm` launch (docs/06 §4): a tab, a workflow, or a question for the AI mod.
     const reply = (id: number, ok: boolean, message: string) =>
       invoke("instance_reply", { id, ok, message }).catch(() => {});
@@ -1220,6 +1226,87 @@ export function App() {
     for (const tab of list) newTab(undefined, undefined, tab.name ?? undefined, tab.launch);
     const first = tabs()[0];
     if (first) setActiveTab(first.id);
+  };
+
+  /**
+   * The last run crashed (decision C11): offer to copy the log or open an issue. The log goes to
+   * the clipboard, never into the issue URL, so the user sees what they paste.
+   */
+  const offerCrashLog = async () => {
+    const crash = await invoke<{ name: string; path: string; text: string; issueUrl: string } | null>(
+      "crash_pending",
+    ).catch(() => null);
+    if (!crash) return;
+    const done = () => {
+      setConfirm(undefined);
+      void invoke("crash_ack", { name: crash.name }).catch(() => {});
+      refocus();
+    };
+    const copy = () => invoke("clipboard_write", { text: crash.text }).catch(() => {});
+    const body = encodeURIComponent(t("crash-issue-body"));
+    const title = encodeURIComponent(t("crash-issue-title"));
+    setConfirm({
+      title: t("crash-title"),
+      body: t("crash-body", { path: crash.path }),
+      buttons: [
+        {
+          label: t("crash-issue"),
+          action: () => {
+            void copy().then(() => invoke("open_url", { url: `${crash.issueUrl}?title=${title}&body=${body}` }));
+            done();
+          },
+        },
+        {
+          label: t("crash-copy"),
+          action: () => {
+            void copy();
+            done();
+          },
+        },
+        { label: t("crash-close"), action: done },
+      ],
+      focus: 2,
+      cancel: done,
+    });
+  };
+
+  /**
+   * Look for a new version (decision C10). `manual` (the palette) reports every outcome; the check
+   * at startup speaks only when there is something to install.
+   */
+  const checkForUpdate = async (manual: boolean) => {
+    let found: { version: string; current: string; notes: string | null } | null;
+    try {
+      found = await invoke("update_check");
+    } catch (e) {
+      if (manual) showNotice(t("update-failed", { error: String(e) }));
+      return;
+    }
+    if (!found) {
+      if (manual) showNotice(t("update-none"));
+      return;
+    }
+    const later = () => {
+      setConfirm(undefined);
+      refocus();
+    };
+    setConfirm({
+      title: t("update-title", { version: found.version }),
+      body: t("update-body", { current: found.current, notes: found.notes ?? "" }),
+      buttons: [
+        {
+          label: t("update-install"),
+          action: () => {
+            later();
+            showNotice(t("update-installing"));
+            void invoke("update_install").catch((e) => showNotice(t("update-failed", { error: String(e) })));
+          },
+        },
+        { label: t("update-later"), action: later },
+      ],
+      focus: 1,
+      cancel: later,
+    });
   };
 
   const askTrust = (ws: UiWorkspace) =>

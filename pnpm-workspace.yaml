@@ -1,5 +1,6 @@
 packages:
   - "packages/*"
   - "mods/*"
+  - "site"
 allowBuilds:
   esbuild: true

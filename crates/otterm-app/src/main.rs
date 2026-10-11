@@ -8,6 +8,7 @@
 mod assist;
 mod config;
 mod config_tools;
+mod crash;
 mod editor;
 mod helptext;
 mod history;
@@ -17,11 +18,13 @@ mod mods;
 mod open;
 mod profiles;
 mod quote;
+mod registry;
 mod screen;
 mod settings;
 mod shell;
 mod shell_history;
 mod text;
+mod update;
 mod window_state;
 
 use otterm_session::{
@@ -1140,6 +1143,7 @@ fn instance_reply(state: State<'_, AppState>, id: u32, ok: bool, message: String
 
 #[cfg(not(feature = "bench"))]
 fn main() {
+    crash::install_hook();
     if cli() {
         return;
     }
@@ -1149,8 +1153,10 @@ fn main() {
     }
     let listen = !launch.new_window;
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state(launch))
         .manage(mods::ModsState::default())
+        .manage(update::UpdateState::default())
         .setup(move |app| {
             if listen {
                 let handle = app.handle().clone();
@@ -1184,6 +1190,10 @@ fn main() {
             workspace_trust,
             workspace_tabs,
             instance_reply,
+            crash::crash_pending,
+            crash::crash_ack,
+            update::update_check,
+            update::update_install,
             config_tools::config_reset,
             config_tools::config_export,
             config_tools::config_import,
@@ -1223,6 +1233,9 @@ fn main() {
             mods::mod_set_enabled,
             mods::mod_install,
             mods::mod_uninstall,
+            mods::store_consent,
+            mods::store_list,
+            mods::store_install,
             mods::mod_setting_set,
             mods::mod_storage,
             mods::mod_fs,

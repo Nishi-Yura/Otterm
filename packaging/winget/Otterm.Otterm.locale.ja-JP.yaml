@@ -1,0 +1,21 @@
+PackageIdentifier: Otterm.Otterm
+PackageVersion: {{version}}
+PackageLocale: ja-JP
+Publisher: otterm
+PublisherUrl: {{repository}}
+PackageName: otterm
+PackageUrl: {{repository}}
+License: Apache-2.0
+LicenseUrl: {{repository}}/blob/main/LICENSE
+ShortDescription: 初心者にやさしく、上級者にも速いターミナル
+Description: |-
+  otterm は、入力支援・コマンドの説明・危険なコマンドの確認を備えたターミナルエミュレータです。
+  mod で機能を足せます。利用状況は一切送信しません。
+Moniker: otterm
+Tags:
+  - terminal
+  - shell
+  - console
+ReleaseNotesUrl: {{repository}}/releases/tag/v{{version}}
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

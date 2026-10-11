@@ -38,6 +38,8 @@ serde_json.workspace = true
 schemars.workspace = true
 # A transparent window (appearance.window.opacity, docs/04 §2.1) needs the private API on macOS.
 tauri = { workspace = true, features = ["macos-private-api"] }
+# Signed updates from GitHub Releases (decision C10).
+tauri-plugin-updater = "2"
 tungstenite.workspace = true
 
 [features]

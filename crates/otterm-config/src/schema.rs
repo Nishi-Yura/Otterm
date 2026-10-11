@@ -820,6 +820,10 @@ pub struct Mods {
     pub auto_update: bool,
     /// Show per-mod logs, timings and API calls in Settings.
     pub developer_mode: bool,
+    /// The registry index (docs/05 §7.2): an https URL, or a local path for a registry checkout.
+    /// Unset means the official registry.
+    #[schemars(extend("x-advanced" = true))]
+    pub registry: Option<String>,
     /// Per-mod settings, validated against each mod's `[settings.schema]` at load time.
     #[schemars(with = "BTreeMap<String, BTreeMap<String, serde_json::Value>>")]
     pub settings: BTreeMap<String, BTreeMap<String, toml::Value>>,

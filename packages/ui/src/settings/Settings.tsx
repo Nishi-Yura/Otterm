@@ -1586,11 +1586,152 @@ function bilingual(s: string | undefined): string {
   return document.documentElement.lang === "ja" ? (parts[0] as string) : (parts[1] as string);
 }
 
+/** A registry mod as `store_list` returns it (crates/otterm-app/src/mods.rs). */
+interface StoreEntry {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  kind: string;
+  categories: string[];
+  permissions: string[];
+  reviewed: boolean;
+  latest: string | null;
+  compatible: boolean;
+  installed: string | null;
+}
+
+/**
+ * The store (docs/05 §7.2): the registry's mods, searched here. It connects only after the user
+ * said yes once (decision K5); installed mods stay off until their permissions are granted.
+ */
+function StoreSection(props: { host: ModHost; notify: (s: string) => void }) {
+  const [allowed, setAllowed] = createSignal<boolean>();
+  const [list, setList] = createSignal<StoreEntry[]>();
+  const [error, setError] = createSignal<string>();
+  const [query, setQuery] = createSignal("");
+  const [busy, setBusy] = createSignal<string>();
+  const load = (refresh: boolean) => {
+    setError(undefined);
+    void invoke<StoreEntry[]>("store_list", { refresh })
+      .then(setList)
+      .catch((e) => setError(String(e)));
+  };
+  onMount(
+    () =>
+      void invoke<boolean>("store_consent", { allow: false })
+        .then((ok) => {
+          setAllowed(ok);
+          if (ok) load(false);
+        })
+        .catch(() => setAllowed(false)),
+  );
+  const shown = () => {
+    const words = query().toLowerCase().split(/\s+/).filter(Boolean);
+    return (list() ?? []).filter((m) => {
+      const hay = `${m.id} ${m.name} ${m.description} ${m.author} ${m.categories.join(" ")}`.toLowerCase();
+      return words.every((w) => hay.includes(w));
+    });
+  };
+  const install = (m: StoreEntry) => {
+    setBusy(m.id);
+    void invoke<string>("store_install", { id: m.id })
+      .then((report) => {
+        props.notify(report.trim().split("\n").join(" · "));
+        void props.host.refresh();
+        load(false);
+      })
+      .catch((e) => props.notify(String(e)))
+      .finally(() => setBusy(undefined));
+  };
+  return (
+    <fieldset class="settings-group" data-ot="store">
+      <legend>{t("store-title")}</legend>
+      <Show
+        when={allowed()}
+        fallback={
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="settings-desc">{t("store-consent")}</div>
+            </div>
+            <div class="settings-control">
+              <button
+                type="button"
+                onClick={() =>
+                  void invoke<boolean>("store_consent", { allow: true }).then((ok) => {
+                    setAllowed(ok);
+                    load(true);
+                  })
+                }
+              >
+                {t("store-connect")}
+              </button>
+            </div>
+          </div>
+        }
+      >
+        <div class="settings-actions">
+          <input
+            type="search"
+            class="settings-filter"
+            placeholder={t("store-search")}
+            aria-label={t("store-search")}
+            onInput={(e) => setQuery(e.currentTarget.value)}
+          />
+          <button type="button" class="settings-small" onClick={() => load(true)}>
+            {t("store-refresh")}
+          </button>
+        </div>
+        <Show when={error()}>
+          <p class="muted">{t("store-error", { error: error() ?? "" })}</p>
+        </Show>
+        <Show when={list() && shown().length === 0 && !error()}>
+          <p class="muted">{t("store-empty")}</p>
+        </Show>
+        <For each={shown()}>
+          {(m) => (
+            <div class="settings-row" data-ot="store-entry">
+              <div class="settings-label">
+                <span>
+                  {bilingual(m.name)} <span class="muted">{m.latest ? `v${m.latest}` : ""}</span>
+                </span>
+                <div class="settings-desc">{bilingual(m.description)}</div>
+                <div class="settings-desc mono">
+                  {m.id} · {m.author}
+                  {m.reviewed ? ` · ${t("store-reviewed")}` : ""}
+                </div>
+                <Show when={m.permissions.length > 0}>
+                  <div class="settings-desc">{t("store-permissions", { list: m.permissions.join(", ") })}</div>
+                </Show>
+                <Show when={!m.compatible}>
+                  <div class="settings-desc settings-workspace">{t("store-incompatible")}</div>
+                </Show>
+              </div>
+              <div class="settings-control">
+                <Show when={m.installed !== m.latest} fallback={<span class="muted">{t("store-installed")}</span>}>
+                  <button type="button" disabled={busy() !== undefined || !m.latest} onClick={() => install(m)}>
+                    {busy() === m.id
+                      ? "…"
+                      : m.installed
+                        ? t("store-update", { version: m.installed })
+                        : t("store-install")}
+                  </button>
+                </Show>
+              </div>
+            </div>
+          )}
+        </For>
+      </Show>
+    </fieldset>
+  );
+}
+
 function ModsPage(props: { host: ModHost; notify: (s: string) => void }) {
   const set = (id: string, key: string, value: unknown) =>
     void invoke("mod_setting_set", { id, key, value }).catch((e) => props.notify(String(e)));
   return (
     <section class="settings-section">
+      <StoreSection host={props.host} notify={props.notify} />
       <For each={props.host.mods()}>
         {(m) => {
           const schema = () => Object.entries(m.entry.settingsSchema ?? {}) as [string, ModSetting][];

@@ -847,6 +847,23 @@ A〜H を決定した後に見つかった事項。同日に推奨どおり決�
 - 影響: 04 §2.3、06 §4、07 M6
 - 時期: M5
 
+### M18. 費用をかけない配布
+- 経緯: M6 の計画（A9、C10）には有料の証明書と CI が前提の項目がある。メンテナの方針は「お金のかかることは一切しない」（2026-10-11）で、リポジトリは private
+- 決定（2026-10-12）: **Windows・macOS のコード署名はしない。ビルドは各 OS の手元で `scripts/release.mjs`、公開は手作業。** updater の署名（minisign、無料）は行う。GitHub Actions のリリース用ワークフローは手動実行のみで、private のうちは実行しない。mod の配布物は sigstore（D2）の代わりにレジストリのインデックスの SHA-256 で検証する（レジストリが public になって Actions が無料になったら D2 に戻す）
+- 影響: 初回起動で SmartScreen / Gatekeeper の警告が出る。Homebrew は自前の tap で配る。詳しくは [release.md](release.md) §6
+- 時期: M6
+
+### M19. コンソール向けの `otterm.com`
+- 経緯: Windows のリリース版は GUI プログラムで、`otterm config get` の出力がコンソールに出ない。`AttachConsole` には `unsafe` が要り（M17 で避けた）、付けても cmd や PowerShell は終了を待たない
+- 決定（2026-10-11）: **`otterm.exe` の隣に小さなコンソールプログラム `otterm.com`**（`crates/otterm-console`）。`PATHEXT` で `.COM` が先に見つかる。サブコマンドは出力をパイプで中継し、終了コードを返す
+- 影響: 06 §4、release.md
+- 時期: M6
+
+### M20. ストアの接続確認とクラッシュログの扱い
+- 決定（2026-10-12）: ストア画面は初めて開いたときに「レジストリに接続する」を押すまで接続しない（K5 の具体化。答えは `state/registry-consent`）。CLI の `otterm mod search|install|update` は利用者の明示的な操作なので確認しない。クラッシュログは「Issue を作る」でクリップボードにコピーし、Issue の URL には入れない（パスにユーザー名が入りうるため、利用者が中身を見てから貼る）
+- 影響: 05 §7.2、C11
+- 時期: M6
+
 ## 決定の記録方法
 
 - 決まった項目には `決定: <内容>（<日付>）` と `根拠:` を 1 行足す

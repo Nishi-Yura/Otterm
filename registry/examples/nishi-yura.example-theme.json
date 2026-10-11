@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.example-theme",
+  "name": "Example Theme / サンプルテーマ",
+  "description": "Example entry showing the registry format. Not a real mod.",
+  "author": "nishi-yura",
+  "kind": "theme",
+  "categories": ["theme"],
+  "license": "MIT",
+  "repository": "https://github.com/nishi-yura/example-theme",
+  "permissions": [],
+  "reviewed": false,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=1.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://github.com/nishi-yura/example-theme/releases/download/v1.0.0/nishi-yura.example-theme-1.0.0.otmod",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "size": 1234,
+      "published": "2026-10-12"
+    }
+  ]
+}
