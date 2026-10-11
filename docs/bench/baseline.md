@@ -81,7 +81,7 @@ vte パーサ単体は約 1,800 MiB/s 出るので、残りは 1 文字約 10 ns
 
 ### 4.4 IPC 転送の 3 OS 比較（2026-10-11、GitHub Actions、コミット `aa04566`）
 
-判断 M2 の材料。共有ランナーは GPU がなく揺れも大きいので、**同じ実行の中での Tauri と WebSocket の比較**にだけ使う。生データは Bench ワークフローの成果物（run 38079432192）。
+判断 M2 の材料。共有ランナーは GPU がなく揺れも大きいので、**同じ実行の中での Tauri と WebSocket の比較**にだけ使う。生データ: [macos](2026-10-10-ipc-ci-macos.json)・[ubuntu](2026-10-10-ipc-ci-ubuntu.json)・[windows](2026-10-10-ipc-ci-windows.json)（Bench ワークフロー run 38079432192、コミット `0414273`）。
 
 macOS ランナー（仮想マシン）は JS と Rust の時計のずれがラウンドごとに 0.15〜1.5 ms の幅で変わり、補正しても片道の値が負になる。そのため比較には**往復**（Rust 送信 → JS 受信 → Rust に応答が届くまで）を使う。応答の経路は Tauri が `invoke`、WebSocket が同じソケットで、行きと帰りの両方の速さを含む。
 

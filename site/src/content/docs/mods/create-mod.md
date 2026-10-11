@@ -11,7 +11,7 @@ sidebar:
 npm create otterm-mod@latest my-mod
 ```
 
-> `create-otterm-mod` は、v1.0 の公開前はリポジトリの `packages/create-mod` から実行できます。
+> `create-otterm-mod` はまだ npm に公開していません。リポジトリの `packages/create-mod` から実行してください（`node packages/create-mod/index.js my-mod`）。
 
 対話で、種類（`extension` か `theme`）と Mod の ID を聞かれます。引数で指定することもできます。
 

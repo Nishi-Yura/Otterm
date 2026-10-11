@@ -1,6 +1,6 @@
 # otterm mod レジストリ
 
-otterm の公式 mod レジストリのテンプレートです。GitHub 上の静的 JSON インデックスと、GitHub Releases の配布物で構成します（サーバーなし）。検索はクライアント側で行います。
+otterm の公式 mod レジストリです。GitHub 上の静的 JSON インデックスと、GitHub Releases の配布物で構成します（サーバーなし）。検索はクライアント側で行います。
 
 ## 構成
 

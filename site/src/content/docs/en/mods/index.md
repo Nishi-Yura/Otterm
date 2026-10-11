@@ -7,7 +7,7 @@ sidebar:
 
 Built-in features such as completion, the danger guard, and the file tree are written as bundled mods using the same public API. Anything a mod can do through the API is available to everyone.
 
-> v1.0 is not released yet. The [API reference](/en/api/) is the source of truth for types.
+> The [API reference](/en/api/) is the source of truth for types.
 
 ## Mod kinds
 
@@ -17,7 +17,7 @@ Built-in features such as completion, the danger guard, and the file tree are wr
 | `layout` | Layout presets | No |
 | `dictionary` | Explanations, completions, danger rules, error hints | No (JSON) |
 | `workflows` | Saved commands | No (TOML) |
-| `outfit` | Kotsume outfits | No (TOML and images) |
+| `outfit` | Pebble outfits | No (TOML and images) |
 | `extension` | UI, events, integrations | Yes (TypeScript) |
 | `pack` | Several mods with recommended settings | No |
 

@@ -6,7 +6,7 @@
 
 <br>
 
-<a href="docs/07-roadmap.md"><img alt="状態: 開発中" src="https://img.shields.io/badge/状態-開発中_(v0)-3e8f8a?style=for-the-badge"></a>
+<a href="https://github.com/Nishi-Yura/Otterm/releases/latest"><img alt="最新リリース" src="https://img.shields.io/github/v/release/Nishi-Yura/Otterm?style=for-the-badge&label=リリース&color=3e8f8a"></a>
 <a href="LICENSE"><img alt="ライセンス Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-8a5a3b?style=for-the-badge"></a>
 <img alt="Windows / macOS / Linux" src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-f5ecdc?style=for-the-badge&logoColor=3b2414">
 <br>
@@ -217,8 +217,16 @@ export async function activate(ctx: ModContext) {
 
 ## 📦 インストール
 
-> [!IMPORTANT]
-> まだリリースはありません（最初のプレリリースを準備中）。いまはソースからビルドしてください。リリース後は [Releases](https://github.com/Nishi-Yura/Otterm/releases) にインストーラー（Windows `.msi` / `.exe`、macOS `.dmg`、Linux `.AppImage` / `.deb`）が並びます。コード署名はしないので、Windows では SmartScreen の「詳細情報 → 実行」が要ります。
+v1.0 は **Windows（x64）版**です。macOS / Linux 版は実機で確かめてから 1.0.x で出します。それまではソースからビルドしてください。
+
+| OS | 入れ方 |
+| --- | --- |
+| 🪟 **Windows** | [Releases](https://github.com/Nishi-Yura/Otterm/releases/latest) の `otterm_<version>_x64-setup.exe` を実行（ユーザー単位、管理者権限は不要）。新しいターミナルで `otterm` と打てば起動します。winget（`winget install otterm`）は申請中 |
+| 🍎 **macOS** | 1.0.x で `.dmg` と Homebrew の tap（`brew install --cask nishi-yura/otterm/otterm`）。いまはソースから |
+| 🐧 **Linux** | 1.0.x で `.AppImage`。いまはソースから |
+
+> [!NOTE]
+> インストーラーにコード署名はありません（有料のため）。Windows では SmartScreen の「詳細情報 → 実行」が要ります。ファイルが本物かは、Releases に添えた `SHA256SUMS.txt` で確かめられます。自動更新は署名つきで、確認するかどうかは初回の案内で聞かれます。
 
 **ソースから**:
 
@@ -229,7 +237,7 @@ just setup   # JS の依存と、Windows では同梱する ConPTY
 just dev     # ホットリロードで起動
 ```
 
-Rust（stable）、Node.js 22 以上、pnpm、[just](https://github.com/casey/just) が要ります。Linux では [Tauri の前提条件](https://v2.tauri.app/start/prerequisites/)も。
+Rust（stable）、Node.js 22 以上、pnpm、[just](https://github.com/casey/just) が要ります。Linux では [Tauri の前提条件](https://v2.tauri.app/start/prerequisites/)も。インストーラーを作るには `node scripts/release.mjs`（[docs/release.md](docs/release.md)）。
 
 <br>
 
@@ -245,14 +253,20 @@ Rust（stable）、Node.js 22 以上、pnpm、[just](https://github.com/casey/ju
 | ✅ | M4.5 コツメ | 表情、台詞、着せ替え |
 | ✅ | M5 設定とテーマ | 設定画面、キーバインド、ワークスペース |
 | ✅ | M5.5 AI 補助 | ローカル / 自分のキー、送信プレビュー |
-| 🚧 | M6 配布 | インストーラー、自動更新、ストア（済み）、winget / Homebrew（これから） |
-| ⏳ | v1.0 | macOS / Linux の手動確認、参照マシンでの計測 |
+| ✅ | M6 配布 | インストーラー、署名つき自動更新、ストア、ドキュメントサイト |
+| ✅ | v1.0 | Windows 版を公開 |
+| ⏳ | v1.0.x | macOS / Linux 版、winget / Homebrew、参照マシンでの計測 |
 
 詳しくは [docs/07-roadmap.md](docs/07-roadmap.md)。
 
 <br>
 
 ## 📚 ドキュメント
+
+使い方のガイドは [site/](site/) にあります（Starlight。まだホストしていないので、GitHub 上でそのまま読むか、`pnpm --filter @otterm/site dev` で手元に開きます）。
+
+- 🧭 [ユーザーガイド](site/src/content/docs/guide/getting-started.md): インストール、基本操作、入力補助、設定、キーバインド、テーマ、コツメ、困ったとき
+- 🧩 [mod 作者ガイド](site/src/content/docs/mods/index.md): 作り方、マニフェスト、権限、API、パッケージ化、公開
 
 仕様書は日本語が正です。
 

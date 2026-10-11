@@ -8,11 +8,13 @@ sidebar:
 otterm は、ターミナルを初めて使う人にも、毎日使う開発者にも役立つように作られたターミナルエミュレータです。
 普通のターミナルとして bash、zsh、PowerShell、cmd などをそのまま動かせます。
 
-> **注意**: v1.0 は公開前です。以下は公開時の入手方法です。
+> **注意**: v1.0 は Windows（x64）版です。macOS / Linux 版は実機で確かめてから 1.0.x で出します。それまでは [リポジトリ](https://github.com/Nishi-Yura/Otterm) をソースからビルドしてください。
 
 ## インストール
 
-### Windows（winget）
+### Windows
+
+[Releases](https://github.com/Nishi-Yura/Otterm/releases/latest) から `otterm_<version>_x64-setup.exe` をダウンロードして実行します（ユーザー単位のインストール、管理者権限は不要）。winget への登録が済めば、次でも入ります。
 
 ```powershell
 winget install otterm

@@ -7,11 +7,13 @@ sidebar:
 
 otterm is a terminal emulator for people who are new to the command line and for developers who use it every day. It runs bash, zsh, PowerShell, and cmd as they are.
 
-> **Note**: v1.0 is not released yet. The methods below are the ones planned for release.
+> **Note**: v1.0 is for Windows (x64). macOS and Linux builds follow in 1.0.x once they have been checked on real machines; until then, build the [repository](https://github.com/Nishi-Yura/Otterm) from source.
 
 ## Install
 
-**Windows (winget)**
+**Windows**
+
+Download `otterm_<version>_x64-setup.exe` from [Releases](https://github.com/Nishi-Yura/Otterm/releases/latest) and run it (per-user, no admin rights). Once the winget submission is accepted, this works too:
 
 ```powershell
 winget install otterm

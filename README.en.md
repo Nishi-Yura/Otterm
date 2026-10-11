@@ -6,7 +6,7 @@
 
 <br>
 
-<a href="docs/07-roadmap.md"><img alt="Status: in development" src="https://img.shields.io/badge/status-in_development_(v0)-3e8f8a?style=for-the-badge"></a>
+<a href="https://github.com/Nishi-Yura/Otterm/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Nishi-Yura/Otterm?style=for-the-badge&label=release&color=3e8f8a"></a>
 <a href="LICENSE"><img alt="License Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-8a5a3b?style=for-the-badge"></a>
 <img alt="Windows / macOS / Linux" src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-f5ecdc?style=for-the-badge&logoColor=3b2414">
 <br>
@@ -217,8 +217,16 @@ Keystrokes go straight to Rust and never wait for a mod. Rendering is WebGL2 (Ca
 
 ## 📦 Install
 
-> [!IMPORTANT]
-> There is no release yet (the first pre-release is being prepared), so build from source for now. Once released, [Releases](https://github.com/Nishi-Yura/Otterm/releases) will have installers (Windows `.msi` / `.exe`, macOS `.dmg`, Linux `.AppImage` / `.deb`). They are not code-signed; on Windows, SmartScreen needs "More info → Run anyway".
+v1.0 is for **Windows (x64)**. macOS and Linux builds follow in 1.0.x once they have been checked on real machines; until then, build from source.
+
+| OS | How |
+| --- | --- |
+| 🪟 **Windows** | Run `otterm_<version>_x64-setup.exe` from [Releases](https://github.com/Nishi-Yura/Otterm/releases/latest) (per-user, no admin rights). Then `otterm` works in a new terminal. winget (`winget install otterm`) is pending |
+| 🍎 **macOS** | A `.dmg` and a Homebrew tap (`brew install --cask nishi-yura/otterm/otterm`) in 1.0.x. From source for now |
+| 🐧 **Linux** | An `.AppImage` in 1.0.x. From source for now |
+
+> [!NOTE]
+> The installer is not code-signed (certificates cost money). On Windows, SmartScreen needs "More info → Run anyway". `SHA256SUMS.txt` next to the installer lets you check the file. Updates are signed; the first-run guide asks whether otterm may check for them.
 
 **From source**:
 
@@ -229,7 +237,7 @@ just setup   # JS dependencies and, on Windows, the bundled ConPTY
 just dev     # run with hot reload
 ```
 
-You need Rust (stable), Node.js 22+, pnpm and [just](https://github.com/casey/just); on Linux also the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
+You need Rust (stable), Node.js 22+, pnpm and [just](https://github.com/casey/just); on Linux also the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). To build an installer, run `node scripts/release.mjs` ([docs/release.md](docs/release.md), in Japanese).
 
 <br>
 
@@ -245,14 +253,20 @@ You need Rust (stable), Node.js 22+, pnpm and [just](https://github.com/casey/ju
 | ✅ | M4.5 Pebble | Moods, lines, outfits |
 | ✅ | M5 Settings and themes | Settings screen, key bindings, workspaces |
 | ✅ | M5.5 AI assist | Local or your own key, preview of what is sent |
-| 🚧 | M6 Distribution | Installer, auto-update, store (done); winget and Homebrew (next) |
-| ⏳ | v1.0 | Hands-on checks on macOS and Linux, measurements on the reference machine |
+| ✅ | M6 Distribution | Installer, signed auto-update, store, documentation site |
+| ✅ | v1.0 | Released for Windows |
+| ⏳ | v1.0.x | macOS and Linux builds, winget and Homebrew, measurements on the reference machine |
 
 Details: [docs/07-roadmap.md](docs/07-roadmap.md).
 
 <br>
 
 ## 📚 Documentation
+
+The user and mod author guides live in [site/](site/) (Starlight; not hosted yet, so read them on GitHub or run `pnpm --filter @otterm/site dev`).
+
+- 🧭 [User guide](site/src/content/docs/en/guide/getting-started.md): install, basics, input assist, settings, key bindings, themes, Pebble, troubleshooting
+- 🧩 [Mod author guide](site/src/content/docs/en/mods/index.md): writing a mod, the manifest, permissions, the API, packaging, publishing
 
 The specification is written in Japanese and is the source of truth.
 
