@@ -15,6 +15,3 @@ vte.workspace = true
 
 [lints]
 workspace = true
-
-[dev-dependencies]
-vte.workspace = true

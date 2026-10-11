@@ -341,30 +341,3 @@ fn nerd_rank(name: &str) -> u8 {
         2
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn nerd_font_names() {
-        assert!(is_nerd_font("JetBrainsMono Nerd Font"));
-        assert!(is_nerd_font("JetBrainsMono NF"));
-        assert!(!is_nerd_font("Cascadia Mono"));
-        let mut v =
-            ["JetBrainsMono Nerd Font".to_owned(), "JetBrainsMono Nerd Font Mono".into(), "Symbols Nerd Font".into()];
-        v.sort_by_key(|n| (nerd_rank(n), n.clone()));
-        assert_eq!(v[0], "Symbols Nerd Font");
-        assert_eq!(v[1], "JetBrainsMono Nerd Font Mono");
-    }
-
-    #[test]
-    fn font_list_puts_configured_fonts_first_and_ends_with_monospace() {
-        let mut c = Config::default();
-        c.font.family = vec!["Iosevka".into()];
-        let css = font_family(&c);
-        assert!(css.starts_with("\"Iosevka\", "), "{css}");
-        assert!(css.contains("\"Symbols Nerd Font Mono\""));
-        assert!(css.ends_with(", monospace"));
-    }
-}

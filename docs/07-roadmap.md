@@ -32,7 +32,7 @@
   - 済み: `otterm-vt`（パーサ、グリッド、スクロールバック、代替画面、SGR、全角、結合文字、モード、DSR / DA 応答、ダメージ追跡）、バイナリ差分とローカル WebSocket での転送（判断 M2）、Canvas 2D レンダラ（フォールバック）、ウィンドウに合わせたリサイズ、Rust 側のキー / ペーストのエンコード、IME の確定文字入力と変換中表示、ConPTY の同梱（判断 M3）
   - 済み（続き）: スクロールバックの表示（ホイール、Shift+PageUp など）、選択とコピー（ドラッグ／単語／行／矩形）、マウス報告（1000/1002/1003、SGR）と代替画面でのホイール→矢印（判断 I5）、リサイズ時の再折り返し、検索（正規表現・大文字小文字・単語）、Ctrl+クリックのリンク（判断 I2）、右クリックメニュー（判断 I1）、タブと縦横分割、設定ファイルの読み込み（キー単位のフォールバック、ライブ再読み込み）とテーマ 13 種、Nerd Font の検出、Fluent による UI 文言（判断 C7）、打鍵遅延ベンチ（Canvas 2D で p99 8.2 ms、`docs/bench/baseline.md` §4.5）
   - TUI の動作確認（Windows、開発機）: vim、less、btop、lazygit で表示・入力・マウスを確認済み
-  - 済み（さらに）: Kitty キーボードプロトコル（判断 I3）、キーバインドの設定（`[keybindings.bindings]`。代替画面では Ctrl+Shift / Cmd 以外をアプリに譲る）、複数行貼り付けの確認（判断 B16）、OSC 52 の確認（判断 H2）、右クリックの動作設定（判断 I1）、ベル（ペインのフラッシュ、背景タブの印）、OSC 8 ハイパーリンク、スクロールバーの操作と検索ヒットの表示、端末状態のリセット、ウィンドウ位置の記憶（判断 I7）、実行中のプログラムがあるときの閉じる確認、起動時間ベンチ（`docs/bench/baseline.md` §4.6）、UI の単体テスト（Vitest）、ファイルのドラッグ&ドロップでクォート済みパスを入力（FR-FILE-03）、出力内のパス（`src/app.ts:42` など）を Ctrl+クリックでエディタの該当行に開く（FR-FILE-06）、vttest のメニュー 1・2 相当の単体テスト、WSL・Nushell の検出、設定の追加分（文字間隔、余白、代替画面のホイール、タブバーの位置、プロファイルの色）、F11 の全画面と Ctrl+, の設定ファイル
+  - 済み（さらに）: Kitty キーボードプロトコル（判断 I3）、キーバインドの設定（`[keybindings.bindings]`。代替画面では Ctrl+Shift / Cmd 以外をアプリに譲る）、複数行貼り付けの確認（判断 B16）、OSC 52 の確認（判断 H2）、右クリックの動作設定（判断 I1）、ベル（ペインのフラッシュ、背景タブの印）、OSC 8 ハイパーリンク、スクロールバーの操作と検索ヒットの表示、端末状態のリセット、ウィンドウ位置の記憶（判断 I7）、実行中のプログラムがあるときの閉じる確認、起動時間ベンチ（`docs/bench/baseline.md` §4.6）、ファイルのドラッグ&ドロップでクォート済みパスを入力（FR-FILE-03）、出力内のパス（`src/app.ts:42` など）を Ctrl+クリックでエディタの該当行に開く（FR-FILE-06）、WSL・Nushell の検出、設定の追加分（文字間隔、余白、代替画面のホイール、タブバーの位置、プロファイルの色）、F11 の全画面と Ctrl+, の設定ファイル
   - 残り: WebGL レンダラと Rust 側の整形・ラスタライズ（判断 C3、C4）、vttest 本体（Unix の pty が要る）、tmux（この開発機には WSL がなく未確認）、参照マシンでの打鍵遅延・起動時間の再計測と CI ゲート、macOS / Linux での手動確認、Symbols Nerd Font Mono の同梱（判断 B14、ダウンロードの承認待ち）
 
 ### M2: シェル統合とブロック（目安 4〜6 週）
@@ -82,7 +82,7 @@
 - 自然文 → コマンド、エラー説明と修正案、`fix`、出力について聞く
 - 送信プレビュー、自動マスク、ローカルログ、ワークスペース単位のオフ
 - `ctx.ai.complete` と権限 `ai`
-- 評価セット（日英 300 問）と危険コマンド生成テストを CI に
+- 評価セット（日英 300 問）と危険コマンド生成の確認を手元で回す（自動テストにはしない。判断 L2）
 - ステップ実行モードは v1.x に回す
 - **完了条件**: AI をオフにしても UI に空欄が生まれない。生成コマンドに danger-guard が 100 % 反応する
 
@@ -139,7 +139,7 @@
 
 仕様書のレビュー、判断一覧 A〜L の決定、`@otterm/api` の型定義ドラフトは完了した。
 
-M0 の進み具合（2026-10-11）: モノレポ初期化、型とデータの配置（`packages/api`、`mods/dictionary-core`、`crates/otterm-config`、`packages/ui/locales`）、3 OS の CI（fmt、clippy、Biome、型検査、テスト、辞書検証）は済み。Tauri 2 + portable-pty の最小起動（`otterm-pty`、`otterm-session` の `SessionManager` trait、`otterm-app`、`packages/ui`）も済み。Windows では pwsh を起動して `ls` の出力が出ることを確認した。ConPTY は起動時のカーソル位置問い合わせ（DSR）に応答するまで出力を止めるため、M0 では UI が仮に応答している（M1 で `otterm-vt` に移す）
+M0 の進み具合（2026-10-11）: モノレポ初期化、型とデータの配置（`packages/api`、`mods/dictionary-core`、`crates/otterm-config`、`packages/ui/locales`）、3 OS の CI（fmt、clippy、Biome、型検査、辞書検証）は済み。Tauri 2 + portable-pty の最小起動（`otterm-pty`、`otterm-session` の `SessionManager` trait、`otterm-app`、`packages/ui`）も済み。Windows では pwsh を起動して `ls` の出力が出ることを確認した。ConPTY は起動時のカーソル位置問い合わせ（DSR）に応答するまで出力を止めるため、M0 では UI が仮に応答している（M1 で `otterm-vt` に移す）
 
 ベンチの土台（`tests/bench/`。PTY のスループットと往復、Rust → WebView の転送を Tauri Channel と WebSocket で比較）も済み。開発機の結果は [bench/baseline.md](bench/baseline.md)。転送手段（判断 M2）と ConPTY の同梱（判断 M3）が新たな判断事項になった。
 

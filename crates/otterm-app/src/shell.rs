@@ -38,19 +38,3 @@ fn base64(bytes: &[u8]) -> String {
     }
     out
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn only_powershell_gets_arguments() {
-        assert!(integration_args("/bin/zsh").is_empty());
-        let args = integration_args("pwsh.exe");
-        assert_eq!(&args[..3], ["-NoLogo", "-NoExit", "-EncodedCommand"]);
-        assert_eq!(base64(b"ab"), "YWI=");
-        assert_eq!(base64(b"abc"), "YWJj");
-        assert_eq!(encode_command("a"), "YQA=", "UTF-16LE");
-        assert_eq!(integration_args("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe").len(), 4);
-    }
-}

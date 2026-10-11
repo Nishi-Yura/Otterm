@@ -724,35 +724,3 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("failed to run otterm");
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_config_template_reads_without_warnings() {
-        let (_, warnings) = otterm_config::parse(include_str!("config_template.toml"));
-        assert!(warnings.is_empty(), "{warnings:?}");
-    }
-
-    #[test]
-    fn osc52_base64_decodes() {
-        assert_eq!(decode_base64("aGVsbG8="), Some("hello".into()));
-        assert_eq!(decode_base64("5pel5pys"), Some("日本".into()));
-        assert_eq!(decode_base64(""), Some(String::new()));
-        assert_eq!(decode_base64("not base64!"), None);
-    }
-
-    #[test]
-    fn file_urls_become_paths() {
-        assert_eq!(local_path("/home/a b"), Some("/home/a b".into()));
-        assert_eq!(local_path("file://localhost/home/a%20b"), Some("/home/a b".into()));
-        if cfg!(windows) {
-            assert_eq!(local_path("file://pc/C:/Users/x"), Some("C:/Users/x".into()));
-        }
-        assert_eq!(local_path("file://no-path"), None);
-        if cfg!(windows) {
-            assert_eq!(local_path("file://srv/share/a%20b"), Some(r"\\srv\share\a b".into()));
-        }
-    }
-}

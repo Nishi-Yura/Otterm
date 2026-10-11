@@ -122,34 +122,3 @@ fn in_path(exe: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
     std::env::split_paths(&path).map(|d| d.join(exe)).find(|p| Path::new(p).is_file())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn wsl_distributions_come_from_reg_output() {
-        let out = "\r\nHKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\{a}\r\n    DistributionName    REG_SZ    Ubuntu-22.04\r\n\r\nHKEY_CURRENT_USER\\...\\{b}\r\n    DistributionName    REG_SZ    docker-desktop\r\n    DistributionName    REG_SZ    My Arch\r\n\r\n2 match(es) found.\r\n";
-        assert_eq!(parse_distros(out), ["Ubuntu-22.04", "My Arch"]);
-        assert!(parse_distros("ERROR: The system was unable to find the specified registry key or value.").is_empty());
-    }
-
-    #[test]
-    fn configured_profiles_come_first_and_win_over_detected_ones() {
-        let mut c = Config::default();
-        c.profiles.push(Profile {
-            id: "cmd".into(),
-            name: "My cmd".into(),
-            command: "cmd.exe".into(),
-            ..Profile::default()
-        });
-        c.profiles.push(Profile { id: "gone".into(), hidden: true, ..Profile::default() });
-        // Hiding a profile with a detected shell's id hides that shell too.
-        c.profiles.push(Profile { id: "pwsh".into(), hidden: true, ..Profile::default() });
-        let list = all(&c);
-        assert_eq!(list[0].name, "My cmd");
-        assert_eq!(list.iter().filter(|p| p.id == "cmd").count(), 1);
-        assert!(list.iter().all(|p| p.id != "gone"), "hidden profiles stay out of the menu");
-        assert!(list.iter().all(|p| p.id != "pwsh"), "a hidden id hides the detected shell");
-    }
-}

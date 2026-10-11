@@ -217,13 +217,3 @@ impl Row {
         });
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn cell_stays_small() {
-        assert!(std::mem::size_of::<Cell>() <= 20, "Cell grew to {} bytes", std::mem::size_of::<Cell>());
-    }
-}

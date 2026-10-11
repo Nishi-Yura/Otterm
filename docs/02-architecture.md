@@ -27,7 +27,7 @@
 | 翻訳 | **Fluent（`.ftl`）** | 複数形・変数を翻訳側で処理。mod も同形式（判断 C7） |
 | パッケージ | **Cargo workspace（Rust）+ pnpm workspace + Turborepo（TS）**、クロス言語のタスクは `just` | モノレポ（判断 L4） |
 | コード規約 | Rust: `rustfmt` + `clippy`（警告ゼロを CI で強制）。TS: **Biome**（lint と format を 1 ツールで）。コミットは Conventional Commits | 判断 L1 |
-| テスト | `cargo test`、VT 互換テスト（vttest / esctest 相当）を厚く。UI コンポーネント単体は Vitest + Playwright。E2E は **`tauri-driver`（WebDriver）で最小限**（起動、タブ、設定変更、mod 有効化） | 判断 L2 |
+| テスト | **自動テストはリポジトリに入れない**。動作はアプリを動かして確かめる（vttest、主要 TUI アプリの手動確認）。CI は静的検査（fmt、clippy、Biome、型検査）と辞書・翻訳の検証のみ | 判断 L2 |
 | CLI ↔ GUI 通信 | OS ネイティブ IPC（名前付きパイプ / Unix ソケット）+ 起動ごとのトークン | 判断 K6。[06-config-keybind.md](06-config-keybind.md) §4 |
 | 公式 mod の配置 | 同梱 mod は本体モノレポ内 `mods/`。別配布の公式 mod（SSH、Docker 等）は別リポジトリ `otterm-mods` | 判断 L6 |
 

@@ -44,31 +44,3 @@ pub fn parse(args: impl IntoIterator<Item = String>) -> Launch {
     }
     launch
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn args(a: &[&str]) -> Vec<String> {
-        a.iter().map(|s| s.to_string()).collect()
-    }
-
-    #[test]
-    fn path_command_and_config() {
-        let dir = std::env::temp_dir();
-        let l = parse(args(&[dir.to_str().unwrap(), "--config", "x.toml", "-e", "vim", "-u", "NONE"]));
-        let cwd = l.cwd.unwrap();
-        assert!(cwd.is_dir() && cwd.is_absolute());
-        assert!(!cwd.to_string_lossy().starts_with(r"\\?\"), "no verbatim prefix: {cwd:?}");
-        assert_eq!(l.config, Some(PathBuf::from("x.toml")));
-        assert_eq!(l.command, Some(args(&["vim", "-u", "NONE"])));
-        assert!(l.unknown.is_empty());
-    }
-
-    #[test]
-    fn unknown_things_are_reported() {
-        let l = parse(args(&["--nope", "/no/such/dir/at/all"]));
-        assert_eq!(l.unknown, args(&["--nope", "/no/such/dir/at/all"]));
-        assert_eq!(parse(args(&["-e"])).command, None);
-    }
-}

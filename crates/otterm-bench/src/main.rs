@@ -279,17 +279,3 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 fn contains(haystack: &[u8], needle: &[u8]) -> bool {
     find(haystack, needle).is_some()
 }
-
-#[cfg(test)]
-mod tests {
-    use super::percentile;
-
-    #[test]
-    fn nearest_rank_percentiles() {
-        let v: Vec<f64> = (1..=100).map(f64::from).collect();
-        assert_eq!(percentile(&v, 0.5), 50.0);
-        assert_eq!(percentile(&v, 0.99), 99.0);
-        assert_eq!(percentile(&v, 1.0), 100.0);
-        assert_eq!(percentile(&[7.0], 0.99), 7.0);
-    }
-}

@@ -93,31 +93,3 @@ fn new_token() -> std::io::Result<String> {
     getrandom::fill(&mut bytes).map_err(|e| std::io::Error::other(e.to_string()))?;
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::time::Duration;
-
-    #[test]
-    fn rejects_a_wrong_token_and_delivers_frames_to_the_right_one() {
-        let server = ScreenServer::start().unwrap();
-        let bad = tungstenite::connect(format!("ws://127.0.0.1:{}/?token=nope", server.port()));
-        assert!(bad.is_err(), "wrong token must be refused");
-
-        let (mut ws, _) =
-            tungstenite::connect(format!("ws://127.0.0.1:{}/?token={}", server.port(), server.token())).unwrap();
-        // Wait until the server registered the client.
-        for _ in 0..100 {
-            if !server.clients.lock().unwrap().is_empty() {
-                break;
-            }
-            thread::sleep(Duration::from_millis(10));
-        }
-        server.broadcast(vec![1, 2, 3]);
-        match ws.read().unwrap() {
-            Message::Binary(b) => assert_eq!(&b[..], &[1, 2, 3]),
-            other => panic!("unexpected {other:?}"),
-        }
-    }
-}

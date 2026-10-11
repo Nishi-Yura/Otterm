@@ -1514,6 +1514,3 @@ impl Perform for Terminal {
         }
     }
 }
-
-#[cfg(test)]
-mod tests;

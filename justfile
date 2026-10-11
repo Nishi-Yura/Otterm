@@ -14,7 +14,7 @@ setup:
     node scripts/fetch-conpty.js
 
 # Everything CI runs. The UI is built first because the app embeds packages/ui/dist at compile time.
-check: fmt-check build-ui lint typecheck test validate
+check: fmt-check build-ui lint typecheck validate
 
 # Run the app with hot reload.
 dev:
@@ -36,10 +36,6 @@ lint:
 
 typecheck:
     pnpm typecheck
-
-test:
-    cargo test --workspace
-    pnpm test
 
 # Run benchmarks (tests/bench/README.md). Example: just bench --suite pty --quick
 bench *ARGS:

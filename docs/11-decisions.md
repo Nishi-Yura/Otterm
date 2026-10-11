@@ -673,9 +673,10 @@ A〜H を決定した後に見つかった事項。同日に推奨どおり決�
 
 ### L2. E2E テストの基盤
 - 選択肢: `tauri-driver`（WebDriver） / Playwright で WebView を直接 / 独自ハーネス
-- 決定（2026-10-10、推奨どおり）: Rust 側のユニットテストと VT 準拠テストを厚くし、E2E は **`tauri-driver` で最小限**（起動、タブ、設定変更、mod の有効化）。Playwright は UI コンポーネント単体のテストに使う
-- 影響: 02 §1.2
-- 時期: M0
+- 決定（2026-10-10、推奨どおり）: Rust 側のユニットテストと VT 準拠テストを厚くし、E2E は `tauri-driver` で最小限。Playwright は UI コンポーネント単体のテストに使う
+- 改定（2026-10-11、ユーザー指示）: **自動テストはリポジトリに入れない**。Rust の `#[test]`、Vitest、E2E はすべて持たない（既存分も削除した）。動作は実際にアプリを動かして確かめる（vttest、vim / htop / lazygit などの手動確認を含む）。CI に残すのは fmt、clippy、Biome、型検査、辞書と翻訳の検証、ベンチの試走
+- 影響: 02 §1.2、03 §2.1、07、10 §8、README
+- 時期: 決定済み
 
 ### L3. ドキュメントサイトのツール
 - 選択肢: Starlight（Astro） / VitePress / Docusaurus

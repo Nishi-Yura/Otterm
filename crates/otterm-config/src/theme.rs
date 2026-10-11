@@ -119,22 +119,3 @@ fn file_name(p: &Path) -> String {
 pub fn find_theme<'a>(themes: &'a [Theme], name: &str) -> Option<&'a Theme> {
     themes.iter().find(|t| t.name.eq_ignore_ascii_case(name))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn bundled_themes_parse_and_include_the_defaults() {
-        let themes = bundled_themes();
-        assert!(find_theme(&themes, "otterm dark").is_some());
-        assert_eq!(find_theme(&themes, "otterm Light").unwrap().appearance, ThemeAppearance::Light);
-        assert!(themes.len() >= 10);
-    }
-
-    #[test]
-    fn bad_colors_are_rejected() {
-        let text = include_str!("../themes/nord.toml").replace("#bf616a", "red");
-        assert!(parse_theme(&text).unwrap_err().contains("red"));
-    }
-}
