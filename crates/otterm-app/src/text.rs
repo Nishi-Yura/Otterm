@@ -153,8 +153,6 @@ fn put_bitmap(out: &mut Vec<u8>, bitmap: Option<&Bitmap>) {
 pub struct RunRequest {
     pub families: Vec<String>,
     pub size_px: f32,
-    /// The renderer's cell width in pixels; bitmaps are placed relative to cells.
-    pub cell_width: f32,
     pub items: Vec<GlyphItem>,
 }
 
@@ -165,8 +163,7 @@ pub fn runs(req: &RunRequest) -> Result<Vec<u8>, String> {
         let mut out = Vec::with_capacity(req.items.len() * 2000);
         for item in &req.items {
             let style = Style { bold: item.bold, italic: item.italic };
-            let groups =
-                if item.text.len() <= MAX_RUN { r.render_run(&item.text, style, req.cell_width) } else { Vec::new() };
+            let groups = if item.text.len() <= MAX_RUN { r.render_run(&item.text, style) } else { Vec::new() };
             out.extend_from_slice(&(groups.len() as u16).to_le_bytes());
             for g in &groups {
                 out.extend_from_slice(&(g.start as u16).to_le_bytes());

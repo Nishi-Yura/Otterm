@@ -165,7 +165,6 @@ export class GlyphAtlas {
       runs = await textRuns(
         this.font.families,
         this.font.size * this.dpr,
-        this.metrics.cellWidth,
         batch.map((b) => b.item),
       );
     } catch (e) {

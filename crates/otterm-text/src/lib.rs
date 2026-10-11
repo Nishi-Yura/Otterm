@@ -177,10 +177,10 @@ impl Rasterizer {
     }
 
     /// Shape a run of cells as one piece of text, so the font can join `->`, `!=` and the like
-    /// into ligatures. `cell_width` is the renderer's cell in pixels. Each group of the result is
-    /// one glyph (or a base with its marks) and the characters it covers; its bitmap is placed
-    /// relative to the first of those characters' cells.
-    pub fn render_run(&mut self, text: &str, style: Style, cell_width: f32) -> Vec<RunGroup> {
+    /// into ligatures. Each group of the result is one glyph (or a base with its marks) and the
+    /// characters it covers; its bitmap is placed relative to the first of those characters'
+    /// cells.
+    pub fn render_run(&mut self, text: &str, style: Style) -> Vec<RunGroup> {
         let set = Arc::clone(&self.set);
         let chars = text.chars().count();
         // Ligatures live in one font: the primary family must have every character; otherwise
@@ -200,8 +200,10 @@ impl Rasterizer {
                 starts.push((i, g.cluster));
             }
         }
-        // Each image re-based on its own cell, which is the cell of the group it belongs to.
-        let images = self.rasterize(family, style, &shaped, |g| (g.cluster as f32 * cell_width).round());
+        // Each image re-based on its own cell. In a monospace font the pen reaches a cluster at
+        // its index times the advance; the renderer's rounded cell width would drift along a run.
+        let advance = self.metrics().advance;
+        let images = self.rasterize(family, style, &shaped, |g| g.cluster as f32 * advance);
         let mut out = Vec::with_capacity(starts.len());
         for (k, &(first, cluster)) in starts.iter().enumerate() {
             let next_glyph = starts.get(k + 1).map_or(shaped.glyphs.len(), |&(i, _)| i);

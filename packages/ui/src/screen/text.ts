@@ -38,13 +38,8 @@ export interface RunGroup {
 }
 
 /** Runs of cells shaped as one piece each (ligatures). Bitmaps are relative to the group's first cell. */
-export async function textRuns(
-  families: string[],
-  sizePx: number,
-  cellWidth: number,
-  items: GlyphItem[],
-): Promise<RunGroup[][]> {
-  const buf = await invoke<ArrayBuffer>("text_runs", { req: { families, sizePx, cellWidth, items } });
+export async function textRuns(families: string[], sizePx: number, items: GlyphItem[]): Promise<RunGroup[][]> {
+  const buf = await invoke<ArrayBuffer>("text_runs", { req: { families, sizePx, items } });
   const v = new DataView(buf);
   const out: RunGroup[][] = [];
   let p = 0;
