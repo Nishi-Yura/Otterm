@@ -18,6 +18,7 @@
 # family = ["Cascadia Mono"]   # 空なら OS の既定 / empty: the platform default
 # size = 14
 # line_height = 1.2
+# letter_spacing = 0          # 文字の間隔（px、-2〜4）/ pixels between characters
 
 [terminal]
 # scrollback = 10000

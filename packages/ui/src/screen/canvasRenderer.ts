@@ -10,6 +10,8 @@ export interface FontConfig {
   /** CSS pixels (decision I9). */
   size: number;
   lineHeight: number;
+  /** Extra space between cells in CSS pixels (may be negative). */
+  letterSpacing: number;
   weight: number;
   weightBold: number;
 }
@@ -19,6 +21,7 @@ export const DEFAULT_FONT: FontConfig = {
   family: '"Cascadia Mono", "SF Mono", Menlo, "DejaVu Sans Mono", "BIZ UDGothic", "Noto Sans Mono CJK JP", monospace',
   size: 14,
   lineHeight: 1.2,
+  letterSpacing: 0,
   weight: 400,
   weightBold: 700,
 };
@@ -36,6 +39,8 @@ export class CanvasRenderer {
   cellWidth = 0;
   cellHeight = 0;
   private baseline = 0;
+  /** Device pixels from a cell's left edge to its glyph (half the letter spacing). */
+  private glyphOffset = 0;
   private scheduled = false;
   focused = true;
   selection: Selection | undefined;
@@ -85,7 +90,10 @@ export class CanvasRenderer {
     this.dpr = window.devicePixelRatio || 1;
     this.ctx.font = this.fontFor(0);
     const m = this.ctx.measureText("M");
-    this.cellWidth = Math.max(1, Math.round(m.width));
+    const spacing = this.font.letterSpacing * this.dpr;
+    this.cellWidth = Math.max(1, Math.round(m.width + spacing));
+    // Glyphs sit in the middle of the space they gained or lost.
+    this.glyphOffset = Math.round(spacing / 2);
     this.cellHeight = Math.max(1, Math.round(this.font.size * this.font.lineHeight * this.dpr));
     const ascent = m.fontBoundingBoxAscent || this.font.size * this.dpr * 0.8;
     const descent = m.fontBoundingBoxDescent || this.font.size * this.dpr * 0.2;
@@ -213,7 +221,7 @@ export class CanvasRenderer {
         ctx.font = this.fontFor(attr.flags);
         ctx.fillStyle = fg;
         ctx.globalAlpha = attr.flags & Flags.DIM ? 0.6 : 1;
-        ctx.fillText(text, x, y + this.baseline);
+        ctx.fillText(text, x + this.glyphOffset, y + this.baseline);
         ctx.globalAlpha = 1;
       }
 
@@ -302,7 +310,11 @@ export class CanvasRenderer {
       if (cp !== 32) {
         ctx.font = this.fontFor(attr.flags);
         ctx.fillStyle = this.palette.theme.background;
-        ctx.fillText(String.fromCodePoint(cp) + (line?.extras.get(m.cursorCol) ?? ""), x, y + this.baseline);
+        ctx.fillText(
+          String.fromCodePoint(cp) + (line?.extras.get(m.cursorCol) ?? ""),
+          x + this.glyphOffset,
+          y + this.baseline,
+        );
       }
     }
   }

@@ -9,6 +9,7 @@ export interface UiConfig {
     family: string;
     size: number;
     lineHeight: number;
+    letterSpacing: number;
     weight: number;
     weightBold: number;
   };

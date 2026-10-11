@@ -66,6 +66,8 @@ pub struct UiFont {
     pub family: String,
     pub size: f32,
     pub line_height: f32,
+    /// CSS pixels between cells (FR-LOOK-02).
+    pub letter_spacing: f32,
     pub weight: u16,
     pub weight_bold: u16,
 }
@@ -121,6 +123,7 @@ impl ConfigState {
                 family: font_family(c),
                 size: c.font.size.clamp(6.0, 72.0),
                 line_height: c.font.line_height.clamp(0.8, 2.0),
+                letter_spacing: c.font.letter_spacing.clamp(-2.0, 4.0),
                 weight: c.font.weight,
                 weight_bold: c.font.weight_bold,
             },
