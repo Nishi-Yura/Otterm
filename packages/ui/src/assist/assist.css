@@ -6,24 +6,22 @@
   flex-direction: column;
   gap: 6px;
   padding: 6px 10px;
-  border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
-  background: var(--ot-assist-bg, color-mix(in srgb, var(--bg) 94%, #fff));
-  color: var(--fg);
-  font:
-    12.5px system-ui,
-    sans-serif;
+  border-top: 1px solid var(--ot-border);
+  background: var(--ot-assist-bg, color-mix(in srgb, var(--ot-bg) 94%, var(--ot-fg) 6%));
+  color: var(--ot-fg);
+  font: 12.5px var(--ot-font-ui);
 }
 
 .assist-explain {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  color: var(--muted);
+  color: var(--ot-fg-muted);
   white-space: pre-wrap;
 }
 
 .assist-explain.danger {
-  color: var(--ot-danger, var(--ot-term-ansi-1, #e5484d));
+  color: var(--ot-danger);
 }
 
 .assist-danger-mark {
@@ -32,9 +30,9 @@
 
 .assist-card {
   padding: 8px 10px;
-  border-left: 3px solid var(--ot-danger, var(--ot-term-ansi-1, #e5484d));
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--ot-danger, #e5484d) 8%, transparent);
+  border-left: 3px solid var(--ot-danger);
+  border-radius: var(--ot-radius);
+  background: color-mix(in srgb, var(--ot-danger) 8%, transparent);
 }
 
 .assist-card-head {
@@ -49,7 +47,7 @@
 
 .assist-card-command {
   overflow: hidden;
-  color: var(--muted);
+  color: var(--ot-fg-muted);
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -60,7 +58,7 @@
   padding: 0 4px;
   border: 0;
   background: transparent;
-  color: var(--muted);
+  color: var(--ot-fg-muted);
   font-size: 15px;
   cursor: pointer;
 }
@@ -88,14 +86,12 @@
   max-width: min(560px, 90%);
   max-height: 240px;
   padding: 4px;
-  border: 1px solid color-mix(in srgb, var(--fg) 15%, transparent);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--bg) 90%, #808080);
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.4);
-  color: var(--fg);
-  font:
-    12.5px system-ui,
-    sans-serif;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: var(--ot-bg-elevated);
+  box-shadow: var(--ot-shadow);
+  color: var(--ot-fg);
+  font: 12.5px var(--ot-font-ui);
   overflow: auto;
 }
 
@@ -109,12 +105,12 @@
 }
 
 .completion-item.selected {
-  background: color-mix(in srgb, var(--ot-accent, #4f8cff) 30%, transparent);
+  background: color-mix(in srgb, var(--ot-accent) 30%, transparent);
 }
 
 .completion-kind {
   width: 1em;
-  color: var(--muted);
+  color: var(--ot-fg-muted);
   text-align: center;
 }
 
@@ -124,7 +120,7 @@
 
 .completion-detail {
   overflow: hidden;
-  color: var(--muted);
+  color: var(--ot-fg-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -146,26 +142,23 @@
   flex-direction: column;
   width: min(640px, calc(100% - 32px));
   max-height: 70vh;
-  border: 1px solid color-mix(in srgb, var(--fg) 15%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--bg) 92%, #fff);
-  box-shadow: 0 12px 40px rgb(0 0 0 / 0.5);
-  color: var(--fg);
-  font:
-    13px system-ui,
-    sans-serif;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: var(--ot-bg-elevated);
+  box-shadow: var(--ot-shadow);
+  color: var(--ot-fg);
+  font: 13px var(--ot-font-ui);
   overflow: hidden;
 }
 
 .palette-input {
   padding: 10px 12px;
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  border-bottom: 1px solid var(--ot-border);
   background: transparent;
-  color: var(--fg);
+  color: var(--ot-fg);
   font: inherit;
   font-size: 15px;
-  outline: none;
 }
 
 .palette-chips,
@@ -174,31 +167,31 @@
   flex-wrap: wrap;
   gap: 6px;
   padding: 6px 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
-  color: var(--muted);
+  border-bottom: 1px solid color-mix(in srgb, var(--ot-fg) 8%, transparent);
+  color: var(--ot-fg-muted);
   font-size: 11.5px;
 }
 
 .palette-chip {
   padding: 2px 8px;
-  border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ot-fg) 20%, transparent);
   border-radius: 10px;
   background: transparent;
-  color: var(--fg);
+  color: var(--ot-fg);
   font: inherit;
   cursor: pointer;
 }
 
 .palette-chip.on {
   border-color: transparent;
-  background: var(--ot-accent, #4f8cff);
+  background: var(--ot-accent);
   color: #fff;
 }
 
 .palette-prefix code {
   padding: 0 4px;
   border-radius: 3px;
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  background: color-mix(in srgb, var(--ot-fg) 10%, transparent);
 }
 
 .palette-list {
@@ -217,7 +210,7 @@
 }
 
 .palette-item.selected {
-  background: color-mix(in srgb, var(--ot-accent, #4f8cff) 25%, transparent);
+  background: color-mix(in srgb, var(--ot-accent) 25%, transparent);
 }
 
 .palette-main {
@@ -235,14 +228,14 @@
 
 .palette-desc,
 .palette-hint {
-  color: var(--muted);
+  color: var(--ot-fg-muted);
   font-size: 11.5px;
   white-space: nowrap;
 }
 
 .palette-empty {
   padding: 12px;
-  color: var(--muted);
+  color: var(--ot-fg-muted);
 }
 
 /* Multi-line editor (Shift+Enter). */
@@ -252,12 +245,10 @@
   flex-direction: column;
   gap: 4px;
   padding: 6px 10px;
-  border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
-  background: color-mix(in srgb, var(--bg) 94%, #fff);
-  color: var(--fg);
-  font:
-    12.5px system-ui,
-    sans-serif;
+  border-top: 1px solid var(--ot-border);
+  background: color-mix(in srgb, var(--ot-bg) 94%, var(--ot-fg) 6%);
+  color: var(--ot-fg);
+  font: 12.5px var(--ot-font-ui);
 }
 
 .multiline-head,
@@ -269,19 +260,19 @@
 
 .multiline .muted,
 .multiline-problems {
-  color: var(--muted);
+  color: var(--ot-fg-muted);
 }
 
 .multiline-problems:not(:empty) {
-  color: var(--ot-warning, var(--ot-term-ansi-3, #f0c674));
+  color: var(--ot-warning);
 }
 
 .multiline-area {
   padding: 6px 8px;
-  border: 1px solid color-mix(in srgb, var(--fg) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ot-fg) 25%, transparent);
   border-radius: 4px;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--ot-bg);
+  color: var(--ot-fg);
   font: 13px var(--ot-prompt-font, monospace);
   resize: vertical;
 }

@@ -80,6 +80,7 @@ export function SearchBar(props: SearchBarProps) {
       class="search-toggle"
       aria-pressed={opts()[p.key]}
       title={p.title}
+      aria-label={p.title}
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => toggle(p.key)}
     >
@@ -92,6 +93,7 @@ export function SearchBar(props: SearchBarProps) {
       <input
         ref={input}
         class="search-input"
+        data-ot="search-input"
         classList={{ invalid: error() !== undefined }}
         aria-label={t("search-label")}
         placeholder={t("search-placeholder")}
@@ -109,13 +111,31 @@ export function SearchBar(props: SearchBarProps) {
       <span class="search-count" title={error()} data-state={error() ? "invalid" : undefined}>
         {error() ? "!" : query() ? `${count() === 0 ? 0 : index()}/${count()}` : ""}
       </span>
-      <button type="button" class="search-step" title={t("search-older")} onClick={() => step(-1)}>
+      <button
+        type="button"
+        class="search-step"
+        title={t("search-older")}
+        aria-label={t("search-older")}
+        onClick={() => step(-1)}
+      >
         ↑
       </button>
-      <button type="button" class="search-step" title={t("search-newer")} onClick={() => step(1)}>
+      <button
+        type="button"
+        class="search-step"
+        title={t("search-newer")}
+        aria-label={t("search-newer")}
+        onClick={() => step(1)}
+      >
         ↓
       </button>
-      <button type="button" class="search-step" title={t("search-close")} onClick={() => props.close()}>
+      <button
+        type="button"
+        class="search-step"
+        title={t("search-close")}
+        aria-label={t("search-close")}
+        onClick={() => props.close()}
+      >
         ×
       </button>
     </search>

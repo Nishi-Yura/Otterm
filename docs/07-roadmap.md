@@ -62,7 +62,7 @@
   - 済み（Rust）: `otterm-modhost`（`otmod.toml` の読み込みと検証、`${cwd}` などのパス変数と glob、権限ブローカー: `fs.read` / `fs.write` の glob と保護リスト（判断 K8）、`process` の実行ファイル名、`network` のホスト照合、子プロセスの実行、`ctx.storage` の 10 MB KV、承認の保存（`mods/permissions.json`、判断 D5）、インストール（コピー／リンク、判断 K7）、`config.toml` の `[mods] enabled / disabled` と `[mods.settings]` の書き換え（toml_edit））。アプリ側の Tauri コマンド（`mods_list`、`mod_source`、`mod_grant`、`mod_set_enabled`、`mod_install`、`mod_fs`、`mod_process_run`、`mod_http_fetch`（ureq）、`mod_storage`、`mod_setting_set`、`mod_log`）、`mods/` の監視（追加・削除・リンク先の `dist/main.js` の更新で `mods-changed`）、CLI `otterm mod list | install <path> [--link] | link | remove | enable | disable | doctor`
   - 済み（UI）: mod ごとの Web Worker + QuickJS（WASM、`quickjs-emscripten-core`。メモリ 64 MB、コールバック 1 回 5 秒で割り込み、判断 C2）、サンドボックス内 SDK（`packages/ui/src/mods/sdk.js`。権限のない名前空間は `ctx` に存在しない）、タイマー 4 関数のみ（判断 M1、deactivate で全停止）、宣言的 UI の 18 種のレンダラ（`render.tsx`。Reactive と Signal はサンドボックス側で解決し、関数は id に置き換えて postMessage）、Slot `statusbar.left/right` とステータスバー（フォルダ、直前の終了コード、mod の状態）、`sidebar.left/right` と `panel.bottom` のパネル、`ctx.ui.toast / dialog / contextMenu`、コマンドとキーの提案（ユーザー設定が優先）、イベント（session-created/closed、cwd-changed、focus-changed、title-changed、block-start/end）、権限の承認画面（05 §6.2）、`terminal.write` と `clipboard.read` の初回使用時の確認（判断 D5）、クラッシュ隔離（例外・5 秒無応答で deactivated、3 回で無効化）、開発者モード（`[mods] developer_mode`: mod 一覧パネルにログと API 呼び出しの回数・時間）、`<データ>/logs/mods.log`、リンクした mod のホットリロード
   - 済み（テンプレ）: `create-otterm-mod`（対話で kind、extension は TypeScript + esbuild、`pnpm dev` = ビルド監視 + `mods/` へのリンク、theme テンプレ）。Windows の開発機で Git Status Bar をテンプレから作り、ブランチと変更数がステータスバーに出ることを確認した（activate 44 ms。QuickJS の起動を含む。判断 C2 の「50 ms 程度」のとおり）
-  - 残り: `ctx.ui.pickPath`、`ctx.fs.watch`、`ctx.process.spawn`、`ctx.terminal.screen / blocks / selection`（呼ぶと「まだ使えない」で reject）、`input-changed` / `before-execute`（入力行の取得は M4）、ワークスペース内 `.otterm/mods/`（信頼モデル K4 と一緒に）、`custom`（iframe）の `otmod:` スキーム、設定画面での mod 設定フォーム（設定画面自体が M5）、署名検証とレジストリ（M6）、macOS / Linux での確認、`otterm mod` の Windows リリースビルドでの標準出力（GUI サブシステムのためコンソールに出ない）
+  - 残り: `ctx.ui.pickPath`、`ctx.fs.watch`、`ctx.process.spawn`、`ctx.terminal.screen / blocks / selection`（呼ぶと「まだ使えない」で reject）、`input-changed` / `before-execute`（入力行の取得は M4）、ワークスペース内 `.otterm/mods/`（信頼モデル K4 と一緒に）、`custom`（iframe）の `otmod:` スキーム、設定画面での mod 設定フォーム（M5 で済み）、署名検証とレジストリ（M6）、macOS / Linux での確認、`otterm mod` の Windows リリースビルドでの標準出力（GUI サブシステムのためコンソールに出ない）
 
 ### M4: 同梱 mod と初心者体験（目安 8〜10 週）
 
@@ -95,6 +95,14 @@
 - 透過・ぼかし・背景画像、フォント設定画面
 - アクセシビリティ（スクリーンリーダー、キーボード完結）
 - **完了条件**: 設定ファイルを一切書かずに、見た目を別物にできる
+- 進み具合（2026-10-11）:
+  - 済み（設定画面）: `Ctrl+,` で開く全画面の設定（04 §6）。左にカテゴリ 13 個、上に横断検索。フォームは `schemars` の JSON Schema から生成（判断 C6）し、`Auto<T>`・`Option<T>`・列挙・範囲付き数値（スライダー）・文字列リスト・マップ・`[[profiles]]` を扱う。変更はその場で `config.toml` に書き戻し（toml_edit、判断 M15）、すぐ反映。手で書いた項目には「既定に戻す」。ラベルと説明は Fluent（`set-*`、`setv-*`）
+  - 済み（見た目）: UI トークン（`--ot-bg` など 12 個。テーマの `[theme.ui]` がなければターミナル色から導く）と全 CSS のトークン化、安定した `data-ot` 属性、テーマの CSS（`[theme.css] file / text`）と `<設定>/user.css`（設定画面で編集すると入力中から反映）、テーマギャラリー（15 種。Catppuccin Frappé / Macchiato を追加）、テーマのライブ編集（ターミナル 20 色・UI トークン・CSS。保存でユーザーテーマ、「mod として書き出す」で theme mod のフォルダ）、配色のインポート（iTerm2・Windows Terminal・VS Code・Alacritty（TOML / YAML）・WezTerm。設定画面と `otterm theme import <file>`）、theme kind の mod の読み込み（判断 M15）
+  - 済み（レイアウト）: プリセット 5 種（minimal / classic / guided / ide / cards）と `auto` の解決（`appearance.tabbar.position`・`statusbar.visible`・`assist_bar`・`blocks` を `Auto` に）、「今の配置を保存」（`<設定>/layouts/*.toml`）、パネルのタブをドラッグして左右・下の Slot へ移す（`appearance.panels`）と設定画面での置き場所選択、`cards` のブロック表示（M2 の残り）、パネルの表示切替キー（判断 M12）
+  - 済み（ウィンドウ）: 不透明度・ぼかし・背景画像（配置 4 種と濃さ。画像は設定画面で選ぶと `<設定>/backgrounds/` にコピー）、テーマの `[theme.window]`（判断 M14）、UI の拡大率（`zoom`、ターミナルの文字は別）、フォント画面（見本の行、インストール済みフォントの候補）
+  - 済み（アクセシビリティ）: スクリーンリーダー向けのライブリージョン（`accessibility.screen_reader`。出力が止まったら新しい行を読む）、フォーカスリング、動きを減らす（OS 追従か `accessibility.reduce_motion`）、OS のハイコントラストで High Contrast テーマへ自動切替（`accessibility.high_contrast`、判断 I15）、`F6` の領域移動、キーバインド画面（記録・解除・競合の赤表示）
+  - 確認済み（Windows、開発機）: 設定画面からテーマを替える（即時反映と `config.toml` への書き込み）、レイアウト `cards`、背景画像、不透明度、フォント画面、キーバインド画面、テーマエディタのライブプレビュー
+  - 残り: ガターのホバーボタン（M2 の残り）、ステータスバー項目の並べ替え、セーフモード（M6）、macOS / Linux での透過とぼかしの確認、色覚多様性のための失敗ブロックのアイコン（判断 I15 の残り）
 
 ### M5.5: AI 補助（目安 4〜6 週、M5 と並行可）
 

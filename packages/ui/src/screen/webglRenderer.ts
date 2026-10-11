@@ -211,7 +211,8 @@ export class WebGLRenderer implements Renderer {
     private font: FontConfig = DEFAULT_FONT,
   ) {
     const gl = canvas.getContext("webgl2", {
-      alpha: false,
+      // A translucent default background (window opacity, a background image) needs the alpha.
+      alpha: true,
       antialias: false,
       depth: false,
       stencil: false,
@@ -441,6 +442,11 @@ export class WebGLRenderer implements Renderer {
     }
   }
 
+  /** The default background's alpha, 0–255. */
+  private backgroundAlpha(): number {
+    return Math.round(Math.min(1, Math.max(0, this.palette.theme.backgroundAlpha ?? 1)) * 255);
+  }
+
   /** `#rrggbb` as RGBA8 in memory order (little-endian u32), with an alpha. */
   private rgba(color: string, alpha = 255): number {
     let c = this.colors.get(color);
@@ -464,7 +470,7 @@ export class WebGLRenderer implements Renderer {
     const { cellWidth: cw, cellHeight: ch } = this.metrics;
     const theme = this.palette.theme;
     const base = row * cols;
-    const background = this.rgba(theme.background);
+    const background = this.rgba(theme.background, this.backgroundAlpha());
     if (!line) {
       this.bg.fill(background, base, base + cols);
       return;
@@ -492,7 +498,7 @@ export class WebGLRenderer implements Renderer {
         }
       }
       if (selected && col >= selected[0] && col < selected[1]) bg = theme.selection;
-      const bgColor = this.rgba(bg);
+      const bgColor = bg === theme.background ? background : this.rgba(bg);
       this.bg[base + col] = bgColor;
       if (span === 2 && col + 1 < cols) this.bg[base + col + 1] = bgColor;
       const x = col * cw;
@@ -631,7 +637,8 @@ export class WebGLRenderer implements Renderer {
     const height = this.canvas.height;
     gl.viewport(0, 0, width, height);
     const bgc = this.rgba(theme.background);
-    gl.clearColor((bgc & 255) / 255, ((bgc >> 8) & 255) / 255, ((bgc >> 16) & 255) / 255, 1);
+    const a = this.backgroundAlpha() / 255;
+    gl.clearColor(((bgc & 255) / 255) * a, (((bgc >> 8) & 255) / 255) * a, (((bgc >> 16) & 255) / 255) * a, a);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     // Gather the rows; the glyph under a block cursor takes the background color.

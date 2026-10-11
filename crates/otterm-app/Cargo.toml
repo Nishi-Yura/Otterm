@@ -30,7 +30,9 @@ otterm-session.workspace = true
 otterm-text.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-tauri.workspace = true
+schemars.workspace = true
+# A transparent window (appearance.window.opacity, docs/04 §2.1) needs the private API on macOS.
+tauri = { workspace = true, features = ["macos-private-api"] }
 tungstenite.workspace = true
 
 [features]

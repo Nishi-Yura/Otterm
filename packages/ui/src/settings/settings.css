@@ -1,0 +1,481 @@
+/* The settings screen (docs/04 §6). Tokens only, so every theme (and its live edit) applies. */
+.settings {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  background: var(--ot-bg);
+  color: var(--ot-fg);
+  font: 13px var(--ot-font-ui);
+}
+
+.settings-nav {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  width: 190px;
+  padding: 16px 8px;
+  overflow-y: auto;
+  border-right: 1px solid var(--ot-border);
+  background: var(--ot-bg-elevated);
+}
+
+.settings-heading {
+  padding: 4px 10px 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.settings .settings-cat {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--ot-radius);
+  background: none;
+  color: var(--ot-fg-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings .settings-cat:hover {
+  background: color-mix(in srgb, var(--ot-fg) 6%, transparent);
+  color: var(--ot-fg);
+}
+
+.settings .settings-cat[aria-current="page"] {
+  background: color-mix(in srgb, var(--ot-accent) 18%, transparent);
+  color: var(--ot-fg);
+}
+
+.settings-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--ot-border);
+}
+
+.settings-search {
+  flex: 1;
+  max-width: 480px;
+}
+
+.settings .settings-close {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--ot-radius);
+  background: none;
+  color: var(--ot-fg-muted);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.settings-close:hover {
+  background: color-mix(in srgb, var(--ot-fg) 8%, transparent);
+  color: var(--ot-fg);
+}
+
+.settings-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 28px 48px;
+}
+
+.settings-body > * {
+  max-width: 860px;
+}
+
+.settings-title {
+  margin: 12px 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.settings-section h3,
+.theme-editor h4 {
+  margin: 20px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings-group {
+  margin: 14px 0;
+  padding: 4px 14px 8px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+}
+
+.settings-group.nested {
+  margin: 10px 0;
+  border-style: dashed;
+}
+
+.settings-group > legend {
+  padding: 0 6px;
+  color: var(--ot-fg-muted);
+  font-weight: 600;
+}
+
+.settings-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ot-border) 60%, transparent);
+}
+
+.settings-row:last-child {
+  border-bottom: 0;
+}
+
+.settings-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-desc {
+  margin-top: 2px;
+  color: var(--ot-fg-muted);
+  font-size: 12px;
+}
+
+.settings-control {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  align-items: center;
+  max-width: 55%;
+}
+
+.settings input[type="text"],
+.settings input[type="search"],
+.settings input[type="number"],
+.settings select,
+.settings textarea {
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: color-mix(in srgb, var(--ot-bg) 80%, var(--ot-fg) 6%);
+  color: var(--ot-fg);
+  font: inherit;
+}
+
+.settings input[type="number"] {
+  width: 90px;
+}
+
+.settings input[type="color"] {
+  width: 32px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--ot-border);
+  border-radius: 4px;
+  background: none;
+}
+
+.settings-switch {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ot-accent);
+}
+
+.settings-number,
+.settings-text {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-inline {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--ot-fg-muted);
+}
+
+.settings button,
+.settings-small {
+  padding: 5px 12px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: var(--ot-bg-elevated);
+  color: var(--ot-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings button:hover:not(:disabled) {
+  border-color: var(--ot-accent);
+}
+
+.settings button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.settings button.primary {
+  border-color: var(--ot-accent);
+  background: var(--ot-accent);
+  color: var(--ot-bg);
+}
+
+.settings button.danger {
+  border-color: var(--ot-danger);
+  color: var(--ot-danger);
+}
+
+.settings .settings-small {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.settings-reset {
+  padding: 2px 6px !important;
+  color: var(--ot-fg-muted) !important;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.settings-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.settings-chip {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid var(--ot-border);
+  border-radius: 999px;
+}
+
+.settings-chip button {
+  padding: 0 4px !important;
+  border: 0 !important;
+  background: none !important;
+  color: var(--ot-fg-muted) !important;
+}
+
+.settings-map,
+.settings-objects {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-map-row {
+  display: flex;
+  gap: 4px;
+}
+
+.settings-raw,
+.mono {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+}
+
+.settings-result {
+  padding: 4px 0;
+}
+
+.settings-crumb {
+  color: var(--ot-fg-muted);
+  font-size: 11px;
+}
+
+.settings-code {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace !important;
+  font-size: 12px !important;
+}
+
+.settings-code.tall {
+  min-height: 220px;
+}
+
+.settings .muted {
+  color: var(--ot-fg-muted);
+}
+
+.settings-filter {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+/* Theme gallery */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.theme-card {
+  border: 2px solid transparent;
+  border-radius: calc(var(--ot-radius) + 2px);
+}
+
+.theme-card.selected {
+  border-color: var(--ot-accent);
+}
+
+.theme-swatch {
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  height: 74px;
+  padding: 10px !important;
+  border: 1px solid var(--ot-border) !important;
+  text-align: left;
+}
+
+.theme-name {
+  font-weight: 600;
+}
+
+.theme-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.theme-dots i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.theme-meta {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px;
+  font-size: 11px;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px 12px;
+  margin: 6px 0;
+}
+
+.color-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+
+/* Layouts */
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.layout-card {
+  display: flex !important;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  padding: 10px !important;
+  text-align: left;
+}
+
+.layout-card[aria-pressed="true"] {
+  border-color: var(--ot-accent) !important;
+  box-shadow: 0 0 0 1px var(--ot-accent);
+}
+
+.layout-card .muted {
+  font-size: 11px;
+}
+
+.layout-sketch {
+  width: 100%;
+  height: auto;
+}
+
+.layout-sketch .frame {
+  fill: var(--ot-bg);
+  stroke: var(--ot-border);
+}
+
+.layout-sketch .part {
+  fill: color-mix(in srgb, var(--ot-fg) 22%, transparent);
+}
+
+.layout-sketch .accent {
+  fill: var(--ot-accent);
+}
+
+.layout-sketch .card {
+  fill: none;
+  stroke: var(--ot-accent);
+  stroke-width: 0.8;
+}
+
+/* Fonts */
+.font-preview {
+  padding: 12px 14px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Key bindings */
+.keys-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.keys-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ot-border) 60%, transparent);
+  vertical-align: middle;
+}
+
+.keys-table tr.conflict td {
+  background: color-mix(in srgb, var(--ot-danger) 10%, transparent);
+}
+
+.keys-conflict {
+  color: var(--ot-danger);
+  font-size: 11px;
+}
+
+.keys-buttons {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.keys-record {
+  width: 160px;
+  border-color: var(--ot-accent) !important;
+}

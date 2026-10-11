@@ -40,7 +40,7 @@ export class CanvasRenderer implements Renderer {
     private readonly model: ScreenModel,
     private font: FontConfig = DEFAULT_FONT,
   ) {
-    const ctx = canvas.getContext("2d", { alpha: false });
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) throw new Error("2D canvas is not available");
     this.ctx = ctx;
     this.measure();
@@ -157,8 +157,11 @@ export class CanvasRenderer implements Renderer {
     const theme = this.palette.theme;
     const y = row * ch;
 
+    ctx.clearRect(0, y, this.model.cols * cw, ch);
+    ctx.globalAlpha = Math.min(1, Math.max(0, theme.backgroundAlpha ?? 1));
     ctx.fillStyle = theme.background;
     ctx.fillRect(0, y, this.model.cols * cw, ch);
+    ctx.globalAlpha = 1;
     const lineNo = this.model.lineAt(row);
     const selected = this.selection?.colsOn(this.model, lineNo);
     const found = this.highlights?.colsOn(lineNo, this.model.cols) ?? [];

@@ -152,6 +152,7 @@ export function PromptHeaders(props: {
               {(i) => (
                 <div
                   class={`prompt-header ${gutterState(h.block)}`}
+                  data-ot="prompt-header"
                   style={{
                     top: `${h.row * props.lineHeight}px`,
                     height: `${props.lineHeight}px`,

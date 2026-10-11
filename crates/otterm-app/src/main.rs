@@ -16,6 +16,7 @@ mod open;
 mod profiles;
 mod quote;
 mod screen;
+mod settings;
 mod shell;
 mod shell_history;
 mod text;
@@ -839,6 +840,7 @@ fn cli() -> bool {
     let result = match args.first().map(String::as_str) {
         Some("mod") => mods::cli(&args[1..]),
         Some("trash") => assist::trash_cli(&args[1..]),
+        Some("theme") => settings::cli(&args[1..]),
         _ => return false,
     };
     match result {
@@ -925,15 +927,21 @@ fn remember_window(window: &tauri::Window, event: &tauri::WindowEvent) {
 
 /// Tell the UI when `config.toml` changes.
 fn watch_config(app: &tauri::App) {
-    use tauri::{Emitter, Manager};
+    use tauri::Manager;
     let handle = app.handle().clone();
     let config = app.state::<AppState>().config;
-    ConfigState::watch(config, move |ui| {
-        // Options read while a session runs (the wheel on the alternate screen) follow at once.
-        let state = handle.state::<AppState>();
-        state.sessions.set_terminal_options(config::terminal_options(&state.config.config()));
-        let _ = handle.emit("config-changed", ui);
-    });
+    settings::apply_window_effects(&handle);
+    ConfigState::watch(config, move |_| config_changed(&handle));
+}
+
+/// After the configuration was (re)read: running sessions, the window and the UI follow.
+pub(crate) fn config_changed(app: &tauri::AppHandle) {
+    use tauri::{Emitter, Manager};
+    let state = app.state::<AppState>();
+    // Options read while a session runs (the wheel on the alternate screen) follow at once.
+    state.sessions.set_terminal_options(config::terminal_options(&state.config.config()));
+    settings::apply_window_effects(app);
+    let _ = app.emit("config-changed", state.config.ui());
 }
 
 #[cfg(not(feature = "bench"))]
@@ -1024,6 +1032,20 @@ fn main() {
             mods::config_set,
             history_query,
             history_delete,
+            settings::config_form,
+            settings::config_write,
+            settings::themes_list,
+            settings::theme_save,
+            settings::theme_delete,
+            settings::theme_import,
+            settings::theme_export_mod,
+            settings::layouts_list,
+            settings::layout_save,
+            settings::user_css_get,
+            settings::user_css_set,
+            settings::background_set,
+            settings::background_image_get,
+            settings::fonts_list,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run otterm");

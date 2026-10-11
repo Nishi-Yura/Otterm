@@ -22,8 +22,41 @@ pub struct Theme {
     pub appearance: ThemeAppearance,
     pub terminal: TerminalColors,
     /// UI tokens, exposed to CSS as `--ot-<key>` (docs/04 §2.2).
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub ui: BTreeMap<String, String>,
+    /// Window look the theme brings; used where `[appearance.window]` keeps its default.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub window: Option<ThemeWindow>,
+    /// Style overrides (docs/04 §2.3).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub css: Option<ThemeCss>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct ThemeWindow {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opacity: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blur: Option<bool>,
+    /// Relative to the theme file.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background_image: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background_fit: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub padding: Option<u32>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ThemeCss {
+    /// A CSS file next to the theme file; read into `text` when the theme loads.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub file: Option<String>,
+    /// The CSS itself.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
 }
 
 /// Colors as CSS hex strings.
@@ -51,6 +84,8 @@ const BUNDLED: &[&str] = &[
     include_str!("../themes/high-contrast.toml"),
     include_str!("../themes/catppuccin-mocha.toml"),
     include_str!("../themes/catppuccin-latte.toml"),
+    include_str!("../themes/catppuccin-frappe.toml"),
+    include_str!("../themes/catppuccin-macchiato.toml"),
     include_str!("../themes/dracula.toml"),
     include_str!("../themes/nord.toml"),
     include_str!("../themes/tokyo-night.toml"),
@@ -99,7 +134,7 @@ pub fn all_themes(dir: Option<&Path>) -> (Vec<Theme>, Vec<crate::Warning>) {
         .collect();
     paths.sort();
     for path in paths {
-        let parsed = std::fs::read_to_string(&path).map_err(|e| e.to_string()).and_then(|t| parse_theme(&t));
+        let parsed = load_theme_file(&path);
         match parsed {
             Ok(theme) => match themes.iter_mut().find(|t| t.name.eq_ignore_ascii_case(&theme.name)) {
                 Some(existing) => *existing = theme,
@@ -109,6 +144,40 @@ pub fn all_themes(dir: Option<&Path>) -> (Vec<Theme>, Vec<crate::Warning>) {
         }
     }
     (themes, warnings)
+}
+
+/// Read a theme file, with its CSS file (if it names one) read in, and a background image path
+/// made absolute.
+pub fn load_theme_file(path: &Path) -> Result<Theme, String> {
+    let mut theme = std::fs::read_to_string(path).map_err(|e| e.to_string()).and_then(|t| parse_theme(&t))?;
+    let dir = path.parent().unwrap_or(Path::new("."));
+    if let Some(css) = &mut theme.css
+        && css.text.is_none()
+        && let Some(file) = &css.file
+    {
+        let p = dir.join(file);
+        if !p.starts_with(dir) || file.contains("..") {
+            return Err(format!("css file outside the theme folder: {file}"));
+        }
+        css.text = Some(std::fs::read_to_string(&p).map_err(|e| format!("{file}: {e}"))?);
+    }
+    if let Some(w) = &mut theme.window
+        && let Some(img) = &mut w.background_image
+        && !Path::new(img.as_str()).is_absolute()
+    {
+        *img = dir.join(&*img).display().to_string();
+    }
+    Ok(theme)
+}
+
+/// Add themes to `themes` (replacing ones of the same name).
+pub fn merge_themes(themes: &mut Vec<Theme>, more: Vec<Theme>) {
+    for theme in more {
+        match themes.iter_mut().find(|t| t.name.eq_ignore_ascii_case(&theme.name)) {
+            Some(existing) => *existing = theme,
+            None => themes.push(theme),
+        }
+    }
 }
 
 fn file_name(p: &Path) -> String {

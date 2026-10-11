@@ -218,8 +218,9 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
 | `block.prev` / `block.next` | `ctrl+arrowup` / `ctrl+arrowdown` |
 | `block.collapse` | `ctrl+shift+[` |
 | `font.bigger` / `font.smaller` / `font.reset` | `ctrl+=` / `ctrl+-` / `ctrl+0` |
-| `sidebar.left.toggle` / `sidebar.right.toggle` | `ctrl+b` / `ctrl+shift+b` |
-| `panel.bottom.toggle` | `ctrl+j` |
+| `sidebar.left.toggle` / `sidebar.right.toggle` | `ctrl+shift+b` / `ctrl+alt+b`（`ctrl+b` はシェルが使うため。判断 M12） |
+| `panel.bottom.toggle` | `ctrl+shift+j`（`ctrl+j` は改行のため。判断 M12） |
+| `focus.next_region` / `focus.prev_region` | `f6` / `shift+f6`（ターミナル → 開いているパネル → ステータスバー） |
 | `settings` | `ctrl+,` |
 | `guide.help_mode` | `f1` |
 | `window.fullscreen` | `f11` |

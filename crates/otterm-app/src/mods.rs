@@ -130,6 +130,22 @@ fn discover_all(data: &Path) -> Vec<Found> {
     all
 }
 
+/// The `theme.toml` of every theme mod not in `[mods] disabled` (docs/05 §2): themes have no code,
+/// so they need no permission and are offered as soon as they are installed.
+pub fn theme_mod_files(disabled: &[String]) -> Vec<PathBuf> {
+    let Some(data) = data_dir() else { return Vec::new() };
+    discover_all(&data)
+        .into_iter()
+        .filter_map(|f| match f {
+            Found::Mod(m) if m.manifest.mod_.kind == otterm_modhost::ModKind::Theme && !disabled.contains(&m.id) => {
+                Some(m.dir.join("theme.toml"))
+            }
+            _ => None,
+        })
+        .filter(|p| p.is_file())
+        .collect()
+}
+
 fn is_bundled(m: &Installed, data: &Path) -> bool {
     m.dir.starts_with(bundled_dir(data))
 }
@@ -368,7 +384,7 @@ pub fn mod_dictionary(mods: State<'_, ModsState>, id: String) -> CmdResult<Dicti
 /// Host settings a mod may change (`ctx.settings.host.set`, official mods only): written to
 /// `config.toml` keeping comments (toml_edit); the config watcher tells everyone.
 #[tauri::command]
-pub fn config_set(state: State<'_, AppState>, key: String, value: Value) -> CmdResult {
+pub fn config_set(app: tauri::AppHandle, state: State<'_, AppState>, key: String, value: Value) -> CmdResult {
     const ALLOWED: &[&str] = &[
         "general.guide_level",
         "general.language",
@@ -377,33 +393,19 @@ pub fn config_set(state: State<'_, AppState>, key: String, value: Value) -> CmdR
         "general.check_updates",
         "shell.default_profile",
         "font.size",
-        // The palette's editor choice (decision I16) until there is a settings screen.
+        // The palette's editor choice (decision I16).
         "open.editor",
     ];
     if !ALLOWED.contains(&key.as_str()) {
         return Err(format!("{key} cannot be set this way"));
     }
-    let path = state.config.path().ok_or("no configuration folder")?;
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir).map_err(err)?;
+    if !matches!(value, Value::Bool(_) | Value::Number(_) | Value::String(_)) {
+        return Err("only booleans, numbers and strings".into());
     }
-    let text = std::fs::read_to_string(&path).unwrap_or_default();
-    let mut doc: toml_edit::DocumentMut = text.parse().map_err(err)?;
-    let (section, name) = key.split_once('.').ok_or("a dotted key is required")?;
-    let item = match value {
-        Value::Bool(b) => toml_edit::value(b),
-        Value::Number(n) if n.is_i64() => toml_edit::value(n.as_i64().unwrap_or(0)),
-        Value::Number(n) => toml_edit::value(n.as_f64().unwrap_or(0.0)),
-        Value::String(s) => toml_edit::value(s),
-        _ => return Err("only booleans, numbers and strings".into()),
-    };
-    if !doc.contains_table(section) {
-        doc[section] = toml_edit::table();
-    }
-    doc[section][name] = item;
-    let tmp = path.with_extension("toml.tmp");
-    std::fs::write(&tmp, doc.to_string()).map_err(err)?;
-    std::fs::rename(&tmp, &path).map_err(err)
+    let path: Vec<String> = key.split('.').map(str::to_owned).collect();
+    crate::settings::write_config(state.config, &path, Some(value))?;
+    crate::config_changed(&app);
+    Ok(())
 }
 
 /// `ctx.settings.set`: written under `[mods.settings."<id>"]`.

@@ -40,6 +40,21 @@ export function setLanguage(setting: string): void {
   setLanguageSignal(lang);
 }
 
+/** An attribute of a message (`id.attr`), or `undefined` when there is none. */
+export function tAttr(id: string, attr: string, args?: Record<string, FluentVariable>): string | undefined {
+  for (const lang of [language(), "en"] as const) {
+    const b = bundle(lang);
+    const pattern = b.getMessage(id)?.attributes[attr];
+    if (pattern) return b.formatPattern(pattern, args);
+  }
+  return undefined;
+}
+
+/** Whether there is a message `id`. */
+export function hasMessage(id: string): boolean {
+  return bundle(language()).hasMessage(id) || bundle("en").hasMessage(id);
+}
+
 /** The message `id` in the current language (English if it is missing there, else the id). */
 export function t(id: string, args?: Record<string, FluentVariable>): string {
   for (const lang of [language(), "en"] as const) {

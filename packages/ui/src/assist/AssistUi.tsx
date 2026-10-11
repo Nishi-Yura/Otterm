@@ -36,6 +36,7 @@ export function AssistBar(props: AssistBarProps) {
                   type="button"
                   class="assist-close"
                   title={t("action-cancel")}
+                  aria-label={t("action-cancel")}
                   onClick={() => props.onDismissHint()}
                 >
                   ×
@@ -121,6 +122,7 @@ export function CompletionPopup(props: CompletionPopupProps) {
           <div
             role="option"
             class="completion-item"
+            data-ot="completion-item"
             classList={{ selected: i() === props.selected, danger: !!item.danger }}
             aria-selected={i() === props.selected}
             onMouseEnter={() => props.onHover(i())}
@@ -270,6 +272,7 @@ export function Palette(props: PaletteProps) {
         <input
           ref={input}
           class="palette-input"
+          data-ot="palette-input"
           placeholder={props.placeholder}
           value={query()}
           onInput={(e) => {
@@ -312,7 +315,7 @@ export function Palette(props: PaletteProps) {
         </Show>
         <div ref={list} class="palette-list" role="listbox">
           <Show when={bang() && props.onBang}>
-            <div class="palette-item selected">
+            <div class="palette-item selected" data-ot="palette-item">
               <span class="palette-title">{t("palette-run-shell", { command: query().slice(1).trim() })}</span>
             </div>
           </Show>
@@ -324,6 +327,7 @@ export function Palette(props: PaletteProps) {
                 <div
                   role="option"
                   class="palette-item"
+                  data-ot="palette-item"
                   classList={{ selected: i() === selected() }}
                   aria-selected={i() === selected()}
                   onMouseEnter={() => setSelected(i())}

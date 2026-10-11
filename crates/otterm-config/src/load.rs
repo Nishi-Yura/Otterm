@@ -93,6 +93,7 @@ pub fn parse(text: &str) -> (Config, Vec<Warning>) {
             "keybindings" => config.keybindings = section(&key, value, w),
             "mods" => config.mods = section(&key, value, w),
             "ai" => config.ai = section(&key, value, w),
+            "accessibility" => config.accessibility = section(&key, value, w),
             _ => w.push(Warning { key, message: "unknown section".into() }),
         }
     }

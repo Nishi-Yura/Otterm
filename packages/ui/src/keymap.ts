@@ -9,7 +9,8 @@ type Bindings = Record<string, string[]>;
 
 const DIRS = ["left", "right", "up", "down"] as const;
 
-function defaults(): Bindings {
+/** The default keys of every action, for the keybindings settings. */
+export function defaults(): Bindings {
   const mac = platform === "macos";
   const b: Bindings = {
     "tab.new": [mac ? "cmd+t" : "ctrl+shift+t"],
@@ -26,8 +27,15 @@ function defaults(): Bindings {
     "block.prev": [mac ? "cmd+arrowup" : "ctrl+arrowup"],
     "block.next": [mac ? "cmd+arrowdown" : "ctrl+arrowdown"],
     "block.collapse": [mac ? "cmd+shift+[" : "ctrl+shift+["],
-    // Opens config.toml until there is a settings screen.
     settings: [mac ? "cmd+," : "ctrl+,"],
+    // Panels (docs/06 §5.2). Plain Ctrl+B / Ctrl+J belong to the shell (readline's back-char,
+    // newline), so otterm takes Ctrl+Shift / Ctrl+Alt chords there (decision M12).
+    "sidebar.left.toggle": [mac ? "cmd+b" : "ctrl+shift+b"],
+    "sidebar.right.toggle": [mac ? "cmd+shift+b" : "ctrl+alt+b"],
+    "panel.bottom.toggle": [mac ? "cmd+j" : "ctrl+shift+j"],
+    // Move the keyboard between the terminal, the panels and the status bar (docs/04 §5).
+    "focus.next_region": ["f6"],
+    "focus.prev_region": ["shift+f6"],
     palette: [mac ? "cmd+shift+p" : "ctrl+shift+p"],
     // Taken from the shell at guide level >= 1 only (decision B5); App checks before acting.
     history: ["ctrl+r"],
@@ -44,12 +52,22 @@ function defaults(): Bindings {
   return b;
 }
 
+/** Whether `id` names an action otterm knows. */
+export function isAction(id: string): boolean {
+  return action(id) !== undefined;
+}
+
 function action(id: string): AppAction | undefined {
   if (id === "settings") return { kind: "settings" };
   if (id === "palette") return { kind: "palette" };
   if (id === "history") return { kind: "history" };
   if (id === "completion.trigger") return { kind: "completion" };
   if (id === "multiline.open") return { kind: "multiline" };
+  if (id === "sidebar.left.toggle") return { kind: "togglePanel", slot: "sidebar.left" };
+  if (id === "sidebar.right.toggle") return { kind: "togglePanel", slot: "sidebar.right" };
+  if (id === "panel.bottom.toggle") return { kind: "togglePanel", slot: "panel.bottom" };
+  if (id === "focus.next_region") return { kind: "focusRegion", dir: 1 };
+  if (id === "focus.prev_region") return { kind: "focusRegion", dir: -1 };
   const [group, verb, arg] = id.split(".");
   const dir = DIRS.find((d) => d === arg);
   switch (`${group}.${verb}`) {

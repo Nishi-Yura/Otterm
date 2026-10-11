@@ -8,6 +8,8 @@ export interface Theme {
   selection: string;
   /** ANSI 0–15. */
   ansi: string[];
+  /** Opacity of the default background (0–1): below 1 the window or a background image shows through. */
+  backgroundAlpha?: number;
 }
 
 export const DEFAULT_THEME: Theme = {

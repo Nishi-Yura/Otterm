@@ -78,6 +78,7 @@ pub struct Config {
     pub keybindings: Keybindings,
     pub mods: Mods,
     pub ai: Ai,
+    pub accessibility: Accessibility,
 }
 
 pub const CURRENT_SCHEMA: u32 = 1;
@@ -157,16 +158,33 @@ pub struct Appearance {
     /// How the terminal grid is drawn (docs/02 §1.2). `auto` uses WebGL2 and falls back to Canvas 2D.
     /// Takes effect for panes opened after the change.
     pub renderer: RendererKind,
-    /// Layout preset or a saved custom layout name.
+    /// Layout preset (`minimal`, `classic`, `guided`, `ide`, `cards`) or the name of a saved layout
+    /// (`<config>/layouts/*.toml`). Settings below that are `auto` follow it (docs/04 §1.2).
     pub layout: String,
-    /// UI scale factor (0.8–2.0). The terminal grid follows OS DPI independently.
+    /// UI scale factor (0.8–2.0) for tabs, panels and dialogs. The terminal text uses `font.size`.
     #[schemars(range(min = 0.8, max = 2.0))]
     pub ui_scale: f32,
     pub tabbar: Tabbar,
     pub sidebar: Sidebars,
     pub panel: Panels,
     pub statusbar: Statusbar,
+    /// The input assist bar under the terminal (explanations, warnings). `auto` follows the layout.
+    pub assist_bar: Auto<bool>,
+    /// How command blocks look: `plain` (a gutter line) or `cards` (a framed card per block). `auto` follows the layout.
+    pub blocks: Auto<BlockStyle>,
+    /// Where each panel goes, by panel id: `sidebar.left`, `sidebar.right` or `panel.bottom`
+    /// (set by dragging a panel's tab; docs/04 §1.1).
+    pub panels: BTreeMap<String, String>,
+    /// Load `<config>/user.css` after the theme (docs/04 §2.3).
+    pub custom_css: bool,
     pub window: Window,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum BlockStyle {
+    Plain,
+    Cards,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -191,6 +209,10 @@ impl Default for Appearance {
             sidebar: Sidebars::default(),
             panel: Panels::default(),
             statusbar: Statusbar::default(),
+            assist_bar: Auto::default(),
+            blocks: Auto::default(),
+            panels: BTreeMap::new(),
+            custom_css: true,
             window: Window::default(),
         }
     }
@@ -199,7 +221,8 @@ impl Default for Appearance {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
 pub struct Tabbar {
-    pub position: TabbarPosition,
+    /// `auto` follows the layout.
+    pub position: Auto<TabbarPosition>,
     /// Template for automatic tab titles. Variables: {cwd_name} {command} {profile} {title} (decision I10).
     pub title_idle: String,
     pub title_running: String,
@@ -208,7 +231,7 @@ pub struct Tabbar {
 impl Default for Tabbar {
     fn default() -> Self {
         Self {
-            position: TabbarPosition::Top,
+            position: Auto::default(),
             title_idle: "{cwd_name}".into(),
             title_running: "{command} · {cwd_name}".into(),
         }
@@ -266,16 +289,11 @@ impl Default for Panel {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
 pub struct Statusbar {
-    pub visible: bool,
-}
-
-impl Default for Statusbar {
-    fn default() -> Self {
-        Self { visible: true }
-    }
+    /// `auto` follows the layout.
+    pub visible: Auto<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -289,6 +307,9 @@ pub struct Window {
     /// Local image path. Themes may override.
     pub background_image: Option<String>,
     pub background_fit: BackgroundFit,
+    /// How strongly the background image shows through the terminal background (0.05–1).
+    #[schemars(range(min = 0.05, max = 1.0))]
+    pub background_image_opacity: f32,
     /// Padding around the terminal grid, in CSS pixels.
     #[schemars(range(min = 0, max = 64))]
     pub padding: u32,
@@ -296,7 +317,14 @@ pub struct Window {
 
 impl Default for Window {
     fn default() -> Self {
-        Self { opacity: 1.0, blur: false, background_image: None, background_fit: BackgroundFit::Cover, padding: 12 }
+        Self {
+            opacity: 1.0,
+            blur: false,
+            background_image: None,
+            background_fit: BackgroundFit::Cover,
+            background_image_opacity: 0.25,
+            padding: 12,
+        }
     }
 }
 
@@ -472,6 +500,21 @@ pub enum RightClick {
     ContextMenu,
     Paste,
     CopyOrPaste,
+}
+
+// ---------------------------------------------------------------------------
+// [accessibility]  (docs/04 §4, §5)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(default, deny_unknown_fields)]
+pub struct Accessibility {
+    /// Read new terminal output aloud through a screen reader (an ARIA live region).
+    pub screen_reader: bool,
+    /// Turn off animations and transitions. `auto` follows the OS "reduce motion" setting.
+    pub reduce_motion: Auto<bool>,
+    /// Use the High Contrast theme. `auto` switches while the OS high-contrast mode is on (decision I15).
+    pub high_contrast: Auto<bool>,
 }
 
 // ---------------------------------------------------------------------------

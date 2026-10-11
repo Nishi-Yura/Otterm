@@ -55,7 +55,7 @@ export function StatusBar(props: StatusBarProps) {
     <div class="statusbar" role="status" data-ot="statusbar">
       <div class="statusbar-side">
         <Show when={props.folder}>
-          <span class="statusbar-item" title={t("status-folder")}>
+          <span class="statusbar-item" data-ot="statusbar-item" title={t("status-folder")}>
             <span class="mt-icon" aria-hidden="true">
               {iconGlyph("folder")}
             </span>
@@ -64,7 +64,7 @@ export function StatusBar(props: StatusBarProps) {
         </Show>
         <For each={left()}>
           {(it) => (
-            <span class="statusbar-item" data-mod={it.mod}>
+            <span class="statusbar-item" data-ot="statusbar-item" data-mod={it.mod}>
               <ModTree node={it.node} host={treeHost(props.host, it.mod, props.insert, props.copy)} context="status" />
             </span>
           )}
@@ -73,7 +73,7 @@ export function StatusBar(props: StatusBarProps) {
       <div class="statusbar-side right">
         <For each={right()}>
           {(it) => (
-            <span class="statusbar-item" data-mod={it.mod}>
+            <span class="statusbar-item" data-ot="statusbar-item" data-mod={it.mod}>
               <ModTree node={it.node} host={treeHost(props.host, it.mod, props.insert, props.copy)} context="status" />
             </span>
           )}
@@ -81,19 +81,21 @@ export function StatusBar(props: StatusBarProps) {
         <button
           type="button"
           class="statusbar-item statusbar-button"
+          data-ot="statusbar-item"
           title={t("status-guide")}
           onClick={() => props.onGuideClick()}
         >
           {t("status-guide-level", { level: props.guideLevel })}
         </button>
         <Show when={props.lastExit !== undefined && props.lastExit !== 0}>
-          <span class="statusbar-item failed" title={t("status-exit")}>
+          <span class="statusbar-item failed" data-ot="statusbar-item" title={t("status-exit")}>
             ✗ {props.lastExit}
           </span>
         </Show>
         <button
           type="button"
           class="statusbar-item statusbar-button"
+          data-ot="statusbar-item"
           classList={{ failed: summary().broken > 0, attention: summary().pending > 0 }}
           title={t("status-mods")}
           onClick={() => props.onModsClick()}
@@ -116,11 +118,26 @@ export interface PanelsProps {
   copy: (text: string) => void;
   /** Built-in panels rendered by the window itself, such as the mods list. */
   builtin?: { id: string; title: string; render: () => import("solid-js").JSX.Element }[];
+  /** Where a panel goes (`appearance.panels` moves them; docs/04 §1.1); defaults to the mod's slot. */
+  slotOf?: (id: string, slot: string) => string;
+  /** A panel's tab is being dragged (to another slot), or the drag ended. */
+  onDrag?: (id: string | undefined) => void;
 }
 
 /** A panel area: tabs for the panels mods put there, and the one that is open (docs/04 §1.1). */
 export function Panels(props: PanelsProps) {
-  const panels = createMemo(() => props.host.panels().filter((p) => p.slot === props.slot));
+  const panels = createMemo(() =>
+    props.host.panels().filter((p) => (props.slotOf ? props.slotOf(p.id, p.slot) : p.slot) === props.slot),
+  );
+  const drag = (id: string) => ({
+    draggable: true,
+    onDragStart: (e: DragEvent) => {
+      e.dataTransfer?.setData("application/x-otterm-panel", id);
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      props.onDrag?.(id);
+    },
+    onDragEnd: () => props.onDrag?.(undefined),
+  });
   const current = createMemo(() => panels().find((p) => p.id === props.shown));
   const builtin = createMemo(() => props.builtin?.find((b) => b.id === props.shown));
   const titleOf = (p: PanelItem) => p.title;
@@ -134,7 +151,9 @@ export function Panels(props: PanelsProps) {
                 type="button"
                 role="tab"
                 class="side-panel-tab"
+                data-ot="panel-tab"
                 aria-selected={props.shown === b.id}
+                {...drag(b.id)}
                 onClick={() => props.onShow(b.id)}
               >
                 {b.title}
@@ -147,7 +166,9 @@ export function Panels(props: PanelsProps) {
                 type="button"
                 role="tab"
                 class="side-panel-tab"
+                data-ot="panel-tab"
                 aria-selected={props.shown === p.id}
+                {...drag(p.id)}
                 onClick={() => props.onShow(p.id)}
               >
                 <Show when={p.icon}>
@@ -166,13 +187,15 @@ export function Panels(props: PanelsProps) {
           <button
             type="button"
             class="side-panel-close"
+            data-ot="panel-close"
             title={t("panel-close")}
+            aria-label={t("panel-close")}
             onClick={() => props.onShow(undefined)}
           >
             ×
           </button>
         </div>
-        <div class="side-panel-body">
+        <div class="side-panel-body" data-ot="panel-body">
           <Show when={current()} keyed>
             {(p) => (
               <ModTree node={p.node} host={treeHost(props.host, p.mod, props.insert, props.copy)} context="panel" />
@@ -337,6 +360,7 @@ export function Toasts(props: { toasts: Toast[]; dismiss: (id: number) => void }
               type="button"
               class="toast-close"
               title={t("action-cancel")}
+              aria-label={t("action-cancel")}
               onClick={() => props.dismiss(toast.id)}
             >
               ×
@@ -373,7 +397,11 @@ export function ModsPanel(props: { host: ModHost; developer: boolean; modsDir: s
       </Show>
       <For each={props.host.mods()}>
         {(m) => (
-          <div class="mods-entry" classList={{ broken: m.status === "crashed" || m.status === "error" }}>
+          <div
+            class="mods-entry"
+            data-ot="mod-row"
+            classList={{ broken: m.status === "crashed" || m.status === "error" }}
+          >
             <div class="mods-entry-head">
               <div class="mods-entry-name">
                 <strong>{m.entry.name}</strong> <span class="muted">v{m.entry.version}</span>

@@ -187,9 +187,41 @@ export function TerminalView(props: TerminalViewProps) {
     }
   });
 
+  /**
+   * A screen reader hears new output (accessibility.screen_reader, docs/04 §5): once the output
+   * pauses, the lines finished since last time go into a polite live region.
+   */
+  const [spoken, setSpoken] = createSignal("");
+  let announced = -1;
+  let announceTimer: ReturnType<typeof setTimeout> | undefined;
+  const scheduleAnnounce = () => {
+    if (!props.config()?.accessibility.screenReader || !props.active()) return;
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      if (model.altScreen || model.offset > 0) return;
+      const cursorLine = model.lineAt(model.cursorRow);
+      if (announced < 0 || announced >= cursorLine) {
+        announced = cursorLine - 1;
+        return;
+      }
+      const out: string[] = [];
+      for (let row = 0; row < model.cursorRow; row++) {
+        const line = model.lineAt(row);
+        if (line > announced) out.push(model.text(row).trimEnd());
+      }
+      announced = cursorLine - 1;
+      const text = out
+        .filter((l) => l !== "")
+        .slice(-30)
+        .join("\n");
+      if (text) setSpoken(text);
+    }, 400);
+  };
+  onCleanup(() => clearTimeout(announceTimer));
+
   const applyConfig = (c: UiConfig) => {
     if (renderer) renderer.minimumContrast = c.minimumContrast;
-    renderer?.setTheme(themeFromConfig(c.theme.terminal));
+    renderer?.setTheme({ ...themeFromConfig(c.theme.terminal), backgroundAlpha: c.terminalAlpha ?? 1 });
     baseFont = c.font;
     const ready = applyFont();
     selection.setWordSeparators(c.wordSeparators);
@@ -258,6 +290,7 @@ export function TerminalView(props: TerminalViewProps) {
         updateThumb();
         updateHeaders();
         r.schedule();
+        scheduleAnnounce();
       });
       // Frames sent before the subscription were dropped; ask for the whole screen.
       await session.redraw();
@@ -898,6 +931,11 @@ export function TerminalView(props: TerminalViewProps) {
         }
       }}
     >
+      <Show when={props.config()?.accessibility.screenReader}>
+        <div class="sr-only" aria-live="polite" aria-atomic="true">
+          {spoken()}
+        </div>
+      </Show>
       <div ref={viewport} id={viewportId} class="viewport">
         <canvas ref={canvas} />
         <PromptHeaders

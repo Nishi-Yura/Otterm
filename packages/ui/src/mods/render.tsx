@@ -554,7 +554,7 @@ function themeCss(): string {
   }
   for (let i = 0; i < root.style.length; i++) {
     const name = root.style.item(i);
-    if (!name.startsWith("--ot-")) continue;
+    if (!name.startsWith("--ot-") || name === "--ot-bg-image") continue;
     const v = clean(root.style.getPropertyValue(name));
     if (v) decls.push(`${name}:${v}`);
   }

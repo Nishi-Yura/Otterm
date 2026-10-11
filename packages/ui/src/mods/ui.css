@@ -1,16 +1,17 @@
 /* Mod UI (docs/05 §5.3): the markup mods/render.tsx produces. Every class is mt-*. */
 
-/* The variables are on :root too, so the window's own buttons (permission screen, toasts) share them. */
+/* The variables are on :root too, so the window's own buttons (permission screen, toasts) share them.
+   They are derived from the UI tokens (docs/04 §2.2), so a theme that sets --ot-* restyles mods too. */
 :root {
-  --mt-line: color-mix(in srgb, var(--fg, #d8dee9) 25%, transparent);
-  --mt-hover: color-mix(in srgb, var(--fg, #d8dee9) 10%, transparent);
-  --mt-input: color-mix(in srgb, var(--bg, #1b1d23) 80%, #fff);
-  --mt-accent: var(--ot-accent, #4f8cff);
+  --mt-line: color-mix(in srgb, var(--ot-fg) 25%, transparent);
+  --mt-hover: color-mix(in srgb, var(--ot-fg) 10%, transparent);
+  --mt-input: color-mix(in srgb, var(--ot-bg) 80%, var(--ot-fg) 20%);
+  --mt-accent: var(--ot-accent);
 }
 
 .mt-root {
-  color: var(--fg, #d8dee9);
-  font-family: system-ui, sans-serif;
+  color: var(--ot-fg);
+  font-family: var(--ot-font-ui);
   min-width: 0;
 }
 .mt-root * {
@@ -32,7 +33,7 @@
   white-space: nowrap;
 }
 .mt-muted {
-  color: var(--muted, #7b8394);
+  color: var(--ot-fg-muted);
 }
 .mt-clickable {
   cursor: pointer;
@@ -73,7 +74,7 @@
 }
 .mt-heading-3 {
   font-size: 1em;
-  color: var(--muted, #7b8394);
+  color: var(--ot-fg-muted);
 }
 
 /* Layout: stacks, rows, gaps, spacers */
@@ -175,7 +176,7 @@
   flex: none;
   width: 1em;
   text-align: center;
-  color: var(--muted, #7b8394);
+  color: var(--ot-fg-muted);
   cursor: pointer;
 }
 .mt-empty,
@@ -203,8 +204,8 @@
 .mt-table th {
   position: sticky;
   top: 0;
-  background: var(--bg, #1b1d23);
-  color: var(--muted, #7b8394);
+  background: var(--ot-bg);
+  color: var(--ot-fg-muted);
   font-weight: 600;
 }
 .mt-table tr.mt-clickable:hover td {
@@ -235,7 +236,7 @@
   border: 1px solid var(--mt-line);
   border-radius: 4px;
   background: var(--mt-input);
-  color: var(--fg, #d8dee9);
+  color: var(--ot-fg);
   font: inherit;
   cursor: pointer;
 }
@@ -252,11 +253,11 @@
   color: #fff;
 }
 .mt-button-primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--mt-accent) 85%, #000);
+  background: color-mix(in srgb, var(--mt-accent) 85%, var(--ot-bg));
 }
 .mt-button-danger {
   border-color: transparent;
-  background: var(--ot-danger, #e5484d);
+  background: var(--ot-danger);
   color: #fff;
 }
 .mt-button-ghost {
@@ -281,7 +282,7 @@
   border: 1px solid var(--mt-line);
   border-radius: 4px;
   background: var(--mt-input);
-  color: var(--fg, #d8dee9);
+  color: var(--ot-fg);
   font: inherit;
 }
 .mt-input {
@@ -308,7 +309,7 @@
   height: 14px;
   border-radius: 7px;
   background: var(--mt-line);
-  transition: background 0.15s;
+  transition: background 0.1s;
 }
 .mt-switch::after {
   content: "";
@@ -318,8 +319,8 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--fg, #d8dee9);
-  transition: transform 0.15s;
+  background: var(--ot-fg);
+  transition: transform 0.1s;
 }
 .mt-toggle-input:focus-visible + .mt-switch {
   outline: 1px solid var(--mt-accent);
@@ -348,13 +349,13 @@
   background: color-mix(in srgb, var(--mt-accent) 25%, transparent);
 }
 .mt-badge-success {
-  background: color-mix(in srgb, var(--ot-success, #3fb950) 25%, transparent);
+  background: color-mix(in srgb, var(--ot-success) 25%, transparent);
 }
 .mt-badge-warning {
-  background: color-mix(in srgb, var(--ot-warning, #d29922) 25%, transparent);
+  background: color-mix(in srgb, var(--ot-warning) 25%, transparent);
 }
 .mt-badge-danger {
-  background: color-mix(in srgb, var(--ot-danger, #e5484d) 25%, transparent);
+  background: color-mix(in srgb, var(--ot-danger) 25%, transparent);
 }
 .mt-progress {
   display: flex;

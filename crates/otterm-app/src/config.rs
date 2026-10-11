@@ -6,8 +6,8 @@ use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, SystemTime};
 
 use otterm_config::{
-    AmbiguousWidth, Auto, Bell, Config, CursorStyle, Effective, Language, Permission, RightClick, TabbarPosition,
-    Theme, Warning,
+    AmbiguousWidth, Auto, BackgroundFit, Bell, Config, CursorStyle, Effective, Language, Layout, Permission,
+    RightClick, TabbarPosition, Theme, Warning,
 };
 use serde::Serialize;
 
@@ -22,7 +22,12 @@ pub struct ConfigState {
 struct Loaded {
     config: Config,
     themes: Vec<Theme>,
+    /// Saved layouts (`<config>/layouts/*.toml`).
+    layouts: Vec<Layout>,
+    /// `<config>/user.css`, empty when there is none.
+    user_css: String,
     warnings: Vec<Warning>,
+    /// The newest modification time of config.toml, user.css and the theme and layout files.
     modified: Option<SystemTime>,
 }
 
@@ -47,8 +52,18 @@ pub struct UiConfig {
     pub profile_colors: std::collections::BTreeMap<String, String>,
     /// The profile a new tab runs when none is picked (`shell.default_profile`).
     pub default_profile: String,
-    /// Where the tab bar is: top, bottom, left, or hidden-when-single.
+    /// Where the tab bar is: top, bottom, left, or hidden-when-single (the layout resolved).
     pub tabbar: TabbarPosition,
+    /// The layout with the `auto` settings resolved (docs/04 §1.2).
+    pub layout: Layout,
+    /// `appearance.ui_scale` for tabs, panels and dialogs.
+    pub ui_scale: f32,
+    pub window: UiWindow,
+    /// Style overrides (docs/04 §2.3): `<config>/user.css` when `appearance.custom_css` is on.
+    pub user_css: String,
+    pub accessibility: UiAccessibility,
+    /// The theme used while the OS (or `accessibility.high_contrast`) asks for high contrast.
+    pub theme_high_contrast: Option<Theme>,
     pub cursor_style: CursorStyle,
     pub cursor_blink: bool,
     pub copy_on_select: bool,
@@ -71,7 +86,7 @@ pub struct UiConfig {
     pub guide_level: u8,
     /// `[assist]` with `auto` values resolved against the guide level.
     pub assist: UiAssist,
-    /// `appearance.statusbar.visible`.
+    /// Whether the status bar shows (the layout resolved).
     pub statusbar: bool,
     /// `[mods] developer_mode`: per-mod logs and timings in the mods panel (docs/05 §8.2).
     pub developer_mode: bool,
@@ -109,6 +124,27 @@ pub struct UiAssist {
     pub danger_guard: bool,
     pub error_hint: bool,
     pub learn_hints: bool,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UiWindow {
+    pub opacity: f32,
+    pub blur: bool,
+    /// The background image's path; the UI asks for its bytes with `background_image_get`.
+    pub background_image: Option<String>,
+    pub background_fit: BackgroundFit,
+    pub background_image_opacity: f32,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UiAccessibility {
+    pub screen_reader: bool,
+    /// `None` follows the OS.
+    pub reduce_motion: Option<bool>,
+    /// `None` follows the OS.
+    pub high_contrast: Option<bool>,
 }
 
 #[derive(Clone, Serialize)]
@@ -156,6 +192,18 @@ impl ConfigState {
                 message: format!("no theme named \"{}\"", c.appearance.theme),
             });
         }
+        let window = window(c, theme.window.as_ref(), self.path.as_deref());
+        let padding = match &theme.window {
+            Some(w) if c.appearance.window.padding == 12 => w.padding.unwrap_or(12),
+            _ => c.appearance.window.padding,
+        }
+        .min(64);
+        let layout =
+            otterm_config::resolve_layout(&c.appearance, &otterm_config::find_layout(&c.appearance.layout, &l.layouts));
+        let auto = |a: &Auto<bool>| match a {
+            Auto::Value(b) => Some(*b),
+            Auto::Auto(_) => None,
+        };
         UiConfig {
             language: c.general.language,
             font: UiFont {
@@ -173,14 +221,23 @@ impl ConfigState {
             follow_system: c.appearance.follow_system,
             minimum_contrast: c.appearance.minimum_contrast.clamp(1.0, 21.0),
             renderer: c.appearance.renderer,
-            padding: c.appearance.window.padding.min(64),
+            padding,
             profile_colors: c
                 .profiles
                 .iter()
                 .filter_map(|p| Some((p.id.clone(), p.color.clone().filter(|c| is_hex_color(c))?)))
                 .collect(),
             default_profile: c.shell.default_profile.clone(),
-            tabbar: c.appearance.tabbar.position,
+            tabbar: layout.tabbar,
+            ui_scale: c.appearance.ui_scale.clamp(0.8, 2.0),
+            window,
+            user_css: if c.appearance.custom_css { l.user_css.clone() } else { String::new() },
+            accessibility: UiAccessibility {
+                screen_reader: c.accessibility.screen_reader,
+                reduce_motion: auto(&c.accessibility.reduce_motion),
+                high_contrast: auto(&c.accessibility.high_contrast),
+            },
+            theme_high_contrast: otterm_config::find_theme(&l.themes, "High Contrast").cloned(),
             cursor_style: c.terminal.cursor.style,
             cursor_blink: c.terminal.cursor.blink,
             copy_on_select: c.terminal.copy_on_select,
@@ -214,7 +271,8 @@ impl ConfigState {
                 error_hint: c.assist.error_hint,
                 learn_hints: effective.learn_hints,
             },
-            statusbar: c.appearance.statusbar.visible,
+            statusbar: layout.statusbar,
+            layout,
             developer_mode: c.mods.developer_mode,
             mods_dir: otterm_config::data_dir().map(|d| otterm_modhost::mods_dir(&d).display().to_string()),
             warnings,
@@ -224,12 +282,34 @@ impl ConfigState {
 
     /// Reload if the file changed since the last read. Returns whether it did.
     pub fn reload_if_changed(&self) -> bool {
-        let modified = self.path.as_ref().and_then(|p| std::fs::metadata(p).ok()?.modified().ok());
+        let modified = newest_change(self.path.as_ref());
         if modified == self.loaded.lock().unwrap().modified {
             return false;
         }
-        *self.loaded.lock().unwrap() = read(self.path.as_ref());
+        self.reload();
         true
+    }
+
+    /// Read everything again (after the settings screen wrote a file).
+    pub fn reload(&self) {
+        *self.loaded.lock().unwrap() = read(self.path.as_ref());
+    }
+
+    /// Every theme, bundled and the user's.
+    pub fn themes(&self) -> Vec<Theme> {
+        self.loaded.lock().unwrap().themes.clone()
+    }
+
+    /// The saved layouts.
+    pub fn layouts(&self) -> Vec<Layout> {
+        self.loaded.lock().unwrap().layouts.clone()
+    }
+
+    /// The folder config.toml is in, created if needed.
+    pub fn dir(&self) -> Result<PathBuf, String> {
+        let dir = self.path.as_ref().and_then(|p| p.parent()).ok_or("no configuration folder")?;
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+        Ok(dir.to_path_buf())
     }
 
     /// Call `on_change` from a background thread whenever the file changes.
@@ -253,11 +333,86 @@ fn read(path: Option<&PathBuf>) -> Loaded {
         Some(p) => otterm_config::load(p),
         None => (Config::default(), Vec::new()),
     };
-    let dir = path.and_then(|p| p.parent()).map(|d| d.join("themes"));
-    let (themes, theme_warnings) = otterm_config::all_themes(dir.as_deref());
+    let dir = path.and_then(|p| p.parent());
+    let (mut themes, theme_warnings) = otterm_config::all_themes(dir.map(|d| d.join("themes")).as_deref());
     warnings.extend(theme_warnings);
-    let modified = path.and_then(|p| std::fs::metadata(p).ok()?.modified().ok());
-    Loaded { config, themes, warnings, modified }
+    // Theme mods first in the list order, then the user's own files win again.
+    let mut from_mods = Vec::new();
+    for file in crate::mods::theme_mod_files(&config.mods.disabled) {
+        match otterm_config::load_theme_file(&file) {
+            Ok(t) => from_mods.push(t),
+            Err(message) => warnings.push(Warning { key: file.display().to_string(), message }),
+        }
+    }
+    let (user, _) = otterm_config::all_themes(None);
+    let user_names: Vec<String> = themes.iter().filter(|t| !user.contains(t)).map(|t| t.name.to_lowercase()).collect();
+    from_mods.retain(|t| !user_names.contains(&t.name.to_lowercase()));
+    otterm_config::merge_themes(&mut themes, from_mods);
+    let (layouts, layout_warnings) = otterm_config::saved_layouts(dir.map(|d| d.join("layouts")).as_deref());
+    warnings.extend(layout_warnings);
+    let user_css = dir.and_then(|d| std::fs::read_to_string(d.join("user.css")).ok()).unwrap_or_default();
+    Loaded { config, themes, layouts, user_css, warnings, modified: newest_change(path) }
+}
+
+/// The newest modification time among config.toml, user.css and the files in `themes/` and
+/// `layouts/`, so that editing any of them reloads (a handful of files, checked once a second).
+fn newest_change(path: Option<&PathBuf>) -> Option<SystemTime> {
+    let path = path?;
+    let time = |p: &std::path::Path| std::fs::metadata(p).ok()?.modified().ok();
+    let mut newest = time(path);
+    let mut see = |t: Option<SystemTime>| {
+        if t > newest {
+            newest = t;
+        }
+    };
+    if let Some(dir) = path.parent() {
+        see(time(&dir.join("user.css")));
+        for sub in ["themes", "layouts"] {
+            let d = dir.join(sub);
+            see(time(&d));
+            for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+                see(time(&e.path()));
+            }
+        }
+    }
+    newest
+}
+
+/// `[appearance.window]`, with the theme's window settings where the config keeps the default.
+fn window(c: &Config, theme: Option<&otterm_config::ThemeWindow>, config: Option<&std::path::Path>) -> UiWindow {
+    let w = &c.appearance.window;
+    let t = theme.cloned().unwrap_or_default();
+    let image = w
+        .background_image
+        .clone()
+        .filter(|p| !p.trim().is_empty())
+        .map(|p| background_path(config, &p).display().to_string())
+        .or(t.background_image);
+    let fit = match (w.background_fit, t.background_fit.as_deref()) {
+        (BackgroundFit::Cover, Some("contain")) => BackgroundFit::Contain,
+        (BackgroundFit::Cover, Some("tile")) => BackgroundFit::Tile,
+        (BackgroundFit::Cover, Some("center")) => BackgroundFit::Center,
+        (f, _) => f,
+    };
+    UiWindow {
+        opacity: if w.opacity >= 1.0 { t.opacity.unwrap_or(1.0) } else { w.opacity }.clamp(0.3, 1.0),
+        blur: w.blur || t.blur.unwrap_or(false),
+        background_image: image,
+        background_fit: fit,
+        background_image_opacity: w.background_image_opacity.clamp(0.05, 1.0),
+    }
+}
+
+/// A background image path from the config: relative paths are under the config folder.
+pub fn background_path(config: Option<&std::path::Path>, p: &str) -> PathBuf {
+    let p = std::path::Path::new(p);
+    if p.is_absolute() {
+        return p.to_path_buf();
+    }
+    match config.and_then(|c| c.parent()) {
+        Some(dir) => dir.join(p),
+        None => p.to_path_buf(),
+    }
 }
 
 /// Settings for new terminals.

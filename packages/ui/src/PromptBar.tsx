@@ -41,7 +41,7 @@ export function PromptBar(props: PromptProps) {
       <div class="prompt-buttons">
         <For each={props.buttons}>
           {(b) => (
-            <button type="button" class="prompt-button" onClick={() => b.action()}>
+            <button type="button" class="prompt-button" data-ot="prompt-button" onClick={() => b.action()}>
               {b.label}
             </button>
           )}

@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack } from "solid-js";
 import {
   AssistBar,
   CompletionPopup,
@@ -13,7 +13,7 @@ import {
 import { wordAt } from "./assist/parse";
 import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInternals, startupMark } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
-import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
+import { applyThemeCss, applyWindow, loadConfig, onConfigChanged, type UiConfig, uiTokens } from "./config";
 import { language, setLanguage, t } from "./i18n";
 import { Keymap } from "./keymap";
 import { type AppAction, platform } from "./keys";
@@ -48,6 +48,7 @@ import { PromptBar, type PromptProps } from "./PromptBar";
 import { folderName, urlToPath } from "./paths";
 import type { Frame } from "./screen/protocol";
 import { connectScreen } from "./session";
+import { Settings } from "./settings/Settings";
 import { type ScreenHub, TerminalView } from "./TerminalView";
 
 /** How long a notice (such as ignored config keys) stays up. */
@@ -159,6 +160,17 @@ export function App() {
   /** The panel open in each panel slot, by panel id. */
   const [shownPanel, setShownPanel] = createSignal<Record<string, string | undefined>>({});
   const MODS_PANEL = "otterm.mods";
+  /** The settings screen (docs/04 §6). */
+  const [settingsOpen, setSettingsOpen] = createSignal(false);
+  /** A theme being edited in the settings: shown in the window until saved or dropped. */
+  const [previewTheme, setPreviewTheme] = createSignal<UiConfig["theme"]>();
+  /** A panel tab being dragged to another slot. */
+  const [dragPanel, setDragPanel] = createSignal<string>();
+  const [dropSlot, setDropSlot] = createSignal<string>();
+  /** Where a panel is: `appearance.panels` (or the layout) first, else where its mod put it. */
+  const slotOf = (id: string, slot: string) => config()?.layout.panels?.[id] ?? slot;
+  /** The panel last shown in each slot, for toggling it back. */
+  const lastPanel: Record<string, string> = {};
   /** Each session's shell program and WSL distribution, from Rust (`session_info`). */
   const shellOf = new Map<number, { shell: string; wsl: string | null }>();
   /** Panes whose terminal has echo off now (a password prompt, decision K2). */
@@ -187,7 +199,8 @@ export function App() {
   const themeInfo = (): ThemeInfo => {
     const th = config()?.theme;
     const vars: Record<string, string> = {};
-    for (const [k, v] of Object.entries(th?.ui ?? {})) vars[`--ot-${k}`] = v;
+    // Every token, derived ones included, so mods see the same colors the window uses.
+    for (const [k, v] of Object.entries(th ? uiTokens(th) : {})) vars[`--ot-${k}`] = v;
     return {
       name: th?.name ?? "",
       appearance: th?.appearance ?? "dark",
@@ -287,7 +300,7 @@ export function App() {
         return true;
       }
       if (id === "otterm.settings.open") {
-        void invoke("config_open").catch((e) => showNotice(String(e)));
+        setSettingsOpen(true);
         return true;
       }
       if (id === "otterm.panel.hide") {
@@ -301,11 +314,11 @@ export function App() {
         const target = String(args?.id ?? "");
         const panel = host.panels().find((p) => p.id === target);
         if (!panel) return false;
-        setShownPanel({ ...shownPanel(), [panel.slot]: panel.id });
+        setShownPanel({ ...shownPanel(), [slotOf(panel.id, panel.slot)]: panel.id });
         return true;
       }
       if (id === "otterm.mods.show") {
-        setShownPanel({ ...shownPanel(), "sidebar.right": MODS_PANEL });
+        setShownPanel({ ...shownPanel(), [slotOf(MODS_PANEL, "sidebar.right")]: MODS_PANEL });
         return true;
       }
       return false;
@@ -792,21 +805,46 @@ export function App() {
   /** The configuration as loaded; `config()` is it with the theme for the OS mode filled in. */
   let loaded: UiConfig | undefined;
   const lightMode = window.matchMedia("(prefers-color-scheme: light)");
+  /** The OS asks for high contrast (decision I15): forced colors or "more contrast". */
+  const contrastMode = window.matchMedia("(forced-colors: active), (prefers-contrast: more)");
+  const motionMode = window.matchMedia("(prefers-reduced-motion: reduce)");
+  /** The terminal's default background alpha (window opacity, background image). */
+  let terminalAlpha = 1;
 
-  /** Pick `theme` or `themeLight` for the OS appearance (appearance.follow_system). */
+  /**
+   * Pick `theme` or `themeLight` for the OS appearance (appearance.follow_system), High Contrast
+   * when asked for, or the theme being edited in the settings.
+   */
   const applyTheme = () => {
     if (!loaded) return;
     const light = loaded.followSystem && lightMode.matches && loaded.themeLight;
-    const c = light ? { ...loaded, theme: loaded.themeLight as UiConfig["theme"] } : loaded;
+    let c = light ? { ...loaded, theme: loaded.themeLight as UiConfig["theme"] } : loaded;
+    const contrast = loaded.accessibility.highContrast ?? contrastMode.matches;
+    if (contrast && loaded.themeHighContrast) c = { ...c, theme: loaded.themeHighContrast };
+    const preview = previewTheme();
+    if (preview) c = { ...c, theme: preview };
     applyThemeCss(c.theme);
+    void applyWindow(c, motionMode.matches).then((alpha) => {
+      if (alpha === terminalAlpha) return;
+      terminalAlpha = alpha;
+      const now = untrack(config);
+      if (now) setConfig({ ...now, terminalAlpha: alpha });
+    });
+    c = { ...c, terminalAlpha };
     setConfig(c);
     host.themeChanged(themeInfo());
     // Programs ask for these (OSC 10/11) to pick light or dark colors of their own.
     const { foreground, background, cursor } = c.theme.terminal;
     void invoke("terminal_colors", { foreground, background, cursor }).catch(() => {});
   };
-  lightMode.addEventListener("change", applyTheme);
-  onCleanup(() => lightMode.removeEventListener("change", applyTheme));
+  for (const m of [lightMode, contrastMode, motionMode]) {
+    m.addEventListener("change", applyTheme);
+    onCleanup(() => m.removeEventListener("change", applyTheme));
+  }
+  createEffect(() => {
+    previewTheme();
+    untrack(applyTheme);
+  });
 
   const applyConfig = (c: UiConfig) => {
     setLanguage(c.language);
@@ -1161,7 +1199,25 @@ export function App() {
         break;
       }
       case "settings":
-        void invoke("config_open").catch((e) => showNotice(String(e)));
+        setSettingsOpen(!settingsOpen());
+        break;
+      case "togglePanel": {
+        const slot = action.slot;
+        const shown = shownPanel()[slot];
+        if (shown) {
+          lastPanel[slot] = shown;
+          setShownPanel({ ...shownPanel(), [slot]: undefined });
+          refocus();
+        } else {
+          const ids = panelsIn(slot);
+          const id = ids.includes(lastPanel[slot] ?? "") ? lastPanel[slot] : ids[0];
+          if (!id) return false;
+          setShownPanel({ ...shownPanel(), [slot]: id });
+        }
+        break;
+      }
+      case "focusRegion":
+        focusRegion(action.dir);
         break;
       case "blockJump": {
         const id = tab ? sessionOf.get(tab.active) : undefined;
@@ -1354,6 +1410,119 @@ export function App() {
     });
   };
 
+  /** The window's own panels (the mods list) for the slot they are placed in. */
+  const builtinPanels = (slot: string) =>
+    slotOf(MODS_PANEL, "sidebar.right") === slot
+      ? [
+          {
+            id: MODS_PANEL,
+            title: t("mods-title"),
+            render: () => (
+              <ModsPanel
+                host={host}
+                developer={config()?.developerMode ?? false}
+                modsDir={config()?.modsDir ?? undefined}
+              />
+            ),
+          },
+        ]
+      : [];
+
+  /** Panel ids that go in a slot, built-in ones included. */
+  const panelsIn = (slot: string): string[] => [
+    ...(slotOf(MODS_PANEL, "sidebar.right") === slot ? [MODS_PANEL] : []),
+    ...host
+      .panels()
+      .filter((p) => slotOf(p.id, p.slot) === slot)
+      .map((p) => p.id),
+  ];
+
+  /**
+   * The layout (docs/04 §1.2) decides which slots start open: a slot it shows gets its first panel
+   * once panels arrive, and a slot it hides is closed when the layout changes.
+   */
+  const opened = new Set<string>();
+  let layoutKey = "";
+  createEffect(() => {
+    const l = config()?.layout;
+    if (!l) return;
+    const key = JSON.stringify([l.name, l.sidebar_left, l.sidebar_right, l.panel_bottom, l.panels]);
+    const slots: [string, boolean][] = [
+      ["sidebar.left", l.sidebar_left],
+      ["sidebar.right", l.sidebar_right],
+      ["panel.bottom", l.panel_bottom],
+    ];
+    const next = { ...shownPanel() };
+    let changed = false;
+    if (key !== layoutKey) {
+      layoutKey = key;
+      opened.clear();
+      for (const [slot, on] of slots) {
+        if (!on && next[slot] && next[slot] !== MODS_PANEL) {
+          next[slot] = undefined;
+          changed = true;
+        }
+      }
+    }
+    for (const [slot, on] of slots) {
+      if (!on || opened.has(slot) || next[slot]) continue;
+      const first = panelsIn(slot).find((id) => id !== MODS_PANEL);
+      if (first) {
+        next[slot] = first;
+        opened.add(slot);
+        changed = true;
+      }
+    }
+    // A panel moved to another slot goes with its place.
+    for (const slot of Object.keys(next)) {
+      const id = next[slot];
+      if (id && !panelsIn(slot).includes(id)) {
+        next[slot] = undefined;
+        const to =
+          id === MODS_PANEL
+            ? slotOf(id, "sidebar.right")
+            : slotOf(id, host.panels().find((p) => p.id === id)?.slot ?? slot);
+        if (to !== slot) next[to] = id;
+        changed = true;
+      }
+    }
+    if (changed) setShownPanel(next);
+  });
+
+  /** F6 / Shift+F6: the terminal, each open panel, the status bar (docs/04 §5, keyboard only). */
+  const focusRegion = (dir: 1 | -1) => {
+    const regions = [
+      document.querySelector<HTMLElement>(".terminal.active .input"),
+      ...[...document.querySelectorAll<HTMLElement>(".side-panel")].map((el) =>
+        el.querySelector<HTMLElement>(
+          '.side-panel-body button, .side-panel-body [tabindex], .side-panel-body input, [role="tab"]',
+        ),
+      ),
+      document.querySelector<HTMLElement>(".statusbar button"),
+    ].filter((el): el is HTMLElement => !!el);
+    if (regions.length === 0) return;
+    const at = regions.findIndex((el) =>
+      el.closest(".side-panel, .statusbar, .terminal")?.contains(document.activeElement),
+    );
+    const next = regions[(at + dir + regions.length) % regions.length];
+    next?.focus();
+  };
+
+  /** Drop a dragged panel tab on a slot: remember the place (`appearance.panels`) and open it there. */
+  const dropPanel = (slot: string) => {
+    const id = dragPanel();
+    setDragPanel(undefined);
+    setDropSlot(undefined);
+    if (!id) return;
+    void invoke("config_write", { path: ["appearance", "panels", id], value: slot }).catch((e) =>
+      showNotice(String(e)),
+    );
+    const next = { ...shownPanel() };
+    for (const k of Object.keys(next)) if (next[k] === id) next[k] = undefined;
+    next[slot] = id;
+    setShownPanel(next);
+  };
+
   const pct = (n: number) => `${n * 100}%`;
   const newTabHint = platform === "macos" ? "⌘T" : "Ctrl+Shift+T";
 
@@ -1364,6 +1533,7 @@ export function App() {
         "tabbar-bottom": config()?.tabbar === "bottom",
         "tabbar-left": config()?.tabbar === "left",
         "tabbar-hidden": config()?.tabbar === "hidden-when-single" && tabs().length === 1,
+        "blocks-cards": config()?.layout.blocks === "cards",
       }}
     >
       <Show when={bench()}>
@@ -1445,6 +1615,9 @@ export function App() {
           onShow={(id) => setShownPanel({ ...shownPanel(), "sidebar.left": id })}
           insert={insertText}
           copy={copyText}
+          slotOf={slotOf}
+          onDrag={setDragPanel}
+          builtin={builtinPanels("sidebar.left")}
         />
         <div class="body-center">
           <div ref={area} class="panes">
@@ -1581,7 +1754,7 @@ export function App() {
             />
           </Show>
           <AssistBar
-            explanation={explanation()}
+            explanation={config()?.layout.assist_bar === false ? undefined : explanation()}
             hint={hint()?.hint}
             hintCommand={hint()?.command}
             onInsert={insertText}
@@ -1598,6 +1771,9 @@ export function App() {
             onShow={(id) => setShownPanel({ ...shownPanel(), "panel.bottom": id })}
             insert={insertText}
             copy={copyText}
+            slotOf={slotOf}
+            onDrag={setDragPanel}
+            builtin={builtinPanels("panel.bottom")}
           />
           <Show when={config()?.statusbar ?? true}>
             <StatusBar
@@ -1615,8 +1791,9 @@ export function App() {
               guideLevel={config()?.guideLevel ?? 2}
               onGuideClick={cycleGuide}
               onModsClick={() => {
-                const open = shownPanel()["sidebar.right"] === MODS_PANEL;
-                setShownPanel({ ...shownPanel(), "sidebar.right": open ? undefined : MODS_PANEL });
+                const slot = slotOf(MODS_PANEL, "sidebar.right");
+                const open = shownPanel()[slot] === MODS_PANEL;
+                setShownPanel({ ...shownPanel(), [slot]: open ? undefined : MODS_PANEL });
               }}
             />
           </Show>
@@ -1628,19 +1805,9 @@ export function App() {
           onShow={(id) => setShownPanel({ ...shownPanel(), "sidebar.right": id })}
           insert={insertText}
           copy={copyText}
-          builtin={[
-            {
-              id: MODS_PANEL,
-              title: t("mods-title"),
-              render: () => (
-                <ModsPanel
-                  host={host}
-                  developer={config()?.developerMode ?? false}
-                  modsDir={config()?.modsDir ?? undefined}
-                />
-              ),
-            },
-          ]}
+          slotOf={slotOf}
+          onDrag={setDragPanel}
+          builtin={builtinPanels("sidebar.right")}
         />
       </div>
       <Show when={palette()}>
@@ -1657,6 +1824,52 @@ export function App() {
             onChip={p().onChip}
           />
         )}
+      </Show>
+      <Show when={dragPanel()}>
+        <For
+          each={[
+            { slot: "sidebar.left", style: { left: "8px", top: "48px", bottom: "40px", width: "22%" } },
+            { slot: "sidebar.right", style: { right: "8px", top: "48px", bottom: "40px", width: "22%" } },
+            { slot: "panel.bottom", style: { left: "24%", right: "24%", bottom: "40px", height: "28%" } },
+          ]}
+        >
+          {(z) => (
+            // biome-ignore lint/a11y/noStaticElementInteractions: a target for a mouse drag; Settings › Layout places panels by keyboard
+            <div
+              class="slot-drop"
+              classList={{ over: dropSlot() === z.slot }}
+              style={z.style}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDropSlot(z.slot);
+              }}
+              onDragLeave={() => setDropSlot(undefined)}
+              onDrop={(e) => {
+                e.preventDefault();
+                dropPanel(z.slot);
+              }}
+            >
+              {t(`settings-slot-${z.slot.replace(".", "-")}`)}
+            </div>
+          )}
+        </For>
+      </Show>
+      <Show when={settingsOpen()}>
+        <Settings
+          config={config()}
+          host={host}
+          panels={[
+            { id: MODS_PANEL, title: t("mods-title"), slot: slotOf(MODS_PANEL, "sidebar.right") },
+            ...host.panels().map((p) => ({ id: p.id, title: p.title, slot: slotOf(p.id, p.slot) })),
+          ]}
+          onClose={() => {
+            setSettingsOpen(false);
+            setPreviewTheme(undefined);
+            refocus();
+          }}
+          preview={setPreviewTheme}
+          notify={showNotice}
+        />
       </Show>
       <Toasts toasts={toasts()} dismiss={dismissToast} />
       <Show when={host.pendingGrants()[0]} keyed>

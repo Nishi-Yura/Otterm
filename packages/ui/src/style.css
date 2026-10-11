@@ -8,12 +8,57 @@
   font-display: block;
 }
 
+/* UI tokens (docs/04 §2.2). The theme sets --ot-<key> on :root at runtime; these are the dark
+   defaults. Everything below uses the tokens, never a fixed color, so a light theme works too. */
 :root {
-  --bg: #1b1d23;
-  --fg: #d8dee9;
-  --muted: #7b8394;
+  --ot-bg: #1b1d23;
+  --ot-bg-elevated: color-mix(in srgb, var(--ot-bg) 88%, var(--ot-fg) 12%);
+  --ot-fg: #d8dee9;
+  --ot-fg-muted: #7b8394;
+  --ot-accent: #4f8cff;
+  --ot-border: color-mix(in srgb, var(--ot-fg) 12%, var(--ot-bg));
+  --ot-danger: #e06c75;
+  --ot-success: #98c379;
+  --ot-warning: #e5c07b;
+  --ot-radius: 6px;
+  --ot-shadow: 0 4px 16px rgb(0 0 0 / 0.4);
+  --ot-font-ui: system-ui, "Segoe UI", "Noto Sans JP", sans-serif;
+  /* Aliases kept for the existing rules and for older overrides. */
+  --bg: var(--ot-bg);
+  --fg: var(--ot-fg);
+  --muted: var(--ot-fg-muted);
   color-scheme: dark;
 }
+
+/* Keyboard focus is always visible (docs/04 §5). The terminal's hidden input and the terminal
+   itself are excluded: they receive keys but have no visible control. */
+:where(button, [role="tab"], [role="option"], input, select, textarea, a, [tabindex]):not(
+  .terminal,
+  .terminal .input
+):focus-visible {
+  outline: 2px solid var(--ot-accent);
+  outline-offset: 1px;
+}
+
+/* Reduced motion (docs/04 §4): the OS setting, or the app's own switch (html.reduce-motion).
+   !important is deliberate here: it must beat any theme or mod rule that adds motion. */
+/* biome-ignore-start lint/complexity/noImportantStyles: reduced motion must win over every rule */
+@media (prefers-reduced-motion: reduce) {
+  html:not(.allow-motion) *,
+  html:not(.allow-motion) *::before,
+  html:not(.allow-motion) *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: reduced motion must win over every rule */
 
 html,
 body,
@@ -21,7 +66,7 @@ body,
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--ot-bg);
 }
 
 /* The window: tab bar on top, panes below (docs/04 §1). */
@@ -39,12 +84,10 @@ body,
   height: 32px;
   padding: 0 6px;
   overflow-x: auto;
-  background: color-mix(in srgb, var(--bg) 88%, #000);
+  background: var(--ot-bg-elevated);
   scrollbar-width: none;
-  font:
-    12px system-ui,
-    sans-serif;
-  color: var(--muted);
+  font: 12px var(--ot-font-ui);
+  color: var(--ot-fg-muted);
   user-select: none;
 }
 
@@ -58,7 +101,7 @@ body,
   min-width: 80px;
   margin-top: 4px;
   padding: 0 6px 0 12px;
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--ot-radius) var(--ot-radius) 0 0;
   cursor: default;
 }
 
@@ -69,7 +112,7 @@ body,
 
 .app.tabbar-bottom .tab {
   margin: 0 0 4px;
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 var(--ot-radius) var(--ot-radius);
   box-shadow: inset 0 -2px 0 var(--tab-accent, transparent);
 }
 
@@ -90,7 +133,7 @@ body,
   height: 30px;
   min-width: 0;
   margin: 0 0 0 4px;
-  border-radius: 6px 0 0 6px;
+  border-radius: var(--ot-radius) 0 0 var(--ot-radius);
   box-shadow: inset 2px 0 0 var(--tab-accent, transparent);
 }
 
@@ -99,12 +142,12 @@ body,
 }
 
 .tab[aria-selected="true"] {
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--ot-bg);
+  color: var(--ot-fg);
 }
 
 .tab:hover:not([aria-selected="true"]) {
-  background: rgb(255 255 255 / 0.05);
+  background: color-mix(in srgb, var(--ot-fg) 5%, transparent);
 }
 
 /* The tab's program rang the bell while it was in the background. */
@@ -113,7 +156,7 @@ body,
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #f0c674;
+  background: var(--ot-warning);
 }
 
 /* Renaming a tab in place (double-click). */
@@ -121,11 +164,10 @@ body,
   flex: 1;
   min-width: 0;
   padding: 1px 4px;
-  border: 1px solid #4f8cff;
+  border: 1px solid var(--ot-accent);
   border-radius: 3px;
-  outline: none;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--ot-bg);
+  color: var(--ot-fg);
   font: inherit;
 }
 
@@ -158,8 +200,8 @@ body,
 
 .tab-close:hover,
 .tab-new:hover {
-  background: rgb(255 255 255 / 0.12);
-  color: var(--fg);
+  background: color-mix(in srgb, var(--ot-fg) 12%, transparent);
+  color: var(--ot-fg);
 }
 
 .panes {
@@ -183,7 +225,7 @@ body,
   position: absolute;
   inset: 0;
   pointer-events: none;
-  outline: 2px dashed var(--fg);
+  outline: 2px dashed var(--ot-fg);
   opacity: 0.5;
   outline-offset: -4px;
 }
@@ -194,7 +236,7 @@ body,
   z-index: 5;
   margin: 0;
   border: 0;
-  background: rgb(255 255 255 / 0.1);
+  background: color-mix(in srgb, var(--ot-fg) 10%, transparent);
   background-clip: content-box;
 }
 
@@ -217,7 +259,7 @@ body,
   content: "";
   position: absolute;
   inset: 0;
-  background: rgb(255 255 255 / 0.08);
+  background: color-mix(in srgb, var(--ot-fg) 8%, transparent);
   pointer-events: none;
 }
 
@@ -262,10 +304,10 @@ body,
   gap: 0.9em;
   padding: 0 0.6em;
   border-radius: 0 4px 4px 0;
-  background: var(--ot-prompt-bg, color-mix(in srgb, var(--fg) 7%, var(--bg)));
+  background: var(--ot-prompt-bg, color-mix(in srgb, var(--ot-fg) 7%, var(--ot-bg)));
   box-shadow: inset 2px 0 0 var(--ot-prompt-edge, var(--ot-term-ansi-4, #81a1c1));
-  color: var(--ot-prompt-fg, var(--muted));
-  font-family: var(--ot-prompt-font, system-ui, sans-serif);
+  color: var(--ot-prompt-fg, var(--ot-fg-muted));
+  font-family: var(--ot-prompt-font, var(--ot-font-ui));
   white-space: nowrap;
   line-height: 1;
 }
@@ -293,10 +335,10 @@ body,
   align-items: center;
   padding: 0 0.6em 0 1.4em;
   border: 0;
-  border-top: 1px dashed var(--ot-gutter, color-mix(in srgb, var(--fg) 25%, transparent));
-  background: var(--bg);
-  color: var(--muted);
-  font-family: var(--ot-prompt-font, system-ui, sans-serif);
+  border-top: 1px dashed var(--ot-gutter, color-mix(in srgb, var(--ot-fg) 25%, transparent));
+  background: var(--ot-bg);
+  color: var(--ot-fg-muted);
+  font-family: var(--ot-prompt-font, var(--ot-font-ui));
   line-height: 1;
   text-align: left;
   white-space: nowrap;
@@ -306,7 +348,7 @@ body,
 
 .block-fold:hover,
 .block-fold:focus-visible {
-  color: var(--fg);
+  color: var(--ot-fg);
 }
 
 /* The block gutter (docs/03 §6.3): a thin line at the left edge of every block; a failure is
@@ -315,7 +357,7 @@ body,
   position: absolute;
   left: 0;
   width: 2px;
-  background: var(--ot-gutter, color-mix(in srgb, var(--fg) 12%, transparent));
+  background: var(--ot-gutter, color-mix(in srgb, var(--ot-fg) 12%, transparent));
 }
 
 .block-gutter.failed {
@@ -330,12 +372,6 @@ body,
 @keyframes gutter-pulse {
   50% {
     opacity: 0.35;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .block-gutter.running {
-    animation: none;
   }
 }
 
@@ -356,7 +392,7 @@ body,
 }
 
 .prompt-header .ph-crumb:last-child {
-  color: var(--ot-prompt-folder, var(--fg));
+  color: var(--ot-prompt-folder, var(--ot-fg));
   font-weight: 600;
 }
 
@@ -403,8 +439,8 @@ body,
   top: 0;
   left: 0;
   padding: 0 1px;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--ot-bg);
+  color: var(--ot-fg);
   text-decoration: underline;
   white-space: pre;
   pointer-events: none;
@@ -419,7 +455,7 @@ body,
   bottom: 6px;
   width: 12px;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.1s;
   cursor: default;
 }
 
@@ -434,11 +470,11 @@ body,
   width: 6px;
   min-height: 8px;
   border-radius: 3px;
-  background: rgb(255 255 255 / 0.3);
+  background: color-mix(in srgb, var(--ot-fg) 30%, transparent);
 }
 
 .scrolltrack:hover .scrollthumb {
-  background: rgb(255 255 255 / 0.45);
+  background: color-mix(in srgb, var(--ot-fg) 45%, transparent);
 }
 
 .scrollmark {
@@ -446,7 +482,7 @@ body,
   right: 0;
   width: 12px;
   height: 2px;
-  background: #f0c674;
+  background: var(--ot-warning);
 }
 
 /* Scrollback search (docs/03 §4). */
@@ -458,14 +494,12 @@ body,
   align-items: center;
   gap: 2px;
   padding: 4px;
-  border: 1px solid rgb(255 255 255 / 0.12);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--bg) 85%, #808080);
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.35);
-  font:
-    12px system-ui,
-    sans-serif;
-  color: var(--fg);
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: var(--ot-bg-elevated);
+  box-shadow: var(--ot-shadow);
+  font: 12px var(--ot-font-ui);
+  color: var(--ot-fg);
 }
 
 .search-input {
@@ -473,18 +507,17 @@ body,
   padding: 3px 6px;
   border: 1px solid transparent;
   border-radius: 4px;
-  outline: none;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--ot-bg);
+  color: var(--ot-fg);
   font: inherit;
 }
 
 .search-input:focus {
-  border-color: #4f8cff;
+  border-color: var(--ot-accent);
 }
 
 .search-input.invalid {
-  border-color: #ff5c5c;
+  border-color: var(--ot-danger);
 }
 
 .search-toggle,
@@ -501,20 +534,20 @@ body,
 }
 
 .search-toggle[aria-pressed="true"] {
-  border-color: #4f8cff;
-  background: rgb(79 140 255 / 0.25);
+  border-color: var(--ot-accent);
+  background: color-mix(in srgb, var(--ot-accent) 25%, transparent);
 }
 
 .search-toggle:hover,
 .search-step:hover {
-  background: rgb(255 255 255 / 0.1);
+  background: color-mix(in srgb, var(--ot-fg) 10%, transparent);
 }
 
 .search-count {
   min-width: 52px;
   padding: 0 4px;
   text-align: center;
-  color: var(--muted);
+  color: var(--ot-fg-muted);
 }
 
 /* Right-click menu (decision I1). */
@@ -525,14 +558,12 @@ body,
   flex-direction: column;
   min-width: 200px;
   padding: 4px;
-  border: 1px solid rgb(255 255 255 / 0.12);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--bg) 85%, #808080);
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.4);
-  font:
-    13px system-ui,
-    sans-serif;
-  color: var(--fg);
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: var(--ot-bg-elevated);
+  box-shadow: var(--ot-shadow);
+  font: 13px var(--ot-font-ui);
+  color: var(--ot-fg);
 }
 
 .menu-item {
@@ -551,8 +582,7 @@ body,
 
 .menu-item:hover:not(:disabled),
 .menu-item:focus-visible {
-  outline: none;
-  background: rgb(79 140 255 / 0.3);
+  background: color-mix(in srgb, var(--ot-accent) 30%, transparent);
 }
 
 .menu-item:disabled {
@@ -561,7 +591,7 @@ body,
 }
 
 .menu-hint {
-  color: var(--muted);
+  color: var(--ot-fg-muted);
 }
 
 /* A question about the terminal: paste confirmation, clipboard requests. */
@@ -574,14 +604,12 @@ body,
   max-width: 640px;
   margin-left: auto;
   padding: 10px 12px;
-  border: 1px solid rgb(255 255 255 / 0.14);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--bg) 85%, #808080);
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.4);
-  font:
-    13px system-ui,
-    sans-serif;
-  color: var(--fg);
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: var(--ot-bg-elevated);
+  box-shadow: var(--ot-shadow);
+  font: 13px var(--ot-font-ui);
+  color: var(--ot-fg);
 }
 
 .prompt-title {
@@ -590,7 +618,7 @@ body,
 
 .prompt-body {
   margin-top: 4px;
-  color: var(--muted);
+  color: var(--ot-fg-muted);
 }
 
 .prompt-preview {
@@ -599,7 +627,7 @@ body,
   padding: 6px 8px;
   overflow: auto;
   border-radius: 4px;
-  background: var(--bg);
+  background: var(--ot-bg);
   font:
     12px "Cascadia Mono",
     monospace;
@@ -616,23 +644,22 @@ body,
 
 .prompt-button {
   padding: 4px 12px;
-  border: 1px solid rgb(255 255 255 / 0.16);
+  border: 1px solid color-mix(in srgb, var(--ot-fg) 16%, transparent);
   border-radius: 5px;
-  background: rgb(255 255 255 / 0.06);
+  background: color-mix(in srgb, var(--ot-fg) 6%, transparent);
   color: inherit;
   font: inherit;
   cursor: pointer;
 }
 
 .prompt-button:first-child {
-  border-color: #4f8cff;
-  background: rgb(79 140 255 / 0.3);
+  border-color: var(--ot-accent);
+  background: color-mix(in srgb, var(--ot-accent) 30%, transparent);
 }
 
 .prompt-button:hover,
 .prompt-button:focus-visible {
-  outline: none;
-  background: rgb(79 140 255 / 0.45);
+  background: color-mix(in srgb, var(--ot-accent) 45%, transparent);
 }
 
 /* A window-level question (closing a tab with a running program), over the panes. */
@@ -657,12 +684,10 @@ body,
   right: 12px;
   max-width: min(560px, calc(100% - 24px));
   padding: 6px 10px;
-  border-radius: 6px;
-  background: rgb(0 0 0 / 0.75);
-  color: #f0c674;
-  font:
-    12px system-ui,
-    sans-serif;
+  border-radius: var(--ot-radius);
+  background: color-mix(in srgb, var(--ot-bg) 75%, transparent);
+  color: var(--ot-warning);
+  font: 12px var(--ot-font-ui);
   pointer-events: none;
 }
 
@@ -672,9 +697,113 @@ body,
   bottom: 8px;
   padding: 4px 8px;
   border-radius: 4px;
-  background: rgb(0 0 0 / 0.5);
-  color: var(--muted);
-  font:
-    12px system-ui,
-    sans-serif;
+  background: color-mix(in srgb, var(--ot-bg) 50%, transparent);
+  color: var(--ot-fg-muted);
+  font: 12px var(--ot-font-ui);
+}
+
+/* Window translucency and the background image (docs/04 §2.1 [theme.window], decision I6). The
+   window's own background is the only tinted layer (config.ts applyWindow): the terminal draws no
+   default background, everything in between is see-through, and the bars keep a little color. */
+html.translucent {
+  --ot-veil: color-mix(in srgb, var(--ot-term-bg, var(--ot-bg)) var(--ot-bg-veil, 100%), transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--ot-term-bg, var(--ot-bg)) calc(var(--ot-window-alpha, 1) * 100%),
+    transparent
+  );
+  background-image: linear-gradient(var(--ot-veil), var(--ot-veil)), var(--ot-bg-image, none);
+  background-position: center;
+  background-size: auto, var(--ot-bg-size, cover);
+  background-repeat: no-repeat, var(--ot-bg-repeat, no-repeat);
+}
+
+html.translucent body,
+html.translucent #root,
+html.translucent .app,
+html.translucent .body,
+html.translucent .panes,
+html.translucent .pane,
+html.translucent .terminal {
+  background: transparent;
+}
+
+html.translucent .tabbar,
+html.translucent .statusbar,
+html.translucent .side-panel,
+html.translucent .assist-bar {
+  background: color-mix(in srgb, var(--ot-bg-elevated) calc(var(--ot-window-alpha, 1) * 80%), transparent);
+}
+
+/* appearance.ui_scale: the window's own parts; the terminal text follows font.size. */
+.tabbar,
+.statusbar,
+.side-panel,
+.assist-bar,
+.palette,
+.mod-dialog,
+.toasts,
+.prompt,
+.search,
+.notice,
+.settings {
+  zoom: var(--ot-ui-scale, 1);
+}
+
+/* Text only screen readers see (accessibility.screen_reader). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Where a dragged panel tab can go (docs/04 §1.1, Slot placement by dragging). */
+.slot-drop {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--ot-accent);
+  border-radius: var(--ot-radius);
+  background: color-mix(in srgb, var(--ot-accent) 12%, transparent);
+  color: var(--ot-fg);
+  font: 12px var(--ot-font-ui);
+}
+
+.slot-drop.over {
+  background: color-mix(in srgb, var(--ot-accent) 30%, transparent);
+}
+
+/* The `cards` layout (docs/04 §1.2): each block is a framed card instead of a gutter line. The
+   frame is drawn over the grid, so the text does not move. */
+.app.blocks-cards .block-gutter {
+  right: 0;
+  width: auto;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ot-fg) 3%, transparent);
+  box-shadow:
+    inset 0 0 0 1px var(--ot-border),
+    inset 3px 0 0 var(--ot-gutter, var(--ot-border));
+  animation: none;
+}
+
+.app.blocks-cards .block-gutter.failed {
+  background: color-mix(in srgb, var(--ot-danger) 5%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ot-danger) 45%, transparent),
+    inset 3px 0 0 var(--ot-danger);
+}
+
+.app.blocks-cards .block-gutter.running {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ot-accent) 45%, transparent),
+    inset 3px 0 0 var(--ot-accent);
+}
+
+.app.blocks-cards .prompt-header {
+  border-radius: 6px 6px 0 0;
 }

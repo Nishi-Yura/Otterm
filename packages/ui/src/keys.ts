@@ -75,7 +75,11 @@ export type AppAction =
   /** Scroll to the previous (-1) or next (1) block (docs/03 §6.3). */
   | { kind: "blockJump"; dir: -1 | 1 }
   /** Fold or show the output of the newest finished block. */
-  | { kind: "blockFold" };
+  | { kind: "blockFold" }
+  /** Show or hide a panel area (docs/06 §5.2). */
+  | { kind: "togglePanel"; slot: "sidebar.left" | "sidebar.right" | "panel.bottom" }
+  /** Move the keyboard to the next part of the window (F6). */
+  | { kind: "focusRegion"; dir: 1 | -1 };
 
 /** Font size keys (docs/06 §5.2): Ctrl (Cmd on macOS) with `=` / `+` bigger, `-` smaller, `0` reset. */
 export function zoomKey(e: KeyboardEvent): 1 | -1 | 0 | undefined {

@@ -2369,6 +2369,7 @@ dependencies = [
  "otterm-session",
  "otterm-text",
  "rusqlite",
+ "schemars 1.2.2",
  "semver",
  "serde",
  "serde_json",
