@@ -146,6 +146,28 @@ pub fn theme_mod_files(disabled: &[String]) -> Vec<PathBuf> {
         .collect()
 }
 
+/// Installed mods that did not come with otterm, as (id, version), for a settings export.
+pub fn installed_mods() -> Vec<(String, String)> {
+    let Some(data) = data_dir() else { return Vec::new() };
+    otterm_modhost::discover(&data, Platform::current(), &host_version())
+        .into_iter()
+        .filter_map(|f| match f {
+            Found::Mod(m) => Some((m.id.clone(), m.manifest.mod_.version.clone())),
+            Found::Broken { .. } => None,
+        })
+        .collect()
+}
+
+/// Whether the installed mod `id` may type into the terminal (`terminal.write`); `None` when no
+/// such mod is installed. A workspace file may not turn those on (docs/06 §1).
+pub fn writes_terminal(id: &str) -> Option<bool> {
+    let data = data_dir()?;
+    discover_all(&data).into_iter().find_map(|f| match f {
+        Found::Mod(m) if m.id == id => Some(m.manifest.permissions.terminal.write),
+        _ => None,
+    })
+}
+
 fn is_bundled(m: &Installed, data: &Path) -> bool {
     m.dir.starts_with(bundled_dir(data))
 }

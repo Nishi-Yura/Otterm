@@ -18,7 +18,15 @@ pub struct Warning {
     pub message: String,
 }
 
-/// The user configuration file for this platform (docs/06 §1). `OTTERM_CONFIG` overrides it.
+/// A `portable/` folder next to the executable, if present. Portable installs keep config and
+/// data beside the app instead of in the user profile.
+pub fn portable_dir() -> Option<PathBuf> {
+    let dir = std::env::current_exe().ok()?.parent()?.join("portable");
+    dir.is_dir().then_some(dir)
+}
+
+/// The user configuration file (docs/06 §1). `OTTERM_CONFIG` overrides it; otherwise it lives in
+/// [`config_dir`].
 pub fn config_path() -> Option<PathBuf> {
     if let Some(p) = std::env::var_os("OTTERM_CONFIG") {
         return Some(PathBuf::from(p));
@@ -26,8 +34,12 @@ pub fn config_path() -> Option<PathBuf> {
     config_dir().map(|d| d.join("config.toml"))
 }
 
-/// The folder holding `config.toml` and `themes/`.
+/// The folder holding `config.toml` and `themes/`. A [`portable_dir`] wins over the platform
+/// location.
 pub fn config_dir() -> Option<PathBuf> {
+    if let Some(dir) = portable_dir() {
+        return Some(dir);
+    }
     let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(PathBuf::from);
     if cfg!(windows) {
         env("APPDATA").map(|d| d.join("otterm"))
@@ -40,12 +52,16 @@ pub fn config_dir() -> Option<PathBuf> {
     }
 }
 
-/// The folder for otterm's own data: mods, state, logs (docs/06 §1). `OTTERM_DATA_DIR` overrides
-/// it (tests, and `create-otterm-mod`'s link step use the same variable).
+/// The folder for otterm's own data: mods, state, logs (docs/06 §1). Precedence: `OTTERM_DATA_DIR`
+/// (tests, and `create-otterm-mod`'s link step use the same variable), then [`portable_dir`], then
+/// the platform location.
 pub fn data_dir() -> Option<PathBuf> {
     let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(PathBuf::from);
     if let Some(d) = env("OTTERM_DATA_DIR") {
         return Some(d);
+    }
+    if let Some(dir) = portable_dir() {
+        return Some(dir);
     }
     if cfg!(windows) {
         env("LOCALAPPDATA").map(|d| d.join("otterm"))
@@ -101,7 +117,7 @@ pub fn parse(text: &str) -> (Config, Vec<Warning>) {
 }
 
 /// One section; on failure, keep the keys that parse on their own.
-fn section<T: DeserializeOwned + Default>(name: &str, value: toml::Value, warnings: &mut Vec<Warning>) -> T {
+pub(crate) fn section<T: DeserializeOwned + Default>(name: &str, value: toml::Value, warnings: &mut Vec<Warning>) -> T {
     let error = match value.clone().try_into::<T>() {
         Ok(v) => return v,
         Err(e) => e,

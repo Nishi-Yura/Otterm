@@ -5,7 +5,7 @@ import { ContextMenu, type MenuItem } from "./ContextMenu";
 import type { UiConfig } from "./config";
 import { t } from "./i18n";
 import { Icon } from "./icons";
-import { isCopyShortcut, isSearchShortcut, platform, scrollKey, terminalKey, zoomKey } from "./keys";
+import { type AppAction, platform, scrollKey, terminalKey } from "./keys";
 import { PromptBar, type PromptProps } from "./PromptBar";
 import { decodeInfo, duration, type FoldRow, type HeaderRow, PromptHeaders } from "./PromptHeaders";
 import { attachPointer } from "./pointer";
@@ -49,6 +49,8 @@ export interface TerminalViewProps {
   cwd?: string;
   /** Profile to start (new-tab menu); the default when absent. */
   profile?: string;
+  /** The later `otterm` launch this pane opens for (docs/06 §4). */
+  launch?: number;
   onTitle: (title: string) => void;
   /** A command started (its line, maybe empty) or ended (""), from the shell integration. */
   onRunning: (command: string) => void;
@@ -76,7 +78,8 @@ export interface TerminalViewProps {
   /** The user clicked into this pane. */
   onActivate: () => void;
   /** Window-level shortcuts (tabs, panes). Returns true when it handled the key. */
-  appKey: (e: KeyboardEvent, altScreen: boolean) => boolean;
+  /** Window keys first: true when otterm took the key, an action when this terminal should run it. */
+  appKey: (e: KeyboardEvent, pane: { altScreen: boolean; hasSelection: boolean }) => boolean | AppAction;
   notify: (text: string) => void;
 }
 
@@ -279,6 +282,7 @@ export function TerminalView(props: TerminalViewProps) {
         },
         props.cwd,
         props.profile,
+        props.launch,
       );
       startupMark("session created");
       props.onSession(session.id);
@@ -804,8 +808,39 @@ export function TerminalView(props: TerminalViewProps) {
   /** An Enter is waiting for the mods' verdict; keys typed meanwhile are not lost (they queue in the DOM). */
   let enterPending = false;
 
+  /** Copy, paste, search, font size and clear (docs/06 §5.2): bound in keymap.ts, run here. */
+  const runPaneAction = (a: AppAction): boolean => {
+    switch (a.kind) {
+      case "copy":
+        // Ctrl+Shift+C with nothing selected does nothing rather than reach the shell.
+        if (selection.active && !selection.empty) void copySelection().then(clearSelection);
+        return true;
+      case "paste":
+        void pasteClipboard();
+        return true;
+      case "search":
+        if (searching()) focusSearch?.();
+        else setSearching(true);
+        return true;
+      case "font":
+        // Keep zoom inside the size limits so the opposite key works at once.
+        zoom = a.step === 0 ? 0 : Math.min(72 - baseFont.size, Math.max(6 - baseFont.size, zoom + a.step));
+        void applyFont();
+        refit?.();
+        return true;
+      case "clear":
+        // The shell clears the screen; the scrollback stays (docs/06 §5.2).
+        if (!session) return false;
+        void session.key({ key: "l", ctrl: true, alt: false, shift: false });
+        return true;
+      default:
+        return false;
+    }
+  };
+
   const onKeyDown = (e: KeyboardEvent) => {
-    if (props.appKey(e, model.altScreen)) {
+    const app = props.appKey(e, { altScreen: model.altScreen, hasSelection: selection.active && !selection.empty });
+    if (app === true || (typeof app === "object" && runPaneAction(app))) {
       e.preventDefault();
       return;
     }
@@ -838,27 +873,6 @@ export function TerminalView(props: TerminalViewProps) {
         .finally(() => {
           enterPending = false;
         });
-      return;
-    }
-    if (isSearchShortcut(e)) {
-      e.preventDefault();
-      if (searching()) focusSearch?.();
-      else setSearching(true);
-      return;
-    }
-    const z = zoomKey(e);
-    if (z !== undefined) {
-      e.preventDefault();
-      // Keep zoom inside the size limits so the opposite key works at once.
-      zoom = z === 0 ? 0 : Math.min(72 - baseFont.size, Math.max(6 - baseFont.size, zoom + z));
-      void applyFont();
-      refit?.();
-      return;
-    }
-    const hasSelection = selection.active && !selection.empty;
-    if (isCopyShortcut(e, hasSelection)) {
-      e.preventDefault();
-      void copySelection().then(clearSelection);
       return;
     }
     const scroll = model.altScreen ? undefined : scrollKey(e, model.rows);

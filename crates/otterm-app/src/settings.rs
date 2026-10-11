@@ -282,7 +282,7 @@ pub fn cli(args: &[String]) -> CmdResult<String> {
     let usage = "usage: otterm theme import <file>...";
     match args.first().map(String::as_str) {
         Some("import") if args.len() > 1 => {
-            let config = crate::config::ConfigState::load(None);
+            let config = crate::config::ConfigState::load(None, None);
             let mut out = String::new();
             for file in &args[1..] {
                 let text = std::fs::read_to_string(file).map_err(|e| format!("{file}: {e}"))?;

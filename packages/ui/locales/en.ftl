@@ -360,6 +360,12 @@ start-failed = Could not start the shell: { $error }
 config-ignored = Ignored part of config.toml: { $keys }
 config-unreadable = Could not read the configuration: { $error }
 launch-unknown = Could not use these arguments: { $args }
+ai-unavailable = To ask the AI, install and turn on the AI mod (otterm.ai-assist)
+command-unknown = There is no command { $id }
+workspace-trust-title = Trust the workspace “{ $name }”?
+workspace-trust-body = The .otterm/workspace.toml in { $root } wants to run commands, turn on mods or change settings. Until you trust it, only its theme is used. Trust only folders you made or whose contents you checked.
+workspace-trust-yes = Trust
+workspace-trust-no = Don’t trust
 copy-failed = Could not copy to the clipboard: { $error }
 
 ## Search
@@ -874,12 +880,25 @@ settings-keys-press = Press a key
 settings-keys-record = Record
 settings-keys-clear = Unassign
 settings-keys-conflict = Same key as another action
+settings-keys-custom = Keys with arguments and conditions
+settings-keys-custom-hint = Entries from [[keybindings.custom]] in config.toml (key, command, args, when). Shown here only
+settings-keys-mods = Keys suggested by mods
+settings-keys-mod-lost = Off: otterm or you use the same key. Change one of them in the table above
 settings-mod-enabled = Enabled
 settings-css = Your CSS (user.css)
 settings-css-hint = Shown as you type. Select elements with [data-ot="…"].
 settings-css-save = Save
 settings-file = Settings file
 settings-open-file = Open config.toml in the editor
+settings-bundle = Export and import
+settings-bundle-hint = Settings, themes, layouts, background images and the mod list in one zip. Importing keeps a backup of the current config.toml beside it
+settings-export = Export to zip
+settings-import = Import from zip
+settings-exported = Exported: { $path }
+settings-reset-all = Reset everything
+settings-reset-all-hint = Puts config.toml back to the defaults. The current file stays as config.toml.bak-reset-…
+settings-reset-category = Reset this category
+settings-reset-confirm = Press again to reset
 
 ## Key binding action names
 
@@ -923,3 +942,13 @@ keyact-pane-focus-up = Focus pane up
 keyact-pane-resize-up = Resize pane up
 keyact-pane-focus-down = Focus pane down
 keyact-pane-resize-down = Resize pane down
+keyact-copy = Copy
+keyact-paste = Paste
+keyact-search = Search
+keyact-font-bigger = Bigger text
+keyact-font-smaller = Smaller text
+keyact-font-reset = Reset text size
+keyact-ai-ask = Ask Pebble (AI)
+keyact-mascot-toggle = Show or hide Pebble
+keyact-guide-help_mode = Help mode
+keyact-clear = Clear the screen

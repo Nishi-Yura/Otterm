@@ -16,6 +16,8 @@ const WATCH_INTERVAL: Duration = Duration::from_secs(1);
 
 pub struct ConfigState {
     path: Option<PathBuf>,
+    /// Where to look for `.otterm/workspace.toml` (docs/06 §1): the folder otterm started in.
+    start: Option<PathBuf>,
     /// Started with `--safe-mode`: what the configuration says about looks and mods is ignored.
     safe: std::sync::atomic::AtomicBool,
     loaded: Mutex<Loaded>,
@@ -29,8 +31,24 @@ struct Loaded {
     /// `<config>/user.css`, empty when there is none.
     user_css: String,
     warnings: Vec<Warning>,
-    /// The newest modification time of config.toml, user.css and the theme and layout files.
+    /// The workspace file found above the start folder, and whether it is trusted (K4).
+    workspace: Option<(otterm_config::Workspace, Option<bool>)>,
+    /// The newest modification time of config.toml, user.css, the theme and layout files and
+    /// the workspace file.
     modified: Option<SystemTime>,
+}
+
+/// The workspace as the UI needs it (docs/06 §1, decision K4).
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UiWorkspace {
+    pub name: String,
+    pub root: String,
+    /// `None` until the user answered the trust question.
+    pub trusted: Option<bool>,
+    /// It has something that waits for trust (tab commands, mods, settings), so ask.
+    pub gated: bool,
+    pub tabs: usize,
 }
 
 /// What the UI needs, resolved.
@@ -74,6 +92,8 @@ pub struct UiConfig {
     pub word_separators: String,
     /// `[keybindings.bindings]`: action id → key chords (an empty list unbinds).
     pub keybindings: std::collections::BTreeMap<String, Vec<String>>,
+    /// `[[keybindings.custom]]`: keys that run a command with arguments under a `when` clause.
+    pub custom_keys: Vec<UiCustomKey>,
     pub alt_screen_passthrough: bool,
     /// Ask before pasting text with line breaks (decision B16, resolved against the guide level).
     pub confirm_multiline_paste: bool,
@@ -102,6 +122,7 @@ pub struct UiConfig {
     pub mods_dir: Option<String>,
     /// Keys that were ignored, to show once.
     pub warnings: Vec<UiWarning>,
+    pub workspace: Option<UiWorkspace>,
     pub config_path: Option<String>,
 }
 
@@ -156,16 +177,58 @@ pub struct UiAccessibility {
 }
 
 #[derive(Clone, Serialize)]
+pub struct UiCustomKey {
+    pub key: String,
+    pub command: String,
+    pub args: serde_json::Map<String, serde_json::Value>,
+    pub when: Option<String>,
+}
+
+#[derive(Clone, Serialize)]
 pub struct UiWarning {
     pub key: String,
     pub message: String,
 }
 
 impl ConfigState {
-    /// Read `path`, or the usual config.toml when it is `None`.
-    pub fn load(path: Option<PathBuf>) -> Self {
+    /// Read `path`, or the usual config.toml when it is `None`. Without `start`, no workspace
+    /// file is looked for (the command line tools).
+    pub fn load(path: Option<PathBuf>, start: Option<PathBuf>) -> Self {
         let path = path.or_else(otterm_config::config_path);
-        Self { loaded: Mutex::new(read(path.as_ref())), path, safe: Default::default() }
+        Self { loaded: Mutex::new(read(path.as_ref(), start.as_deref())), path, start, safe: Default::default() }
+    }
+
+    /// Bring an older config.toml up to this otterm's schema (docs/06 §3), keeping a backup.
+    pub fn migrate(&self) {
+        let Some(path) = self.path.as_ref() else { return };
+        let warning = match otterm_config::migrate_file(path) {
+            Ok(otterm_config::Migration::UpToDate) => return,
+            Ok(otterm_config::Migration::Migrated { from, backup }) => Warning {
+                key: "schema".into(),
+                message: format!("updated from schema {from}; the old file is {}", backup.display()),
+            },
+            Ok(otterm_config::Migration::Newer(n)) => Warning {
+                key: "schema".into(),
+                message: format!("written by a newer otterm (schema {n}); unknown keys are ignored"),
+            },
+            Err(message) => Warning { key: "schema".into(), message },
+        };
+        self.reload();
+        self.loaded.lock().unwrap().warnings.push(warning);
+    }
+
+    /// The workspace in use and whether it is trusted.
+    pub fn workspace(&self) -> Option<(otterm_config::Workspace, Option<bool>)> {
+        self.loaded.lock().unwrap().workspace.clone()
+    }
+
+    /// Record the answer to the trust question (K4) and read everything again.
+    pub fn trust_workspace(&self, trusted: bool) -> Result<(), String> {
+        let (ws, _) = self.workspace().ok_or("no workspace")?;
+        let data = otterm_config::data_dir().ok_or("no data folder")?;
+        otterm_config::TrustStore::open(&data).set(&ws.root, trusted)?;
+        self.reload();
+        Ok(())
     }
 
     /// Turn safe mode on (docs/04 §2.3).
@@ -295,6 +358,21 @@ impl ConfigState {
                     (k.clone(), keys)
                 })
                 .collect(),
+            custom_keys: c
+                .keybindings
+                .custom
+                .iter()
+                .map(|k| UiCustomKey {
+                    key: k.key.clone(),
+                    command: k.command.clone(),
+                    args: k
+                        .args
+                        .iter()
+                        .filter_map(|(name, v)| Some((name.clone(), serde_json::to_value(v).ok()?)))
+                        .collect(),
+                    when: k.when.clone(),
+                })
+                .collect(),
             alt_screen_passthrough: c.keybindings.alt_screen_passthrough,
             confirm_multiline_paste: effective.confirm_multiline_paste,
             right_click: effective.right_click,
@@ -319,13 +397,27 @@ impl ConfigState {
             safe_mode: safe,
             mods_dir: otterm_config::data_dir().map(|d| otterm_modhost::mods_dir(&d).display().to_string()),
             warnings,
+            workspace: l.workspace.as_ref().map(|(ws, trusted)| UiWorkspace {
+                name: ws.config.name.clone().unwrap_or_else(|| {
+                    ws.root.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
+                }),
+                root: ws.root.display().to_string(),
+                trusted: *trusted,
+                gated: ws.config.tabs.iter().any(|t| t.command.is_some())
+                    || !ws.config.mods.is_empty()
+                    || !ws.overrides.is_empty()
+                    || !ws.config.settings.is_empty()
+                    || ws.config.outfit.is_some(),
+                tabs: ws.config.tabs.len(),
+            }),
             config_path: self.path.as_ref().map(|p| p.display().to_string()),
         }
     }
 
     /// Reload if the file changed since the last read. Returns whether it did.
     pub fn reload_if_changed(&self) -> bool {
-        let modified = newest_change(self.path.as_ref());
+        let ws_file = self.workspace().map(|(ws, _)| ws.file);
+        let modified = newest_change(self.path.as_ref()).max(ws_file.and_then(|f| mtime(&f)));
         if modified == self.loaded.lock().unwrap().modified {
             return false;
         }
@@ -335,7 +427,7 @@ impl ConfigState {
 
     /// Read everything again (after the settings screen wrote a file).
     pub fn reload(&self) {
-        *self.loaded.lock().unwrap() = read(self.path.as_ref());
+        *self.loaded.lock().unwrap() = read(self.path.as_ref(), self.start.as_deref());
     }
 
     /// Every theme, bundled and the user's.
@@ -371,11 +463,12 @@ impl ConfigState {
     }
 }
 
-fn read(path: Option<&PathBuf>) -> Loaded {
-    let (config, mut warnings) = match path {
+fn read(path: Option<&PathBuf>, start: Option<&std::path::Path>) -> Loaded {
+    let (mut config, mut warnings) = match path {
         Some(p) => otterm_config::load(p),
         None => (Config::default(), Vec::new()),
     };
+    let workspace = start.and_then(|s| workspace(s, &mut config, &mut warnings));
     let dir = path.and_then(|p| p.parent());
     let (mut themes, theme_warnings) = otterm_config::all_themes(dir.map(|d| d.join("themes")).as_deref());
     warnings.extend(theme_warnings);
@@ -394,7 +487,49 @@ fn read(path: Option<&PathBuf>) -> Loaded {
     let (layouts, layout_warnings) = otterm_config::saved_layouts(dir.map(|d| d.join("layouts")).as_deref());
     warnings.extend(layout_warnings);
     let user_css = dir.and_then(|d| std::fs::read_to_string(d.join("user.css")).ok()).unwrap_or_default();
-    Loaded { config, themes, layouts, user_css, warnings, modified: newest_change(path) }
+    let modified = newest_change(path).max(workspace.as_ref().and_then(|(ws, _)| mtime(&ws.file)));
+    Loaded { config, themes, layouts, user_css, warnings, workspace, modified }
+}
+
+/// The workspace above `start`, applied to `config` as far as its trust allows (K4): untrusted,
+/// only its theme; trusted, its settings and its mods, but never a mod that types into the
+/// terminal (`terminal.write`, docs/06 §1).
+fn workspace(
+    start: &std::path::Path,
+    config: &mut Config,
+    warnings: &mut Vec<Warning>,
+) -> Option<(otterm_config::Workspace, Option<bool>)> {
+    let file = otterm_config::find_workspace(start)?;
+    let (ws, more) = otterm_config::load_workspace(&file);
+    let prefix = |w: Warning| Warning { key: format!("workspace.toml {}", w.key).trim_end().to_owned(), ..w };
+    warnings.extend(more.into_iter().map(prefix));
+    let ws = ws?;
+    let trusted = otterm_config::data_dir().and_then(|d| otterm_config::TrustStore::open(&d).get(&ws.root));
+    let on = trusted == Some(true);
+    warnings.extend(otterm_config::apply_workspace(config, &ws, on).into_iter().map(prefix));
+    if on {
+        for id in &ws.config.mods {
+            match crate::mods::writes_terminal(id) {
+                Some(false) => {
+                    if !config.mods.disabled.contains(id) && !config.mods.enabled.contains(id) {
+                        config.mods.enabled.push(id.clone());
+                    }
+                }
+                Some(true) => warnings.push(Warning {
+                    key: format!("workspace.toml mods.{id}"),
+                    message: "a mod with terminal.write cannot be turned on by a workspace".into(),
+                }),
+                None => {
+                    warnings.push(Warning { key: format!("workspace.toml mods.{id}"), message: "not installed".into() })
+                }
+            }
+        }
+    }
+    Some((ws, trusted))
+}
+
+fn mtime(p: &std::path::Path) -> Option<SystemTime> {
+    std::fs::metadata(p).ok()?.modified().ok()
 }
 
 /// The newest modification time among config.toml, user.css and the files in `themes/` and

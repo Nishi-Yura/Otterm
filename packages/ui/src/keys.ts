@@ -28,25 +28,6 @@ export function isPasteShortcut(e: KeyboardEvent): boolean {
   return v && e.ctrlKey && e.shiftKey && !e.altKey;
 }
 
-/**
- * The copy shortcut (decision B4): Cmd+C on macOS, Ctrl+Shift+C on Linux and Windows, and on
- * Windows also Ctrl+C while there is a selection (without one, Ctrl+C stays SIGINT).
- */
-export function isCopyShortcut(e: KeyboardEvent, hasSelection: boolean): boolean {
-  // Ctrl+Insert, the old CUA copy key, everywhere but macOS (only with a selection).
-  if (platform !== "macos" && e.key === "Insert" && e.ctrlKey && !e.shiftKey && !e.altKey) return hasSelection;
-  if (e.key.toLowerCase() !== "c" || e.altKey) return false;
-  if (platform === "macos") return e.metaKey && !e.ctrlKey;
-  if (e.ctrlKey && e.shiftKey) return true;
-  return platform === "windows" && e.ctrlKey && hasSelection;
-}
-
-/** Open the search bar (docs/06 §5.2): Ctrl+Shift+F, Cmd+F on macOS. */
-export function isSearchShortcut(e: KeyboardEvent): boolean {
-  if (e.key.toLowerCase() !== "f" || e.altKey) return false;
-  return platform === "macos" ? e.metaKey && !e.ctrlKey : e.ctrlKey && e.shiftKey && !e.metaKey;
-}
-
 export type Dir = "left" | "right" | "up" | "down";
 
 /** Window-level actions on tabs and panes; keys for them are in keymap.ts. */
@@ -79,17 +60,21 @@ export type AppAction =
   /** Show or hide a panel area (docs/06 §5.2). */
   | { kind: "togglePanel"; slot: "sidebar.left" | "sidebar.right" | "panel.bottom" }
   /** Move the keyboard to the next part of the window (F6). */
-  | { kind: "focusRegion"; dir: 1 | -1 };
-
-/** Font size keys (docs/06 §5.2): Ctrl (Cmd on macOS) with `=` / `+` bigger, `-` smaller, `0` reset. */
-export function zoomKey(e: KeyboardEvent): 1 | -1 | 0 | undefined {
-  const mod = platform === "macos" ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
-  if (!mod || e.altKey) return undefined;
-  if (e.key === "=" || e.key === "+" || e.code === "NumpadAdd") return 1;
-  if ((e.key === "-" && !e.shiftKey) || e.code === "NumpadSubtract") return -1;
-  if (e.key === "0" && !e.shiftKey) return 0;
-  return undefined;
-}
+  | { kind: "focusRegion"; dir: 1 | -1 }
+  /** Copy or paste the selection / clipboard (docs/06 §5.2). */
+  | { kind: "copy" }
+  | { kind: "paste" }
+  /** Open the search bar. */
+  | { kind: "search" }
+  /** Font size: 1 bigger, -1 smaller, 0 reset. */
+  | { kind: "font"; step: 1 | -1 | 0 }
+  /** Ask the AI mod (docs/06 §5.2). */
+  | { kind: "aiAsk" }
+  | { kind: "mascotToggle" }
+  /** Guide help mode (F1). */
+  | { kind: "helpMode" }
+  /** Pass Ctrl+L through to the shell and keep the scrollback. */
+  | { kind: "clear" };
 
 /** Scrollback keys: Shift+PageUp/PageDown by a page, Ctrl+Shift+Home/End to the top / bottom. */
 export function scrollKey(e: KeyboardEvent, rows: number): number | "top" | "bottom" | undefined {

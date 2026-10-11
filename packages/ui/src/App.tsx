@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack } from "solid-js";
@@ -13,10 +14,18 @@ import {
 import { wordAt } from "./assist/parse";
 import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInternals, startupMark } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
-import { applyThemeCss, applyWindow, loadConfig, onConfigChanged, type UiConfig, uiTokens } from "./config";
+import {
+  applyThemeCss,
+  applyWindow,
+  loadConfig,
+  onConfigChanged,
+  type UiConfig,
+  type UiWorkspace,
+  uiTokens,
+} from "./config";
 import { language, setLanguage, t } from "./i18n";
 import { Icon } from "./icons";
-import { defaults as defaultKeys, Keymap } from "./keymap";
+import { defaults as defaultKeys, Keymap, type KeyTarget } from "./keymap";
 import { type AppAction, platform } from "./keys";
 import {
   type Divider,
@@ -51,11 +60,20 @@ import type { Frame } from "./screen/protocol";
 import { connectScreen } from "./session";
 import { Settings } from "./settings/Settings";
 import { type ScreenHub, TerminalView } from "./TerminalView";
+import type { WhenContext } from "./when";
 
 /** How long a notice (such as ignored config keys) stays up. */
 const NOTICE_MS = 10_000;
 /** How far Alt+Shift+arrow moves a divider, as a fraction of the split. */
 const RESIZE_STEP = 0.05;
+/** Actions the focused terminal runs itself: they need its selection, search bar or font. */
+const PANE_ACTIONS = new Set<AppAction["kind"]>(["copy", "paste", "search", "font", "clear"]);
+
+/** What a terminal tells the keymap about itself when a key arrives. */
+export interface PaneKeyState {
+  altScreen: boolean;
+  hasSelection: boolean;
+}
 
 interface Tab {
   id: number;
@@ -79,6 +97,8 @@ interface Pane {
   profileName?: string;
   /** When it was created (ms), to tell a shell that dies at once from one that ran. */
   started?: number;
+  /** A later `otterm` launch it opened for (docs/06 §4). */
+  launch?: number;
 }
 
 /**
@@ -145,6 +165,8 @@ export function App() {
   /** The user confirmed closing the window; do not ask again. */
   let closingWindow = false;
   let keymap = new Keymap();
+  /** The ignored-keys notice last shown, so a reload with the same problems stays quiet. */
+  let lastWarnings = "";
 
   const hub: ScreenHub = {
     subscribe(session, onFrame) {
@@ -598,10 +620,16 @@ export function App() {
   const keyHint = (id: string): string | undefined => {
     const chord = (config()?.keybindings[id] ?? defaultKeys()[id])?.[0];
     if (!chord) return undefined;
+    // A sequence (`ctrl+k ctrl+t`) shows each of its chords the same way.
     return chord
-      .split("+")
-      .map((p) => (p === "cmd" ? "⌘" : p.replace(/^arrow/, "").replace(/^./, (c) => c.toUpperCase())))
-      .join("+");
+      .split(/\s+/)
+      .map((step) =>
+        step
+          .split("+")
+          .map((p) => (p === "cmd" ? "⌘" : p.replace(/^arrow/, "").replace(/^./, (c) => c.toUpperCase())))
+          .join("+"),
+      )
+      .join(" ");
   };
 
   /** The palette (docs/03 §7): otterm's own actions, profiles, and every mod command. */
@@ -894,12 +922,13 @@ export function App() {
     setLanguage(c.language);
     loaded = c;
     applyTheme();
-    keymap = new Keymap(c.keybindings);
+    keymap = new Keymap(c.keybindings, c.customKeys);
     const warnings = [
       ...c.warnings.map((w) => (w.key ? `${w.key}: ${w.message}` : w.message)),
-      ...keymap.problems.map((p) => `keybindings.bindings.${p}`),
-    ];
-    if (warnings.length > 0) showNotice(t("config-ignored", { keys: warnings.join("; ") }));
+      ...keymap.problems.map((p) => (p.startsWith("custom[") ? `keybindings.${p}` : `keybindings.bindings.${p}`)),
+    ].join("; ");
+    if (warnings && warnings !== lastWarnings) showNotice(t("config-ignored", { keys: warnings }));
+    lastWarnings = warnings;
     // Enabled lists and mod settings live in config.toml too (docs/06 §2).
     if (ready()) {
       if (previous && previous.language !== c.language) host.restartAll();
@@ -943,8 +972,21 @@ export function App() {
       showNotice(t("start-failed", { error: String(e) }));
       return;
     }
-    newTab();
+    await openFirstTabs();
     setReady(true);
+    // A later `otterm` launch (docs/06 §4): a tab, a workflow, or a question for the AI mod.
+    const unlisten = await Promise.all([
+      listen<number>("instance-open", (e) => newTab(undefined, undefined, undefined, e.payload)),
+      listen<string>("instance-workflow", (e) => void runKeyCommand("workflow.run", { name: e.payload })),
+      listen<string | null>("instance-ask", (e) => {
+        void host.runCommand("ai.ask", e.payload ? { question: e.payload } : undefined).then((ok) => {
+          if (!ok) showNotice(t("ai-unavailable"));
+        });
+      }),
+    ]);
+    onCleanup(() => {
+      for (const u of unlisten) u();
+    });
     // Mods load after the first tab is up (docs/09 §3.5).
     // Safe mode starts no mods (docs/04 §2.3): one of them may be what broke the window.
     if (!config()?.safeMode) host.start().catch((e) => showNotice(String(e)));
@@ -1024,7 +1066,7 @@ export function App() {
 
   // Tabs and panes change together (batch), so a new pane is laid out and visible by the time its
   // terminal mounts and measures itself.
-  const newTab = (cwd?: string, profile?: string, profileName?: string) => {
+  const newTab = (cwd?: string, profile?: string, profileName?: string, launch?: number) => {
     const tabId = nextId++;
     const paneId = nextId++;
     const at = tabs().findIndex((x) => x.id === activeTab());
@@ -1033,7 +1075,7 @@ export function App() {
     batch(() => {
       setTabs(next);
       setActiveTab(tabId);
-      setPanes([...panes(), { id: paneId, tab: tabId, cwd, profile, profileName, started: Date.now() }]);
+      setPanes([...panes(), { id: paneId, tab: tabId, cwd, profile, profileName, launch, started: Date.now() }]);
     });
   };
 
@@ -1149,6 +1191,46 @@ export function App() {
       () => void invoke("app_restart", { safe }).catch((e) => showNotice(String(e))),
     );
 
+  /**
+   * The first tabs: the workspace file's (docs/06 §2), else one. A workspace that wants to run
+   * commands, turn on mods or change settings asks first (decision K4); Escape decides nothing
+   * and asks again next time.
+   */
+  const openFirstTabs = async () => {
+    const ws = config()?.workspace;
+    if (ws && ws.trusted === null && ws.gated) {
+      const trusted = await askTrust(ws);
+      if (trusted !== undefined) await invoke("workspace_trust", { trusted }).catch((e) => showNotice(String(e)));
+    }
+    const list =
+      ws && ws.tabs > 0
+        ? await invoke<{ launch: number; name: string | null }[]>("workspace_tabs").catch(() => [])
+        : [];
+    if (list.length === 0) return newTab();
+    for (const tab of list) newTab(undefined, undefined, tab.name ?? undefined, tab.launch);
+    const first = tabs()[0];
+    if (first) setActiveTab(first.id);
+  };
+
+  const askTrust = (ws: UiWorkspace) =>
+    new Promise<boolean | undefined>((resolve) => {
+      const answer = (trusted: boolean | undefined) => {
+        setConfirm(undefined);
+        resolve(trusted);
+      };
+      setConfirm({
+        title: t("workspace-trust-title", { name: ws.name }),
+        body: t("workspace-trust-body", { root: ws.root }),
+        buttons: [
+          { label: t("workspace-trust-yes"), action: () => answer(true) },
+          { label: t("workspace-trust-no"), action: () => answer(false) },
+        ],
+        // Enter alone does not trust a folder.
+        focus: 1,
+        cancel: () => answer(undefined),
+      });
+    });
+
   /** Close, asking first when a program is still running there (docs/03 §3.2). */
   const askThenClose = async (paneIds: number[], close: () => void) => {
     const program = await runningIn(paneIds);
@@ -1181,17 +1263,71 @@ export function App() {
    * alternate screen (vim, less, …) only Ctrl+Shift and Cmd chords stay with otterm, unless
    * `keybindings.alt_screen_passthrough` is off (issue #5).
    */
-  const onAppKey = (e: KeyboardEvent, altScreen: boolean): boolean => {
-    const hit = keymap.match(e);
-    if (!hit) {
+  const onAppKey = (e: KeyboardEvent, pane: PaneKeyState): boolean | AppAction => {
+    const ctx = keyContext({ terminalFocus: true, altScreen: pane.altScreen, hasSelection: pane.hasSelection });
+    const passthrough = config()?.altScreenPassthrough ?? true;
+    const starting = !keymap.pending;
+    const r = keymap.feed(e, ctx);
+    // On the alternate screen a sequence may only start with a Ctrl+Shift or Cmd chord: nano and
+    // emacs need their Ctrl+K.
+    if (r?.kind === "pending" && starting && pane.altScreen && passthrough && !keymap.pendingStrong) {
+      keymap.reset();
+      return false;
+    }
+    // The middle of a sequence (`ctrl+k ctrl+s`), or a sequence that went nowhere: the key is otterm's.
+    if (r?.kind === "pending" || r?.kind === "cancel") return true;
+    if (!r) {
       // A mod's suggested key, when the user bound nothing to the chord (docs/06 §5).
-      const command = host.matchKey(e, altScreen);
+      const command = host.matchKey(e, ctx);
       if (!command) return false;
       void host.runCommand(command);
       return true;
     }
-    if (altScreen && !hit.strong && (config()?.altScreenPassthrough ?? true)) return false;
-    return run(hit.action);
+    const local = r.target.kind === "action" && PANE_ACTIONS.has(r.target.action.kind);
+    // Copy, paste, search and font size act on otterm itself, so they stay otterm's on the
+    // alternate screen too (as before: vim never saw Ctrl+V on Windows).
+    if (pane.altScreen && !r.strong && !local && passthrough) return false;
+    if (r.target.kind === "action" && local) return r.target.action;
+    return runTarget(r.target);
+  };
+
+  /** What `when` clauses can test (docs/06 §5.4). */
+  const keyContext = (extra: WhenContext = {}): WhenContext => {
+    const focused = document.activeElement as HTMLElement | null;
+    const side = focused?.closest<HTMLElement>(".side-panel");
+    const slot = side?.dataset.slot;
+    const st = inputState();
+    return {
+      terminalFocus: false,
+      altScreen: false,
+      hasSelection: false,
+      inputEmpty: !st.active || st.line.trim() === "",
+      paletteOpen: palette() !== undefined,
+      panelFocus: !!side,
+      fileTreeFocus: !!slot && (shownPanel()[slot] ?? "").includes("file-tree"),
+      settingsOpen: settingsOpen(),
+      guideLevel: config()?.guideLevel ?? 2,
+      platform,
+      ...extra,
+    };
+  };
+
+  const runTarget = (target: KeyTarget): boolean => {
+    if (target.kind === "action") return run(target.action);
+    void runKeyCommand(target.id, target.args);
+    return true;
+  };
+
+  /** A `[[keybindings.custom]]` command: otterm's (`workflow.run`), a mod's, or one of the host's. */
+  const runKeyCommand = async (id: string, args: Record<string, unknown> = {}) => {
+    let command = id;
+    let rest: Record<string, unknown> | undefined = args;
+    // The workflows mod registers one command per workflow (mods/workflows).
+    if (id === "workflow.run") {
+      command = `workflows.run.${String(args.name ?? "")}`;
+      rest = undefined;
+    }
+    if (!(await host.runCommand(command, rest))) showNotice(t("command-unknown", { id: command }));
   };
 
   /**
@@ -1217,8 +1353,15 @@ export function App() {
       if (target?.closest(".terminal")) return;
       const editing = !!target?.matches("input, textarea, select, [contenteditable]");
       const chord = e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(e.key);
-      const hit = !editing || chord ? keymap.match(e) : undefined;
-      if (hit && run(hit.action)) {
+      if (editing && !chord && !keymap.pending) return;
+      const r = keymap.feed(e, keyContext());
+      const done =
+        r?.kind === "pending" ||
+        r?.kind === "cancel" ||
+        (r?.kind === "hit" &&
+          !(r.target.kind === "action" && PANE_ACTIONS.has(r.target.action.kind)) &&
+          runTarget(r.target));
+      if (done) {
         e.preventDefault();
         e.stopPropagation();
       }
@@ -1230,6 +1373,13 @@ export function App() {
       window.removeEventListener("keydown", onKey);
     });
   });
+
+  /** Run a mod's command if one is registered; false (the key goes on) when none is. */
+  const runModCommand = (id: string): boolean => {
+    if (!host.hasCommand(id)) return false;
+    void host.runCommand(id);
+    return true;
+  };
 
   /** Returns false when the action had nothing to do, so the key goes to the terminal instead. */
   const run = (action: AppAction): boolean => {
@@ -1343,6 +1493,17 @@ export function App() {
         setMultiline(st.line);
         break;
       }
+      // Commands of mods that may not be there (the AI mod, the mascot, the guide); without one
+      // the key goes on to the terminal.
+      case "aiAsk":
+        return runModCommand("ai.ask");
+      case "mascotToggle":
+        return runModCommand("mascot.toggle");
+      case "helpMode":
+        return runModCommand("guide.help_mode");
+      default:
+        // Pane actions (copy, paste, …) are the terminal's; it runs them itself.
+        return false;
     }
     return true;
   };
@@ -1760,6 +1921,7 @@ export function App() {
                       active={() => paneActive(p)}
                       cwd={p.cwd}
                       profile={p.profile}
+                      launch={p.launch}
                       onTitle={(title) => {
                         setTitles({ ...titles(), [p.id]: title });
                         const s = snapshot(p);

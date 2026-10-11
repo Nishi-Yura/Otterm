@@ -95,6 +95,13 @@
   max-width: 860px;
 }
 
+.settings-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .settings-title {
   margin: 12px 0 8px;
   font-size: 20px;

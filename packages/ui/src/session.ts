@@ -111,10 +111,19 @@ export async function createSession(
   cwd?: string,
   /** Profile id from the new-tab menu; the default profile when absent. */
   profile?: string,
+  /** A later `otterm` launch this tab is for (its folder, command and profile). */
+  launch?: number,
 ): Promise<Session> {
   const events = new Channel<SessionEvent>();
   events.onmessage = onEvent;
-  const id = await invoke<number>("session_create", { cols, rows, events, cwd: cwd ?? null, profile: profile ?? null });
+  const id = await invoke<number>("session_create", {
+    cols,
+    rows,
+    events,
+    cwd: cwd ?? null,
+    profile: profile ?? null,
+    launch: launch ?? null,
+  });
   return {
     id,
     write: (data) => invoke("session_write", { id, data }),

@@ -11,7 +11,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { createEffect, createMemo, createResource, createSignal, For, Index, onCleanup, onMount, Show } from "solid-js";
 import { type Layout, setStyleSheet, UI_TOKENS, type UiConfig, uiTokens } from "../config";
 import { t } from "../i18n";
-import { defaults as defaultKeys } from "../keymap";
+import { defaults as defaultKeys, Keymap } from "../keymap";
 import type { ModHost } from "../mods/host";
 import { describe, type Field, help, label, leaves, optionLabel, resolve, type Schema, tidy, valueAt } from "./schema";
 import "./settings.css";
@@ -261,7 +261,18 @@ export function Settings(props: SettingsProps) {
                   </Show>
                 }
               >
-                <h2 class="settings-title">{t(`settings-cat-${current().id}`)}</h2>
+                <div class="settings-title-row">
+                  <h2 class="settings-title">{t(`settings-cat-${current().id}`)}</h2>
+                  <Show when={current().id !== "advanced" && current().id !== "mods"}>
+                    <ConfirmButton
+                      label={t("settings-reset-category")}
+                      confirm={t("settings-reset-confirm")}
+                      onConfirm={() => {
+                        for (const p of current().paths) void write(p, undefined);
+                      }}
+                    />
+                  </Show>
+                </div>
                 <Show when={current().page === "theme"}>
                   <ThemePage {...props} form={f()} write={write} />
                 </Show>
@@ -1347,6 +1358,9 @@ function KeysPage(props: SettingsProps & { write: Write }) {
   const defs = defaultKeys();
   const ids = Object.keys(defs);
   const [recording, setRecording] = createSignal<string>();
+  /** Chords pressed so far while recording; a pause ends the sequence (`ctrl+k ctrl+s`). */
+  const [steps, setSteps] = createSignal<string[]>([]);
+  let stepTimer: ReturnType<typeof setTimeout> | undefined;
   const [filter, setFilter] = createSignal("");
   const bound = (id: string) => props.config?.keybindings[id] ?? defs[id] ?? [];
   const conflicts = createMemo(() => {
@@ -1363,12 +1377,30 @@ function KeysPage(props: SettingsProps & { write: Write }) {
   const record = (id: string, e: KeyboardEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.key === "Escape") return setRecording(undefined);
+    if (e.key === "Escape") {
+      clearTimeout(stepTimer);
+      setSteps([]);
+      return setRecording(undefined);
+    }
     const chord = chordOf(e);
     if (!chord) return;
-    setRecording(undefined);
-    void props.write(["keybindings", "bindings", id], [chord]);
+    const next = [...steps(), chord];
+    setSteps(next);
+    clearTimeout(stepTimer);
+    // A second chord within a moment makes a sequence; two steps at most, like VS Code.
+    const done = () => {
+      setSteps([]);
+      setRecording(undefined);
+      void props.write(["keybindings", "bindings", id], [next.join(" ")]);
+    };
+    if (next.length >= 2) done();
+    else stepTimer = setTimeout(done, 900);
   };
+  /** Mods' suggested keys, and whether one of otterm's or the user's keys took the chord (docs/06 §5.3). */
+  const suggested = createMemo(() => {
+    const map = new Keymap(props.config?.keybindings ?? {}, props.config?.customKeys ?? []);
+    return props.host.suggestedKeys().map((k) => ({ ...k, lost: !!k.chord && map.claims(k.chord) }));
+  });
   return (
     <section class="settings-section">
       <input
@@ -1392,7 +1424,7 @@ function KeysPage(props: SettingsProps & { write: Write }) {
                     <input
                       class="keys-record"
                       readonly
-                      value={t("settings-keys-press")}
+                      value={steps().length > 0 ? `${steps().join(" ")} …` : t("settings-keys-press")}
                       ref={(el) => setTimeout(() => el.focus())}
                       onKeyDown={(e) => record(id, e)}
                       onBlur={() => setRecording(undefined)}
@@ -1429,7 +1461,80 @@ function KeysPage(props: SettingsProps & { write: Write }) {
           </For>
         </tbody>
       </table>
+      <h3>{t("settings-keys-custom")}</h3>
+      <p class="muted">{t("settings-keys-custom-hint")}</p>
+      <Show when={(props.config?.customKeys ?? []).length > 0}>
+        <table class="keys-table">
+          <tbody>
+            <For each={props.config?.customKeys ?? []}>
+              {(k) => (
+                <tr data-ot="keybinding-custom">
+                  <td class="mono">{k.key}</td>
+                  <td>
+                    <span class="mono">{k.command}</span>
+                    <Show when={Object.keys(k.args).length > 0}>
+                      <div class="muted mono">{JSON.stringify(k.args)}</div>
+                    </Show>
+                    <Show when={k.when}>
+                      <div class="muted mono">when {k.when}</div>
+                    </Show>
+                  </td>
+                </tr>
+              )}
+            </For>
+          </tbody>
+        </table>
+      </Show>
+      <Show when={suggested().length > 0}>
+        <h3>{t("settings-keys-mods")}</h3>
+        <table class="keys-table">
+          <tbody>
+            <For each={suggested()}>
+              {(k) => (
+                <tr classList={{ conflict: k.lost }} data-ot="keybinding-mod">
+                  <td>
+                    <span class="mono">{k.command}</span>
+                    <div class="muted mono">{k.mod}</div>
+                  </td>
+                  <td class="mono">
+                    {k.key}
+                    <Show when={k.lost}>
+                      <div class="keys-conflict">⚠ {t("settings-keys-mod-lost")}</div>
+                    </Show>
+                  </td>
+                </tr>
+              )}
+            </For>
+          </tbody>
+        </table>
+      </Show>
     </section>
+  );
+}
+
+/** A button that asks once more before it acts (resets that cannot be undone from here). */
+function ConfirmButton(props: { label: string; confirm: string; onConfirm: () => void }) {
+  const [armed, setArmed] = createSignal(false);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  onCleanup(() => clearTimeout(timer));
+  return (
+    <button
+      type="button"
+      class="settings-small"
+      classList={{ danger: armed() }}
+      onClick={() => {
+        if (armed()) {
+          clearTimeout(timer);
+          setArmed(false);
+          props.onConfirm();
+          return;
+        }
+        setArmed(true);
+        timer = setTimeout(() => setArmed(false), 4000);
+      }}
+    >
+      {armed() ? props.confirm : props.label}
+    </button>
   );
 }
 
@@ -1552,6 +1657,7 @@ function ModsPage(props: { host: ModHost; notify: (s: string) => void }) {
 // ---------------------------------------------------------------------------
 
 function AdvancedPage(props: SettingsProps & { form: Form }) {
+  let bundleInput!: HTMLInputElement;
   const [css, setCss] = createSignal("");
   const [dirty, setDirty] = createSignal(false);
   onMount(
@@ -1608,6 +1714,50 @@ function AdvancedPage(props: SettingsProps & { form: Form }) {
         <button type="button" onClick={() => void invoke("config_open").catch((e) => props.notify(String(e)))}>
           {t("settings-open-file")}
         </button>
+      </div>
+      <h3>{t("settings-bundle")}</h3>
+      <p class="muted">{t("settings-bundle-hint")}</p>
+      <div class="settings-actions">
+        <button
+          type="button"
+          onClick={() =>
+            void invoke<string>("config_export")
+              .then((path) => props.notify(t("settings-exported", { path })))
+              .catch((e) => props.notify(String(e)))
+          }
+        >
+          {t("settings-export")}
+        </button>
+        <button type="button" onClick={() => bundleInput.click()}>
+          {t("settings-import")}
+        </button>
+        <input
+          ref={bundleInput}
+          type="file"
+          hidden
+          accept=".zip"
+          onChange={async (e) => {
+            const file = e.currentTarget.files?.[0];
+            e.currentTarget.value = "";
+            if (!file) return;
+            try {
+              const body = new Uint8Array(await file.arrayBuffer());
+              const report = await invoke<string>("config_import", body);
+              props.notify(report.trim().split("\n").join(" · "));
+            } catch (err) {
+              props.notify(String(err));
+            }
+          }}
+        />
+      </div>
+      <h3>{t("settings-reset-all")}</h3>
+      <p class="muted">{t("settings-reset-all-hint")}</p>
+      <div class="settings-actions">
+        <ConfirmButton
+          label={t("settings-reset-all")}
+          confirm={t("settings-reset-confirm")}
+          onConfirm={() => void invoke("config_reset", { path: [] }).catch((e) => props.notify(String(e)))}
+        />
       </div>
     </section>
   );

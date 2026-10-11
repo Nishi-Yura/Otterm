@@ -7,9 +7,11 @@
 
 mod assist;
 mod config;
+mod config_tools;
 mod editor;
 mod helptext;
 mod history;
+mod instance;
 mod launch;
 mod mods;
 mod open;
@@ -33,15 +35,33 @@ use tauri::ipc::Channel;
 use crate::config::{ConfigState, UiConfig};
 use crate::screen::ScreenServer;
 
-/// Folder and command for the first tab, from the command line.
-type FirstTab = (Option<std::path::PathBuf>, Option<Vec<String>>);
+/// Folder, command and profile for a tab, from the command line (this process's or a later
+/// launch's, handed over by [`instance`]).
+#[derive(Default)]
+struct TabLaunch {
+    cwd: Option<std::path::PathBuf>,
+    command: Option<Vec<String>>,
+    profile: Option<String>,
+    /// Typed into the shell once it starts: a trusted workspace tab's `command` (docs/06 §2).
+    input: Option<String>,
+}
+
+/// Keep a launch for the tab the UI is about to open; the UI passes the id to `session_create`.
+fn add_launch(state: &AppState, launch: TabLaunch) -> u32 {
+    static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1);
+    let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    state.launches.lock().unwrap().insert(id, launch);
+    id
+}
 
 struct AppState {
     sessions: Box<LocalSessionManager>,
     screen: std::sync::Arc<ScreenServer>,
     config: &'static ConfigState,
     /// Folder and command from the command line, for the first session only.
-    first: std::sync::Mutex<Option<FirstTab>>,
+    first: std::sync::Mutex<Option<TabLaunch>>,
+    /// Tabs later launches asked for, by the id the UI gets in `instance-open`.
+    launches: std::sync::Mutex<std::collections::HashMap<u32, TabLaunch>>,
     /// Command-line arguments that were not understood.
     unknown_args: Vec<String>,
     /// The shell each session started, to quote dropped paths for it.
@@ -172,8 +192,16 @@ fn session_create(
     events: Channel<UiEvent>,
     cwd: Option<String>,
     profile: Option<String>,
+    launch: Option<u32>,
 ) -> CmdResult<SessionId> {
     let config = state.config.config();
+    // `otterm <path>` / `otterm -e <command>` / `--profile`: the first tab, or the tab a later
+    // launch asked for.
+    let launch = match launch {
+        Some(n) => state.launches.lock().unwrap().remove(&n),
+        None => state.first.lock().unwrap().take(),
+    };
+    let profile = profile.or_else(|| launch.as_ref().and_then(|l| l.profile.clone()));
     state.sessions.set_terminal_options(config::terminal_options(&config));
     let mut opts = SpawnOptions { size: PtySize { cols, rows }, ..Default::default() };
     // A profile picked in the new-tab menu, else the configured default (a configured profile or
@@ -206,9 +234,10 @@ fn session_create(
     {
         opts.cwd = Some(dir);
     }
-    // `otterm <path>` / `otterm -e <command>` apply to the first tab.
-    if let Some((dir, command)) = state.first.lock().unwrap().take() {
-        if let Some(dir) = dir {
+    let mut input = None;
+    if let Some(TabLaunch { cwd, command, input: typed, .. }) = launch {
+        input = typed;
+        if let Some(dir) = cwd {
             opts.cwd = Some(dir);
         }
         if let Some(mut command) = command {
@@ -312,6 +341,10 @@ fn session_create(
         )
         .map_err(err)?;
     *id_cell.lock().unwrap() = Some(id);
+    // The pseudo console holds typed input until the shell reads it.
+    if let Some(text) = input.filter(|t| !t.trim().is_empty()) {
+        let _ = state.sessions.write(id, format!("{text}\r").as_bytes());
+    }
     state.shells.lock().unwrap().insert(id, shell);
     if let Some(d) = wsl_distro {
         state.wsl.lock().unwrap().insert(id, d);
@@ -602,6 +635,13 @@ fn session_block_jump(state: State<'_, AppState>, id: SessionId, dir: i32) -> Cm
 /// The UI names the file (`otterm-<command>-<date>.txt`); only a plain file name is accepted.
 #[tauri::command]
 async fn block_save(name: String, text: String) -> CmdResult<String> {
+    let path = downloads_path(&name)?;
+    std::fs::write(&path, text).map_err(err)?;
+    Ok(path.display().to_string())
+}
+
+/// A new file named `name` in the Downloads folder (decision I12), never one that exists.
+fn downloads_path(name: &str) -> CmdResult<std::path::PathBuf> {
     let name: String = name.chars().filter(|c| c.is_alphanumeric() || matches!(c, '-' | '_' | '.')).take(120).collect();
     if name.is_empty() || name.starts_with('.') {
         return Err("bad file name".into());
@@ -618,8 +658,7 @@ async fn block_save(name: String, text: String) -> CmdResult<String> {
         }
         path = dir.join(format!("{stem}-{n}.{ext}"));
     }
-    std::fs::write(&path, text).map_err(err)?;
-    Ok(path.display().to_string())
+    Ok(path)
 }
 
 /// Run a clipboard operation, retrying for a moment: on Windows the clipboard is unavailable while
@@ -841,6 +880,15 @@ fn cli() -> bool {
         Some("mod") => mods::cli(&args[1..]),
         Some("trash") => assist::trash_cli(&args[1..]),
         Some("theme") => settings::cli(&args[1..]),
+        Some("config") => config_tools::cli(&args[1..]),
+        Some("workflow") => match args.get(1).map(String::as_str) {
+            Some("run") if args.len() == 3 => ask_running(instance::Request::Workflow { name: args[2].clone() }),
+            _ => Err("usage: otterm workflow run <name>".into()),
+        },
+        Some("ask") => {
+            let question = Some(args[1..].join(" ")).filter(|q| !q.trim().is_empty());
+            ask_running(instance::Request::Ask { question })
+        }
         _ => return false,
     };
     match result {
@@ -853,11 +901,22 @@ fn cli() -> bool {
     true
 }
 
-fn app_state() -> AppState {
+/// A request only the running window can carry out (`otterm workflow run`, `otterm ask`).
+fn ask_running(request: instance::Request) -> Result<String, String> {
+    match instance::send(request) {
+        Some(r) if r.ok => Ok(String::new()),
+        Some(r) => Err(r.message),
+        None => Err("otterm is not running; start it first".into()),
+    }
+}
+
+fn app_state(launch: launch::Launch) -> AppState {
     config::warm_up();
-    let launch = launch::parse(std::env::args().skip(1));
     // Lives as long as the app; the watcher thread holds it.
-    let config: &'static ConfigState = Box::leak(Box::new(ConfigState::load(launch.config)));
+    // The workspace file is looked for above the folder otterm opens in (docs/06 §1).
+    let start = launch.cwd.clone().or_else(|| std::env::current_dir().ok());
+    let config: &'static ConfigState = Box::leak(Box::new(ConfigState::load(launch.config, start)));
+    config.migrate();
     config.set_safe(launch.safe_mode || std::env::var_os("OTTERM_SAFE_MODE").is_some_and(|v| v == "1"));
     // Resolve the configured fonts while the WebView starts (decision C4).
     std::thread::spawn(move || {
@@ -870,7 +929,13 @@ fn app_state() -> AppState {
         sessions: Box::new(LocalSessionManager::new()),
         screen: std::sync::Arc::new(ScreenServer::start().expect("start the screen socket")),
         config,
-        first: std::sync::Mutex::new(Some((launch.cwd, launch.command))),
+        first: std::sync::Mutex::new(Some(TabLaunch {
+            cwd: launch.cwd,
+            command: launch.command,
+            profile: launch.profile,
+            input: None,
+        })),
+        launches: Default::default(),
         unknown_args: launch.unknown,
         shells: Default::default(),
         history,
@@ -907,6 +972,45 @@ fn profiles_list(state: State<'_, AppState>) -> Vec<profiles::MenuEntry> {
             detected: !config.profiles.iter().any(|c| c.id == p.id),
             name: if p.name.is_empty() { p.id.clone() } else { p.name },
             id: p.id,
+        })
+        .collect()
+}
+
+/// Answer the workspace trust question (decision K4) and apply what it unlocks.
+#[tauri::command]
+fn workspace_trust(app: tauri::AppHandle, state: State<'_, AppState>, trusted: bool) -> CmdResult {
+    state.config.trust_workspace(trusted)?;
+    config_changed(&app);
+    Ok(())
+}
+
+/// A tab of the workspace file for the UI to open: the launch id for `session_create`, and the
+/// name to show until the shell sets a title.
+#[derive(Serialize)]
+struct WorkspaceTabLaunch {
+    launch: u32,
+    name: Option<String>,
+}
+
+/// The workspace file's `tabs` (docs/06 §2). Their commands are typed only once the workspace is
+/// trusted (decision K4).
+#[tauri::command]
+fn workspace_tabs(state: State<'_, AppState>) -> Vec<WorkspaceTabLaunch> {
+    let Some((ws, trusted)) = state.config.workspace() else { return Vec::new() };
+    // The first tab keeps what the command line asked for (`-e`, `--profile`).
+    state.first.lock().unwrap().take();
+    ws.config
+        .tabs
+        .iter()
+        .map(|t| {
+            let cwd = ws.root.join(t.cwd.as_deref().unwrap_or("."));
+            let launch = TabLaunch {
+                cwd: Some(cwd).filter(|d| d.is_dir()),
+                command: None,
+                profile: t.profile.clone(),
+                input: t.command.clone().filter(|_| trusted == Some(true)),
+            };
+            WorkspaceTabLaunch { launch: add_launch(&state, launch), name: t.name.clone() }
         })
         .collect()
 }
@@ -962,15 +1066,67 @@ pub(crate) fn config_changed(app: &tauri::AppHandle) {
     let _ = app.emit("config-changed", state.config.ui());
 }
 
+/// A later launch: open its tab in the otterm that already runs, and exit. Not with `--config`,
+/// `--safe-mode` or `--new-window`, which ask for a process of their own.
+fn hand_over(launch: &launch::Launch) -> bool {
+    if launch.new_window || launch.safe_mode || launch.config.is_some() {
+        return false;
+    }
+    let request = instance::Request::Open {
+        cwd: launch.cwd.clone(),
+        command: launch.command.clone(),
+        profile: launch.profile.clone(),
+    };
+    instance::send(request).is_some_and(|r| r.ok)
+}
+
+/// Answer a later launch (see [`instance`]).
+fn on_request(app: &tauri::AppHandle, request: instance::Request) -> instance::Reply {
+    use tauri::{Emitter, Manager};
+    let state = app.state::<AppState>();
+    let result = match request {
+        instance::Request::Open { cwd, command, profile } => {
+            let id = add_launch(&state, TabLaunch { cwd, command, profile, input: None });
+            app.emit("instance-open", id)
+        }
+        instance::Request::Workflow { name } => app.emit("instance-workflow", name),
+        instance::Request::Ask { question } => {
+            if !state.config.config().ai.enabled {
+                return instance::Reply::error("AI is off: turn on [ai] enabled (the otterm.ai-assist mod)");
+            }
+            app.emit("instance-ask", question)
+        }
+    };
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+    match result {
+        Ok(()) => instance::Reply::ok(),
+        Err(e) => instance::Reply::error(e.to_string()),
+    }
+}
+
 #[cfg(not(feature = "bench"))]
 fn main() {
     if cli() {
         return;
     }
+    let launch = launch::parse(std::env::args().skip(1));
+    if hand_over(&launch) {
+        return;
+    }
+    let listen = !launch.new_window;
     tauri::Builder::default()
-        .manage(app_state())
+        .manage(app_state(launch))
         .manage(mods::ModsState::default())
-        .setup(|app| {
+        .setup(move |app| {
+            if listen {
+                let handle = app.handle().clone();
+                // Fails when another otterm listens already (`--config` and the like); this one
+                // then runs on its own.
+                let _ = instance::listen(move |r| on_request(&handle, r));
+            }
             watch_config(app);
             mods::extract_bundled();
             mods::watch(app);
@@ -994,6 +1150,11 @@ fn main() {
             config_get,
             config_open,
             launch_problems,
+            workspace_trust,
+            workspace_tabs,
+            config_tools::config_reset,
+            config_tools::config_export,
+            config_tools::config_import,
             profiles_list,
             terminal_colors,
             session_focus,
@@ -1077,7 +1238,7 @@ mod bench;
 fn main() {
     bench::STARTED.get_or_init(|| (std::time::Instant::now(), std::time::SystemTime::now()));
     tauri::Builder::default()
-        .manage(app_state())
+        .manage(app_state(launch::parse(std::env::args().skip(1))))
         .manage(mods::ModsState::default())
         .manage(bench::BenchState::default())
         .setup(|app| {

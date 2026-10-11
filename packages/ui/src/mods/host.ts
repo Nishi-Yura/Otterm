@@ -9,7 +9,8 @@ import { listen } from "@tauri-apps/api/event";
 import { createSignal } from "solid-js";
 import { type ParsedCommand, parseCommand } from "../assist/parse";
 import { t } from "../i18n";
-import { matches, parseChord } from "../keymap";
+import { type Chord, matches, parseChord } from "../keymap";
+import { compileWhen, type WhenContext } from "../when";
 import type {
   HostToWorker,
   ManifestInfo,
@@ -270,7 +271,7 @@ export class ModHost {
   private readonly running = new Map<string, Running>();
   private readonly states = new Map<string, ModState>();
   private readonly commands = new Map<string, HostCommand>();
-  private readonly keys: { chord: ReturnType<typeof parseChord>; command: string; when?: string }[] = [];
+  private readonly keys: { chord: Chord | undefined; command: string; key: string; when?: string; mod: string }[] = [];
   private unlisten: (() => void)[] = [];
   /** Block start times by "session:line", to fill `startedAt`. */
   private readonly blockStarts = new Map<string, number>();
@@ -734,13 +735,23 @@ export class ModHost {
   }
 
   /** A key the window did not bind itself: a mod's suggested binding (docs/06 §5; user keys win). */
-  matchKey(e: KeyboardEvent, altScreen: boolean): string | undefined {
+  matchKey(e: KeyboardEvent, ctx: WhenContext): string | undefined {
     for (const k of this.keys) {
       if (!k.chord || !matches(k.chord, e)) continue;
-      if (!when(k.when, altScreen)) continue;
+      if (k.when && !compileWhen(k.when)?.(ctx)) continue;
       if (this.commands.has(k.command)) return k.command;
     }
     return undefined;
+  }
+
+  /** The keys mods suggested, for the keybindings settings (docs/06 §5.3). */
+  suggestedKeys(): { mod: string; command: string; key: string; chord: Chord | undefined; when?: string }[] {
+    return this.keys.filter((k) => this.commands.has(k.command)).map((k) => ({ ...k }));
+  }
+
+  /** Whether a mod (or the host) registered this command. */
+  hasCommand(id: string): boolean {
+    return this.commands.has(id);
   }
 
   /** Commands for the palette and keybindings. */
@@ -996,7 +1007,7 @@ export class ModHost {
         this.commands.delete(msg.id);
         break;
       case "keybinding":
-        this.keys.push({ chord: parseChord(msg.key), command: msg.command, when: msg.when });
+        this.keys.push({ chord: parseChord(msg.key), command: msg.command, key: msg.key, when: msg.when, mod: id });
         break;
       case "subscribe":
         r.subs.add(msg.event);
@@ -1388,19 +1399,6 @@ function sessionInfo(s: SessionSnapshot) {
     // Not tracked yet; 0 says so rather than inventing one.
     pid: 0,
   };
-}
-
-/** A tiny `when` clause: identifiers joined by `&&`, each optionally negated (docs/06 §5). */
-function when(clause: string | undefined, altScreen: boolean): boolean {
-  if (!clause) return true;
-  return clause.split("&&").every((term) => {
-    const t = term.trim();
-    const neg = t.startsWith("!");
-    const name = neg ? t.slice(1).trim() : t;
-    const value = name === "terminalFocus" ? true : name === "altScreen" ? altScreen : undefined;
-    if (value === undefined) return false;
-    return neg ? !value : value;
-  });
 }
 
 function platformName(): "windows" | "macos" | "linux" {

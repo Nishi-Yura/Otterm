@@ -79,6 +79,10 @@ export interface UiConfig {
   copyOnSelect: boolean;
   wordSeparators: string;
   keybindings: Record<string, string[]>;
+  /** `[[keybindings.custom]]`: keys with a command, its arguments and a `when` condition. */
+  customKeys: { key: string; command: string; args: Record<string, unknown>; when?: string }[];
+  /** `.otterm/workspace.toml` above the folder otterm opened in (docs/06 §1). */
+  workspace: UiWorkspace | null;
   altScreenPassthrough: boolean;
   confirmMultilinePaste: boolean;
   rightClick: "context-menu" | "paste" | "copy-or-paste";
@@ -267,4 +271,15 @@ export async function applyWindow(c: UiConfig, osReduceMotion: boolean): Promise
   const veil = image ? (1 - w.backgroundImageOpacity) * w.opacity : 0;
   root.style.setProperty("--ot-bg-veil", `${Math.round(veil * 100)}%`);
   return translucent ? 0 : 1;
+}
+
+/** A workspace file and its trust (decision K4). */
+export interface UiWorkspace {
+  name: string;
+  root: string;
+  /** null until the user answered the trust question. */
+  trusted: boolean | null;
+  /** It has tab commands, mods or settings that wait for trust. */
+  gated: boolean;
+  tabs: number;
 }

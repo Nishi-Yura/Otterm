@@ -360,6 +360,12 @@ start-failed = シェルを起動できませんでした: { $error }
 config-ignored = config.toml の一部を無視しました: { $keys }
 config-unreadable = 設定を読み込めませんでした: { $error }
 launch-unknown = 起動時の引数を使えませんでした: { $args }
+ai-unavailable = AI に聞くには AI mod（otterm.ai-assist）を入れて有効にしてください
+command-unknown = コマンド { $id } はありません
+workspace-trust-title = 「{ $name }」のワークスペースを信頼しますか
+workspace-trust-body = { $root } の .otterm/workspace.toml がコマンドの実行、mod の有効化、設定の上書きを求めています。信頼するまでは見た目のテーマだけを使います。自分で作ったフォルダや、中身を確かめたフォルダだけを信頼してください。
+workspace-trust-yes = 信頼する
+workspace-trust-no = 信頼しない
 copy-failed = クリップボードにコピーできませんでした: { $error }
 
 ## 検索
@@ -874,12 +880,25 @@ settings-keys-press = キーを押してください
 settings-keys-record = 記録
 settings-keys-clear = 外す
 settings-keys-conflict = ほかの操作と同じキーです
+settings-keys-custom = 引数・条件付きの割り当て
+settings-keys-custom-hint = config.toml の [[keybindings.custom]] に書いた割り当てです（key・command・args・when）。ここでは表示のみ
+settings-keys-mods = mod が提案したキー
+settings-keys-mod-lost = otterm かあなたの割り当てと重なるため無効です。上の表でどちらかのキーを変えてください
 settings-mod-enabled = 有効にする
 settings-css = 自分用の CSS（user.css）
 settings-css-hint = 入力すると画面にすぐ反映されます。要素は [data-ot="…"] で選べます。
 settings-css-save = 保存
 settings-file = 設定ファイル
 settings-open-file = config.toml をエディタで開く
+settings-bundle = 書き出しと読み込み
+settings-bundle-hint = 設定・テーマ・レイアウト・背景画像・mod の一覧を 1 つの zip にします。読み込むと今の config.toml は横にバックアップを残します
+settings-export = zip に書き出す
+settings-import = zip から読み込む
+settings-exported = 書き出しました: { $path }
+settings-reset-all = すべて既定に戻す
+settings-reset-all-hint = config.toml を既定の状態にします。今のファイルは config.toml.bak-reset-… として残ります
+settings-reset-category = このカテゴリを既定に戻す
+settings-reset-confirm = もう一度押すと戻します
 
 ## キーバインドの操作名
 
@@ -923,3 +942,13 @@ keyact-pane-focus-up = 上のペインへ移動
 keyact-pane-resize-up = ペインを上へ広げる
 keyact-pane-focus-down = 下のペインへ移動
 keyact-pane-resize-down = ペインを下へ広げる
+keyact-copy = コピー
+keyact-paste = 貼り付け
+keyact-search = 検索
+keyact-font-bigger = 文字を大きく
+keyact-font-smaller = 文字を小さく
+keyact-font-reset = 文字の大きさを戻す
+keyact-ai-ask = コツメに聞く（AI）
+keyact-mascot-toggle = コツメの表示切替
+keyact-guide-help_mode = ヘルプモード
+keyact-clear = 画面をクリア

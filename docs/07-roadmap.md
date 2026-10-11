@@ -123,6 +123,10 @@
 - ドキュメントサイト（Starlight。ユーザーガイド、mod 作者ガイド、TypeDoc から生成する API リファレンス。判断 L3）
 - ローカルクラッシュログと「Issue を作る」ボタン（外部送信なし。判断 C11）。セーフモードは M5 で済み
 - **完了条件**: v1.0 公開。レジストリに同梱以外の mod が 10 以上
+- 進み具合（2026-10-11）:
+  - 済み（06 の残り）: 単一インスタンス（名前付きパイプ / Unix ソケットと起動ごとのトークン、判断 K6）と `--profile`・`--new-window`、`otterm config get|set|path|reset|export|import`、`otterm workflow run`、`otterm ask`、ポータブル版、`schema` のマイグレーションの枠、ワークスペースファイルと信頼の確認（判断 K4）、設定の zip 書き出し・読み込み、カテゴリ単位と全体のリセット、キーバインドのチョード・`mod` 表記・`[[keybindings.custom]]` と `when` 式、コピー・貼り付け・検索・文字サイズの割当変更、mod の提案キーの競合表示
+  - 確認済み（Windows、開発機）: ワークスペースの信頼ダイアログとタブ展開、2 回目の起動の引き継ぎ、`Ctrl+K Ctrl+T` のチョード、custom キー、`otterm workflow run`、CLI の `config` 一式
+  - 残り: インストーラ、自動更新、署名、mod レジストリとストア画面、`otterm mod update|publish`、ドキュメントサイト、クラッシュログ
 
 ### v1.x
 

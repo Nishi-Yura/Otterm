@@ -21,10 +21,15 @@ fontdb.workspace = true
 otterm-config.workspace = true
 otterm-modhost.workspace = true
 getrandom.workspace = true
+# One otterm per user: later launches hand their arguments over (decision K6).
+interprocess = "2"
 semver.workspace = true
 ureq = { version = "3", default-features = false, features = ["rustls", "gzip"] }
 rusqlite = { version = "0.40", features = ["bundled"] }
 trash = "5"
+# `otterm config export|import` (docs/06 §3).
+zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+toml.workspace = true
 toml_edit.workspace = true
 otterm-session.workspace = true
 otterm-text.workspace = true

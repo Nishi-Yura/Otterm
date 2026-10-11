@@ -12,6 +12,12 @@
 - ワークスペース設定: `<プロジェクト>/.otterm/workspace.toml`（ユーザー設定より優先。チームで共有可。`terminal.write` 権限の mod はワークスペース側では有効化できない）
 - ワークスペースは初回に「信頼しますか」を聞く。信頼前は `tabs[].command` の実行とワークスペース mod の有効化を行わない（判断 K4、[03-core-features.md](03-core-features.md) §3.3）。信頼の記録は `state/trusted-workspaces.json`
 - 読み込み優先度: 既定値 < ユーザー設定 < ワークスペース設定 < コマンドライン引数
+- 実装（2026-10-11）:
+  - ポータブル版は `<実行ファイル>/portable/` フォルダがあるときに有効。環境変数 `OTTERM_CONFIG` / `OTTERM_DATA_DIR` はそれより優先する
+  - ワークスペースファイルは otterm を開いたフォルダ（`otterm [path]`、なければ起動時のカレント）から上へ探し、ホームフォルダで止まる。キーはトップレベルにも `[workspace]` の中にも書ける。`[font]` などの節と `settings = { "font.size" = 18 }` の両方で上書きできる
+  - 信頼前に効くのは `theme` だけ（OS のライト追従でも上書きが見えるよう `theme_light` にも入れる）。信頼後も `shell`・`profiles`・`open`・`ai`・`mods`・`history`・`keybindings.custom`・`general.check_updates`・`general.update_channel` はワークスペースから変えられない（プログラムの起動や外部送信につながるため）。無視したキーは起動時の通知に出る
+  - 信頼の確認は、コマンド・mod・設定の上書きを含むワークスペースだけで出す。Escape は「答えない」で、次回また聞く。`tabs[].command` は信頼後にシェルへ打ち込む
+  - 1 つのウィンドウが扱うワークスペースは起動時の 1 つだけ。後から `otterm <別のフォルダ>` で開いたタブには別のワークスペースを適用しない
 
 ## 2. `config.toml` 全体像
 
@@ -167,6 +173,7 @@ tabs = [
 - **マイグレーション**: `schema` 番号で管理。更新時に自動変換し、バックアップ（`config.toml.bak-<version>`）を残す
 - **エクスポート／インポート**: 設定 + テーマ + mod リスト + キーバインドを 1 つの zip に。dotfiles にも置けるよう TOML はそのまま
 - **リセット**: 項目単位・カテゴリ単位・全体で「既定に戻す」
+- 実装（2026-10-11）: マイグレーションは手順の表（`crates/otterm-config/src/migrate.rs`）があるだけで、`schema = 1` のあいだは何も変換しない。バックアップ名は `config.toml.bak-<変換前の schema 番号>`。新しい otterm が書いたファイル（`schema` が大きい）は書き換えずに通知する。エクスポートの zip には `config.toml`・`user.css`・`themes/`・`layouts/`・`backgrounds/` と、入っている mod の一覧 `mods.toml` を入れる（mod 本体は入れない）。インポートはこの形のファイルだけを取り出し、今の `config.toml` を `config.toml.bak-import-<時刻>` に残す。全体のリセットも `config.toml.bak-reset-<時刻>` を残す。設定画面では各カテゴリの右上と「詳細」から使える
 
 ## 4. コマンドライン
 
@@ -185,6 +192,8 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
 ```
 
 - 既に起動している場合はそのインスタンスに新タブとして開く（単一インスタンス、`--new-window` で別窓）
+  - 実装（2026-10-11）: `--new-window` は別プロセスとして起動する。`--config` と `--safe-mode` も設定が違うため引き継がず、別プロセスになる。`otterm workflow run <name>` は起動中のウィンドウでワークフロー mod のコマンド `workflows.run.<name>` を開く。`otterm ask` は AI mod が有効でないとエラーで終わる。どちらも otterm が起動していないとエラーになる
+  - リリースビルドの Windows 版は GUI サブシステムなので、`otterm config get` などの出力はコンソールに出ない場合がある（未対応。`AttachConsole` には `unsafe` が要る）
 - CLI と GUI の通信（判断 K6）: OS ネイティブの IPC（Windows: 名前付きパイプ、macOS / Linux: Unix ドメインソケット）。GUI は起動ごとにランダムなトークンをデータフォルダに書き（所有者のみ読み取り可）、CLI はそれを添えて接続する。同一ユーザー以外は接続できない
 
 ## 5. キーバインド
@@ -248,6 +257,7 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
   - M1 の実装（2026-10-11、issue #5）: 代替画面中も otterm が使うのは `Ctrl+Shift+…` と `Cmd+…` の割当だけで、`Alt+矢印`・`Ctrl+Tab`・`Ctrl+数字` はアプリに渡す（`keybindings.alt_screen_passthrough = false` で常に otterm）。移動先のペインがないときのペイン移動・リサイズのキーも、シェルに渡す
 - 設定画面のキーバインドタブで競合を赤表示。「キーを押して記録」で設定
 - mod が提案するキーはユーザー設定と競合すると無効になり、設定画面で解決を促す
+- 実装（2026-10-11）: チョードは 2 段まで記録でき（設定画面では 1 つ目のキーのあと 0.9 秒以内に 2 つ目）、`config.toml` には何段でも書ける。途中で違うキーを押すと、そのキーは捨てる。代替画面中は `Ctrl+Shift` か `Cmd` で始まるチョードだけが始まる。`copy`・`paste`・`search`・`font.*` は otterm 自身の操作なので代替画面中も otterm が使う。`ai.ask`・`mascot.toggle`・`guide.help_mode` は、そのコマンドを登録した mod がないときはキーをシェルへ渡す。`[[keybindings.custom]]` の `command` はアクション ID、`workflow.run`（`args.name`）、mod のコマンド、`otterm.*` のホストコマンドのどれか
 
 ### 5.4 キーバインドのスコープ
 
@@ -258,5 +268,8 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
 | `inputEmpty` | 入力行が空 |
 | `paletteOpen` / `panelFocus` / `fileTreeFocus` | 各 UI にフォーカス |
 | `guideLevel >= 2` | ガイドレベル条件 |
+| `hasSelection` / `settingsOpen` / `platform == "windows"` | 選択範囲がある / 設定画面が開いている / OS（実装時に追加） |
+
+`when` は `!`・`&&`・`||`・括弧・比較（`== != >= <= > <`）が使える。知らない名前は偽になる。
 
 記法は 2 章の `[keybindings.bindings]`（アクション ID → キー）と `[[keybindings.custom]]`（引数・when 条件付き）の 2 形式。設定の Rust 構造体は [crates/otterm-config/src/schema.rs](../crates/otterm-config/src/schema.rs) を参照。
