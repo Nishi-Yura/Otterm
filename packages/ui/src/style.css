@@ -1,3 +1,13 @@
+/* Bundled icon font for prompts (decision B14, issue #1); an installed copy is used first.
+   Licenses: public/fonts/SymbolsNerdFontMono-LICENSE.txt and -README.md. */
+@font-face {
+  font-family: "Symbols Nerd Font Mono";
+  src:
+    local("Symbols Nerd Font Mono"),
+    url("/fonts/SymbolsNerdFontMono-Regular.ttf") format("truetype");
+  font-display: block;
+}
+
 :root {
   --bg: #1b1d23;
   --fg: #d8dee9;

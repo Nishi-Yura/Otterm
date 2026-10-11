@@ -302,8 +302,14 @@ export function TerminalView(props: TerminalViewProps) {
     if (props.active() && input && !searching() && !menu()) input.focus();
   });
 
+  // A web font (the bundled Nerd Font symbols) arrives after the first frame: glyphs drawn
+  // before it came are redrawn with it.
+  const onFontsLoaded = () => renderer?.invalidate();
+  document.fonts.addEventListener("loadingdone", onFontsLoaded);
+
   // Registered synchronously: cleanups created after an `await` in onMount would never run.
   onCleanup(() => {
+    document.fonts.removeEventListener("loadingdone", onFontsLoaded);
     closed = true;
     observer?.disconnect();
     detachPointer?.();
@@ -321,6 +327,8 @@ export function TerminalView(props: TerminalViewProps) {
 
   const applyFont = () => {
     const size = Math.min(72, Math.max(6, baseFont.size + zoom));
+    // Canvas text does not make the browser fetch a web font; ask for the symbols font here.
+    void document.fonts.load(`${size}px "Symbols Nerd Font Mono"`, "\ue0b0").catch(() => {});
     renderer?.setFont({ ...baseFont, size });
     setFont(renderer?.currentFont ?? baseFont);
   };
