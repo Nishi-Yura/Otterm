@@ -85,6 +85,16 @@ export interface UiConfig {
   workspace: UiWorkspace | null;
   /** `general.check_updates` (decision K5). */
   checkUpdates: boolean;
+  /** `[mascot]`, resolved against the guide level (docs/08 §4.3). */
+  mascot: {
+    visible: boolean;
+    position: "assist-bar" | "statusbar" | "float" | "hidden";
+    speech: "always" | "alert-only" | "never";
+    speechAuto: boolean;
+    moodChanges: boolean;
+    happyThresholdMs: number;
+    outfit: string;
+  };
   altScreenPassthrough: boolean;
   confirmMultilinePaste: boolean;
   rightClick: "context-menu" | "paste" | "copy-or-paste";

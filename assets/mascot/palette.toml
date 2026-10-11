@@ -1,0 +1,20 @@
+# Kotsume's colors (docs/08 §3.4, decision E2). Fixed: they do not follow the UI theme.
+# The UI exposes each as --ot-mascot-<name>; outfits may override them.
+
+[colors]
+outline = "#3b2414"
+body = "#8a5a3b"
+body_shade = "#74492e"
+face = "#ecd9c0"
+eye = "#24150c"
+eye_light = "#ffffff"
+nose = "#24150c"
+mouth = "#5a3420"
+blush = "#f0a8a0"
+pebble = "#a7b0b8"
+pebble_shade = "#7d868e"
+pebble_light = "#d6dde3"
+brow = "#d0303a"
+glasses = "#2c3e50"
+mug = "#f5f1e8"
+mug_band = "#3fb8b0"

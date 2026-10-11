@@ -1,0 +1,19 @@
+[mod]
+id = "otterm.outfit-developer"
+name = "コツメ 開発者の装い / Pebble the developer"
+version = "0.0.0"
+description = "眼鏡とマグカップ。設定 › コツメで着替えます。 / Glasses and a mug. Change outfits in Settings › Pebble."
+author = "otterm"
+license = "Apache-2.0"
+kind = "outfit"
+
+[compat]
+otterm = ">=0.0.0"
+api = "1"
+
+[outfit]
+base = "default"
+layers = [
+  { slot = "face", file = "assets/face.svg" },
+  { slot = "hand", file = "assets/hand.svg" },
+]

@@ -124,6 +124,11 @@ pub struct ModsState {
     installed: Mutex<Vec<Installed>>,
 }
 
+/// Every mod folder, for other modules of the app (the mascot's outfits).
+pub fn discover_everything(data: &Path) -> Vec<Found> {
+    discover_all(data)
+}
+
 /// Every mod folder: the user's, then the bundled ones.
 fn discover_all(data: &Path) -> Vec<Found> {
     let mut all = otterm_modhost::discover(data, Platform::current(), &host_version());

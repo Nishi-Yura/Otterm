@@ -212,6 +212,12 @@
   font-size: 11px;
 }
 
+.mod-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
 .mod-dialog-title {
   margin-bottom: 10px;
   font-size: 15px;

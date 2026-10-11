@@ -4,13 +4,15 @@
  * (§7) and the multi-line editor (§8.6). The data comes from mods through the host; these only
  * draw it and hand clicks back.
  */
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, type JSX, onCleanup, onMount, Show } from "solid-js";
 import { t } from "../i18n";
 import { Icon } from "../icons";
 import type { CompletionItem, ErrorHint, Explanation } from "../mods/host";
 import "./assist.css";
 
 export interface AssistBarProps {
+  /** Kotsume at the left end (docs/08 §6.1); with it the bar stays, even with nothing to explain. */
+  mascot?: JSX.Element;
   explanation: Explanation | undefined;
   hint: ErrorHint | undefined;
   /** The line the hint belongs to, shown above it. */
@@ -23,7 +25,7 @@ export interface AssistBarProps {
 /** Under the terminal: the explanation of the line being typed, and the last error's hint card. */
 export function AssistBar(props: AssistBarProps) {
   return (
-    <Show when={props.explanation || props.hint}>
+    <Show when={props.explanation || props.hint || props.mascot}>
       <div class="assist-bar" data-ot="assist-bar">
         <Show when={props.hint} keyed>
           {(h) => (
@@ -73,15 +75,20 @@ export function AssistBar(props: AssistBarProps) {
             </div>
           )}
         </Show>
-        <Show when={props.explanation} keyed>
-          {(x) => (
-            <div class="assist-explain" classList={{ danger: !!x.danger }} data-ot="assist-explain">
-              <Show when={x.danger}>
-                <Icon name="alert-triangle" class="assist-danger-mark" />
-              </Show>
-              <span>{x.summary}</span>
-            </div>
-          )}
+        <Show when={props.explanation || props.mascot}>
+          <div class="assist-row">
+            {props.mascot}
+            <Show when={props.explanation} keyed>
+              {(x) => (
+                <div class="assist-explain" classList={{ danger: !!x.danger }} data-ot="assist-explain">
+                  <Show when={x.danger}>
+                    <Icon name="alert-triangle" class="assist-danger-mark" />
+                  </Show>
+                  <span>{x.summary}</span>
+                </div>
+              )}
+            </Show>
+          </div>
         </Show>
       </div>
     </Show>

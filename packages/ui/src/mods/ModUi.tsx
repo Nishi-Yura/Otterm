@@ -31,6 +31,8 @@ export function treeHost(
 
 export interface StatusBarProps {
   host: ModHost;
+  /** Kotsume, when it lives in the status bar (docs/08 §6.1). */
+  mascot?: import("solid-js").JSX.Element;
   /** Folder name of the active pane, shown at the left (docs/04 §1). */
   folder: string;
   /** Exit code of the last command in the active pane, if the shell integration reported one. */
@@ -188,6 +190,7 @@ export function StatusBar(props: StatusBarProps) {
   return (
     <div class="statusbar" role="status" data-ot="statusbar">
       <div class="statusbar-side">
+        {props.mascot}
         <For each={left()}>{itemView(left)}</For>
       </div>
       <div class="statusbar-side right">
@@ -361,6 +364,8 @@ export function ModDialog(props: {
   insert: (text: string) => void;
   copy: (text: string) => void;
   onClose: (id: string | null) => void;
+  /** Kotsume beside the text, for the dialogs it narrates (onboarding, docs/08 §5.1). */
+  mascot?: import("solid-js").JSX.Element;
 }) {
   const body = () => props.req.body;
   const tree = (): TreeHost | undefined => {
@@ -376,10 +381,15 @@ export function ModDialog(props: {
     <div class="mod-dialog-backdrop">
       <div class="mod-dialog" role="dialog" aria-label={props.req.title} data-ot="mod-dialog" onKeyDown={onKeyDown}>
         <div class="mod-dialog-from">{props.req.from}</div>
-        <div class="mod-dialog-title">{props.req.title}</div>
-        <Show when={typeof body() === "string"}>
-          <div class="mod-dialog-body">{body() as string}</div>
-        </Show>
+        <div class="mod-dialog-head">
+          {props.mascot}
+          <div>
+            <div class="mod-dialog-title">{props.req.title}</div>
+            <Show when={typeof body() === "string"}>
+              <div class="mod-dialog-body">{body() as string}</div>
+            </Show>
+          </div>
+        </div>
         <Show when={typeof body() === "object" ? tree() : undefined} keyed>
           {(h) => (
             <div class="mod-dialog-body">

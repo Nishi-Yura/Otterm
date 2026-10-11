@@ -122,6 +122,8 @@ pub struct UiConfig {
     pub safe_mode: bool,
     /// `general.check_updates`: look for a new version a little after startup (decision K5).
     pub check_updates: bool,
+    /// `[mascot]` with `auto` resolved against the guide level (docs/08 §4.3).
+    pub mascot: UiMascot,
     /// Where installed mods live, to tell the user.
     pub mods_dir: Option<String>,
     /// Keys that were ignored, to show once.
@@ -178,6 +180,19 @@ pub struct UiAccessibility {
     pub reduce_motion: Option<bool>,
     /// `None` follows the OS.
     pub high_contrast: Option<bool>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UiMascot {
+    pub visible: bool,
+    pub position: otterm_config::MascotPosition,
+    pub speech: otterm_config::Speech,
+    /// `speech` was left on `auto`: guide level 2 then speaks only for alerts and first-time help.
+    pub speech_auto: bool,
+    pub mood_changes: bool,
+    pub happy_threshold_ms: u32,
+    pub outfit: String,
 }
 
 #[derive(Clone, Serialize)]
@@ -405,6 +420,15 @@ impl ConfigState {
             developer_mode: c.mods.developer_mode,
             safe_mode: safe,
             check_updates: c.general.check_updates,
+            mascot: UiMascot {
+                visible: effective.mascot_visible,
+                position: c.mascot.position,
+                speech: effective.speech,
+                speech_auto: matches!(c.mascot.speech, Auto::Auto(_)),
+                mood_changes: c.mascot.mood_changes,
+                happy_threshold_ms: c.mascot.happy_threshold_ms,
+                outfit: c.mascot.outfit.clone(),
+            },
             mods_dir: otterm_config::data_dir().map(|d| otterm_modhost::mods_dir(&d).display().to_string()),
             warnings,
             workspace: l.workspace.as_ref().map(|(ws, trusted)| UiWorkspace {

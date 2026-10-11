@@ -99,6 +99,25 @@
   color: var(--ot-warning-text);
 }
 
+.mascot-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.mascot-gallery-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: var(--ot-bg-elevated);
+}
+
 .settings-title-row {
   display: flex;
   align-items: center;

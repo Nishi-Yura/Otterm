@@ -240,6 +240,17 @@
 
   // --- events -------------------------------------------------------------------------------------
 
+  /** Whether Kotsume shows; the host updates it with a `mascot-visible` event. Subscribed on first
+   * use: this file runs while the VM is still being set up, too early to talk to the host. */
+  const mascotVisible = signal(true);
+  let watchingMascot = false;
+  const watchMascotVisible = () => {
+    if (!watchingMascot) {
+      watchingMascot = true;
+      on("mascot-visible", (v) => mascotVisible.set(v !== false));
+    }
+    return mascotVisible;
+  };
   const subs = new Map();
   const on = (name, cb) => {
     let set = subs.get(name);
@@ -411,17 +422,49 @@
         guideLevel,
       },
       links: { addDetector: () => later("links", "links.addDetector does nothing until M4") },
-      // Kotsume arrives with M4.5; until then `say` is a toast, as at guide level 0.
+      // Kotsume (docs/08 §6.3). At guide level 0 the host turns `say` into a toast by itself.
       mascot: {
-        say: (text, opts) => ui.toast({ text, actions: opts?.actions, durationMs: opts?.duration }),
-        setMood: () => Promise.resolve(),
-        onMoodChanged: () => noop(),
-        visible: signal(false),
-        reactions: { add: () => noop() },
+        say: (text, opts) =>
+          call("mascot.say", {
+            text: resolve(text),
+            mood: opts?.mood,
+            duration: opts?.duration,
+            urgent: opts?.urgent,
+            // Buttons run the mod's own code; there is no "run in the terminal" button (§6.3).
+            actions: (opts?.actions ?? []).map((a) => ({ label: resolve(a.label), fn: ref(a.onClick, true).$fn })),
+          }),
+        setMood: (mood, opts) => call("mascot.setMood", { mood, for: opts?.for }),
+        onMoodChanged: (cb) => on("mascot-mood", (m) => cb(m)),
+        get visible() {
+          return watchMascotVisible();
+        },
+        reactions: {
+          // Rules run here, in the mod's Worker: `when` is the mod's own function. The events reach
+          // the mod only with the permissions the manifest declares (block events: terminal.read).
+          add(rule) {
+            const day = () => new Date().toDateString();
+            let fired;
+            return on(rule.on, (payload) => {
+              if (rule.once === "per-session" && fired) return;
+              if (rule.once === "per-day" && fired === day()) return;
+              if (rule.once === "never" && fired) return;
+              try {
+                if (rule.when && !rule.when(payload)) return;
+              } catch (e) {
+                console.warn("mascot reaction failed", e);
+                return;
+              }
+              fired = rule.once === "per-day" ? day() : true;
+              if (rule.say) void call("mascot.say", { text: resolve(rule.say), mood: rule.mood, actions: [] });
+              else if (rule.mood) void call("mascot.setMood", { mood: rule.mood, for: 3000 });
+            });
+          },
+        },
         outfits: {
-          register: () => noop(),
-          current: () => Promise.resolve("default"),
-          list: () => Promise.resolve([]),
+          // Outfits come from `outfit` mods (otmod.toml [outfit]); code cannot add one.
+          register: () => later("outfits.register", "mascot.outfits.register: outfits are outfit mods (docs/08 §6.4)"),
+          current: () => call("mascot.outfit"),
+          list: () => call("mascot.outfits"),
         },
       },
       workspace: { current: () => Promise.resolve(undefined), onChanged: () => noop() },

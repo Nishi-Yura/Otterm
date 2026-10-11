@@ -12,6 +12,13 @@
   font: 12.5px var(--ot-font-ui);
 }
 
+.assist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .assist-explain {
   display: flex;
   align-items: baseline;

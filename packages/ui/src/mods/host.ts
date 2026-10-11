@@ -223,6 +223,21 @@ export interface HostEnv {
   runHostCommand(id: string, args: Record<string, unknown> | undefined): boolean;
   /** `[mods] developer_mode`. */
   developerMode(): boolean;
+  /** Kotsume (docs/08 §6.3): a line from a mod; falls back to a toast when Kotsume is hidden. */
+  mascotSay(mod: string, req: MascotSayRequest): Promise<void>;
+  mascotSetMood(mod: string, mood: string, forMs: number | undefined): void;
+  mascotMood(): string;
+  mascotOutfit(): string;
+  mascotOutfits(): string[];
+}
+
+/** `ctx.mascot.say` as it reaches the host. */
+export interface MascotSayRequest {
+  text: string;
+  mood?: string;
+  durationMs?: number;
+  urgent?: boolean;
+  actions: { label: string; run: () => void }[];
 }
 
 export interface HostCommand {
@@ -1107,6 +1122,35 @@ export class ModHost {
         });
         return undefined;
       }
+      // --- Kotsume (docs/08 §6.3)
+      case "mascot.say": {
+        const o = a[0] as {
+          text: string;
+          mood?: string;
+          duration?: number;
+          urgent?: boolean;
+          actions: { label: string; fn: number }[];
+        };
+        await this.env.mascotSay(id, {
+          text: o.text,
+          mood: o.mood,
+          durationMs: o.duration,
+          urgent: o.urgent,
+          actions: o.actions.map((x) => ({ label: x.label, run: () => void this.invoke(id, x.fn).catch(() => {}) })),
+        });
+        return undefined;
+      }
+      case "mascot.setMood": {
+        const o = a[0] as { mood: string; for?: number };
+        this.env.mascotSetMood(id, o.mood, o.for);
+        return undefined;
+      }
+      case "mascot.mood":
+        return this.env.mascotMood();
+      case "mascot.outfit":
+        return this.env.mascotOutfit();
+      case "mascot.outfits":
+        return this.env.mascotOutfits();
       case "ui.dialog": {
         const o = a[0] as unknown as Omit<DialogRequest, "from" | "tree">;
         return this.env.dialog({ ...o, from: id, tree: this.treeHostFor(id) });

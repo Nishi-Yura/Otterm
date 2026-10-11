@@ -41,6 +41,9 @@ import {
   setRatio,
   splitPane,
 } from "./layout";
+import { MascotDock, MascotFloat, MascotLive, MascotSprite, MascotStatus } from "./mascot/Mascot";
+import { clearSpriteCache, MOODS, type Mood, type OutfitInfo } from "./mascot/sprite";
+import { MascotStore, type SpeechAction, type SpeechKind } from "./mascot/store";
 import {
   type BlockPayload,
   type CompletionItem,
@@ -51,6 +54,7 @@ import {
   localized,
   ModHost,
   type SessionSnapshot,
+  type ToastRequest,
 } from "./mods/host";
 import { ModDialog, ModsPanel, Panels, PermissionDialog, StatusBar, type Toast, Toasts } from "./mods/ModUi";
 import type { ThemeInfo } from "./mods/protocol";
@@ -68,6 +72,10 @@ const NOTICE_MS = 10_000;
 const RESIZE_STEP = 0.05;
 /** The update check waits until the window has settled (docs/09: startup comes first). */
 const UPDATE_DELAY_MS = 10_000;
+/** A command running this long makes Kotsume wait with it (docs/08 §5.1). */
+const LONG_RUN_MS = 3000;
+/** Completions or help taking this long show Kotsume thinking; quicker ones would only flicker. */
+const THINKING_DELAY_MS = 300;
 /** Actions the focused terminal runs itself: they need its selection, search bar or font. */
 const PANE_ACTIONS = new Set<AppAction["kind"]>(["copy", "paste", "search", "font", "clear"]);
 
@@ -187,6 +195,69 @@ export function App() {
   const [toasts, setToasts] = createSignal<Toast[]>([]);
   let nextToast = 1;
   const dismissToast = (id: number) => setToasts(toasts().filter((x) => x.id !== id));
+  const pushToast = (req: ToastRequest) => {
+    const id = nextToast++;
+    setToasts([...toasts(), { ...req, id }]);
+    const ms = req.durationMs ?? 5000;
+    if (ms > 0) setTimeout(() => dismissToast(id), ms);
+  };
+
+  // --- Kotsume (docs/08) ---------------------------------------------------------------------------
+  const mascot = new MascotStore((source, message) => console.warn(`[${source}] ${message}`));
+  const [outfits, setOutfits] = createSignal<OutfitInfo[]>([]);
+  /** First-time hints already shown (decision E5). */
+  const [seen, setSeen] = createSignal<Set<string>>(new Set());
+  /** Panes whose command has run for a while: Kotsume juggles the pebble while they wait. */
+  const [busyPanes, setBusyPanes] = createSignal<Set<number>>(new Set());
+  const busyTimers = new Map<number, ReturnType<typeof setTimeout>>();
+  const mascotConf = () => config()?.mascot;
+  const mascotShown = () => !!mascotConf()?.visible && mascotConf()?.position !== "hidden";
+  const outfit = () => outfits().find((o) => o.id === mascotConf()?.outfit);
+  /** The assist bar unless the layout has none; then the status bar (decision E4). */
+  const mascotPlace = () => {
+    const p = mascotConf()?.position ?? "assist-bar";
+    return p === "assist-bar" && config()?.layout.assist_bar === false ? "statusbar" : p;
+  };
+  /** Whether a line of this kind is spoken now (docs/08 §4.3): level 1 alerts only, level 2 also
+   * first-time hints, level 3 everything; an explicit `mascot.speech` overrides the level. */
+  const speaks = (kind: SpeechKind) => {
+    const m = mascotConf();
+    if (!m || !mascotShown() || m.speech === "never") return false;
+    if (m.speech === "alert-only") return kind === "alert";
+    if (m.speechAuto && (config()?.guideLevel ?? 2) <= 2) return kind !== "info";
+    return true;
+  };
+  /** One of otterm's own lines, when its kind is spoken now. */
+  const mascotSay = (
+    kind: SpeechKind,
+    text: string,
+    extra: { mood?: Mood; actions?: SpeechAction[]; durationMs?: number } = {},
+  ) => {
+    if (speaks(kind)) void mascot.say({ text, kind, source: "otterm", ...extra });
+  };
+  /** A first-time hint, shown once per feature for good (decision E5). */
+  const firstTime = (key: string, text: string, actions?: SpeechAction[]) => {
+    if (seen().has(key) || !speaks("first")) return;
+    setSeen(new Set([...seen(), key]));
+    void invoke("mascot_seen_add", { key }).catch(() => {});
+    mascotSay("first", text, { actions, durationMs: 12_000 });
+  };
+  const loadMascot = () => {
+    void invoke<OutfitInfo[]>("mascot_outfits")
+      .then((o) => {
+        clearSpriteCache();
+        setOutfits(o);
+      })
+      .catch(() => {});
+    void invoke<string[]>("mascot_seen")
+      .then((s) => setSeen(new Set(s)))
+      .catch(() => {});
+  };
+  const mascotClick = () => {
+    // Clicking Kotsume asks the AI when the AI mod is there (decision F1), else opens the palette.
+    if (host.hasCommand("ai.ask")) void host.runCommand("ai.ask");
+    else void openPalette();
+  };
   const [modDialog, setModDialog] = createSignal<{ req: DialogRequest; done: (id: string | null) => void }>();
   /** The panel open in each panel slot, by panel id. */
   const [shownPanel, setShownPanel] = createSignal<Record<string, string | undefined>>({});
@@ -255,12 +326,38 @@ export function App() {
         .filter((s): s is SessionSnapshot => s !== undefined),
     insert: (id, text) => invoke("session_paste", { id, text }),
     write: (id, text) => invoke("session_write", { id, data: text }),
-    toast(req) {
-      const id = nextToast++;
-      setToasts([...toasts(), { ...req, id }]);
-      const ms = req.durationMs ?? 5000;
-      if (ms > 0) setTimeout(() => dismissToast(id), ms);
+    toast: pushToast,
+    mascotSay(mod, req) {
+      // A mod's line is information unless it is an urgent alert; when Kotsume would not say it
+      // (hidden, level 0, a quieter level) it becomes a toast, so nothing is lost (docs/08 §6.3).
+      const kind: SpeechKind = req.mood === "alert" && req.urgent ? "alert" : "info";
+      const mood = MOODS.find((m) => m === req.mood);
+      if (!speaks(kind)) {
+        pushToast({
+          text: req.text,
+          from: mod,
+          kind: mood === "alert" ? "warning" : "info",
+          durationMs: req.durationMs,
+          actions: req.actions.map((a) => ({ label: a.label, onClick: a.run })),
+        });
+        return Promise.resolve();
+      }
+      return mascot.say({
+        text: req.text,
+        mood,
+        kind,
+        source: mod,
+        durationMs: req.durationMs,
+        actions: req.actions,
+      });
     },
+    mascotSetMood(mod, mood, forMs) {
+      const m = MOODS.find((x) => x === mood);
+      if (m) mascot.setReason(`mod:${mod}`, m, Math.min(forMs ?? 3000, 60_000));
+    },
+    mascotMood: () => mascot.mood(),
+    mascotOutfit: () => mascotConf()?.outfit ?? "default",
+    mascotOutfits: () => ["default", ...outfits().map((o) => o.id)],
     dialog: (req) =>
       new Promise((resolve) => {
         setModDialog({
@@ -357,6 +454,19 @@ export function App() {
     developerMode: () => config()?.developerMode ?? false,
   };
   const host = new ModHost(env);
+  mascot.onMoodChanged((m) => host.emit("mascot-mood", m));
+  createEffect(() => {
+    mascot.moodChanges = mascotConf()?.moodChanges ?? true;
+    const shown = mascotShown();
+    if (!shown) mascot.clear();
+    host.emit("mascot-visible", shown);
+  });
+  // A question on screen (a danger, closing a running program, trusting a folder): Kotsume
+  // stops with the user (docs/08 §4.2).
+  createEffect(() => {
+    if (confirm()) mascot.setReason("prompt", "alert");
+    else mascot.clearReason("prompt");
+  });
   const insertText = (text: string) => {
     const s = env.activeSession();
     if (s) void env.insert(s.id, text).catch((e) => showNotice(String(e)));
@@ -480,10 +590,14 @@ export function App() {
     const s = env.activeSession();
     if (!s || !st.active || s.echoOff) return setCompletion(undefined);
     const parsed = host.parse(st.line, s.cwd ?? "", shellKindOf(s));
+    const slow = setTimeout(() => mascot.setReason("completion", "thinking"), THINKING_DELAY_MS);
     const [fromMods, mine] = await Promise.all([
       host.complete({ sessionId: String(s.id), line: st.line, cursor: st.cursor, exact: st.exact }, parsed),
       builtinCompletions(st),
-    ]);
+    ]).finally(() => {
+      clearTimeout(slow);
+      mascot.clearReason("completion");
+    });
     if (inputState() !== st && inputState().line !== st.line) return;
     const seen = new Set<string>();
     const items = [...fromMods, ...mine].filter((it) => {
@@ -975,8 +1089,11 @@ export function App() {
       showNotice(t("start-failed", { error: String(e) }));
       return;
     }
+    loadMascot();
     await openFirstTabs();
     setReady(true);
+    if (config()?.safeMode) mascotSay("first", t("mascot-safe-mode"));
+    else firstTime("first-tab", t("mascot-first-tab"));
     void offerCrashLog();
     // The only connection otterm makes by itself, when the user allowed it (decision K5).
     if (config()?.checkUpdates) setTimeout(() => void checkForUpdate(false), UPDATE_DELAY_MS);
@@ -1309,6 +1426,37 @@ export function App() {
     });
   };
 
+  /**
+   * Kotsume and the commands (docs/08 §4.2): waits with a long one, stops on a failure, and is
+   * happy when a long one succeeds (`mascot.happy_threshold_ms`).
+   */
+  const onMascotBlock = (pane: number, kind: "start" | "end", exit?: number, ms?: number) => {
+    clearTimeout(busyTimers.get(pane));
+    if (kind === "start") {
+      busyTimers.set(
+        pane,
+        setTimeout(() => {
+          setBusyPanes(new Set([...busyPanes(), pane]));
+          mascot.setReason(`run:${pane}`, "thinking");
+        }, LONG_RUN_MS),
+      );
+      return;
+    }
+    const busy = new Set(busyPanes());
+    busy.delete(pane);
+    setBusyPanes(busy);
+    mascot.clearReason(`run:${pane}`);
+    if (exit === undefined) return;
+    if (exit !== 0) {
+      mascot.setReason("exit", "alert", 3000);
+      return;
+    }
+    if ((ms ?? 0) >= (mascotConf()?.happyThresholdMs ?? 10_000)) {
+      mascot.setReason("done", "happy", 3000);
+      mascotSay("info", t("mascot-done", { seconds: Math.round((ms ?? 0) / 1000) }), { mood: "happy" });
+    }
+  };
+
   const askTrust = (ws: UiWorkspace) =>
     new Promise<boolean | undefined>((resolve) => {
       const answer = (trusted: boolean | undefined) => {
@@ -1596,8 +1744,13 @@ export function App() {
       // the key goes on to the terminal.
       case "aiAsk":
         return runModCommand("ai.ask");
-      case "mascotToggle":
-        return runModCommand("mascot.toggle");
+      case "mascotToggle": {
+        const show = !mascotShown();
+        void invoke("config_write", { path: ["mascot", "visible"], value: show }).catch((e) => showNotice(String(e)));
+        if (show && mascotConf()?.position === "hidden")
+          void invoke("config_write", { path: ["mascot", "position"], value: "assist-bar" }).catch(() => {});
+        break;
+      }
       case "helpMode":
         return runModCommand("guide.help_mode");
       default:
@@ -2034,6 +2187,7 @@ export function App() {
                       onBlock={(e) => {
                         integrated.add(p.id);
                         if (e.kind === "start" && currentTab()?.active === p.id) setHint(undefined);
+                        onMascotBlock(p.id, e.kind, e.exit, e.ms);
                         if (e.kind === "end" && e.exit !== undefined) {
                           setLastExit({ ...lastExit(), [p.id]: e.exit });
                           void onBlockFailed(p, e.line, e.exit, e.ms ?? 0);
@@ -2139,6 +2293,11 @@ export function App() {
             )}
           </Show>
           <AssistBar
+            mascot={
+              mascotShown() && mascotPlace() === "assist-bar" ? (
+                <MascotDock store={mascot} outfit={outfit()} busy={busyPanes().size > 0} onClick={mascotClick} />
+              ) : undefined
+            }
             explanation={config()?.layout.assist_bar === false ? undefined : explanation()}
             hint={hint()?.hint}
             hintCommand={hint()?.command}
@@ -2162,6 +2321,11 @@ export function App() {
           />
           <Show when={config()?.statusbar ?? true}>
             <StatusBar
+              mascot={
+                mascotShown() && mascotPlace() === "statusbar" ? (
+                  <MascotStatus store={mascot} outfit={outfit()} busy={busyPanes().size > 0} onClick={mascotClick} />
+                ) : undefined
+              }
               host={host}
               folder={(() => {
                 const p = activePane();
@@ -2247,6 +2411,9 @@ export function App() {
       </Show>
       <Show when={settingsOpen()}>
         <Settings
+          say={(text) => mascotSay("info", text, { mood: "happy" })}
+          onOutfitsChanged={loadMascot}
+          onSeenReset={() => setSeen(new Set<string>())}
           restart={restart}
           config={config()}
           host={host}
@@ -2263,6 +2430,10 @@ export function App() {
           notify={showNotice}
         />
       </Show>
+      <Show when={mascotShown() && mascotPlace() === "float"}>
+        <MascotFloat store={mascot} outfit={outfit()} busy={busyPanes().size > 0} onClick={mascotClick} />
+      </Show>
+      <MascotLive store={mascot} />
       <Toasts toasts={toasts()} dismiss={dismissToast} />
       <Show when={host.pendingGrants()[0]} keyed>
         {(entry) => (
@@ -2274,7 +2445,23 @@ export function App() {
         )}
       </Show>
       <Show when={modDialog()} keyed>
-        {(d) => <ModDialog req={d.req} insert={insertText} copy={copyText} onClose={d.done} />}
+        {(d) => (
+          <ModDialog
+            req={d.req}
+            insert={insertText}
+            copy={copyText}
+            onClose={d.done}
+            mascot={
+              d.req.from === "otterm.onboarding" && mascotShown() ? (
+                <MascotSprite
+                  mood={mascot.mood()}
+                  size={(config()?.guideLevel ?? 2) >= 3 ? 96 : 48}
+                  outfit={outfit()}
+                />
+              ) : undefined
+            }
+          />
+        )}
       </Show>
       <Show when={profileMenu()} keyed>
         {(m) => (

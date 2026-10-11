@@ -16,8 +16,8 @@ mod store;
 pub use broker::{DirEntry, EntryKind, Grant, ProcessOutput, Protected};
 pub use manifest::Manifest;
 pub use manifest::{
-    Adds, Compat, Entry, FsPermissions, MANIFEST_EVENTS, ManifestError, ModInfo, ModKind, Permissions, Platform,
-    Problem, SETTING_TYPES, SLOT_NAMES, Settings, TerminalPermissions, parse_manifest, valid_id,
+    Adds, Compat, Entry, FsPermissions, MANIFEST_EVENTS, ManifestError, ModInfo, ModKind, Outfit, OutfitLayer,
+    Permissions, Platform, Problem, SETTING_TYPES, SLOT_NAMES, Settings, TerminalPermissions, parse_manifest, valid_id,
 };
 pub use package::{install_package, pack, sha256_file, unpack};
 pub use paths::{PathVars, VARIABLES, expand, expand_glob};

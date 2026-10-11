@@ -14,6 +14,7 @@ mod helptext;
 mod history;
 mod instance;
 mod launch;
+mod mascot;
 mod mods;
 mod open;
 mod profiles;
@@ -1190,6 +1191,10 @@ fn main() {
             workspace_trust,
             workspace_tabs,
             instance_reply,
+            mascot::mascot_seen,
+            mascot::mascot_seen_add,
+            mascot::mascot_seen_reset,
+            mascot::mascot_outfits,
             crash::crash_pending,
             crash::crash_ack,
             update::update_check,

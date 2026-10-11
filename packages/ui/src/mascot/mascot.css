@@ -1,0 +1,155 @@
+/* Kotsume (docs/08 §3, §6). The sprite's own colors are fixed (decision E2); everything around it
+   uses the UI tokens. Movement stops with reduced motion (§6.5): the global rule in style.css
+   turns animations and transitions off. */
+
+.mascot-sprite {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  image-rendering: pixelated;
+}
+
+.mascot-frame,
+.mascot-frame svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mascot-frame {
+  animation: mascot-in 300ms ease-out both;
+}
+
+.mascot-frame.leaving {
+  animation: mascot-out 300ms ease-out both;
+}
+
+@keyframes mascot-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes mascot-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Thinking: the pebble rolls in the paws, one pixel each way (steps, not a smear). */
+.mascot-sprite.thinking .mascot-hand {
+  animation: mascot-roll 1.2s steps(1) infinite;
+}
+
+@keyframes mascot-roll {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-1px);
+  }
+}
+
+/* A long wait: the pebble goes up and down, a one-second loop (docs/08 §3.3). */
+.mascot-sprite.busy .mascot-hand {
+  animation: mascot-juggle 1s steps(1) infinite;
+}
+
+@keyframes mascot-juggle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  25%,
+  75% {
+    transform: translateY(-1px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.mascot-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--ot-radius);
+}
+
+.mascot-button:focus-visible {
+  outline: 2px solid var(--ot-accent);
+  outline-offset: 1px;
+}
+
+.mascot-dock {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: none;
+  max-width: 100%;
+}
+
+.mascot-speech {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ot-fg);
+}
+
+.mascot-speech-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mascot-speech.alert .mascot-speech-text {
+  color: var(--ot-warning-text);
+}
+
+.mascot-status {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.mascot-pop,
+.mascot-bubble {
+  position: absolute;
+  z-index: 30;
+  padding: 6px 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: var(--ot-bg-elevated);
+  box-shadow: var(--ot-shadow);
+  white-space: nowrap;
+}
+
+.mascot-pop {
+  bottom: calc(100% + 6px);
+  left: 0;
+}
+
+.mascot-float {
+  position: fixed;
+  z-index: 25;
+  opacity: 0.85;
+  cursor: grab;
+  touch-action: none;
+}
+
+.mascot-float:hover {
+  opacity: 1;
+}
+
+.mascot-bubble {
+  bottom: calc(100% + 6px);
+  right: 0;
+}

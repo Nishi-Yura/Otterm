@@ -12,6 +12,8 @@ import { createEffect, createMemo, createResource, createSignal, For, Index, onC
 import { type Layout, setStyleSheet, UI_TOKENS, type UiConfig, uiTokens } from "../config";
 import { t } from "../i18n";
 import { defaults as defaultKeys, Keymap } from "../keymap";
+import { MascotSprite } from "../mascot/Mascot";
+import { MOODS, type OutfitInfo } from "../mascot/sprite";
 import type { ModHost } from "../mods/host";
 import { describe, type Field, help, label, leaves, optionLabel, resolve, type Schema, tidy, valueAt } from "./schema";
 import "./settings.css";
@@ -41,6 +43,12 @@ export interface SettingsProps {
   notify: (text: string) => void;
   /** Start otterm again, in safe mode (`true`) or normally. */
   restart: (safe: boolean) => void;
+  /** Kotsume says a line (a mod was installed, docs/08 §5.1). */
+  say?: (text: string) => void;
+  /** Outfit mods were installed or removed. */
+  onOutfitsChanged?: () => void;
+  /** "Show the first-time hints again" was pressed (decision E5). */
+  onSeenReset?: () => void;
 }
 
 /** Keys the generic form leaves to a page of its own. */
@@ -60,7 +68,7 @@ const SPECIAL = new Set([
 interface Category {
   id: string;
   paths: string[][];
-  page?: "theme" | "layout" | "font" | "keys" | "mods" | "advanced";
+  page?: "theme" | "layout" | "font" | "keys" | "mods" | "advanced" | "mascot";
 }
 
 const CATEGORIES: Category[] = [
@@ -92,7 +100,7 @@ const CATEGORIES: Category[] = [
   { id: "terminal", paths: [["terminal"]] },
   { id: "profiles", paths: [["shell"], ["profiles"]] },
   { id: "assist", paths: [["assist"], ["history"], ["open"]] },
-  { id: "mascot", paths: [["mascot"]] },
+  { id: "mascot", page: "mascot", paths: [["mascot"]] },
   { id: "keys", page: "keys", paths: [["keybindings"]] },
   { id: "mods", page: "mods", paths: [["mods"]] },
   { id: "ai", paths: [["ai"]] },
@@ -289,10 +297,18 @@ export function Settings(props: SettingsProps) {
                   <KeysPage {...props} write={write} />
                 </Show>
                 <Show when={current().page === "mods"}>
-                  <ModsPage host={props.host} notify={props.notify} />
+                  <ModsPage
+                    host={props.host}
+                    notify={props.notify}
+                    say={props.say}
+                    onOutfitsChanged={props.onOutfitsChanged}
+                  />
                 </Show>
                 <Show when={current().page === "advanced"}>
                   <AdvancedPage {...props} form={f()} />
+                </Show>
+                <Show when={current().page === "mascot"}>
+                  <MascotPage {...props} write={write} />
                 </Show>
                 <For each={current().paths}>{(p) => <FieldView form={f()} path={p} write={write} />}</For>
                 <Show when={current().page === "theme"}>
@@ -1605,7 +1621,12 @@ interface StoreEntry {
  * The store (docs/05 §7.2): the registry's mods, searched here. It connects only after the user
  * said yes once (decision K5); installed mods stay off until their permissions are granted.
  */
-function StoreSection(props: { host: ModHost; notify: (s: string) => void }) {
+function StoreSection(props: {
+  host: ModHost;
+  notify: (s: string) => void;
+  say?: (s: string) => void;
+  onOutfitsChanged?: () => void;
+}) {
   const [allowed, setAllowed] = createSignal<boolean>();
   const [list, setList] = createSignal<StoreEntry[]>();
   const [error, setError] = createSignal<string>();
@@ -1637,7 +1658,9 @@ function StoreSection(props: { host: ModHost; notify: (s: string) => void }) {
     setBusy(m.id);
     void invoke<string>("store_install", { id: m.id })
       .then((report) => {
-        props.notify(report.trim().split("\n").join(" · "));
+        if (props.say) props.say(t("mascot-mod-installed", { name: bilingual(m.name) }));
+        else props.notify(report.trim().split("\n").join(" · "));
+        if (m.kind === "outfit") props.onOutfitsChanged?.();
         void props.host.refresh();
         load(false);
       })
@@ -1726,12 +1749,17 @@ function StoreSection(props: { host: ModHost; notify: (s: string) => void }) {
   );
 }
 
-function ModsPage(props: { host: ModHost; notify: (s: string) => void }) {
+function ModsPage(props: {
+  host: ModHost;
+  notify: (s: string) => void;
+  say?: (s: string) => void;
+  onOutfitsChanged?: () => void;
+}) {
   const set = (id: string, key: string, value: unknown) =>
     void invoke("mod_setting_set", { id, key, value }).catch((e) => props.notify(String(e)));
   return (
     <section class="settings-section">
-      <StoreSection host={props.host} notify={props.notify} />
+      <StoreSection host={props.host} notify={props.notify} say={props.say} onOutfitsChanged={props.onOutfitsChanged} />
       <For each={props.host.mods()}>
         {(m) => {
           const schema = () => Object.entries(m.entry.settingsSchema ?? {}) as [string, ModSetting][];
@@ -1926,6 +1954,71 @@ function AdvancedPage(props: SettingsProps & { form: Form }) {
           confirm={t("settings-reset-confirm")}
           onConfirm={() => void invoke("config_reset", { path: [] }).catch((e) => props.notify(String(e)))}
         />
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Kotsume (docs/08): the four moods, outfits to try on, first-time hints again
+// ---------------------------------------------------------------------------
+
+function MascotPage(props: SettingsProps & { write: Write }) {
+  const [outfits] = createResource(() => invoke<OutfitInfo[]>("mascot_outfits").catch(() => []));
+  const [trying, setTrying] = createSignal<string>();
+  const current = () => trying() ?? props.config?.mascot.outfit ?? "default";
+  const outfit = () => outfits()?.find((o) => o.id === current());
+  return (
+    <section class="settings-section" data-ot="settings-mascot">
+      <p class="muted">{t("mascot-settings-intro")}</p>
+      <div class="mascot-gallery">
+        <For each={MOODS}>
+          {(mood) => (
+            <figure class="mascot-gallery-item">
+              <MascotSprite mood={mood} size={96} outfit={outfit()} />
+              <figcaption class="muted">{t(`mascot-mood-${mood}`)}</figcaption>
+            </figure>
+          )}
+        </For>
+      </div>
+      <h3>{t("mascot-outfit")}</h3>
+      <div class="settings-actions">
+        <For each={[{ id: "default", name: t("mascot-outfit-default") }, ...(outfits() ?? [])]}>
+          {(o) => (
+            <button
+              type="button"
+              classList={{ primary: current() === o.id }}
+              onMouseEnter={() => setTrying(o.id)}
+              onMouseLeave={() => setTrying(undefined)}
+              onFocus={() => setTrying(o.id)}
+              onBlur={() => setTrying(undefined)}
+              onClick={() => {
+                setTrying(undefined);
+                void props.write(["mascot", "outfit"], o.id === "default" ? undefined : o.id);
+              }}
+            >
+              {bilingual(o.name)}
+            </button>
+          )}
+        </For>
+      </div>
+      <p class="muted">{t("mascot-outfit-hint")}</p>
+      <h3>{t("mascot-hints-again")}</h3>
+      <p class="muted">{t("mascot-hints-again-hint")}</p>
+      <div class="settings-actions">
+        <button
+          type="button"
+          onClick={() =>
+            void invoke("mascot_seen_reset")
+              .then(() => {
+                props.onSeenReset?.();
+                props.notify(t("mascot-hints-reset"));
+              })
+              .catch((e) => props.notify(String(e)))
+          }
+        >
+          {t("mascot-hints-again")}
+        </button>
       </div>
     </section>
   );

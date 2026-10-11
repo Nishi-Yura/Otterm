@@ -74,6 +74,33 @@ pub struct Manifest {
     /// The `[dependencies]` table: mod id to a version range.
     #[serde(default)]
     pub dependencies: BTreeMap<String, String>,
+    /// The `[outfit]` table of an `outfit` mod (docs/08 §6.4).
+    #[serde(default)]
+    pub outfit: Option<Outfit>,
+}
+
+/// An outfit for Kotsume (docs/08 §6.4): SVG layers put over the base sprite, by slot.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Outfit {
+    /// `default` keeps Kotsume underneath; `custom` replaces the whole sprite (decision E6).
+    pub base: Option<String>,
+    pub layers: Vec<OutfitLayer>,
+    /// A whole sprite per mood, relative to the mod folder (with `base = "custom"`, or to override one mood).
+    pub moods: BTreeMap<String, String>,
+    /// Replacement lines by translation key: `{ ja = "...", en = "..." }`.
+    #[serde(default)]
+    pub lines: BTreeMap<String, BTreeMap<String, String>>,
+}
+
+/// One layer of an outfit.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OutfitLayer {
+    /// `head`, `face`, `body`, `hand`, `shell`, `back` or `effect`.
+    pub slot: String,
+    /// An SVG file relative to the mod folder.
+    pub file: String,
 }
 
 /// The `[mod]` table: identity and display information.

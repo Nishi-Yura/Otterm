@@ -220,6 +220,15 @@ alert = "assets/alert-override.svg"
 - 表情だけで意味を伝えない。必ずテキストかアイコンが伴う
 - アニメーションは `reduced motion` で停止。点滅は使わない
 
+### 6.6 実装（2026-10-12）
+
+- 素材: `scripts/mascot.py` のグリッドが唯一の元データ。`assets/mascot/src/<mood>.svg`（`<g id="body|face|hand">`、色は `var(--ot-mascot-*, #hex)`）、`palette.toml`、`png/`、`logo.svg`、`icon-source.png` とアプリのアイコンを書き出す。小石は `hand` Slot に入れた
+- 本体は同梱 mod ではなくホストの UI（`packages/ui/src/mascot/`）に置いた（判断 M21）。mod 向けの `ctx.mascot` は §6.3 のとおり
+- 入力支援バーにいるときは、話すことがなくてもバーを細く出し続ける（左端のコツメと、右に説明）。台詞はバーの中のテキストとして出す。ステータスバーとフロートでは小さな吹き出し
+- `say` の扱い: mod の台詞は `urgent` 付きの `alert` だけを「alert」、それ以外を「案内」として扱い、そのガイドレベルで出さない種類ならトーストにする
+- 衣装の SVG は mod から来るので、`<rect>` の数値の位置と色だけを取り出して描く（それ以外の要素や属性は捨てる）
+- 同梱衣装は `otterm.outfit-developer`（眼鏡とマグカップ）。`pixel` は本体がすでに 16 px のドット絵なので作っていない
+
 ## 7. やらないこと
 
 - ユーザーの作業中に勝手に話し出さない（イベント起因のみ。時間経過で雑談しない）
