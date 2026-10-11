@@ -1,9 +1,9 @@
 name: Bench
 
 # Release builds of the app take several minutes, so this runs on main and on demand rather than on every PR.
+# Manual only: GitHub Actions minutes on this private repository cost money once the free
+# allowance is used up. Run `just check` (scripts/check.sh) locally instead.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

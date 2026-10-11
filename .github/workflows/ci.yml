@@ -1,9 +1,9 @@
 name: CI
 
+# Manual only: GitHub Actions minutes on this private repository cost money once the free
+# allowance is used up. Run `just check` (scripts/check.sh) locally instead.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
