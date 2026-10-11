@@ -139,6 +139,10 @@ export interface ModEntry {
   official: boolean;
   /** Installed with `--link`: a symlink to a checkout; its main.js is watched for changes. */
   linked: boolean;
+  /** Where it was found: the mods folder, the app's own, or the open workspace's `.otterm/mods/` (docs/05 §4). */
+  source: "user" | "bundled" | "workspace";
+  /** The workspace root a workspace mod comes from. */
+  workspaceRoot: string | null;
   enabled: boolean;
   granted: boolean;
   problems: string[];
@@ -747,9 +751,10 @@ export class ModHost {
     this.reloadRequested.add(id);
   }
 
-  /** The user approved the permission list (docs/05 §6.2). */
+  /** The user approved the permission list (docs/05 §6.2). A workspace mod is approved for its workspace. */
   async grant(id: string) {
-    await invoke("mod_grant", { id });
+    if (this.states.get(id)?.entry.source === "workspace") await invoke("workspace_mod_set", { id, enabled: true });
+    else await invoke("mod_grant", { id });
     this.setPendingGrants(this.pendingGrants().filter((g) => g.id !== id));
     await this.refresh();
   }
@@ -757,14 +762,23 @@ export class ModHost {
   /** The user declined: the mod is disabled so the question does not come back at every start. */
   async decline(id: string) {
     this.setPendingGrants(this.pendingGrants().filter((g) => g.id !== id));
-    await invoke("mod_set_enabled", { id, enabled: false });
+    // A workspace mod was never on, so there is nothing to switch off.
+    if (this.states.get(id)?.entry.source !== "workspace") await invoke("mod_set_enabled", { id, enabled: false });
     await this.refresh();
   }
 
   async setEnabled(id: string, enabled: boolean) {
     const state = this.states.get(id);
+    if (state?.entry.source === "workspace" && enabled) {
+      // A workspace mod is never switched on without the permission list (docs/05 §4): the dialog asks,
+      // and `grant` turns it on. Mods that type into the terminal cannot come from a workspace at all.
+      if (state.entry.permissions.terminalWrite) return;
+      if (!this.pendingGrants().some((g) => g.id === id)) this.setPendingGrants([...this.pendingGrants(), state.entry]);
+      return;
+    }
     if (state && enabled) state.crashes = 0;
-    await invoke("mod_set_enabled", { id, enabled });
+    if (state?.entry.source === "workspace") await invoke("workspace_mod_set", { id, enabled: false });
+    else await invoke("mod_set_enabled", { id, enabled });
     await this.refresh();
   }
 
@@ -1651,7 +1665,9 @@ export class ModHost {
   // --- signals for the UI --------------------------------------------------------------------------
 
   private publish() {
-    this.setMods([...this.states.values()].sort((x, y) => x.entry.id.localeCompare(y.entry.id)));
+    // Copies: the states are changed in place, and a list of the same objects would leave the rows
+    // of an open mods panel as they were.
+    this.setMods([...this.states.values()].map((s) => ({ ...s })).sort((x, y) => x.entry.id.localeCompare(y.entry.id)));
   }
 
   private publishUi() {

@@ -833,8 +833,11 @@ pub fn process_tree_memory() -> u64 {
     while next < tree.len() {
         let parent = tree[next];
         next += 1;
+        // Windows reuses process ids: a process whose parent died long ago can name an id that one
+        // of ours has now. A real child never started before its parent.
+        let born = sys.process(parent).map_or(0, |p| p.start_time());
         for p in sys.processes().values() {
-            if p.parent() == Some(parent) && !tree.contains(&p.pid()) {
+            if p.parent() == Some(parent) && p.start_time() >= born && !tree.contains(&p.pid()) {
                 tree.push(p.pid());
             }
         }
