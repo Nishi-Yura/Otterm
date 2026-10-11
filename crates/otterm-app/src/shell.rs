@@ -32,17 +32,49 @@ pub struct Integration {
     pub env: Vec<(String, String)>,
 }
 
-/// `program` with `args` and the integration for it. Shells otterm has no hook for (cmd, nu,
-/// WSL's launcher), and invocations that run a command or script of their own (`-c`, `-File`),
-/// keep their arguments unchanged.
-pub fn integrate(program: &str, args: Vec<String>, prompt: PromptStyle) -> Integration {
-    let stem = Path::new(program).file_stem().map(|s| s.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
+fn stem_of(program: &str) -> String {
+    Path::new(program).file_stem().map(|s| s.to_string_lossy().to_ascii_lowercase()).unwrap_or_default()
+}
+
+/// `program` started without the user's startup files (decision M24), for when the integration is
+/// off: its hooks skip those files themselves. Shells that take no such flag, and invocations that
+/// run a command of their own, keep their arguments.
+pub fn clean_start(program: &str, args: Vec<String>) -> Vec<String> {
+    let lower: Vec<String> = args.iter().map(|a| a.to_ascii_lowercase()).collect();
+    let has = |flags: &[&str]| lower.iter().any(|a| flags.contains(&a.as_str()));
+    let mut args = args;
+    match stem_of(program).as_str() {
+        "pwsh" | "powershell" if !has(&["-noprofile", "-nop"]) => args.insert(0, "-NoProfile".to_owned()),
+        "cmd" if !has(&["/d"]) => args.insert(0, "/D".to_owned()),
+        "bash" if !has(&["-c", "--rcfile", "--init-file", "--norc"]) => {
+            args.splice(0..0, ["--noprofile".to_owned(), "--norc".to_owned()]);
+        }
+        "zsh" if !has(&["-c", "-f", "--no-rcs"]) => args.insert(0, "-f".to_owned()),
+        "fish" if !has(&["-c", "--command", "-n", "--no-config"]) => args.insert(0, "--no-config".to_owned()),
+        _ => {}
+    }
+    args
+}
+
+/// `program` with `args` and the integration for it. Shells otterm has no hook for (nu, WSL's
+/// launcher), and invocations that run a command or script of their own (`-c`, `-File`), keep their
+/// arguments unchanged. Without `user_files`, the shell's own startup files are not read
+/// (decision M24).
+pub fn integrate(program: &str, args: Vec<String>, prompt: PromptStyle, user_files: bool) -> Integration {
+    let stem = stem_of(program);
     let mode = match prompt {
         PromptStyle::Otterm => "otterm",
         PromptStyle::Shell => "shell",
     };
     let mut env = vec![("OTTERM_PROMPT".to_owned(), mode.to_owned())];
-    let plain = Integration { args: args.clone(), env: Vec::new() };
+    if !user_files {
+        // The bash and zsh hooks source the user's files themselves unless this says not to.
+        env.push(("OTTERM_USER_STARTUP".to_owned(), "0".to_owned()));
+    }
+    let plain = Integration {
+        args: if user_files { args.clone() } else { clean_start(program, args.clone()) },
+        env: Vec::new(),
+    };
     // Written for every shell, so the user can read the scripts whichever shell they run.
     let dir = hooks_dir();
     let lower: Vec<String> = args.iter().map(|a| a.to_ascii_lowercase()).collect();
@@ -60,9 +92,13 @@ pub fn integrate(program: &str, args: Vec<String>, prompt: PromptStyle) -> Integ
             if !has(&["-nologo"]) {
                 args.push("-NoLogo".to_owned());
             }
+            if !user_files && !has(&["-noprofile", "-nop"]) {
+                args.push("-NoProfile".to_owned());
+            }
             args.extend(["-NoExit".to_owned(), "-EncodedCommand".to_owned(), encode_command(PWSH_SCRIPT)]);
             Integration { args, env }
         }
+        "cmd" => plain,
         "bash" => {
             if has(&["-c", "--rcfile", "--init-file", "--norc", "--posix", "-s"]) {
                 return plain;
@@ -117,9 +153,12 @@ pub fn integrate(program: &str, args: Vec<String>, prompt: PromptStyle) -> Integ
                 return plain;
             }
             let Some(dir) = dir else { return plain };
-            // Runs after config.fish.
+            // Runs after config.fish (which --no-config skips).
             let path = shell_path(&dir.join("otterm.fish")).replace('\\', "\\\\").replace('\'', "\\'");
             let mut args = args;
+            if !user_files {
+                args.insert(0, "--no-config".to_owned());
+            }
             args.extend(["--init-command".to_owned(), format!("source '{path}'")]);
             Integration { args, env }
         }

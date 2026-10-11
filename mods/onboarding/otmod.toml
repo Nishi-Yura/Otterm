@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.onboarding"
 name = "Onboarding and Tutorial"
-version = "0.0.0"
+version = "1.0.0"
 description = "First-run setup with Kotsume, and a six-chapter tutorial for your first terminal."
 author = "otterm"
 license = "Apache-2.0"

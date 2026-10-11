@@ -24,6 +24,10 @@ if [[ -n ${OTTERM:-} && -z ${OTTERM_SHELL_INTEGRATION:-} && -z ${__OTTERM_LOADIN
             source /etc/profile
         fi
         for __otterm_rc in ~/.bash_profile ~/.bash_login ~/.profile; do
+            # shell.user_startup_files off (decision M24): only the system files above.
+            if [[ ${OTTERM_USER_STARTUP:-1} == 0 ]]; then
+                break
+            fi
             if [[ -r $__otterm_rc ]]; then
                 source "$__otterm_rc"
                 break
@@ -35,7 +39,7 @@ if [[ -n ${OTTERM:-} && -z ${OTTERM_SHELL_INTEGRATION:-} && -z ${__OTTERM_LOADIN
         if [[ -r /etc/bash.bashrc ]]; then
             source /etc/bash.bashrc
         fi
-        if [[ -r ~/.bashrc ]]; then
+        if [[ ${OTTERM_USER_STARTUP:-1} != 0 && -r ~/.bashrc ]]; then
             source ~/.bashrc
         fi
     fi

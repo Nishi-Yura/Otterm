@@ -58,7 +58,7 @@ node scripts/release.mjs --notes packaging/release-notes/<version>.updater.txt
 
 あわせて `SHA256SUMS.txt`、`latest.json`（鍵があるとき）、`winget/<version>/*.yaml`、`otterm.rb`（macOS で作ったとき）ができる。OS ごとに実行すると `latest.json` と `SHA256SUMS.txt` に追記していく。
 
-Windows のインストーラは `otterm.exe` の隣に `otterm.com`（docs/06 §4）を入れ、インストール先をユーザーの PATH に足す（`crates/otterm-app/windows/hooks.nsh`）。アンインストールで PATH から外す。
+Windows のインストーラは `%LOCALAPPDATA%\Programs\otterm` に入る（判断 M24。データフォルダの `%LOCALAPPDATA%\otterm` とは分ける）。Tauri に既定のフォルダの設定がないので、Tauri の NSIS テンプレートを写して 1 行変えたもの（`crates/otterm-app/windows/installer.nsi`）を使う。**tauri-cli を更新したら、新しいテンプレートを写して同じ変更をし直す**。インストーラは `otterm.exe` の隣に `otterm.com`（docs/06 §4）を入れ、インストール先をユーザーの PATH に足す（`crates/otterm-app/windows/hooks.nsh`）。アンインストールで PATH から外す。
 
 macOS と Linux はこの開発機ではビルドできない。Mac と Linux の手元の機械で同じスクリプトを実行する（Linux の準備は `packaging/linux/README.md`）。`.github/workflows/release.yml` は 3 OS をまとめてビルドする（手動実行のみ。public リポジトリなので実行は無料）。
 

@@ -228,12 +228,17 @@ fn session_create(
         opts.program = Some(otterm_session::default_shell());
     }
     // otterm's integration, loaded through the shell's arguments and environment (B6).
-    if config.shell.integration
-        && let Some(program) = opts.program.as_deref()
-    {
-        let shell::Integration { args, env } = shell::integrate(program, opts.args.clone(), config.shell.prompt);
-        opts.args = args;
-        opts.env.extend(env);
+    if let Some(program) = opts.program.clone() {
+        if config.shell.integration {
+            let user_files = config.shell.user_startup_files;
+            let shell::Integration { args, env } =
+                shell::integrate(&program, opts.args.clone(), config.shell.prompt, user_files);
+            opts.args = args;
+            opts.env.extend(env);
+        } else if !config.shell.user_startup_files {
+            // Without the hooks, the shell's own flags keep its startup files out (decision M24).
+            opts.args = shell::clean_start(&program, opts.args.clone());
+        }
     }
     // The folder of the pane this one came from, unless the profile names its own. That folder
     // comes from the shell's output (OSC 7), so a network share is not followed: even checking it

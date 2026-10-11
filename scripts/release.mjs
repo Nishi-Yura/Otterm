@@ -87,6 +87,8 @@ const overlay = {
             nsis: {
               installMode: "currentUser",
               installerHooks: "windows/hooks.nsh",
+              // Tauri's template with the per-user folder moved to %LOCALAPPDATA%\Programs\otterm.
+              template: "windows/installer.nsi",
               languages: ["Japanese", "English"],
               displayLanguageSelector: true,
             },

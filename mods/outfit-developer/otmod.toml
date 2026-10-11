@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.outfit-developer"
 name = "コツメ 開発者の装い / Pebble the developer"
-version = "0.0.0"
+version = "1.0.0"
 description = "眼鏡とマグカップ。設定 › コツメで着替えます。 / Glasses and a mug. Change outfits in Settings › Pebble."
 author = "otterm"
 license = "Apache-2.0"

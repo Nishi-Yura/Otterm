@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.ai-assist"
 name = "Ask Pebble (AI assist)"
-version = "0.0.0"
+version = "1.0.0"
 description = "コツメに聞きます。自然文からコマンドを作り、失敗の原因を説明し、出力について答えます。既定オフ。 / Ask Pebble: natural language to commands, failure explanations, and questions about output. Off by default."
 author = "otterm"
 license = "Apache-2.0"

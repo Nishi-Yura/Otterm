@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.completion"
 name = "Completion"
-version = "0.0.0"
+version = "1.0.0"
 description = "Completes subcommands, options and file names for the word under the cursor, from the command dictionary (ja / en)."
 author = "otterm"
 license = "Apache-2.0"

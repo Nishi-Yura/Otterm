@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.danger-guard"
 name = "Danger Guard"
-version = "0.0.0"
+version = "1.0.0"
 description = "Asks before risky commands run, and blocks the ones that must not run (ja / en)."
 author = "otterm"
 license = "Apache-2.0"

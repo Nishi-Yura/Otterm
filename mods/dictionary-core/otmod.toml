@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.dictionary-core"
 name = "Command Dictionary"
-version = "0.0.0"
+version = "1.0.0"
 description = "Explanations, completion data, danger marks and error hints for common commands (ja / en)."
 author = "otterm"
 license = "Apache-2.0"

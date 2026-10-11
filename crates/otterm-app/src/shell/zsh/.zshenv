@@ -10,7 +10,7 @@
 
 __OTTERM_ZDOTDIR=$ZDOTDIR
 ZDOTDIR=${OTTERM_USER_ZDOTDIR:-$HOME}
-[[ -f $ZDOTDIR/.zshenv ]] && builtin source $ZDOTDIR/.zshenv
+[[ ${OTTERM_USER_STARTUP:-1} != 0 && -f $ZDOTDIR/.zshenv ]] && builtin source $ZDOTDIR/.zshenv
 
 # .zprofile (login), .zshrc (interactive) or .zlogin (login) is still to be read.
 if [[ -o login || -o interactive ]]; then

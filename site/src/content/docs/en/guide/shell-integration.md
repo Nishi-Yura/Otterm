@@ -19,6 +19,12 @@ By default, otterm loads its hook through startup arguments for the shells it la
 
 To use integration in shells started outside otterm, set `shell.integration_install = "rc"`. This adds one line to your startup file and can be undone.
 
+## The shell's own startup files
+
+By default otterm starts the shell **as installed**: it does not read the PowerShell profile, `~/.bashrc`, `~/.zshrc`, `config.fish` or cmd's AutoRun. Customizations made for other terminals (prompt themes, completion add-ons) stay out of otterm; conveniences come from otterm's settings and mods instead.
+
+To load your usual startup files, set `shell.user_startup_files = true` (applies to new tabs). otterm's own shell integration loads either way.
+
 ## Prompt
 
 `shell.prompt = "otterm"` (default) draws the prompt bar in otterm. `"shell"` keeps your own prompt, such as Oh My Posh, and blocks still work.

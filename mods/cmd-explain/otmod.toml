@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.cmd-explain"
 name = "Command Explanations"
-version = "0.0.0"
+version = "1.0.0"
 description = "Explains the command on the input line: what it does, its options, and which parts are dangerous (ja / en)."
 author = "otterm"
 license = "Apache-2.0"

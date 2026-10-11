@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.workflows"
 name = "Workflows"
-version = "0.1.0"
+version = "1.0.0"
 description = "よく使うコマンドを埋めて入力欄に入れます。ユーザー定義は ${data}/workflows.json。 / Fill in command templates and insert them at the prompt. User workflows live in workflows.json."
 author = "otterm"
 license = "Apache-2.0"

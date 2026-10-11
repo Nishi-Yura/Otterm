@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.file-tree"
 name = "File Tree"
-version = "0.1.0"
+version = "1.0.0"
 description = "サイドパネルのファイルツリー。シェルのフォルダに追従し、プレビューと基本操作を提供します。 / Sidebar file tree that follows the shell folder, with previews and basic file actions."
 author = "otterm"
 license = "Apache-2.0"

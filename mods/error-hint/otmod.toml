@@ -1,7 +1,7 @@
 [mod]
 id = "otterm.error-hint"
 name = "Error Hints"
-version = "0.0.0"
+version = "1.0.0"
 description = "Explains common command errors and offers a fix you can insert, never run (ja / en)."
 author = "otterm"
 license = "Apache-2.0"

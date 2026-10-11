@@ -535,6 +535,10 @@ pub struct Shell {
     pub integration_install: IntegrationInstall,
     /// Who draws the prompt (decision M4). Needs `integration`.
     pub prompt: PromptStyle,
+    /// Load the shell's own startup files: the PowerShell profile, ~/.bashrc, ~/.zshrc,
+    /// config.fish, cmd's AutoRun (decision M24). Off: the shell starts as installed, and otterm's
+    /// own features come from its settings and mods.
+    pub user_startup_files: bool,
 }
 
 impl Default for Shell {
@@ -544,6 +548,7 @@ impl Default for Shell {
             integration: true,
             integration_install: IntegrationInstall::Args,
             prompt: PromptStyle::Otterm,
+            user_startup_files: false,
         }
     }
 }

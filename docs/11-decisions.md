@@ -889,3 +889,10 @@ A〜H を決定した後に見つかった事項。同日に推奨どおり決�
 - ユーザーが `[mods] registry` で設定した別のレジストリは署名なしを許す（ストアと `otterm mod search` に「署名なし」と出す）。署名があって合わないときは拒否する
 - 鍵: `~/.tauri/otterm-registry.key`（updater とは別の鍵。鍵 ID `2736B83507A3D2B7`）。リポジトリには入れない。ローテーションは公開鍵を差し替えた版を出してから新しい鍵で署名し直す（古い版は新しい鍵の署名を拒むので、切り替えの前に新しい公開鍵の入った版が行き渡っている必要がある）
 - sigstore（作者ごとの署名）は、公開を GitHub Actions に移すときに改めて検討する
+
+### M24. シェルを素の状態で起動する
+
+- 背景: これまでは PowerShell のプロファイルや `~/.bashrc` を読んだうえで otterm のフックを足していた（B6）。そのため、ほかのターミナル用に入れた機能（プロンプトのテーマ、PSReadLine の拡張など）が otterm にも入り、otterm の見た目や挙動がユーザーの環境しだいで変わっていた
+- 決定（2026-10-12）: **既定では、シェル自身の設定ファイルを読まずに起動する**（`shell.user_startup_files = false`）。otterm は「インストールしたままのシェル + otterm の連携」から始まり、便利な機能は設定と mod で足す。読みたい人は設定でオンにする
+- 具体的には PowerShell は `-NoProfile`、cmd は `/D`（AutoRun を読まない）、bash と zsh は otterm のフックがユーザーのファイルを読まない（`/etc` の全体設定は読む）、fish は `--no-config`。連携をオフにしたときも、シェルのフラグで同じようにする
+- インストーラ: ユーザー単位の既定のインストール先を `%LOCALAPPDATA%\Programs\otterm` にした。Tauri の既定（`%LOCALAPPDATA%\otterm`）は otterm のデータフォルダと同じで、プログラムとデータが混ざっていた。Tauri に設定がないため、NSIS のテンプレートを写して 1 行変えている（`crates/otterm-app/windows/installer.nsi`）
