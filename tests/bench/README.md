@@ -22,7 +22,9 @@ node tests/bench/compare.js old.json new.json --threshold 10
 
 | `startup` | `startup` | Process start (`main`) to the end of the first draw that shows the prompt of `otterm-bench prompt`, a stand-in shell that prints at once. Six launches: the first, and the median of the other five | `crates/otterm-app/src/bench.rs`, `packages/ui/src/bench.ts` |
 
-Not yet possible: `memory`, `mod-overhead`, `resize`.
+| `mod-overhead` | `mod-overhead` | `typing-latency` twice, each with its own config and data folder: every bundled mod disabled at guide level 0, then every one enabled at guide level 3. Reports both p50 / p99 and the p99 difference | `tests/bench/run.js` |
+
+Not yet possible: `memory`, `resize`.
 
 ### Notes
 

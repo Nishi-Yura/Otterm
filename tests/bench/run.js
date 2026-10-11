@@ -1,6 +1,6 @@
 // Runs otterm's benchmarks and writes one combined result file.
 //
-//   node tests/bench/run.js [--suite pty,ipc,typing,startup] [--quick] [--out tests/bench/results/latest.json]
+//   node tests/bench/run.js [--suite pty,ipc,typing,startup,mod-overhead] [--quick] [--out tests/bench/results/latest.json]
 //
 // Result format: tests/bench/README.md. Compare two files with tests/bench/compare.js.
 const { execFileSync, execSync, spawnSync } = require("node:child_process");
@@ -102,6 +102,66 @@ if (suites.includes("ipc")) results.push(runApp("ipc"));
 
 // The app types into `otterm-bench pong`, so the echo comes from the PTY, not a shell.
 if (suites.includes("typing")) results.push(runApp("typing", { OTTERM_BENCH_CHILD: buildBenchBin() }));
+
+// Mod overhead (09 §4.1): typing latency with every bundled mod off, then with every one on at guide
+// level 3, each with its own config and data folder so the user's setup is not involved.
+if (suites.includes("mod-overhead")) {
+  const bundled = fs
+    .readdirSync(path.join(root, "mods"))
+    .map((d) => path.join(root, "mods", d, "otmod.toml"))
+    .filter((f) => fs.existsSync(f))
+    .map((f) => /^id\s*=\s*"([^"]+)"/m.exec(fs.readFileSync(f, "utf8"))?.[1])
+    .filter(Boolean);
+  const list = (ids) => `[${ids.map((id) => JSON.stringify(id)).join(", ")}]`;
+  const variants = {
+    off: `schema = 1
+[general]
+guide_level = 0
+[mods]
+enabled = []
+disabled = ${list(bundled)}
+developer_mode = true
+`,
+    on: `schema = 1
+[general]
+guide_level = 3
+[mods]
+enabled = ${list(bundled)}
+disabled = []
+developer_mode = true
+[ai]
+enabled = true
+`,
+  };
+  const p99 = {};
+  const p50 = {};
+  for (const [name, config] of Object.entries(variants)) {
+    const dir = fs.mkdtempSync(path.join(tmp, `mods-${name}-`));
+    fs.writeFileSync(path.join(dir, "config.toml"), config);
+    const r = runApp("typing", {
+      OTTERM_BENCH_CHILD: buildBenchBin(),
+      OTTERM_CONFIG: path.join(dir, "config.toml"),
+      OTTERM_DATA_DIR: path.join(dir, "data"),
+    });
+    p99[name] = r.metrics["keystroke_to_draw.p99"].value;
+    p50[name] = r.metrics["keystroke_to_draw.p50"].value;
+  }
+  const metric = (value) => ({ value, unit: "ms", better: "lower" });
+  results.push({
+    suite: "mod-overhead",
+    bench: "mod-overhead",
+    platform: `${process.platform}-${process.arch}`,
+    params: { mods: bundled, off: "guide level 0, bundled mods disabled", on: "guide level 3, bundled mods enabled" },
+    metrics: {
+      "p50.off": metric(p50.off),
+      "p50.on": metric(p50.on),
+      "p99.off": metric(p99.off),
+      "p99.on": metric(p99.on),
+      "p99.added": metric(Math.round((p99.on - p99.off) * 100) / 100),
+    },
+    samples: [],
+  });
+}
 
 // Startup: the first run is the coldest this machine allows (files may still be cached), the
 // rest are warm.
