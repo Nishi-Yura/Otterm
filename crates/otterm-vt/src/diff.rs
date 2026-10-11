@@ -134,8 +134,10 @@ pub fn encode_frame(term: &mut Terminal, session: u32, view: &View, last: &mut F
         v.sort_unstable();
         v
     };
-    let lines: Vec<Option<&Row>> =
+    // Old scrollback lines come decompressed (crate::history), so these may be owned rows.
+    let owned: Vec<Option<std::borrow::Cow<'_, Row>>> =
         indices.iter().map(|&i| view.lines.get(i).filter(|&&l| l != u64::MAX).and_then(|&l| term.line(l))).collect();
+    let lines: Vec<Option<&Row>> = owned.iter().map(|r| r.as_deref()).collect();
 
     // Attribute table for the rows in this frame.
     let mut attr_index: HashMap<Attrs, u16> = HashMap::new();

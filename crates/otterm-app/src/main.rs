@@ -934,8 +934,15 @@ fn app_state(launch: launch::Launch) -> AppState {
     let history = std::sync::Arc::new(history::History::open(otterm_config::data_dir()));
     history.prune(config.config().history.retention_days);
     ai::prune_log(config.config().ai.log_retention_days);
+    let sessions = Box::new(LocalSessionManager::new());
+    // Unlimited scrollback spills here, one folder per process (docs/09 §5); what a crashed run
+    // left is no use now.
+    if let Some(root) = otterm_config::data_dir().map(|d| d.join("scrollback")) {
+        otterm_session::clean_spill_root(&root);
+        sessions.set_spill_root(Some(root.join(std::process::id().to_string())));
+    }
     AppState {
-        sessions: Box::new(LocalSessionManager::new()),
+        sessions,
         screen: std::sync::Arc::new(ScreenServer::start().expect("start the screen socket")),
         config,
         first: std::sync::Mutex::new(Some(TabLaunch {

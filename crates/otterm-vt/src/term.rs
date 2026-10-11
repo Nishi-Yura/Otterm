@@ -1,12 +1,14 @@
 //! Terminal state machine: applies parsed VT sequences to a grid.
 //! Spec: docs/03-core-features.md §2.1 (supported sequences).
 
+use std::borrow::Cow;
 use std::collections::VecDeque;
 
 use unicode_width::UnicodeWidthChar;
 use vte::{Params, Perform};
 
 use crate::cell::{Attrs, BlockHead, BlockState, Cell, Color, Row, flags};
+use crate::history::History;
 
 /// Mouse tracking requested by the application (DECSET 1000/1002/1003).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -181,7 +183,7 @@ pub struct Terminal {
     /// Ring buffers so that scrolling the whole screen is O(1).
     primary: VecDeque<Row>,
     alt: VecDeque<Row>,
-    scrollback: VecDeque<Row>,
+    scrollback: History,
     scrollback_limit: usize,
     /// Line number of `scrollback[0]`. Lines are numbered from the first line ever written and
     /// keep their number while they move from the screen into scrollback; see [`Self::line`].
@@ -230,7 +232,7 @@ impl Terminal {
             cols,
             primary: (0..rows).map(|_| Row::new(cols, &pen)).collect(),
             alt: (0..rows).map(|_| Row::new(cols, &pen)).collect(),
-            scrollback: VecDeque::new(),
+            scrollback: History::default(),
             scrollback_limit: 10_000,
             history_base: 0,
             cursor: Cursor::default(),
@@ -282,9 +284,16 @@ impl Terminal {
         if self.modes.alt_screen { &self.alt } else { &self.primary }
     }
 
-    /// Lines that scrolled off the top of the primary screen, oldest first.
-    pub fn scrollback(&self) -> &VecDeque<Row> {
-        &self.scrollback
+    /// How many lines scrolled off the top of the primary screen are kept.
+    pub fn scrollback_len(&self) -> usize {
+        self.scrollback.len()
+    }
+
+    /// Keep old scrollback chunks in files under `spill.dir` past what memory holds (docs/09 §5),
+    /// for unlimited scrollback (`terminal.scrollback = 0`).
+    pub fn set_scrollback_spill(&mut self, spill: Option<crate::history::Spill>) {
+        let dropped = self.scrollback.set_spill(spill);
+        self.history_base += dropped as u64;
     }
 
     /// Line number of the oldest scrollback line. Screen row `r` is line `screen_top() + r`.
@@ -299,11 +308,12 @@ impl Terminal {
 
     /// A line of scrollback or of the visible screen by line number; `None` once it was dropped
     /// from scrollback, or below the screen.
-    pub fn line(&self, line: u64) -> Option<&Row> {
+    /// Old lines come back decompressed, as an owned row.
+    pub fn line(&self, line: u64) -> Option<Cow<'_, Row>> {
         let i = usize::try_from(line.checked_sub(self.history_base)?).ok()?;
         match i.checked_sub(self.scrollback.len()) {
             None => self.scrollback.get(i),
-            Some(r) => self.screen().get(r),
+            Some(r) => self.screen().get(r).map(Cow::Borrowed),
         }
     }
 
@@ -481,9 +491,10 @@ impl Terminal {
             pending_wrap = self.reflow_primary(cols, rows);
         } else if rows < self.rows {
             let excess = (self.cursor.row + 1).saturating_sub(rows).min(self.rows - rows);
-            for row in self.primary.drain(..excess) {
-                if !self.modes.alt_screen {
-                    self.scrollback.push_back(row);
+            let moved: Vec<Row> = self.primary.drain(..excess).collect();
+            if !self.modes.alt_screen {
+                for row in moved {
+                    self.push_history(row);
                 }
             }
             self.primary.truncate(rows);
@@ -511,7 +522,7 @@ impl Terminal {
             row.resize(cols);
         }
         // Scrollback rows are trimmed; only cut the ones that are now too long.
-        for row in self.scrollback.iter_mut().filter(|r| r.cells.len() > cols) {
+        for row in self.scrollback.hot_mut().filter(|r| r.cells.len() > cols) {
             row.resize(cols);
         }
         for s in &mut self.saved {
@@ -532,10 +543,11 @@ impl Terminal {
         self.trim_scrollback();
     }
 
-    /// Rewrap the primary screen and the scrollback for a new width (issue #2). Returns whether
-    /// the cursor ends up waiting to wrap.
+    /// Rewrap the primary screen and the recent scrollback for a new width (issue #2); compressed
+    /// scrollback keeps its width (crate::history). Returns whether the cursor ends up waiting
+    /// to wrap.
     fn reflow_primary(&mut self, cols: usize, rows: usize) -> bool {
-        let mut all: Vec<Row> = self.scrollback.drain(..).chain(self.primary.drain(..)).collect();
+        let mut all: Vec<Row> = self.scrollback.take_hot().into_iter().chain(self.primary.drain(..)).collect();
         let cursor_at = all.len() - self.rows + self.cursor.row;
         // Blank rows below the cursor hold nothing; without them the text can move down.
         while all.len() > cursor_at + 1 && all.last().is_some_and(is_blank) {
@@ -546,13 +558,14 @@ impl Terminal {
         let start = out.len().saturating_sub(rows).min(row);
         let mut screen: VecDeque<Row> = out.drain(start..).take(rows).collect();
         screen.resize_with(rows, || Row::new(cols, &Attrs::default()));
-        self.scrollback = out
-            .into_iter()
-            .map(|mut r| {
-                r.compact_in_place();
-                r
-            })
-            .collect();
+        self.scrollback.set_hot(
+            out.into_iter()
+                .map(|mut r| {
+                    r.compact_in_place();
+                    r
+                })
+                .collect(),
+        );
         self.primary = screen;
         self.cursor.row = row - start;
         self.cursor.col = col.min(cols - 1);
@@ -578,9 +591,16 @@ impl Terminal {
     }
 
     fn trim_scrollback(&mut self) {
-        while self.scrollback.len() > self.scrollback_limit {
-            self.scrollback.pop_front();
-            self.history_base += 1;
+        let dropped = self.scrollback.trim_to(self.scrollback_limit);
+        self.history_base += dropped as u64;
+    }
+
+    /// A line leaves the top of the screen for the scrollback.
+    fn push_history(&mut self, row: Row) {
+        let dropped = self.scrollback.push_back(row);
+        self.history_base += dropped as u64;
+        if self.scrollback.len() > self.scrollback_limit {
+            self.trim_scrollback();
         }
     }
 
@@ -620,15 +640,15 @@ impl Terminal {
         if let Some(r) = (0..=row.min(self.rows - 1)).rev().find(|&r| self.primary[r].block.is_some()) {
             return Some(HeadAt::Screen(r));
         }
-        self.scrollback.iter().rposition(|r| r.block.is_some()).map(HeadAt::History)
+        self.scrollback.last_head_before(self.scrollback.len()).map(HeadAt::History)
     }
 
     fn head_mut(&mut self, at: HeadAt) -> &mut BlockHead {
-        let row = match at {
-            HeadAt::Screen(r) => &mut self.primary[r],
-            HeadAt::History(i) => &mut self.scrollback[i],
-        };
-        row.block.as_deref_mut().expect("a head was found there")
+        match at {
+            HeadAt::Screen(r) => self.primary[r].block.as_deref_mut(),
+            HeadAt::History(i) => self.scrollback.head_mut(i),
+        }
+        .expect("a head was found there")
     }
 
     fn touch_head(&mut self, at: HeadAt) {
@@ -856,11 +876,11 @@ impl Terminal {
         };
         let at = on_screen.or_else(|| {
             let upto = if i >= history { history } else { i + 1 };
-            self.scrollback.iter().take(upto).rposition(|r| r.block.is_some()).map(HeadAt::History)
+            self.scrollback.last_head_before(upto).map(HeadAt::History)
         })?;
         Some(match at {
             HeadAt::Screen(r) => (base + (history + r) as u64, self.primary[r].block.as_deref()?),
-            HeadAt::History(j) => (base + j as u64, self.scrollback[j].block.as_deref()?),
+            HeadAt::History(j) => (base + j as u64, self.scrollback.head(j)?),
         })
     }
 
@@ -877,11 +897,16 @@ impl Terminal {
             return Vec::new();
         }
         let base = self.history_base;
+        let history = self.scrollback.len();
         self.scrollback
-            .iter()
-            .chain(self.primary.iter())
-            .enumerate()
-            .filter_map(|(i, r)| Some((base + i as u64, r.block.as_deref()?)))
+            .heads()
+            .map(|(i, h)| (base + i as u64, h))
+            .chain(
+                self.primary
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(r, row)| Some((base + (history + r) as u64, row.block.as_deref()?))),
+            )
             .collect()
     }
 
@@ -890,14 +915,7 @@ impl Terminal {
         if self.modes.alt_screen {
             return None;
         }
-        let base = self.history_base;
-        let mut heads = self
-            .scrollback
-            .iter()
-            .chain(self.primary.iter())
-            .enumerate()
-            .filter(|(_, r)| r.block.is_some())
-            .map(|(i, _)| base + i as u64);
+        let mut heads = self.block_heads().into_iter().map(|(l, _)| l);
         if dir < 0 { heads.take_while(|&l| l < line).last() } else { heads.find(|&l| l > line) }
     }
 
@@ -919,11 +937,7 @@ impl Terminal {
             // History keeps a trimmed copy; the screen row, still in cache, is cleared and reused.
             // Reusing old history rows instead meant touching memory written ~10,000 lines ago.
             if to_scrollback {
-                self.scrollback.push_back(row.compact());
-                if self.scrollback.len() > self.scrollback_limit {
-                    self.scrollback.pop_front();
-                    self.history_base += 1;
-                }
+                self.push_history(row.compact());
             }
             if row.cells.len() == cols {
                 row.clear(&pen);
@@ -1252,6 +1266,7 @@ impl Terminal {
         let limit = self.scrollback_limit;
         let ambiguous = self.ambiguous_wide;
         let base = self.history_base + self.scrollback.len() as u64;
+        let spill = self.scrollback.spill();
         let (shape, blink) = self.default_cursor;
         let kitty_enabled = self.kitty_enabled;
         let colors = self.colors;
@@ -1261,6 +1276,7 @@ impl Terminal {
         self.kitty_enabled = kitty_enabled;
         self.history_base = base;
         self.scrollback_limit = limit;
+        self.scrollback.set_spill(spill);
         self.ambiguous_wide = ambiguous;
     }
 

@@ -12,6 +12,8 @@ publish.workspace = true
 unicode-width.workspace = true
 regex.workspace = true
 vte.workspace = true
+# Compressed scrollback chunks (docs/09 §5).
+lz4_flex = { version = "0.11", default-features = false, features = ["safe-encode", "safe-decode"] }
 
 [lints]
 workspace = true

@@ -636,8 +636,9 @@ pub fn background_path(config: Option<&std::path::Path>, p: &str) -> PathBuf {
 /// Settings for new terminals.
 pub fn terminal_options(c: &Config) -> otterm_session::TerminalOptions {
     otterm_session::TerminalOptions {
-        // 0 means unlimited with disk spill (docs/06), which is not built yet; keep a large cap.
-        scrollback: if c.terminal.scrollback == 0 { 100_000 } else { c.terminal.scrollback as usize },
+        // 0 means unlimited: old chunks are compressed, then spilled to disk (docs/09 §5).
+        scrollback: if c.terminal.scrollback == 0 { usize::MAX } else { c.terminal.scrollback as usize },
+        spill_limit_mb: u64::from(c.terminal.scrollback_spill_limit_mb),
         ambiguous_wide: c.terminal.ambiguous_width == AmbiguousWidth::Wide,
         cursor_shape: match c.terminal.cursor.style {
             CursorStyle::Block => otterm_session::CursorShape::Block,

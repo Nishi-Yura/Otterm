@@ -130,8 +130,10 @@ struct ViewData {
 /// Settings for each new session's terminal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TerminalOptions {
-    /// Scrollback lines kept.
+    /// Scrollback lines kept; `usize::MAX` is unlimited, with old chunks spilled to disk.
     pub scrollback: usize,
+    /// Disk the spilled chunks of one session may take, in MB (`terminal.scrollback_spill_limit_mb`).
+    pub spill_limit_mb: u64,
     /// East Asian Ambiguous characters are two cells wide.
     pub ambiguous_wide: bool,
     /// Cursor style until an application sets one.
@@ -150,6 +152,7 @@ impl Default for TerminalOptions {
     fn default() -> Self {
         Self {
             scrollback: 10_000,
+            spill_limit_mb: 1024,
             ambiguous_wide: false,
             cursor_shape: CursorShape::Block,
             cursor_blink: true,
@@ -255,7 +258,7 @@ impl Session {
         folds.retain(|f| f.end >= base);
         let mut top = self.view_top.lock().unwrap();
         if folds.is_empty() || term.modes().alt_screen {
-            let scrollback = term.scrollback().len();
+            let scrollback = term.scrollback_len();
             let mut offset = 0;
             if let Some(t) = *top {
                 offset = screen_top.saturating_sub(t.max(base)) as usize;
@@ -406,6 +409,7 @@ pub struct LocalSessionManager {
     mode: Mode,
     options: Mutex<TerminalOptions>,
     colors: Mutex<[(u8, u8, u8); 3]>,
+    spill_root: Mutex<Option<std::path::PathBuf>>,
 }
 
 impl Default for LocalSessionManager {
@@ -423,6 +427,7 @@ impl LocalSessionManager {
             mode: Mode::Screen,
             options: Mutex::new(TerminalOptions::default()),
             colors: Mutex::new([(0xd8, 0xde, 0xe9), (0x1b, 0x1d, 0x23), (0x88, 0xc0, 0xd0)]),
+            spill_root: Mutex::new(None),
         }
     }
 
@@ -445,6 +450,11 @@ impl LocalSessionManager {
         *self.options.lock().unwrap() = options;
     }
 
+    /// Where sessions with unlimited scrollback keep their spilled chunks, one folder each.
+    pub fn set_spill_root(&self, root: Option<std::path::PathBuf>) {
+        *self.spill_root.lock().unwrap() = root;
+    }
+
     fn get(&self, id: SessionId) -> Result<Arc<Session>> {
         self.sessions.lock().unwrap().get(&id).cloned().ok_or_else(|| anyhow!("no session {id}"))
     }
@@ -464,6 +474,14 @@ impl SessionManager for LocalSessionManager {
         let options = *self.options.lock().unwrap();
         let mut term = Terminal::new(size.cols as usize, size.rows as usize);
         term.set_scrollback_limit(options.scrollback);
+        if options.scrollback == usize::MAX
+            && let Some(root) = self.spill_root.lock().unwrap().clone()
+        {
+            term.set_scrollback_spill(Some(otterm_vt::Spill {
+                dir: root.join(id.to_string()),
+                limit_bytes: options.spill_limit_mb.saturating_mul(1024 * 1024),
+            }));
+        }
         term.set_ambiguous_wide(options.ambiguous_wide);
         term.set_default_cursor(options.cursor_shape, options.cursor_blink);
         term.set_kitty_keyboard_enabled(options.kitty_keyboard);
@@ -775,6 +793,25 @@ impl SessionManager for LocalSessionManager {
 /// Children of a shell that are not a program the user started: console hosts, and prompt
 /// engines that some setups keep running.
 const NOT_PROGRAMS: &[&str] = &["conhost", "OpenConsole", "oh-my-posh", "starship"];
+
+/// Remove the spill folders (`<root>/<pid>`) of otterm processes that are gone: a crash leaves
+/// its compressed scrollback behind, while another running window still needs its own.
+pub fn clean_spill_root(root: &std::path::Path) {
+    use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
+    let Ok(entries) = std::fs::read_dir(root) else { return };
+    let mut sys = System::new();
+    sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing());
+    for e in entries.flatten() {
+        let alive = e
+            .file_name()
+            .to_str()
+            .and_then(|n| n.parse::<u32>().ok())
+            .is_some_and(|pid| sys.process(Pid::from_u32(pid)).is_some());
+        if !alive {
+            let _ = std::fs::remove_dir_all(e.path());
+        }
+    }
+}
 
 /// The most recently started child process of `shell`, by name without `.exe`. Console hosts
 /// (ConPTY's OpenConsole, conhost) and prompt engines are not programs the user started; nor is

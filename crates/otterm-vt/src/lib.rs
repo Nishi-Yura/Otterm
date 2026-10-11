@@ -6,11 +6,13 @@
 
 mod cell;
 pub mod diff;
+pub mod history;
 mod input;
 mod reflow;
 pub mod search;
 mod term;
 
 pub use cell::{Attrs, BlockHead, BlockState, Cell, Color, Row, flags};
+pub use history::Spill;
 pub use input::{Key, Mouse, MouseAction, MouseButton, encode_key, encode_mouse, encode_paste};
 pub use term::{BlockRange, Cursor, CursorShape, Damage, Event, KITTY_SUPPORTED, Modes, MouseMode, Terminal};
