@@ -70,10 +70,21 @@ pub fn quote(path: &str, style: Style) -> Option<String> {
 
 /// A Windows path as WSL sees it: C:\Users\me → /mnt/c/Users/me. Other paths stay as they are.
 fn wsl_path(path: &str) -> String {
+    let path = path.strip_prefix(r"\\?\").unwrap_or(path);
+    // A file inside a distribution, seen from Windows: \\wsl.localhost\Ubuntu\home → /home.
+    for share in [r"\\wsl.localhost\", r"\\wsl$\"] {
+        if let Some(rest) =
+            path.get(..share.len()).filter(|p| p.eq_ignore_ascii_case(share)).map(|_| &path[share.len()..])
+        {
+            let inside = rest.split_once('\\').map_or("", |(_, inside)| inside);
+            return format!("/{}", inside.replace('\\', "/"));
+        }
+    }
     let b = path.as_bytes();
-    if b.len() >= 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && (b[2] == b'\\' || b[2] == b'/') {
+    let drive_root = b.len() == 2 || (b.len() >= 3 && (b[2] == b'\\' || b[2] == b'/'));
+    if b.len() >= 2 && b[0].is_ascii_alphabetic() && b[1] == b':' && drive_root {
         let drive = (b[0] as char).to_ascii_lowercase();
-        return format!("/mnt/{drive}/{}", path[3..].replace('\\', "/"));
+        return format!("/mnt/{drive}/{}", path.get(3..).unwrap_or("").replace('\\', "/"));
     }
     path.to_string()
 }
@@ -163,7 +174,11 @@ mod tests {
         assert_eq!(Style::for_shell(r"C:\Windows\System32\wsl.exe"), Style::Wsl);
         let paths = vec![r"C:\Users\me\My Notes.txt".to_string(), r"D:\a.txt".to_string()];
         assert_eq!(dropped(&paths, Style::Wsl).0, "'/mnt/c/Users/me/My Notes.txt' /mnt/d/a.txt ");
-        assert_eq!(wsl_path(r"\\wsl$\Ubuntu\home"), r"\\wsl$\Ubuntu\home");
+        assert_eq!(wsl_path(r"\\wsl$\Ubuntu\home\me\f.txt"), "/home/me/f.txt");
+        assert_eq!(wsl_path(r"\\wsl.localhost\Ubuntu"), "/");
+        assert_eq!(wsl_path("C:"), "/mnt/c/");
+        assert_eq!(wsl_path(r"\\?\C:\long\path"), "/mnt/c/long/path");
+        assert_eq!(wsl_path(r"\\server\share\x"), r"\\server\share\x");
     }
 
     #[test]

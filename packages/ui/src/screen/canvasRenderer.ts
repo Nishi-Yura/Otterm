@@ -93,7 +93,7 @@ export class CanvasRenderer {
     const spacing = this.font.letterSpacing * this.dpr;
     this.cellWidth = Math.max(1, Math.round(m.width + spacing));
     // Glyphs sit in the middle of the space they gained or lost.
-    this.glyphOffset = Math.round(spacing / 2);
+    this.glyphOffset = spacing === 0 ? 0 : Math.round((this.cellWidth - m.width) / 2);
     this.cellHeight = Math.max(1, Math.round(this.font.size * this.font.lineHeight * this.dpr));
     const ascent = m.fontBoundingBoxAscent || this.font.size * this.dpr * 0.8;
     const descent = m.fontBoundingBoxDescent || this.font.size * this.dpr * 0.2;

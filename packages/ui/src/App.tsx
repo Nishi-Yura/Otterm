@@ -461,7 +461,9 @@ export function App() {
   const tabAccent = (tab: Tab) => {
     const c = config();
     const pane = panes().find((p) => p.id === tab.active);
-    return c?.profileColors[pane?.profile ?? c.defaultProfile];
+    const id = pane?.profile ?? c?.defaultProfile ?? "";
+    // Own keys only: a profile named "constructor" must not pick up Object's.
+    return c && Object.hasOwn(c.profileColors, id) ? c.profileColors[id] : undefined;
   };
   const tabTitle = (tab: Tab) => tab.name || paneTitle(tab.active) || t("tab-untitled");
 

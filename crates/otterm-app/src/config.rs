@@ -226,12 +226,12 @@ pub fn terminal_options(c: &Config) -> otterm_session::TerminalOptions {
     }
 }
 
-/// The program, arguments, directory and environment of the default profile, if one is set.
 /// `#rrggbb`: the only form passed on to CSS.
 fn is_hex_color(s: &str) -> bool {
     s.len() == 7 && s.starts_with('#') && s[1..].bytes().all(|b| b.is_ascii_hexdigit())
 }
 
+/// The program, arguments, directory and environment of the default profile, if one is set.
 pub fn default_profile(c: &Config) -> Option<&otterm_config::Profile> {
     let id = &c.shell.default_profile;
     if id.is_empty() { None } else { c.profiles.iter().find(|p| &p.id == id) }
