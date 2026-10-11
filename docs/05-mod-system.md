@@ -104,7 +104,7 @@ discovered -> validated -> (permissions granted) -> loaded -> activated
 | permissions granted | 初回はユーザーに権限一覧を表示して承認。承認は `permissions.json` に保存。後から変更／取り消し可 |
 | loaded | Worker を起動し、`main.js` を QuickJS 上で評価。`activate(ctx)` を呼ぶ |
 | activated | イベント配信対象になる |
-| deactivated | `deactivate()` を呼び、登録した UI・コマンドをすべて自動で撤去（mod 側の後片付け漏れを許容する） |
+| deactivated | `deactivate()` を呼び、登録した UI・コマンドと、止め忘れたタイマー（`setTimeout` / `setInterval`、判断 M1）をすべて自動で撤去（mod 側の後片付け漏れを許容する） |
 
 - 有効／無効の切替は再起動不要。Worker を破棄して作り直す
 - クラッシュ（未処理例外、無応答 5 秒）した mod は自動で deactivated にし、ステータスバーに通知。3 回連続で落ちたら自動無効化

@@ -123,7 +123,7 @@ Rust コア （UI はコアを呼ぶが、コアは UI を知らない。イベ�
 ### 4.3 mod ランタイム
 
 - 1 mod = 1 Web Worker。Worker 内で QuickJS（WASM）を起動し、mod の JS をその中で実行する
-- Worker 自体がブラウザのサンドボックスであり、さらに QuickJS で `fetch` や `importScripts` 等のグローバルを持たない状態から始める。公開するのは `otterm` グローバルのみ
+- Worker 自体がブラウザのサンドボックスであり、さらに QuickJS で `fetch` や `importScripts` 等のグローバルを持たない状態から始める。公開するのは `otterm` グローバルと、標準のタイマー 4 関数（`setTimeout` / `clearTimeout` / `setInterval` / `clearInterval`）のみ（判断 M1）。ホストは mod の deactivate 時に残ったタイマーをすべて止める
 - UI 描画が必要な mod（パネル等）は、**宣言的 UI（JSON ツリー）** または **サンドボックス iframe（srcdoc, CSP 制限）** のどちらかを選ぶ。詳細は [05-mod-system.md](05-mod-system.md)
 
 ## 5. データフロー例：コマンド実行 1 回
