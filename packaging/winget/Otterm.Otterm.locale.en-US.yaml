@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: Otterm.Otterm
+PackageVersion: {{version}}
+PackageLocale: en-US
+Publisher: otterm
+PublisherUrl: {{repository}}
+PublisherSupportUrl: {{repository}}/issues
+PackageName: otterm
+PackageUrl: {{repository}}
+License: Apache-2.0
+LicenseUrl: {{repository}}/blob/main/LICENSE
+ShortDescription: A terminal that is kind to beginners and fast for everyone
+Description: |-
+  otterm is a terminal emulator that explains commands as you type them, asks before dangerous
+  ones run, and grows with sandboxed mods. A river otter named Pebble lives in the window as a
+  guide. No telemetry, no server, no account.
+Moniker: otterm
+Tags:
+  - terminal
+  - terminal-emulator
+  - shell
+  - console
+  - powershell
+ReleaseNotesUrl: {{repository}}/releases/tag/v{{version}}
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

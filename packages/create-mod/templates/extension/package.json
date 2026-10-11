@@ -9,7 +9,7 @@
     "link": "node scripts/link.mjs"
   },
   "devDependencies": {
-    "@otterm/api": "^0.0.0",
+    "@otterm/api": "^1.0.0",
     "esbuild": "^0.28.2",
     "typescript": "^5.9"
   }

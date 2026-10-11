@@ -41,8 +41,10 @@ pnpm tauri signer generate -w ~/.tauri/otterm-registry.key
 ```bash
 pnpm install --frozen-lockfile
 node scripts/fetch-conpty.js          # Windows のみ（判断 M3）
-node scripts/release.mjs --notes notes.md
+node scripts/release.mjs --notes packaging/release-notes/<version>.updater.txt
 ```
+
+リリースノートは `packaging/release-notes/<version>.md`（GitHub のリリース本文）と、更新の確認画面に出る短い `<version>.updater.txt`。
 
 `dist-release/<version>/` にできるもの:
 
@@ -61,7 +63,7 @@ macOS と Linux はこの開発機ではビルドできない。Mac と Linux �
 ## 4. 公開（手作業）
 
 1. GitHub で `v<version>` のリリースを作り、`dist-release/<version>/` の配布物、`.sig`、`SHA256SUMS.txt`、`latest.json` を添付する。安定版は通常のリリース、ベータは prerelease にして、`latest.json` を `beta` タグのリリースにも置く（`general.update_channel = "beta"` の取得先）
-2. winget: `dist-release/<version>/winget/<version>/` の 3 ファイルを microsoft/winget-pkgs の `manifests/o/Otterm/Otterm/<version>/` に置いて PR を出す（`winget validate` で確かめてから）
+2. winget: `dist-release/<version>/winget/<version>/` の 4 ファイル（既定の言語は en-US、ほかに ja-JP）を microsoft/winget-pkgs の `manifests/o/Otterm/Otterm/<version>/` に置いて PR を出す（`winget validate` で確かめてから）
 3. Homebrew: まず自前の tap（`homebrew-otterm` リポジトリの `Casks/otterm.rb`）に置く。`brew install --cask <user>/otterm/otterm`
 4. ドキュメントサイト: `pnpm --filter @otterm/site build` の `site/dist/` を置く。置き場所（GitHub Pages は public リポジトリなら無料）は未定
 5. mod レジストリ: このリポジトリの `registry/` がそのままレジストリになる。本体の既定の取得先は `https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/index.json`（`[mods] registry` で変えられる）。`community-mods/` の mod は `node scripts/publish-community-mods.mjs` で `registry/packages/` と `registry/mods/` に入り、push すると公開される。mod が増えてレビューの負担が大きくなったら、別リポジトリに分ける

@@ -1,6 +1,6 @@
 {
   "name": "@otterm/api",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Type definitions for otterm mods",
   "license": "MIT",
   "type": "module",

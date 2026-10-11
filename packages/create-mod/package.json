@@ -1,6 +1,6 @@
 {
   "name": "create-otterm-mod",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Scaffold a new otterm mod",
   "license": "MIT",
   "private": true,

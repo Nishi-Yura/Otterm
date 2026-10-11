@@ -1,0 +1,2 @@
+otterm 1.0 — the first stable release / 最初の安定版です。
+https://github.com/Nishi-Yura/Otterm/releases/tag/v1.0.0

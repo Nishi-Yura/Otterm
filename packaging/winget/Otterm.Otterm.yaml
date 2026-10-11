@@ -1,7 +1,6 @@
-# Filled in by scripts/release.mjs. Submit the three files to microsoft/winget-pkgs under
-# manifests/o/Otterm/Otterm/<version>/ (docs/release.md).
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.6.0.schema.json
 PackageIdentifier: Otterm.Otterm
 PackageVersion: {{version}}
-DefaultLocale: ja-JP
+DefaultLocale: en-US
 ManifestType: version
 ManifestVersion: 1.6.0

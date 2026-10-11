@@ -1,8 +1,10 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.6.0.schema.json
 PackageIdentifier: Otterm.Otterm
 PackageVersion: {{version}}
 PackageLocale: ja-JP
 Publisher: otterm
 PublisherUrl: {{repository}}
+PublisherSupportUrl: {{repository}}/issues
 PackageName: otterm
 PackageUrl: {{repository}}
 License: Apache-2.0
@@ -17,5 +19,5 @@ Tags:
   - shell
   - console
 ReleaseNotesUrl: {{repository}}/releases/tag/v{{version}}
-ManifestType: defaultLocale
+ManifestType: locale
 ManifestVersion: 1.6.0

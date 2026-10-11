@@ -2998,7 +2998,7 @@ dependencies = [
 
 [[package]]
 name = "otterm-app"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "arboard",
  "base64 0.22.1",
@@ -3032,7 +3032,7 @@ dependencies = [
 
 [[package]]
 name = "otterm-bench"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "otterm-session",
@@ -3042,7 +3042,7 @@ dependencies = [
 
 [[package]]
 name = "otterm-config"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "schemars 1.2.2",
  "serde",
@@ -3053,11 +3053,11 @@ dependencies = [
 
 [[package]]
 name = "otterm-console"
-version = "0.0.0"
+version = "1.0.0"
 
 [[package]]
 name = "otterm-modhost"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "globset",
@@ -3072,7 +3072,7 @@ dependencies = [
 
 [[package]]
 name = "otterm-pty"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "nix 0.28.0",
@@ -3082,7 +3082,7 @@ dependencies = [
 
 [[package]]
 name = "otterm-session"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "otterm-pty",
@@ -3092,7 +3092,7 @@ dependencies = [
 
 [[package]]
 name = "otterm-text"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "fontdb",
  "rustybuzz",
@@ -3101,7 +3101,7 @@ dependencies = [
 
 [[package]]
 name = "otterm-vt"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "lz4_flex",
  "regex",
