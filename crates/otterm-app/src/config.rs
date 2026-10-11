@@ -85,6 +85,8 @@ pub struct UiFont {
     pub letter_spacing: f32,
     pub weight: u16,
     pub weight_bold: u16,
+    /// `font.ligatures`: shape runs of cells together so the font can join `->` and the like.
+    pub ligatures: bool,
 }
 
 #[derive(Clone, Serialize)]
@@ -142,6 +144,7 @@ impl ConfigState {
                 letter_spacing: c.font.letter_spacing.clamp(-2.0, 4.0),
                 weight: c.font.weight,
                 weight_bold: c.font.weight_bold,
+                ligatures: c.font.ligatures,
             },
             theme,
             theme_light,

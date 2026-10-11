@@ -16,6 +16,8 @@ export interface FontConfig {
   letterSpacing: number;
   weight: number;
   weightBold: number;
+  /** Shape runs of cells together so the font can join `->`, `!=` and the like. */
+  ligatures: boolean;
 }
 
 /** Used until the configuration arrives. */
@@ -27,6 +29,7 @@ export const DEFAULT_FONT: FontConfig = {
   letterSpacing: 0,
   weight: 400,
   weightBold: 700,
+  ligatures: true,
 };
 
 /**

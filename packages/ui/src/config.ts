@@ -14,6 +14,8 @@ export interface UiConfig {
     letterSpacing: number;
     weight: number;
     weightBold: number;
+    /** `font.ligatures`. */
+    ligatures: boolean;
   };
   theme: {
     name: string;

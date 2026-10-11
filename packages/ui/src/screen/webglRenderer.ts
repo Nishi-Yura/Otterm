@@ -1,10 +1,10 @@
 import { readable } from "./contrast";
-import { GlyphAtlas } from "./glyphAtlas";
+import { type Glyph, GlyphAtlas } from "./glyphAtlas";
 import type { Highlights } from "./highlights";
 import type { Link } from "./links";
-import { DEFAULT_ATTR, type ScreenModel } from "./model";
+import { DEFAULT_ATTR, type Line, type ScreenModel } from "./model";
 import { Palette, type Theme } from "./palette";
-import { CursorShape, Flags } from "./protocol";
+import { type Attr, CursorShape, Flags } from "./protocol";
 import {
   DEFAULT_FONT,
   type FontConfig,
@@ -17,6 +17,14 @@ import {
 } from "./renderer";
 import type { Selection } from "./selection";
 import type { TextMetrics } from "./text";
+
+/** Characters programming fonts make ligatures from (`->`, `=>`, `!=`, `::`, `...`, `</`, `&&`). */
+const LIGATURE_CHARS = new Set("-=<>!~|&:+*/#?.%$@^\\".split("").map((c) => c.charCodeAt(0)));
+
+/** A cell that can be part of a shaped run: one column wide, visible, with a character. */
+function runnable(cp: number, attr: Attr): boolean {
+  return cp !== 32 && !(attr.flags & (Flags.WIDE | Flags.WIDE_SPACER | Flags.HIDDEN));
+}
 
 /** Floats per glyph instance: x, y, w, h (pixels), u, v, uw, vh (texels), color (RGBA8), mode. */
 const GLYPH_STRIDE = 10;
@@ -180,6 +188,8 @@ export class WebGLRenderer implements Renderer {
   onRemeasure: (() => void) | undefined;
   /** Rust's metrics for the current font and scale; Canvas 2D measurements until they arrive. */
   private text: TextMetrics | undefined;
+  /** The atlas was asked for printable ASCII (after the first draw, so startup does not wait). */
+  private warmed = false;
 
   private bgProgram!: Program;
   private rectProgram!: Program;
@@ -340,6 +350,7 @@ export class WebGLRenderer implements Renderer {
       ? metricsFromText(this.font, this.text, dpr)
       : measureFont(this.measureCtx, this.font, dpr);
     if (!this.lost) this.atlas.reset(this.font, this.metrics, dpr);
+    this.warmed = false;
     this.rows = [];
   }
 
@@ -424,6 +435,10 @@ export class WebGLRenderer implements Renderer {
     this.render();
     this.onDraw?.();
     this.afterDraw?.();
+    if (!this.warmed) {
+      this.warmed = true;
+      setTimeout(() => this.atlas.prewarm(), 0);
+    }
   }
 
   /** `#rrggbb` as RGBA8 in memory order (little-endian u32), with an alpha. */
@@ -461,6 +476,7 @@ export class WebGLRenderer implements Renderer {
     const findColors = searchColors(theme.background);
     const thickness = Math.max(1, Math.round(this.dpr));
     const under = y + ch - 2 * thickness;
+    const shaped = this.font.ligatures ? this.shapeRuns(line, cols) : undefined;
 
     for (let col = 0; col < cols; col++) {
       const attr = line.attrs[col] ?? DEFAULT_ATTR;
@@ -482,9 +498,16 @@ export class WebGLRenderer implements Renderer {
       const x = col * cw;
 
       const cp = line.codepoints[col] ?? 32;
-      if (cp !== 32 && !(attr.flags & Flags.HIDDEN)) {
-        const text = String.fromCodePoint(cp) + (line.extras.get(col) ?? "");
-        const g = this.atlas.get(text, attr.flags & (Flags.BOLD | Flags.ITALIC));
+      const run = shaped?.get(col);
+      if (run === null) {
+        // Covered by a ligature drawn from an earlier cell.
+      } else if (cp !== 32 && !(attr.flags & Flags.HIDDEN)) {
+        const g =
+          run ??
+          this.atlas.get(
+            String.fromCodePoint(cp) + (line.extras.get(col) ?? ""),
+            attr.flags & (Flags.BOLD | Flags.ITALIC),
+          );
         if (g.w > 0) {
           const color = this.rgba(readable(fg, bg, this.minimumContrast), attr.flags & Flags.DIM ? 153 : 255);
           this.pushGlyph(cache.glyphs, x + g.x, y + g.y, g.w, g.h, g.u, g.v, color, g.color);
@@ -514,6 +537,55 @@ export class WebGLRenderer implements Renderer {
       if (attr.flags & Flags.OVERLINE) this.pushRect(cache.rects, x, y, w, thickness, fgColor);
       if (attr.flags & Flags.STRIKE) this.pushRect(cache.rects, x, y + Math.round(ch / 2), w, thickness, fgColor);
     }
+  }
+
+  /**
+   * Runs of cells the font may join into ligatures (`font.ligatures`): neighbours with the same
+   * style, not blank, holding at least one of the characters ligatures are made of. Returns the
+   * glyph to draw at each cell of a shaped run, null for cells a ligature covers; cells of runs
+   * still being shaped are absent and drawn one by one.
+   */
+  private shapeRuns(line: Line, cols: number): Map<number, Glyph | null> | undefined {
+    let out: Map<number, Glyph | null> | undefined;
+    let col = 0;
+    while (col < cols) {
+      const attr = line.attrs[col] ?? DEFAULT_ATTR;
+      const cp = line.codepoints[col] ?? 32;
+      if (!runnable(cp, attr)) {
+        col++;
+        continue;
+      }
+      let end = col + 1;
+      while (end < cols && (line.attrs[end] ?? DEFAULT_ATTR) === attr && runnable(line.codepoints[end] ?? 32, attr))
+        end++;
+      if (end - col >= 2) {
+        let text = "";
+        let joins = false;
+        const cellAt: number[] = [];
+        for (let c = col; c < end; c++) {
+          const cp = line.codepoints[c] ?? 32;
+          joins ||= LIGATURE_CHARS.has(cp);
+          const cell = String.fromCodePoint(cp) + (line.extras.get(c) ?? "");
+          for (let i = 0; i < [...cell].length; i++) cellAt.push(c);
+          text += cell;
+        }
+        if (joins) {
+          const layout = this.atlas.run(text, attr.flags & (Flags.BOLD | Flags.ITALIC));
+          if (layout) {
+            out ??= new Map();
+            for (const g of layout.groups) {
+              const first = cellAt[g.start];
+              if (first === undefined) continue;
+              out.set(first, g.glyph);
+              const last = cellAt[g.start + g.len - 1] ?? first;
+              for (let c = first + 1; c <= last; c++) out.set(c, null);
+            }
+          }
+        }
+      }
+      col = end;
+    }
+    return out;
   }
 
   private pushGlyph(

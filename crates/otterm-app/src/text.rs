@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use otterm_text::{FontSet, Rasterizer, Style};
+use otterm_text::{Bitmap, FontSet, Rasterizer, Style};
 use serde::{Deserialize, Serialize};
 
 /// The bundled icon font (decision B14), so prompts show their icons without an installed Nerd
@@ -113,28 +113,65 @@ pub struct GlyphRequest {
     pub items: Vec<GlyphItem>,
 }
 
+/// Longer than any grapheme cluster; keeps a bad request from tying up the rasterizer.
+const MAX_CLUSTER: usize = 64;
+/// Longer than any run worth shaping as one piece (a row of a wide terminal).
+const MAX_RUN: usize = 1024;
+
 /// Bitmaps for every item, in order. Little-endian: per item `u16 width, u16 height, i16 left,
 /// i16 top, u8 color, u8 0`, then `width * height * 4` bytes of straight-alpha RGBA. A width of
 /// 0 is a cluster with nothing to draw.
 pub fn glyphs(req: &GlyphRequest) -> Result<Vec<u8>, String> {
-    /// Longer than any grapheme cluster; keeps a bad request from tying up the rasterizer.
-    const MAX_TEXT: usize = 64;
     with_rasterizer(&req.families, req.size_px, |r| {
         let mut out = Vec::with_capacity(req.items.len() * 400);
         for item in &req.items {
             let style = Style { bold: item.bold, italic: item.italic };
-            let bitmap = (item.text.len() <= MAX_TEXT).then(|| r.render(&item.text, style)).flatten();
-            match bitmap {
-                Some(b) => {
-                    out.extend_from_slice(&(b.width as u16).to_le_bytes());
-                    out.extend_from_slice(&(b.height as u16).to_le_bytes());
-                    out.extend_from_slice(&(b.left as i16).to_le_bytes());
-                    out.extend_from_slice(&(b.top as i16).to_le_bytes());
-                    out.push(b.color as u8);
-                    out.push(0);
-                    out.extend_from_slice(&b.data);
-                }
-                None => out.extend_from_slice(&[0; 10]),
+            let bitmap = (item.text.len() <= MAX_CLUSTER).then(|| r.render(&item.text, style)).flatten();
+            put_bitmap(&mut out, bitmap.as_ref());
+        }
+        out
+    })
+}
+
+fn put_bitmap(out: &mut Vec<u8>, bitmap: Option<&Bitmap>) {
+    match bitmap {
+        Some(b) => {
+            out.extend_from_slice(&(b.width as u16).to_le_bytes());
+            out.extend_from_slice(&(b.height as u16).to_le_bytes());
+            out.extend_from_slice(&(b.left as i16).to_le_bytes());
+            out.extend_from_slice(&(b.top as i16).to_le_bytes());
+            out.push(b.color as u8);
+            out.push(0);
+            out.extend_from_slice(&b.data);
+        }
+        None => out.extend_from_slice(&[0; 10]),
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RunRequest {
+    pub families: Vec<String>,
+    pub size_px: f32,
+    /// The renderer's cell width in pixels; bitmaps are placed relative to cells.
+    pub cell_width: f32,
+    pub items: Vec<GlyphItem>,
+}
+
+/// Runs of cells shaped as one piece, for ligatures (`font.ligatures`). Per item: `u16 group
+/// count`, then per group `u16 start, u16 len` (characters) and a bitmap as in [`glyphs`].
+pub fn runs(req: &RunRequest) -> Result<Vec<u8>, String> {
+    with_rasterizer(&req.families, req.size_px, |r| {
+        let mut out = Vec::with_capacity(req.items.len() * 2000);
+        for item in &req.items {
+            let style = Style { bold: item.bold, italic: item.italic };
+            let groups =
+                if item.text.len() <= MAX_RUN { r.render_run(&item.text, style, req.cell_width) } else { Vec::new() };
+            out.extend_from_slice(&(groups.len() as u16).to_le_bytes());
+            for g in &groups {
+                out.extend_from_slice(&(g.start as u16).to_le_bytes());
+                out.extend_from_slice(&(g.len as u16).to_le_bytes());
+                put_bitmap(&mut out, g.bitmap.as_ref());
             }
         }
         out

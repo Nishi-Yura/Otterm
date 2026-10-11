@@ -83,6 +83,12 @@ async fn text_glyphs(req: text::GlyphRequest) -> CmdResult<tauri::ipc::Response>
     text::glyphs(&req).map(tauri::ipc::Response::new)
 }
 
+/// Runs of cells shaped together for ligatures (format in `text::runs`).
+#[tauri::command]
+async fn text_runs(req: text::RunRequest) -> CmdResult<tauri::ipc::Response> {
+    text::runs(&req).map(tauri::ipc::Response::new)
+}
+
 /// The configuration as the UI uses it. Changes arrive later as `config-changed` events.
 #[tauri::command]
 fn config_get(state: State<'_, AppState>) -> UiConfig {
@@ -653,6 +659,7 @@ fn main() {
             screen_endpoint,
             text_metrics,
             text_glyphs,
+            text_runs,
             config_get,
             config_open,
             launch_problems,
@@ -712,6 +719,7 @@ fn main() {
             screen_endpoint,
             text_metrics,
             text_glyphs,
+            text_runs,
             config_get,
             config_open,
             launch_problems,

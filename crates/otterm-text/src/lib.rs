@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use swash::scale::image::Content;
+use swash::scale::image::{Content, Image};
 use swash::scale::{Render, ScaleContext, Source, StrikeWith};
 use swash::zeno::{Angle, Format, Transform};
 use swash::{CacheKey, FontRef};
@@ -171,7 +171,64 @@ impl Rasterizer {
     /// Rasterize one cluster; `None` when it has no visible pixels.
     pub fn render(&mut self, text: &str, style: Style) -> Option<Bitmap> {
         let set = Arc::clone(&self.set);
-        let (family, shaped) = shape(&set, text, style)?;
+        let (family, shaped) = shape(&set, text, style, false)?;
+        let images = self.rasterize(family, style, &shaped, |_| 0.0);
+        composite(images.into_iter().map(|(img, _, l, t)| (img, l, t)).collect())
+    }
+
+    /// Shape a run of cells as one piece of text, so the font can join `->`, `!=` and the like
+    /// into ligatures. `cell_width` is the renderer's cell in pixels. Each group of the result is
+    /// one glyph (or a base with its marks) and the characters it covers; its bitmap is placed
+    /// relative to the first of those characters' cells.
+    pub fn render_run(&mut self, text: &str, style: Style, cell_width: f32) -> Vec<RunGroup> {
+        let set = Arc::clone(&self.set);
+        let chars = text.chars().count();
+        // Ligatures live in one font: the primary family must have every character; otherwise
+        // the run is drawn cell by cell with the usual fallbacks.
+        let Some((family, shaped)) = shape(&set, text, style, true) else {
+            return text
+                .chars()
+                .enumerate()
+                .map(|(i, c)| RunGroup { start: i as u32, len: 1, bitmap: self.render(&c.to_string(), style) })
+                .collect();
+        };
+        // Groups: each glyph starts one unless it shares its cluster with the glyph before it (a
+        // mark over its base). A group's characters run up to the next group's cluster.
+        let mut starts: Vec<(usize, usize)> = Vec::new(); // (first glyph, cluster)
+        for (i, g) in shaped.glyphs.iter().enumerate() {
+            if starts.last().is_none_or(|&(_, c)| c != g.cluster) {
+                starts.push((i, g.cluster));
+            }
+        }
+        // Each image re-based on its own cell, which is the cell of the group it belongs to.
+        let images = self.rasterize(family, style, &shaped, |g| (g.cluster as f32 * cell_width).round());
+        let mut out = Vec::with_capacity(starts.len());
+        for (k, &(first, cluster)) in starts.iter().enumerate() {
+            let next_glyph = starts.get(k + 1).map_or(shaped.glyphs.len(), |&(i, _)| i);
+            let next_cluster = starts.get(k + 1).map_or(chars, |&(_, c)| c);
+            let group: Vec<(Image, i32, i32)> = images
+                .iter()
+                .filter(|(_, glyph, ..)| (first..next_glyph).contains(glyph))
+                .map(|(img, _, left, top)| (img.clone(), *left, *top))
+                .collect();
+            out.push(RunGroup {
+                start: cluster as u32,
+                len: next_cluster.saturating_sub(cluster).max(1) as u32,
+                bitmap: composite(group),
+            });
+        }
+        out
+    }
+
+    /// Images of the shaped glyphs with their top-left corners relative to the pen at the
+    /// baseline, minus `rebase(glyph)` (the x of the glyph's own cell), and each glyph's index.
+    fn rasterize(
+        &mut self,
+        family: &Family,
+        style: Style,
+        shaped: &Shaped,
+        rebase: impl Fn(&ShapedGlyph) -> f32,
+    ) -> Vec<(Image, usize, i32, i32)> {
         let (face, synthetic) = family.face(style);
         let font = face.font();
         let scale = self.size / shaped.upem;
@@ -185,102 +242,125 @@ impl Rasterizer {
         if synthetic.italic {
             render.transform(Some(Transform::skew(Angle::from_degrees(-12.0), Angle::ZERO)));
         }
-
-        // Each glyph's image and where its top-left lands, relative to the pen at the baseline.
         let mut images = Vec::with_capacity(shaped.glyphs.len());
-        let (mut x0, mut y0, mut x1, mut y1) = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
         let mut pen_x = 0.0f32;
-        for g in &shaped.glyphs {
-            let image = render.render(&mut scaler, g.id);
-            if let Some(img) = image
+        for (i, g) in shaped.glyphs.iter().enumerate() {
+            if let Some(img) = render.render(&mut scaler, g.id)
                 && img.placement.width > 0
                 && img.placement.height > 0
             {
-                let left = (pen_x + g.x_offset * scale).round() as i32 + img.placement.left;
+                let left = (pen_x + g.x_offset * scale - rebase(g)).round() as i32 + img.placement.left;
                 let top = (-g.y_offset * scale).round() as i32 - img.placement.top;
-                x0 = x0.min(left);
-                y0 = y0.min(top);
-                x1 = x1.max(left + img.placement.width as i32);
-                y1 = y1.max(top + img.placement.height as i32);
-                images.push((img, left, top));
+                images.push((img, i, left, top));
             }
             pen_x += g.x_advance * scale;
         }
-        if images.is_empty() {
-            return None;
-        }
-        let width = (x1 - x0) as u32;
-        let height = (y1 - y0) as u32;
-        let color = images.iter().any(|(img, ..)| matches!(img.content, Content::Color));
-        let mut data = vec![0u8; (width * height * 4) as usize];
-        for (img, left, top) in &images {
-            let (w, h) = (img.placement.width as usize, img.placement.height as usize);
-            for y in 0..h {
-                for x in 0..w {
-                    let dst = (((top - y0) as usize + y) * width as usize + (left - x0) as usize + x) * 4;
-                    let px = match img.content {
-                        Content::Mask => {
-                            let a = img.data[y * w + x];
-                            [255, 255, 255, a]
-                        }
-                        Content::SubpixelMask => {
-                            let i = (y * w + x) * 4;
-                            let a = img.data[i..i + 3].iter().map(|&v| v as u16).sum::<u16>() / 3;
-                            [255, 255, 255, a as u8]
-                        }
-                        Content::Color => {
-                            let i = (y * w + x) * 4;
-                            [img.data[i], img.data[i + 1], img.data[i + 2], img.data[i + 3]]
-                        }
-                    };
-                    // Overlapping glyphs (a mark over its base): the stronger coverage wins.
-                    if px[3] > data[dst + 3] {
-                        data[dst..dst + 4].copy_from_slice(&px);
-                    }
-                }
-            }
-        }
-        Some(Bitmap { width, height, left: x0, top: y0, color, data })
+        images
     }
 }
 
-/// Shape `text` with the first family whose font has every character of it; the primary family
-/// when none does (its boxes are the honest answer).
-fn shape<'a>(set: &'a FontSet, text: &str, style: Style) -> Option<(&'a Family, Shaped)> {
-    {
-        let mut first: Option<(&Family, Shaped)> = None;
-        for family in &set.families {
-            let (face, _) = family.face(style);
-            let Some(shaper) = face.shaper() else { continue };
-            let mut buffer = rustybuzz::UnicodeBuffer::new();
-            buffer.push_str(text);
-            buffer.guess_segment_properties();
-            let out = rustybuzz::shape(&shaper, &[], buffer);
-            let glyphs: Vec<ShapedGlyph> = out
-                .glyph_infos()
-                .iter()
-                .zip(out.glyph_positions())
-                .map(|(info, pos)| ShapedGlyph {
-                    id: info.glyph_id as u16,
-                    x_advance: pos.x_advance as f32,
-                    x_offset: pos.x_offset as f32,
-                    y_offset: pos.y_offset as f32,
-                })
-                .collect();
-            let shaped = Shaped { upem: shaper.units_per_em() as f32, glyphs };
-            if shaped.glyphs.iter().all(|g| g.id != 0) {
-                return Some((family, shaped));
-            }
-            if first.is_none() {
-                first = Some((family, shaped));
+/// A group of a shaped run: the characters `start..start + len` and their glyph.
+#[derive(Debug, Clone, Default)]
+pub struct RunGroup {
+    pub start: u32,
+    pub len: u32,
+    pub bitmap: Option<Bitmap>,
+}
+
+/// Merge glyph images (with their top-left corners) into one bitmap; `None` when there are none.
+fn composite(images: Vec<(Image, i32, i32)>) -> Option<Bitmap> {
+    if images.is_empty() {
+        return None;
+    }
+    let (mut x0, mut y0, mut x1, mut y1) = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
+    for (img, left, top) in &images {
+        x0 = x0.min(*left);
+        y0 = y0.min(*top);
+        x1 = x1.max(left + img.placement.width as i32);
+        y1 = y1.max(top + img.placement.height as i32);
+    }
+    let width = (x1 - x0) as u32;
+    let height = (y1 - y0) as u32;
+    let color = images.iter().any(|(img, ..)| matches!(img.content, Content::Color));
+    let mut data = vec![0u8; (width * height * 4) as usize];
+    for (img, left, top) in &images {
+        let (w, h) = (img.placement.width as usize, img.placement.height as usize);
+        for y in 0..h {
+            for x in 0..w {
+                let dst = (((top - y0) as usize + y) * width as usize + (left - x0) as usize + x) * 4;
+                let px = match img.content {
+                    Content::Mask => {
+                        let a = img.data[y * w + x];
+                        [255, 255, 255, a]
+                    }
+                    Content::SubpixelMask => {
+                        let i = (y * w + x) * 4;
+                        let a = img.data[i..i + 3].iter().map(|&v| v as u16).sum::<u16>() / 3;
+                        [255, 255, 255, a as u8]
+                    }
+                    Content::Color => {
+                        let i = (y * w + x) * 4;
+                        [img.data[i], img.data[i + 1], img.data[i + 2], img.data[i + 3]]
+                    }
+                };
+                // Overlapping glyphs (a mark over its base): the stronger coverage wins.
+                if px[3] > data[dst + 3] {
+                    data[dst..dst + 4].copy_from_slice(&px);
+                }
             }
         }
-        first
     }
+    Some(Bitmap { width, height, left: x0, top: y0, color, data })
+}
+
+/// Shape `text` with the first family whose font has every character of it; the primary family
+/// when none does (its boxes are the honest answer). With `primary_only`, `None` unless the
+/// primary family has them all.
+fn shape<'a>(set: &'a FontSet, text: &str, style: Style, primary_only: bool) -> Option<(&'a Family, Shaped)> {
+    // rustybuzz clusters are byte offsets; the renderer counts characters.
+    let mut char_at = vec![0usize; text.len() + 1];
+    for (n, (i, _)) in text.char_indices().enumerate() {
+        char_at[i] = n;
+    }
+    char_at[text.len()] = text.chars().count();
+    let mut first: Option<(&Family, Shaped)> = None;
+    for family in &set.families {
+        let (face, _) = family.face(style);
+        let Some(shaper) = face.shaper() else { continue };
+        let mut buffer = rustybuzz::UnicodeBuffer::new();
+        buffer.push_str(text);
+        buffer.guess_segment_properties();
+        let out = rustybuzz::shape(&shaper, &[], buffer);
+        let glyphs: Vec<ShapedGlyph> = out
+            .glyph_infos()
+            .iter()
+            .zip(out.glyph_positions())
+            .map(|(info, pos)| ShapedGlyph {
+                id: info.glyph_id as u16,
+                cluster: char_at.get(info.cluster as usize).copied().unwrap_or(0),
+                x_advance: pos.x_advance as f32,
+                x_offset: pos.x_offset as f32,
+                y_offset: pos.y_offset as f32,
+            })
+            .collect();
+        let shaped = Shaped { upem: shaper.units_per_em() as f32, glyphs };
+        if shaped.glyphs.iter().all(|g| g.id != 0) {
+            return Some((family, shaped));
+        }
+        if primary_only {
+            return None;
+        }
+        if first.is_none() {
+            first = Some((family, shaped));
+        }
+    }
+    first
 }
 
 struct ShapedGlyph {
     id: u16,
+    /// Index of the first character this glyph came from.
+    cluster: usize,
     x_advance: f32,
     x_offset: f32,
     y_offset: f32,

@@ -1,5 +1,5 @@
 import { cssFont, type FontConfig, type Metrics } from "./renderer";
-import { type GlyphBitmap, type GlyphItem, textGlyphs } from "./text";
+import { type GlyphBitmap, type GlyphItem, type RunGroup, textGlyphs, textRuns } from "./text";
 
 /** A glyph in the atlas, positioned relative to the top-left corner of its cell. */
 export interface Glyph {
@@ -17,6 +17,11 @@ export interface Glyph {
 }
 
 const EMPTY: Glyph = { u: 0, v: 0, w: 0, h: 0, x: 0, y: 0, color: false };
+
+/** How a run of cells is drawn once shaped: one glyph per group of characters. */
+export interface RunLayout {
+  groups: { start: number; len: number; glyph: Glyph }[];
+}
 /** Requested from Rust, not back yet. */
 const PENDING: Glyph = { ...EMPTY };
 
@@ -45,6 +50,8 @@ export class GlyphAtlas {
   /** Called when requested glyphs arrived, so the rows showing them are drawn again. */
   onReady: (() => void) | undefined;
   private queue: { key: string; item: GlyphItem }[] = [];
+  private readonly runs = new Map<string, RunLayout | undefined>();
+  private runQueue: { key: string; item: GlyphItem }[] = [];
   private flushing = false;
   /** Bumped by `reset`; replies from before a reset are dropped. */
   private generation = 0;
@@ -84,17 +91,23 @@ export class GlyphAtlas {
     this.dpr = dpr;
     this.generation++;
     this.queue = [];
+    this.runQueue = [];
     this.local = false;
     this.clear();
     this.padX = Math.ceil(metrics.cellWidth / 2);
     this.padY = Math.ceil(metrics.cellHeight / 3);
     this.scratch.width = metrics.cellWidth * 2 + this.padX * 2;
     this.scratch.height = metrics.cellHeight + this.padY * 2;
+  }
+
+  /** Request printable ASCII ahead of use; the renderer calls this after its first draw. */
+  prewarm(): void {
     for (const style of [0, 1]) for (const ch of PREWARM) this.get(ch, style);
   }
 
   private clear(): void {
     this.glyphs.clear();
+    this.runs.clear();
     this.shelfX = 0;
     this.shelfY = 0;
     this.shelfHeight = 0;
@@ -116,6 +129,21 @@ export class GlyphAtlas {
     return PENDING;
   }
 
+  /**
+   * The layout of a run of cells shaped as one piece (ligatures), or undefined while Rust is
+   * still shaping it; the caller then draws the cells one by one.
+   */
+  run(text: string, style: number): RunLayout | undefined {
+    const key = `${style}|${text}`;
+    if (this.local) return undefined;
+    const layout = this.runs.get(key);
+    if (layout !== undefined || this.runs.has(key)) return layout;
+    this.runs.set(key, undefined);
+    this.runQueue.push({ key, item: { text, bold: (style & 1) !== 0, italic: (style & 4) !== 0 } });
+    this.scheduleFlush();
+    return undefined;
+  }
+
   private scheduleFlush(): void {
     if (this.flushing) return;
     this.flushing = true;
@@ -123,7 +151,56 @@ export class GlyphAtlas {
     queueMicrotask(() => {
       this.flushing = false;
       void this.flush();
+      void this.flushRuns();
     });
+  }
+
+  private async flushRuns(): Promise<void> {
+    const batch = this.runQueue;
+    this.runQueue = [];
+    if (batch.length === 0) return;
+    const generation = this.generation;
+    let runs: RunGroup[][];
+    try {
+      runs = await textRuns(
+        this.font.families,
+        this.font.size * this.dpr,
+        this.metrics.cellWidth,
+        batch.map((b) => b.item),
+      );
+    } catch (e) {
+      if (generation !== this.generation) return;
+      console.warn("run shaping unavailable:", e);
+      for (const b of batch) this.runs.delete(b.key);
+      return;
+    }
+    if (generation !== this.generation) return;
+    for (const [i, b] of batch.entries()) {
+      const groups = runs[i] ?? [];
+      const style = (b.item.bold ? 1 : 0) | (b.item.italic ? 4 : 0);
+      const layout: RunLayout = { groups: [] };
+      for (const g of groups) {
+        // Fonts draw a ligature from its first character and leave the others blank, so a group
+        // depends on its run, not only on its own characters.
+        const key = `g${style}|${b.item.text}|${g.start}`;
+        let glyph = this.glyphs.get(key);
+        if (!glyph) {
+          glyph = EMPTY;
+          if (g.bitmap) {
+            const up = this.upload(new ImageData(g.bitmap.data, g.bitmap.width, g.bitmap.height), g.bitmap.color);
+            if (up) {
+              up.x = g.bitmap.left + this.metrics.glyphOffset;
+              up.y = this.metrics.baseline + g.bitmap.top;
+              glyph = up;
+            }
+          }
+          this.glyphs.set(key, glyph);
+        }
+        layout.groups.push({ start: g.start, len: g.len, glyph });
+      }
+      this.runs.set(b.key, layout);
+    }
+    this.onReady?.();
   }
 
   private async flush(): Promise<void> {
