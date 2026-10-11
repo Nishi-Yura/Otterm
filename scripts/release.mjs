@@ -3,7 +3,7 @@
 // a folder `dist-release/<version>/` with the installer, SHA256SUMS.txt, latest.json for the
 // updater (decision C10) and the winget / Homebrew manifests filled in, ready to publish by hand.
 //
-//   node scripts/release.mjs [--notes <file>] [--skip-build]
+//   node scripts/release.mjs [--notes <file>] [--skip-build] [--unsigned]
 //
 // Run it once per OS (Windows: NSIS installer; macOS: .app + .dmg; Linux: AppImage). Each run
 // merges its platform into the same latest.json. Updater signing needs the private key in
@@ -53,9 +53,16 @@ const pubFile = join(root, "packaging/updater.pub");
 const pubkey = existsSync(pubFile) ? readFileSync(pubFile, "utf8").trim() : "";
 const canSign = pubkey !== "" && !!process.env.TAURI_SIGNING_PRIVATE_KEY;
 if (!canSign) {
-  console.warn(
-    "warning: no updater key (packaging/updater.pub and TAURI_SIGNING_PRIVATE_KEY); this build cannot update itself",
-  );
+  const message =
+    "no updater key (packaging/updater.pub and TAURI_SIGNING_PRIVATE_KEY); this build cannot update itself";
+  // A release that cannot update strands its users on it: stop, unless asked for on purpose.
+  // Environment variables belong to one terminal, so set them in the one that runs this script.
+  if (version !== "0.0.0" && !flag("--unsigned")) {
+    console.error(`error: ${message}.
+Set TAURI_SIGNING_PRIVATE_KEY (and its password) in this terminal, or pass --unsigned.`);
+    process.exit(1);
+  }
+  console.warn(`warning: ${message}`);
 }
 
 const targets = { windows: ["nsis"], macos: ["app", "dmg"], linux: ["appimage"] }[platform];

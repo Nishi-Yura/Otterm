@@ -44,6 +44,8 @@ node scripts/fetch-conpty.js          # Windows のみ（判断 M3）
 node scripts/release.mjs --notes packaging/release-notes/<version>.updater.txt
 ```
 
+更新の署名鍵の環境変数（`TAURI_SIGNING_PRIVATE_KEY` とパスワード）は、**スクリプトを実行するのと同じターミナルで** 設定する（環境変数はターミナルごと）。鍵が見つからないと、1.0.0 のようなリリース版はビルドを止める（わざと署名なしで作るなら `--unsigned`）。
+
 リリースノートは `packaging/release-notes/<version>.md`（GitHub のリリース本文）と、更新の確認画面に出る短い `<version>.updater.txt`。
 
 `dist-release/<version>/` にできるもの:
