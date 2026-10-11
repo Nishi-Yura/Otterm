@@ -630,6 +630,9 @@
   globalThis.__otterm = {
     init(json) {
       init = JSON.parse(json);
+      // Ids continue from the host's base for this Worker (host.ts `idBase`).
+      nextFn = init.idBase ?? nextFn;
+      nextSig = init.idBase ?? nextSig;
       ctx = build();
     },
     async activate(ns) {

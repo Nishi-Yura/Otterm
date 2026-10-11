@@ -463,6 +463,14 @@ impl LocalSessionManager {
     pub fn screen_text(&self, id: SessionId) -> Result<Vec<String>> {
         Ok(self.get(id)?.term.lock().unwrap().screen_text())
     }
+
+    /// Lines in each session's scrollback, for the memory warning (decision I13).
+    pub fn scrollback_lines(&self) -> Vec<(SessionId, usize)> {
+        // The sessions map is not held while the terminals are locked.
+        let list: Vec<(SessionId, Arc<Session>)> =
+            self.sessions.lock().unwrap().iter().map(|(id, s)| (*id, Arc::clone(s))).collect();
+        list.into_iter().map(|(id, s)| (id, s.term.lock().unwrap().scrollback_len())).collect()
+    }
 }
 
 impl SessionManager for LocalSessionManager {
@@ -811,6 +819,27 @@ pub fn clean_spill_root(root: &std::path::Path) {
             let _ = std::fs::remove_dir_all(e.path());
         }
     }
+}
+
+/// Resident memory of this process and its child processes, in bytes (decision I13). WebView2
+/// runs its browser and renderer processes as children, so they are counted too.
+pub fn process_tree_memory() -> u64 {
+    use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
+    let mut sys = System::new();
+    sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::nothing().with_memory());
+    let mut tree = vec![Pid::from_u32(std::process::id())];
+    // Breadth first over the parent links; a scan per node is cheap at this size.
+    let mut next = 0;
+    while next < tree.len() {
+        let parent = tree[next];
+        next += 1;
+        for p in sys.processes().values() {
+            if p.parent() == Some(parent) && !tree.contains(&p.pid()) {
+                tree.push(p.pid());
+            }
+        }
+    }
+    tree.iter().filter_map(|pid| sys.process(*pid)).map(|p| p.memory()).sum()
 }
 
 /// The most recently started child process of `shell`, by name without `.exe`. Console hosts

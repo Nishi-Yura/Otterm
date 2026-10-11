@@ -3,7 +3,7 @@
  * panels, the permission screen (docs/05 §6.2), toasts and dialogs mods ask for, and the mods
  * list with developer mode (docs/05 §8.2).
  */
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, For, onMount, Show } from "solid-js";
 import { t } from "../i18n";
 import { Icon } from "../icons";
 import type { DialogRequest, ModEntry, ModHost, ModState, ToastRequest } from "./host";
@@ -47,6 +47,9 @@ export interface StatusBarProps {
   order: string[];
   /** An item was dragged onto another: the new order of every id. */
   onReorder: (ids: string[]) => void;
+  /** Memory over the warning line (decision I13): the item to show, if any. */
+  memory?: { gb: string; tab: string };
+  onMemoryClick?: () => void;
 }
 
 interface BarItem {
@@ -108,6 +111,19 @@ export function StatusBar(props: StatusBarProps) {
   const right = createMemo(() =>
     sorted([
       ...modItems("statusbar.right"),
+      ...(props.memory
+        ? [
+            {
+              id: "otterm.memory",
+              render: () => (
+                <button type="button" class="statusbar-button attention" onClick={() => props.onMemoryClick?.()}>
+                  <Icon name="alert-triangle" class="mt-icon" />{" "}
+                  {t("memory-warning", { gb: props.memory?.gb ?? "", tab: props.memory?.tab ?? "" })}
+                </button>
+              ),
+            },
+          ]
+        : []),
       {
         id: "otterm.guide",
         render: () => (
@@ -261,7 +277,10 @@ export function Panels(props: PanelsProps) {
                 data-ot="panel-tab"
                 aria-selected={props.shown === p.id}
                 {...drag(p.id)}
-                onClick={() => props.onShow(p.id)}
+                onClick={() => {
+                  void props.host.wake(p.mod);
+                  props.onShow(p.id);
+                }}
               >
                 <Show when={p.icon}>
                   <Icon name={p.icon ?? ""} class="mt-icon" />
@@ -377,9 +396,24 @@ export function ModDialog(props: {
     e.stopPropagation();
     if (e.key === "Escape") props.onClose(props.req.cancelId ?? null);
   };
+  let ref: HTMLDivElement | undefined;
+  // Keys go to the dialog, not to the terminal behind it: the first text field, else the primary button.
+  onMount(() => {
+    const first = ["input:not([type=checkbox])", "textarea", ".mt-button-primary", "button"]
+      .map((s) => ref?.querySelector<HTMLElement>(s))
+      .find((el) => el);
+    first?.focus();
+  });
   return (
     <div class="mod-dialog-backdrop">
-      <div class="mod-dialog" role="dialog" aria-label={props.req.title} data-ot="mod-dialog" onKeyDown={onKeyDown}>
+      <div
+        ref={ref}
+        class="mod-dialog"
+        role="dialog"
+        aria-label={props.req.title}
+        data-ot="mod-dialog"
+        onKeyDown={onKeyDown}
+      >
         <div class="mod-dialog-from">{props.req.from}</div>
         <div class="mod-dialog-head">
           {props.mascot}

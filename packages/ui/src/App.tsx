@@ -1710,6 +1710,36 @@ export function App() {
    * browser keys never do — F5 / Ctrl+R would reload the whole window, F6 would move the focus out
    * of it, F7 turns on caret browsing, Ctrl+P prints, Ctrl+F / F3 search the page.
    */
+  /** Memory of otterm and its WebView processes (decision I13): over 1 GB, the status bar warns and
+   * names the tab with the largest scrollback. Polled every 30 s; the check is cheap. */
+  const MEMORY_WARN_BYTES = 1_000_000_000;
+  const [memoryWarning, setMemoryWarning] = createSignal<{ gb: string; tab: string; pane: number }>();
+  const checkMemory = () => {
+    invoke<{ total_bytes: number; largest_scrollback: [number, number] | null }>("memory_usage")
+      .then((m) => {
+        if (m.total_bytes <= MEMORY_WARN_BYTES) return setMemoryWarning(undefined);
+        const session = m.largest_scrollback?.[0];
+        const pane = session === undefined ? undefined : [...sessionOf].find(([, s]) => s === session)?.[0];
+        setMemoryWarning({
+          gb: (m.total_bytes / 1e9).toFixed(1),
+          tab: (pane !== undefined && titles()[pane]) || String(session ?? ""),
+          pane: pane ?? -1,
+        });
+      })
+      .catch(() => setMemoryWarning(undefined));
+  };
+  const showMemoryTab = () => {
+    const w = memoryWarning();
+    if (!w || w.pane < 0) return;
+    const tab = tabs().find((x) => leaves(x.root).includes(w.pane));
+    if (tab) setActiveTab(tab.id);
+    activatePane(w.pane);
+  };
+  onMount(() => {
+    checkMemory();
+    const memoryTimer = setInterval(checkMemory, 30_000);
+    onCleanup(() => clearInterval(memoryTimer));
+  });
   onMount(() => {
     const browserKey = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
@@ -2467,6 +2497,8 @@ export function App() {
               copy={copyText}
               guideLevel={config()?.guideLevel ?? 2}
               onGuideClick={cycleGuide}
+              memory={memoryWarning()}
+              onMemoryClick={showMemoryTab}
               order={config()?.statusbarOrder ?? []}
               onReorder={(ids) =>
                 void invoke("config_write", { path: ["appearance", "statusbar", "order"], value: ids }).catch((e) =>

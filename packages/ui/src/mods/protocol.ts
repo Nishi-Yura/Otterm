@@ -13,6 +13,9 @@ export interface ModInit {
   manifest: ManifestInfo;
   host: { version: string; apiVersion: 1; platform: "windows" | "macos" | "linux" };
   locale: "ja" | "en";
+  /** The first callback and signal id of this Worker: ids never repeat across Workers, so a stale
+   * id from a suspended Worker finds nothing (docs/09 §5). */
+  idBase: number;
   /** Fluent sources by locale from the mod's `locales/`. */
   locales: Record<string, string>;
   /** The mod's settings with defaults applied. */

@@ -36,6 +36,19 @@ const OUTPUT_LINES = 2000;
 const BEFORE_EXECUTE_MS = 50;
 /** How long a provider may take before its answer is dropped. */
 const PROVIDER_MS = 400;
+/** A mod with no activity for this long is suspended (docs/09 §5); checked every minute. */
+const SUSPEND_AFTER_MS = 10 * 60_000;
+const SUSPEND_CHECK_MS = 60_000;
+/** Messages that wait while a Worker is still starting (the others are sent at once). */
+const EARLY_QUEUED = new Set<HostToWorker["t"]>([
+  "event",
+  "invoke",
+  "signal",
+  "guide",
+  "hostSetting",
+  "settings",
+  "theme",
+]);
 
 /** A danger rule as `DangerRule` in @otterm/api (plain data). */
 export interface DangerRule {
@@ -304,6 +317,21 @@ interface Running {
   /** Timer handles of mod toasts' actions and the like are plain functions here. */
   confirmedWrite: boolean;
   confirmedClipboardRead: boolean;
+  /** Set once `activate` has finished; messages that need the mod active wait until then. */
+  ready: boolean;
+  queue: HostToWorker[];
+  /** Callers waiting for a wake-up to finish (see `resume`). */
+  waiters: (() => void)[];
+  /** Last render, call, delivered event or click: what the idle check looks at (docs/09 §5). */
+  lastActive: number;
+  /** Calls from the mod that the host is still answering. */
+  calls: number;
+}
+
+/** A suspended mod that is starting again: what to send it once it is active. */
+interface Waking {
+  queue: HostToWorker[];
+  waiters: (() => void)[];
 }
 
 export class ModHost {
@@ -315,6 +343,16 @@ export class ModHost {
   private unlisten: (() => void)[] = [];
   /** Block start times by "session:line", to fill `startedAt`. */
   private readonly blockStarts = new Map<string, number>();
+  /**
+   * Suspended mods (docs/09 §5): no Worker, but the subscriptions they had, so an event can wake
+   * them. Their last rendered items and panels and their commands stay in place.
+   */
+  private readonly suspended = new Map<string, Set<string>>();
+  /** Mods starting again after a suspension, until their Worker exists. */
+  private readonly waking = new Map<string, Waking>();
+  private suspendTimer?: ReturnType<typeof setInterval>;
+  /** Each Worker gets its own range of callback and signal ids (see sdk.js `init`). */
+  private nextIdBase = 1;
 
   readonly mods: () => ModState[];
   private readonly setMods: (v: ModState[]) => void;
@@ -358,12 +396,15 @@ export class ModHost {
         void this.refresh();
       }),
     );
+    this.suspendTimer = setInterval(() => this.suspendIdle(), SUSPEND_CHECK_MS);
     await this.refresh();
   }
 
   dispose() {
     for (const f of this.unlisten) f();
-    for (const id of [...this.running.keys()]) this.stop(id, "inactive");
+    clearInterval(this.suspendTimer);
+    for (const id of new Set([...this.running.keys(), ...this.suspended.keys(), ...this.waking.keys()]))
+      this.stop(id, "inactive");
   }
 
   /** Re-read the installed mods; start, stop or restart to match. */
@@ -388,6 +429,7 @@ export class ModHost {
       const prev = this.states.get(entry.id);
       const state: ModState = prev ?? { entry, status: "inactive", crashes: 0, logs: [], calls: {} };
       const changedSettings = prev ? diffKeys(prev.entry.settings, entry.settings) : [];
+      const versionChanged = prev !== undefined && prev.entry.version !== entry.version;
       state.entry = entry;
       this.states.set(entry.id, state);
       const wanted = entry.enabled && entry.hasEntry && entry.problems.length === 0;
@@ -397,6 +439,9 @@ export class ModHost {
         state.message = entry.problems[0];
         continue;
       }
+      // A suspended mod stays suspended (it reads its settings when it wakes) unless its code changed.
+      if (this.suspended.has(entry.id) && !versionChanged && !entry.linked && !this.reloadRequested.has(entry.id))
+        continue;
       if (!entry.granted) {
         state.status = "needs-grant";
         if (!this.pendingGrants().some((g) => g.id === entry.id))
@@ -658,7 +703,7 @@ export class ModHost {
           },
         });
       });
-      r.worker.postMessage({ t: "event", name: "before-execute", payload, id: reqId } satisfies HostToWorker);
+      this.post(r, { t: "event", name: "before-execute", payload, id: reqId } satisfies HostToWorker);
       asks.push(p);
     }
     const results = (await Promise.all(asks)).flat() as (Record<string, unknown> | undefined)[];
@@ -724,16 +769,25 @@ export class ModHost {
 
   // --- events from the window -------------------------------------------------------------------
 
-  /** Deliver an event to the mods that subscribed to it. */
+  /** Deliver an event to the mods that subscribed to it; a suspended one that subscribed wakes up. */
   emit(name: string, payload: unknown) {
     for (const [id, r] of this.running) {
-      if (!r.subs.has(name)) continue;
-      // `output` needs the manifest's say-so as well (docs/05 §5.4, decision D11).
-      const perms = this.states.get(id)?.entry.permissions;
-      if (name === "output" && !perms?.events.includes("output")) continue;
-      if ((name === "block-start" || name === "block-end" || name === "output") && !perms?.terminalRead) continue;
-      r.worker.postMessage({ t: "event", name, payload } satisfies HostToWorker);
+      if (!r.subs.has(name) || !this.mayReceive(id, name)) continue;
+      this.touch(r);
+      this.post(r, { t: "event", name, payload } satisfies HostToWorker);
     }
+    for (const [id, subs] of this.suspended) {
+      if (!subs.has(name) || !this.mayReceive(id, name)) continue;
+      void this.resume(id, { t: "event", name, payload } satisfies HostToWorker);
+    }
+  }
+
+  /** Whether a mod may get an event. `output` needs the manifest's say-so (docs/05 §5.4, decision D11). */
+  private mayReceive(id: string, name: string): boolean {
+    const perms = this.states.get(id)?.entry.permissions;
+    if (name === "output" && !perms?.events.includes("output")) return false;
+    if ((name === "block-start" || name === "block-end" || name === "output") && !perms?.terminalRead) return false;
+    return true;
   }
 
   /** A block started or ended in a session; the block's text is fetched for the mods that may read it. */
@@ -749,7 +803,9 @@ export class ModHost {
     if (kind === "block-start") this.blockStarts.set(key, now);
     const startedAt = this.blockStarts.get(key) ?? now - (ms ?? 0);
     if (kind === "block-end") this.blockStarts.delete(key);
-    const anyone = [...this.running.values()].some((r) => r.subs.has(kind));
+    const anyone =
+      [...this.running.values()].some((r) => r.subs.has(kind)) ||
+      [...this.suspended.values()].some((subs) => subs.has(kind));
     if (!anyone) return;
     let command = "";
     let output: string | undefined;
@@ -801,8 +857,16 @@ export class ModHost {
 
   /** Run a command: a mod's, else one of otterm's own. Resolves to false when nobody has it. */
   async runCommand(id: string, args?: Record<string, unknown>): Promise<boolean> {
-    const c = this.commands.get(id);
-    if (!c) return this.env.runHostCommand(id, args);
+    const found = this.commands.get(id);
+    if (!found) return this.env.runHostCommand(id, args);
+    let c = found;
+    if (this.suspended.has(c.mod)) {
+      // The command's callback died with the Worker; the wake-up registers it again under this id.
+      await this.resume(c.mod);
+      const again = this.commands.get(id);
+      if (!again) return false;
+      c = again;
+    }
     try {
       await this.invoke(c.mod, c.fn, [args]);
     } catch (e) {
@@ -813,16 +877,21 @@ export class ModHost {
 
   /** The renderer's way back into a mod: run a callback by id. */
   invoke(mod: string, fn: number, args: unknown[] = []): Promise<unknown> {
+    // A suspended mod's callbacks died with its Worker: a click on one only wakes the mod.
+    if (this.suspended.has(mod)) return this.resume(mod);
     const r = this.running.get(mod);
     if (!r) return Promise.reject(new Error(`${mod} is not running`));
+    this.touch(r);
     const id = r.nextInvoke++;
     return new Promise((resolve, reject) => {
       r.pending.set(id, { resolve, reject: (e) => reject(new Error(e)) });
-      r.worker.postMessage({ t: "invoke", id, fn, args } satisfies HostToWorker);
+      this.post(r, { t: "invoke", id, fn, args } satisfies HostToWorker);
     });
   }
 
   setSignal(mod: string, sig: number, value: unknown) {
+    // A suspended mod's signals died with its Worker; an edit to one is dropped.
+    if (this.suspended.has(mod)) return;
     this.send(mod, { t: "signal", sig, value });
   }
 
@@ -858,11 +927,16 @@ export class ModHost {
     return this.states.get(id);
   }
 
+  /** A panel of a mod was opened: wake the mod if it is suspended (its content stays as last rendered). */
+  wake(mod: string): Promise<void> {
+    return this.resume(mod);
+  }
+
   // --- lifecycle ---------------------------------------------------------------------------------
 
-  private async launch(state: ModState) {
+  private async launch(state: ModState, wake?: Waking) {
     const { entry } = state;
-    if (this.running.has(entry.id)) this.stop(entry.id, "inactive");
+    if (!wake && (this.running.has(entry.id) || this.suspended.has(entry.id))) this.stop(entry.id, "inactive");
     state.status = "starting";
     state.message = undefined;
     this.publish();
@@ -870,24 +944,48 @@ export class ModHost {
     try {
       source = await invoke("mod_source", { id: entry.id });
     } catch (e) {
+      if (wake) {
+        this.waking.delete(entry.id);
+        this.suspended.delete(entry.id);
+        for (const w of wake.waiters.splice(0)) w();
+      }
       state.status = "error";
       state.message = String(e);
       this.publish();
       return;
     }
+    // Stopped while its source was read: a wake-up that was stopped starts nothing.
+    if (wake && this.waking.get(entry.id) !== wake) return;
+    const subs = new Set<string>(wake ? this.suspended.get(entry.id) : undefined);
+    if (wake) {
+      this.waking.delete(entry.id);
+      this.suspended.delete(entry.id);
+    }
     const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module", name: `mod:${entry.id}` });
+    const idBase = this.nextIdBase;
+    this.nextIdBase += 1_000_000;
     const r: Running = {
       worker,
-      subs: new Set(),
+      subs,
       pending: new Map(),
       nextInvoke: 1,
       pingId: 0,
       confirmedWrite: false,
       confirmedClipboardRead: false,
+      ready: false,
+      queue: wake?.queue ?? [],
+      waiters: wake?.waiters ?? [],
+      lastActive: Date.now(),
+      calls: 0,
     };
     this.running.set(entry.id, r);
-    worker.onmessage = (e: MessageEvent<WorkerToHost>) => this.onMessage(entry.id, e.data);
-    worker.onerror = (e) => this.crashed(entry.id, e.message || "worker error");
+    // A Worker that was retired (stopped, suspended) may still have a last word: it is ignored.
+    worker.onmessage = (e: MessageEvent<WorkerToHost>) => {
+      if (this.running.get(entry.id)?.worker === worker) this.onMessage(entry.id, e.data);
+    };
+    worker.onerror = (e) => {
+      if (this.running.get(entry.id)?.worker === worker) this.crashed(entry.id, e.message || "worker error");
+    };
     worker.postMessage({
       t: "init",
       init: {
@@ -902,26 +1000,26 @@ export class ModHost {
         theme: this.env.theme(),
         deadlineMs: DEADLINE_MS,
         guideLevel: this.guideLevel,
+        idBase,
       },
     } satisfies HostToWorker);
   }
 
   private stop(id: string, status: ModStatus) {
     const r = this.running.get(id);
-    if (!r) return;
-    this.running.delete(id);
-    clearInterval(r.pingTimer);
-    clearTimeout(r.pongTimer);
-    for (const p of r.pending.values()) p.reject("the mod stopped");
-    // Give the mod its deactivate(), then end the Worker whatever it does.
-    r.worker.postMessage({ t: "deactivate" } satisfies HostToWorker);
-    const kill = setTimeout(() => r.worker.terminate(), 1000);
-    r.worker.onmessage = (e: MessageEvent<WorkerToHost>) => {
-      if (e.data.t === "deactivated") {
-        clearTimeout(kill);
-        r.worker.terminate();
-      }
-    };
+    const wasSuspended = this.suspended.delete(id);
+    const wake = this.waking.get(id);
+    this.waking.delete(id);
+    for (const w of wake?.waiters.splice(0) ?? []) w();
+    if (!r && !wasSuspended && !wake) return;
+    if (r) {
+      this.running.delete(id);
+      clearInterval(r.pingTimer);
+      clearTimeout(r.pongTimer);
+      for (const p of r.pending.values()) p.reject("the mod stopped");
+      for (const w of r.waiters.splice(0)) w();
+      this.retire(r);
+    }
     this.forget(id);
     const state = this.states.get(id);
     if (state) state.status = status;
@@ -964,6 +1062,7 @@ export class ModHost {
       clearInterval(r.pingTimer);
       clearTimeout(r.pongTimer);
       for (const p of r.pending.values()) p.reject("the mod crashed");
+      for (const w of r.waiters.splice(0)) w();
       r.worker.terminate();
     }
     this.forget(id);
@@ -993,13 +1092,25 @@ export class ModHost {
   }
 
   private send(id: string, msg: HostToWorker) {
-    this.running.get(id)?.worker.postMessage(msg);
+    const r = this.running.get(id);
+    if (r) this.post(r, msg);
+  }
+
+  /** Send to a Worker. While it is still starting, the messages that need it active wait in its queue. */
+  private post(r: Running, msg: HostToWorker) {
+    if (r.ready || !EARLY_QUEUED.has(msg.t)) r.worker.postMessage(msg);
+    else r.queue.push(msg);
+  }
+
+  private touch(r: Running) {
+    r.lastActive = Date.now();
   }
 
   private onMessage(id: string, msg: WorkerToHost) {
     const r = this.running.get(id);
     const state = this.states.get(id);
     if (!r || !state) return;
+    if (msg.t !== "pong" && msg.t !== "log" && msg.t !== "ready") this.touch(r);
     switch (msg.t) {
       case "ready":
         break;
@@ -1008,6 +1119,10 @@ export class ModHost {
         state.activateMs = msg.ms;
         state.crashes = 0;
         this.log(id, "info", `activated in ${msg.ms} ms`);
+        r.ready = true;
+        for (const m of r.queue.splice(0)) r.worker.postMessage(m);
+        for (const w of r.waiters.splice(0)) w();
+        this.touch(r);
         this.startPings(id, r);
         this.publish();
         break;
@@ -1082,6 +1197,88 @@ export class ModHost {
     }
   }
 
+  /**
+   * Suspend the mods idle for ten minutes (docs/09 §5). A mod counts as active while it does
+   * something: a render, a call it makes, an event or a click it gets (each touches `lastActive`).
+   * So a mod whose timer redraws it every few seconds never idles, and neither does one that
+   * rendered in the last ten minutes. See `suspendable` for the exclusions.
+   */
+  private suspendIdle() {
+    const now = Date.now();
+    for (const [id, r] of this.running) {
+      if (now - r.lastActive < SUSPEND_AFTER_MS || !this.suspendable(r)) continue;
+      this.suspend(id, r);
+    }
+  }
+
+  /**
+   * Excluded: a mod still starting; one with a call or a click waiting for its answer; and one
+   * that reads each command before it runs (before-execute) or each edit at the prompt
+   * (input-changed), which would wake it on every keystroke anyway.
+   */
+  private suspendable(r: Running): boolean {
+    return (
+      r.ready &&
+      r.pending.size === 0 &&
+      r.waiters.length === 0 &&
+      r.calls === 0 &&
+      !r.subs.has("before-execute") &&
+      !r.subs.has("input-changed")
+    );
+  }
+
+  private suspend(id: string, r: Running) {
+    this.running.delete(id);
+    clearInterval(r.pingTimer);
+    clearTimeout(r.pongTimer);
+    this.retire(r);
+    // The Worker's callbacks go with it, so its providers and context menus are dropped. The
+    // subscriptions stay so an event can wake the mod; commands, items and panels stay as they were.
+    this.suspended.set(id, new Set(r.subs));
+    for (const key of [...this.providers.keys()]) if (key.startsWith(`${id}#`)) this.providers.delete(key);
+    for (const key of [...this.menuRegs.keys()]) if (key.startsWith(`${id}#`)) this.menuRegs.delete(key);
+    if (this.env.developerMode()) this.log(id, "debug", `suspended after ${SUSPEND_AFTER_MS / 60_000} min idle`);
+    this.publishMenus();
+    this.publish();
+  }
+
+  /**
+   * Start a suspended mod again, or wait for it if it is already starting. `msg`, if given, is
+   * delivered once it is active. Resolves when it is active or the attempt has ended.
+   */
+  private resume(id: string, msg?: HostToWorker): Promise<void> {
+    const r = this.running.get(id);
+    if (r) {
+      if (msg) this.post(r, msg);
+      return r.ready ? Promise.resolve() : new Promise((resolve) => r.waiters.push(resolve));
+    }
+    const w = this.waking.get(id);
+    if (w) {
+      if (msg) w.queue.push(msg);
+      return new Promise((resolve) => w.waiters.push(resolve));
+    }
+    const state = this.states.get(id);
+    if (!state || !this.suspended.has(id)) return Promise.resolve();
+    if (this.env.developerMode()) this.log(id, "debug", "resumed after suspension");
+    const wake: Waking = { queue: msg ? [msg] : [], waiters: [] };
+    this.waking.set(id, wake);
+    const active = new Promise<void>((resolve) => wake.waiters.push(resolve));
+    void this.launch(state, wake);
+    return active;
+  }
+
+  /** End a Worker: give the mod its deactivate(), then terminate it whatever it does. */
+  private retire(r: Running) {
+    r.worker.postMessage({ t: "deactivate" } satisfies HostToWorker);
+    const kill = setTimeout(() => r.worker.terminate(), 1000);
+    r.worker.onmessage = (e: MessageEvent<WorkerToHost>) => {
+      if (e.data.t === "deactivated") {
+        clearTimeout(kill);
+        r.worker.terminate();
+      }
+    };
+  }
+
   private startPings(id: string, r: Running) {
     clearInterval(r.pingTimer);
     r.pingTimer = setInterval(() => {
@@ -1097,6 +1294,7 @@ export class ModHost {
   private async handleCall(id: string, r: Running, callId: number, method: string, args: unknown[]) {
     const state = this.states.get(id);
     const started = performance.now();
+    r.calls++;
     let reply: HostToWorker;
     try {
       const value = await this.call(id, r, method, args);
@@ -1116,6 +1314,7 @@ export class ModHost {
           `${method} ${Math.round(performance.now() - started)} ms${reply.ok ? "" : ` → ${reply.error}`}`,
         );
     }
+    r.calls--;
     if (this.running.get(id) === r) r.worker.postMessage(reply);
   }
 

@@ -402,6 +402,20 @@ fn session_blocks(state: State<'_, AppState>, id: SessionId) -> CmdResult<Vec<Bl
         .collect())
 }
 
+/// Memory use of otterm and its WebView processes, and the session with the largest scrollback
+/// (decision I13). The window polls this every 30 s and warns above 1 GB.
+#[derive(Serialize)]
+struct MemoryUsage {
+    total_bytes: u64,
+    largest_scrollback: Option<(SessionId, usize)>,
+}
+
+#[tauri::command]
+fn memory_usage(state: State<'_, AppState>) -> MemoryUsage {
+    let largest_scrollback = state.sessions.scrollback_lines().into_iter().max_by_key(|(_, lines)| *lines);
+    MemoryUsage { total_bytes: otterm_session::process_tree_memory(), largest_scrollback }
+}
+
 /// The visible screen as text and the cursor (`ctx.terminal.screen`).
 #[tauri::command]
 fn session_screen(state: State<'_, AppState>, id: SessionId) -> CmdResult<(Vec<String>, (usize, usize))> {
@@ -1267,6 +1281,7 @@ fn main() {
             session_info,
             session_blocks,
             session_screen,
+            memory_usage,
             session_reveal_row,
             editors_detect,
             help_get,
@@ -1377,6 +1392,7 @@ fn main() {
             session_info,
             session_blocks,
             session_screen,
+            memory_usage,
             session_reveal_row,
             editors_detect,
             help_get,
