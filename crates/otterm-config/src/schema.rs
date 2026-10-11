@@ -149,6 +149,11 @@ pub struct Appearance {
     pub theme_light: String,
     /// Switch between `theme` and `theme_light` with the OS appearance.
     pub follow_system: bool,
+    /// Text closer to its background than this WCAG contrast ratio is moved toward black or white
+    /// until it reaches it (1 = off, 21 = black or white only). Keeps colors that programs chose for
+    /// a dark background readable on a light theme, and the other way round.
+    #[schemars(range(min = 1.0, max = 21.0))]
+    pub minimum_contrast: f32,
     /// Layout preset or a saved custom layout name.
     pub layout: String,
     /// UI scale factor (0.8–2.0). The terminal grid follows OS DPI independently.
@@ -167,6 +172,7 @@ impl Default for Appearance {
             theme: "otterm Dark".into(),
             theme_light: "otterm Light".into(),
             follow_system: true,
+            minimum_contrast: 3.0,
             layout: "guided".into(),
             ui_scale: 1.0,
             tabbar: Tabbar::default(),

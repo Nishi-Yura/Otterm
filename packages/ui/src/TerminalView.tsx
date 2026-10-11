@@ -157,6 +157,7 @@ export function TerminalView(props: TerminalViewProps) {
   });
 
   const applyConfig = (c: UiConfig) => {
+    if (renderer) renderer.minimumContrast = c.minimumContrast;
     renderer?.setTheme(themeFromConfig(c.theme.terminal));
     baseFont = c.font;
     applyFont();

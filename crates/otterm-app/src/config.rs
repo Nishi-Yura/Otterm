@@ -37,6 +37,8 @@ pub struct UiConfig {
     /// Used instead of `theme` while the OS is in light mode, when `follow_system` is on.
     pub theme_light: Option<Theme>,
     pub follow_system: bool,
+    /// `appearance.minimum_contrast`, 1 to 21.
+    pub minimum_contrast: f32,
     /// Space around the terminal grid, CSS pixels (`appearance.window.padding`).
     pub padding: u32,
     /// Tab accent colors by profile id (`profiles.color`), only valid `#rrggbb` values.
@@ -139,6 +141,7 @@ impl ConfigState {
             theme,
             theme_light,
             follow_system: c.appearance.follow_system,
+            minimum_contrast: c.appearance.minimum_contrast.clamp(1.0, 21.0),
             padding: c.appearance.window.padding.min(64),
             profile_colors: c
                 .profiles

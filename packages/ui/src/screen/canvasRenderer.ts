@@ -1,3 +1,4 @@
+import { readable } from "./contrast";
 import type { Highlights } from "./highlights";
 import type { Link } from "./links";
 import { DEFAULT_ATTR, type ScreenModel } from "./model";
@@ -41,6 +42,8 @@ export class CanvasRenderer {
   private baseline = 0;
   /** Device pixels from a cell's left edge to its glyph (half the letter spacing). */
   private glyphOffset = 0;
+  /** `appearance.minimum_contrast`; 1 draws colors exactly as the program asked. */
+  minimumContrast = 1;
   private scheduled = false;
   focused = true;
   selection: Selection | undefined;
@@ -219,7 +222,7 @@ export class CanvasRenderer {
           skip = col + 1;
         }
         ctx.font = this.fontFor(attr.flags);
-        ctx.fillStyle = fg;
+        ctx.fillStyle = readable(fg, bg, this.minimumContrast);
         ctx.globalAlpha = attr.flags & Flags.DIM ? 0.6 : 1;
         ctx.fillText(text, x + this.glyphOffset, y + this.baseline);
         ctx.globalAlpha = 1;

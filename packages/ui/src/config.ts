@@ -29,6 +29,8 @@ export interface UiConfig {
   /** The light-mode theme, used while the OS is light and `followSystem` is on. */
   themeLight: UiConfig["theme"] | null;
   followSystem: boolean;
+  /** Text below this contrast with its background is made readable; 1 is off. */
+  minimumContrast: number;
   /** Space around the terminal grid in CSS pixels. */
   padding: number;
   /** Tab accent colors (`#rrggbb`) by profile id. */
