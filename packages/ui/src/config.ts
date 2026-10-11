@@ -31,6 +31,10 @@ export interface UiConfig {
   followSystem: boolean;
   /** Space around the terminal grid in CSS pixels. */
   padding: number;
+  /** Tab accent colors (`#rrggbb`) by profile id. */
+  profileColors: Record<string, string>;
+  /** The profile new tabs run when none is picked; empty for the platform shell. */
+  defaultProfile: string;
   cursorStyle: "block" | "underline" | "bar";
   cursorBlink: boolean;
   copyOnSelect: boolean;

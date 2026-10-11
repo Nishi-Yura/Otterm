@@ -51,6 +51,8 @@ interface Pane {
   cwd?: string;
   /** Profile it runs (from the new-tab menu). */
   profile?: string;
+  /** That profile's name as the menu showed it: the title of last resort ({profile}, decision I10). */
+  profileName?: string;
   /** When it was created (ms), to tell a shell that dies at once from one that ran. */
   started?: number;
 }
@@ -221,7 +223,7 @@ export function App() {
 
   // Tabs and panes change together (batch), so a new pane is laid out and visible by the time its
   // terminal mounts and measures itself.
-  const newTab = (cwd?: string, profile?: string) => {
+  const newTab = (cwd?: string, profile?: string, profileName?: string) => {
     const tabId = nextId++;
     const paneId = nextId++;
     const at = tabs().findIndex((x) => x.id === activeTab());
@@ -230,7 +232,7 @@ export function App() {
     batch(() => {
       setTabs(next);
       setActiveTab(tabId);
-      setPanes([...panes(), { id: paneId, tab: tabId, cwd, profile, started: Date.now() }]);
+      setPanes([...panes(), { id: paneId, tab: tabId, cwd, profile, profileName, started: Date.now() }]);
     });
   };
 
@@ -453,7 +455,14 @@ export function App() {
   const paneActive = (p: Pane) => paneVisible(p) && currentTab()?.active === p.id;
 
   /** Decision I10: the program's title (OSC 0/2) if it set one, else the folder name. */
-  const paneTitle = (pane: number) => titles()[pane] || folders()[pane] || "";
+  const paneTitle = (pane: number) =>
+    titles()[pane] || folders()[pane] || panes().find((p) => p.id === pane)?.profileName || "";
+  /** The color of the profile the tab's active pane runs, if it has one (`profiles.color`). */
+  const tabAccent = (tab: Tab) => {
+    const c = config();
+    const pane = panes().find((p) => p.id === tab.active);
+    return c?.profileColors[pane?.profile ?? c.defaultProfile];
+  };
   const tabTitle = (tab: Tab) => tab.name || paneTitle(tab.active) || t("tab-untitled");
 
   /** The tab whose name is being edited. */
@@ -551,7 +560,7 @@ export function App() {
         // Shells otterm found itself have translated names; the user's own profiles keep theirs.
         const key = `profile-${p.id}`;
         const label = p.detected && t(key) !== key ? t(key) : p.name;
-        return { label, action: () => newTab(cwd, p.id) };
+        return { label, action: () => newTab(cwd, p.id, label) };
       }),
     });
   };
@@ -572,6 +581,7 @@ export function App() {
               role="tab"
               tabIndex={-1}
               aria-selected={tab.id === activeTab()}
+              style={{ "--tab-accent": tabAccent(tab) }}
               data-ot="tab"
               onMouseDown={(e) => {
                 // Middle click closes, as in browsers.

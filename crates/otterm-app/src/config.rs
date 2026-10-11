@@ -38,6 +38,10 @@ pub struct UiConfig {
     pub follow_system: bool,
     /// Space around the terminal grid, CSS pixels (`appearance.window.padding`).
     pub padding: u32,
+    /// Tab accent colors by profile id (`profiles.color`), only valid `#rrggbb` values.
+    pub profile_colors: std::collections::BTreeMap<String, String>,
+    /// The profile a new tab runs when none is picked (`shell.default_profile`).
+    pub default_profile: String,
     pub cursor_style: CursorStyle,
     pub cursor_blink: bool,
     pub copy_on_select: bool,
@@ -133,6 +137,12 @@ impl ConfigState {
             theme_light,
             follow_system: c.appearance.follow_system,
             padding: c.appearance.window.padding.min(64),
+            profile_colors: c
+                .profiles
+                .iter()
+                .filter_map(|p| Some((p.id.clone(), p.color.clone().filter(|c| is_hex_color(c))?)))
+                .collect(),
+            default_profile: c.shell.default_profile.clone(),
             cursor_style: c.terminal.cursor.style,
             cursor_blink: c.terminal.cursor.blink,
             copy_on_select: c.terminal.copy_on_select,
@@ -217,6 +227,11 @@ pub fn terminal_options(c: &Config) -> otterm_session::TerminalOptions {
 }
 
 /// The program, arguments, directory and environment of the default profile, if one is set.
+/// `#rrggbb`: the only form passed on to CSS.
+fn is_hex_color(s: &str) -> bool {
+    s.len() == 7 && s.starts_with('#') && s[1..].bytes().all(|b| b.is_ascii_hexdigit())
+}
+
 pub fn default_profile(c: &Config) -> Option<&otterm_config::Profile> {
     let id = &c.shell.default_profile;
     if id.is_empty() { None } else { c.profiles.iter().find(|p| &p.id == id) }
