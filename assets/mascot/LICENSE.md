@@ -12,7 +12,7 @@ Everything else is fine: fan art, articles, videos, streams, stickers for yourse
 
 # Pebble / コツメ キャラクターガイドライン
 
-otterm のソースコードは Apache-2.0 ですが、マスコットキャラクター **コツメ**（海外名 **Pebble**。名前は仮）のデザイン・画像・名前はその対象外で、次の 3 つのルールで扱います。
+otterm のソースコードは Apache-2.0 ですが、マスコットキャラクター **コツメ**（海外名 **Pebble**）のデザイン・画像・名前はその対象外で、次の 3 つのルールで扱います。
 
 1. **衣装と mod は自由。** otterm の衣装 mod や、otterm 用 mod の一部としての改変・描き直し・再配布は、許可なく行えます。
 2. **otterm と無関係な商用利用は不可。** コツメの画像やグッズの販売、otterm と無関係な製品・サービスの宣伝への利用は、otterm メンテナーの書面による許可が必要です。

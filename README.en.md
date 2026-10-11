@@ -4,7 +4,7 @@
 
 otterm is a new terminal emulator built without the assumption that you already know the commands. For someone opening a terminal for the first time, it is a friendly app rather than a black screen. For someone who lives in a terminal all day, it is a fast, light tool that can be modified without limit.
 
-The name is otter + term. Otters pry shells open with their nimble paws; otterm cracks the shell open for you. A river otter named **Pebble** (コツメ in Japanese; both names provisional) lives in the UI as your guide.
+The name is otter + term. Otters pry shells open with their nimble paws; otterm cracks the shell open for you. A river otter named **Pebble** (コツメ in Japanese) lives in the UI as your guide.
 
 ## What makes it different
 

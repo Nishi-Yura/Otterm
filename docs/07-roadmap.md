@@ -131,7 +131,7 @@
 4. ~~AI アシストのプロバイダ~~ → **決定**: BYOK（Claude / OpenAI / Gemini / OpenAI 互換）とローカル（Ollama）の両対応。詳細は [10-ai-assist.md](10-ai-assist.md)
 5. ~~ライセンス~~ → **決定**: 本体 Apache-2.0、mod SDK（`@otterm/api`）MIT（判断 A1）
 6. 「otterm」の商標・名称衝突の確認 → 調査方法は決定（判断 A3: J-PlatPat と USPTO / EUIPO の「コンピュータソフトウェア」区分）。**調査の実施は M0**。「oterm」という近い名前の Obsidian プラグインと Ruby gem があるが、ターミナルエミュレータとしての衝突は未確認
-7. キャラクター名 → **見直し中**（判断 E9）: 種族をラッコからカワウソに改め、名前は仮に日本語「コツメ」、海外「Pebble」。詳細は [08-character.md](08-character.md)
+7. ~~キャラクター名~~ → **決定**（判断 E9）: 種族をラッコからカワウソに改め、名前は日本語「コツメ」、海外「Pebble」（2026-10-11）。詳細は [08-character.md](08-character.md)
 8. ~~キャラクターデザインの担当とライセンス~~ → **決定**: 内製。ライセンスは独自の短いキャラクターガイドライン（判断 A2）
 9. ネイティブ wgpu レンダラを v1.0 に含めるか → **未決**。M0 のベンチ結果で判断（[09-performance.md](09-performance.md) 4.4）
 
