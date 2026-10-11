@@ -1,10 +1,13 @@
 //! Shell integration loaded through the shell's start arguments (decision B6: no user file is
-//! changed). PowerShell only for now, and only the working directory (OSC 7); the rest is M2.
+//! changed). PowerShell only for now: the working directory (OSC 7) and otterm's prompt bar
+//! (decision M4); the rest is M2.
+
+use otterm_config::PromptStyle;
 
 const PWSH_SCRIPT: &str = include_str!("shell/otterm.ps1");
 
 /// Arguments that start `program` with otterm's integration, or none when there is none for it.
-pub fn integration_args(program: &str) -> Vec<String> {
+pub fn integration_args(program: &str, prompt: PromptStyle) -> Vec<String> {
     let stem =
         std::path::Path::new(program).file_stem().map(|s| s.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
     if stem != "pwsh" && stem != "powershell" {
@@ -14,7 +17,12 @@ pub fn integration_args(program: &str) -> Vec<String> {
     // refused under the default execution policy of Windows PowerShell 5.1 (Restricted), and
     // otterm should not loosen the user's policy. -NoExit keeps the shell open; the profile still
     // loads first, so the script wraps the prompt the profile set up.
-    vec!["-NoLogo".into(), "-NoExit".into(), "-EncodedCommand".into(), encode_command(PWSH_SCRIPT)]
+    let mode = match prompt {
+        PromptStyle::Otterm => "otterm",
+        PromptStyle::Shell => "shell",
+    };
+    let script = format!("$global:__OttermPromptMode = '{mode}'\n{PWSH_SCRIPT}");
+    vec!["-NoLogo".into(), "-NoExit".into(), "-EncodedCommand".into(), encode_command(&script)]
 }
 
 /// PowerShell's -EncodedCommand form.

@@ -6,6 +6,7 @@ import type { UiConfig } from "./config";
 import { t } from "./i18n";
 import { isCopyShortcut, isSearchShortcut, platform, scrollKey, terminalKey, zoomKey } from "./keys";
 import { PromptBar, type PromptProps } from "./PromptBar";
+import { type HeaderRow, PromptHeaders } from "./PromptHeaders";
 import { attachPointer } from "./pointer";
 import { SearchBar } from "./SearchBar";
 import { CanvasRenderer, DEFAULT_FONT, type FontConfig } from "./screen/canvasRenderer";
@@ -71,6 +72,8 @@ export function TerminalView(props: TerminalViewProps) {
   const [menu, setMenu] = createSignal<{ x: number; y: number; items: MenuItem[] }>();
   const [prompt, setPrompt] = createSignal<PromptProps>();
   const [flash, setFlash] = createSignal(false);
+  /** otterm's prompt bars in view (decision M4) and the row height they are placed with. */
+  const [headers, setHeaders] = createSignal<{ rows: HeaderRow[]; lineHeight: number }>({ rows: [], lineHeight: 0 });
   let lastBell = 0;
   /** The user chose "always allow" for OSC 52 in this pane. */
   let osc52Allowed = false;
@@ -208,6 +211,7 @@ export function TerminalView(props: TerminalViewProps) {
       unsubscribe = props.hub.subscribe(session.id, (frame) => {
         model.apply(frame);
         updateThumb();
+        updateHeaders();
         r.schedule();
       });
       // Frames sent before the subscription were dropped; ask for the whole screen.
@@ -332,6 +336,25 @@ export function TerminalView(props: TerminalViewProps) {
     void document.fonts.load(`${size}px "Symbols Nerd Font Mono"`, "\ue0b0").catch(() => {});
     renderer?.setFont({ ...baseFont, size });
     setFont(renderer?.currentFont ?? baseFont);
+    updateHeaders();
+  };
+
+  const updateHeaders = () => {
+    const rows: HeaderRow[] = [];
+    for (let row = 0; row < model.rows; row++) {
+      const bar = model.lines[row]?.bar;
+      if (bar) rows.push({ row, bar });
+    }
+    const lineHeight = renderer?.lineHeightCss ?? 0;
+    const old = headers();
+    const same =
+      old.lineHeight === lineHeight &&
+      old.rows.length === rows.length &&
+      rows.every((h, i) => {
+        const o = old.rows[i];
+        return o?.row === h.row && o.bar.info === h.bar.info && o.bar.done?.exit === h.bar.done?.exit;
+      });
+    if (!same) setHeaders({ rows, lineHeight });
   };
 
   const updateThumb = () => {
@@ -704,6 +727,7 @@ export function TerminalView(props: TerminalViewProps) {
     >
       <div ref={viewport} id={viewportId} class="viewport">
         <canvas ref={canvas} />
+        <PromptHeaders rows={headers().rows} lineHeight={headers().lineHeight} fontSize={font().size} />
         <textarea
           ref={input}
           class="input"

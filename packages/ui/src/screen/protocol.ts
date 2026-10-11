@@ -29,9 +29,18 @@ export const Flags = {
   WIDE_SPACER: 1 << 12,
 } as const;
 
+/** otterm's prompt bar on a row (decision M4). */
+export interface RowBar {
+  /** Base64 of the JSON the shell integration sent (cwd, home, branch). */
+  info: string;
+  /** The command run at this prompt ended. */
+  done?: { exit: number; ms: number };
+}
+
 export interface FrameRow {
   index: number;
   wrapped: boolean;
+  bar?: RowBar;
   /** Code points of the cells that were sent; cells beyond are blank. */
   codepoints: Uint32Array;
   attrs: Attr[];
@@ -104,7 +113,8 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
   const lines: FrameRow[] = [];
   for (let n = u16(); n > 0; n--) {
     const index = u16();
-    const wrapped = (u8() & 1) === 1;
+    const rowFlags = u8();
+    const wrapped = (rowFlags & 1) !== 0;
     const count = u16();
     const codepoints = new Uint32Array(count);
     const attrs: Attr[] = new Array(count);
@@ -119,7 +129,18 @@ export function decodeFrame(buf: ArrayBuffer): Frame | null {
       extras.set(col, utf8.decode(new Uint8Array(buf, p, len)));
       p += len;
     }
-    lines.push({ index, wrapped, codepoints, attrs, extras });
+    let bar: RowBar | undefined;
+    if (rowFlags & 2) {
+      const len = u16();
+      bar = { info: utf8.decode(new Uint8Array(buf, p, len)) };
+      p += len;
+      if (rowFlags & 4) {
+        const exit = v.getInt32(p, true);
+        p += 4;
+        bar.done = { exit, ms: u32() };
+      }
+    }
+    lines.push({ index, wrapped, bar, codepoints, attrs, extras });
   }
 
   const links = new Map<number, string>();

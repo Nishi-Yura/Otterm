@@ -71,6 +71,7 @@ close_behavior = "close"            # close | keep | restart
 default_profile = "pwsh"
 integration = true
 integration_install = "args"        # args（起動引数で注入、既定。ユーザーのファイルを触らない）| rc（起動ファイルに 1 行追記、オプトイン）| manual
+prompt = "otterm"                   # otterm（otterm がプロンプトバーを描き、シェルは ❯ だけ。判断 M4）| shell（シェルや Oh My Posh のプロンプトのまま）
 
 [[profiles]]
 id = "pwsh"

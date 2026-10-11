@@ -18,10 +18,12 @@
 //!        u16 hyperlink id (0 none)
 //! u16  row count, then per row:
 //!        u16 row index
-//!        u8  bit0 wrapped
+//!        u8  bit0 wrapped, bit1 prompt bar, bit2 the bar's command finished
 //!        u16 cell count (trailing default cells are omitted; missing cells are blank)
 //!        per cell: u32 code point, u16 attribute index
 //!        u16 extra count, then per extra: u16 col, u16 byte length, UTF-8 bytes
+//!        with bit1: u16 byte length, prompt bar info (base64 JSON, decision M4)
+//!        with bit2: i32 exit code, u32 duration in ms
 //! u16  link count, then per link used by the attributes above: u16 id, u16 byte length, UTF-8 URI
 //! ```
 //!
@@ -136,7 +138,9 @@ pub fn encode_frame(
     for (&r, row) in rows.iter().zip(&lines) {
         let n = used_len(row);
         put_u16(out, r);
-        out.push(row.wrapped as u8);
+        let bar = row.bar.as_deref();
+        let done = bar.and_then(|b| b.done);
+        out.push(row.wrapped as u8 | (bar.is_some() as u8) << 1 | (done.is_some() as u8) << 2);
         put_u16(out, n);
         out.reserve(n * 6);
         for cell in &row.cells[..n] {
@@ -148,6 +152,14 @@ pub fn encode_frame(
             out.extend_from_slice(&col.to_le_bytes());
             put_u16(out, text.len());
             out.extend_from_slice(text.as_bytes());
+        }
+        if let Some(bar) = bar {
+            put_u16(out, bar.info.len());
+            out.extend_from_slice(bar.info.as_bytes());
+        }
+        if let Some((code, ms)) = done {
+            out.extend_from_slice(&code.to_le_bytes());
+            out.extend_from_slice(&ms.to_le_bytes());
         }
     }
     // Targets of the hyperlinks in this frame's attributes.

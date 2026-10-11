@@ -243,6 +243,83 @@ body,
   display: block;
 }
 
+/* otterm's prompt bar (decision M4), over the blank row the shell integration reserved. Themes
+   restyle it with the `prompt-*` keys of their [ui] table (--ot-prompt-*). */
+.prompt-headers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.prompt-header {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  padding: 0 0.6em;
+  border-radius: 0 4px 4px 0;
+  background: var(--ot-prompt-bg, color-mix(in srgb, var(--fg) 7%, var(--bg)));
+  box-shadow: inset 2px 0 0 var(--ot-prompt-edge, var(--ot-term-ansi-4, #81a1c1));
+  color: var(--ot-prompt-fg, var(--muted));
+  font-family: var(--ot-prompt-font, system-ui, sans-serif);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.prompt-header.ok {
+  box-shadow: inset 2px 0 0 var(--ot-prompt-ok, var(--ot-term-ansi-2, #a3be8c));
+}
+
+.prompt-header.failed {
+  box-shadow: inset 2px 0 0 var(--ot-prompt-failed, var(--ot-term-ansi-1, #bf616a));
+}
+
+.prompt-header .ph-icon {
+  margin-right: 0.4em;
+  font-family: "Symbols Nerd Font Mono", monospace;
+}
+
+.prompt-header .ph-crumbs {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prompt-header .ph-sep {
+  margin: 0 0.35em;
+  opacity: 0.6;
+}
+
+.prompt-header .ph-crumb:last-child {
+  color: var(--ot-prompt-folder, var(--fg));
+  font-weight: 600;
+}
+
+.prompt-header .ph-branch {
+  color: var(--ot-prompt-branch, var(--ot-term-ansi-5, #b48ead));
+}
+
+.prompt-header .ph-spacer {
+  flex: 1;
+}
+
+.prompt-header .ph-result {
+  display: flex;
+  gap: 0.6em;
+}
+
+.prompt-header.ok .ph-status {
+  color: var(--ot-prompt-ok, var(--ot-term-ansi-2, #a3be8c));
+}
+
+.prompt-header.failed .ph-status {
+  color: var(--ot-prompt-failed, var(--ot-term-ansi-1, #bf616a));
+}
+
 /* Receives keys and IME input; invisible, but kept at the cursor for the candidate window. */
 .input {
   position: absolute;

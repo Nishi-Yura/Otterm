@@ -83,6 +83,15 @@ impl Cell {
     }
 }
 
+/// What the shell reported for a prompt bar (OSC 7777 `bar` and `done`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PromptBar {
+    /// Opaque to the terminal: base64 of a JSON object the UI reads (cwd, Git branch).
+    pub info: Box<str>,
+    /// Exit code and duration in milliseconds of the command run at this prompt, once it ended.
+    pub done: Option<(i32, u32)>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Row {
     pub cells: Vec<Cell>,
@@ -90,6 +99,8 @@ pub struct Row {
     pub extra: Vec<(u16, Box<str>)>,
     /// The line continues on the next row because of autowrap (needed for copy and reflow).
     pub wrapped: bool,
+    /// otterm's prompt bar sits on this row (decision M4). The row itself stays blank.
+    pub bar: Option<Box<PromptBar>>,
     /// Every cell at or after this column is `Cell::default()`. Lets clearing and trimming skip
     /// the unused tail, which is most of a row in typical output.
     pub(crate) used: usize,
@@ -98,7 +109,7 @@ pub struct Row {
 impl Row {
     pub fn new(cols: usize, pen: &Attrs) -> Self {
         let used = if pen.bg == Color::Default { 0 } else { cols };
-        Self { cells: vec![Cell::blank(pen); cols], extra: Vec::new(), wrapped: false, used }
+        Self { cells: vec![Cell::blank(pen); cols], extra: Vec::new(), wrapped: false, bar: None, used }
     }
 
     /// Record that cells before `to` may no longer be default.
@@ -109,7 +120,13 @@ impl Row {
     /// A copy without trailing default cells, for scrollback. Readers treat missing cells as blank.
     pub fn compact(&self) -> Self {
         let used = self.content_len();
-        Self { cells: self.cells[..used].to_vec(), extra: self.extra.clone(), wrapped: self.wrapped, used }
+        Self {
+            cells: self.cells[..used].to_vec(),
+            extra: self.extra.clone(),
+            wrapped: self.wrapped,
+            bar: self.bar.clone(),
+            used,
+        }
     }
 
     /// Cells to keep when compacting. A row that wrapped keeps all of them: a blank before the
@@ -143,6 +160,7 @@ impl Row {
         }
         self.extra.clear();
         self.wrapped = false;
+        self.bar = None;
     }
 
     pub fn resize(&mut self, cols: usize) {

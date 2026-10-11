@@ -6,7 +6,7 @@ use std::collections::VecDeque;
 use unicode_width::UnicodeWidthChar;
 use vte::{Params, Perform};
 
-use crate::cell::{Attrs, Cell, Color, Row, flags};
+use crate::cell::{Attrs, Cell, Color, PromptBar, Row, flags};
 
 /// Mouse tracking requested by the application (DECSET 1000/1002/1003).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -566,10 +566,51 @@ impl Terminal {
         let to = if to < cols && r.cells[to].is_spacer() { to + 1 } else { to };
         r.cells[from..to].fill(Cell::blank(&pen));
         r.clear_extra(from, to);
+        // Clearing the whole row (`cls`, a redraw) takes the prompt bar with it.
+        if from == 0 && to == cols {
+            r.bar = None;
+        }
         if pen.bg != Color::Default {
             r.touch_to(to);
         }
         self.touch(row);
+    }
+
+    /// Put a prompt bar on a blank row of its own at the cursor: a new line first unless the
+    /// cursor is at the start of one (output that did not end in a newline).
+    fn start_bar(&mut self, info: String) {
+        /// More than a path and a branch name need.
+        const MAX_INFO: usize = 8192;
+        if self.modes.alt_screen || info.is_empty() || info.len() > MAX_INFO {
+            return;
+        }
+        if self.cursor.col > 0 || self.cursor.pending_wrap {
+            self.cursor.col = 0;
+            self.linefeed();
+        }
+        let (row, cols) = (self.cursor.row, self.cols);
+        self.erase_cells(row, 0, cols);
+        self.grid()[row].bar = Some(Box::new(PromptBar { info: info.into(), done: None }));
+    }
+
+    /// Record the result of the command run at the nearest prompt bar above the cursor.
+    fn finish_bar(&mut self, code: i32, ms: u32) {
+        if self.modes.alt_screen {
+            return;
+        }
+        let done = Some((code, ms));
+        for r in (0..=self.cursor.row).rev() {
+            if let Some(bar) = self.primary[r].bar.as_mut() {
+                bar.done = done;
+                self.touch(r);
+                return;
+            }
+        }
+        if let Some(bar) = self.scrollback.iter_mut().rev().find_map(|row| row.bar.as_mut()) {
+            bar.done = done;
+            // A view scrolled up may show it.
+            self.full_damage = true;
+        }
     }
 
     /// Scroll the region up by `n`: lines leave at the top, blanks enter at the bottom.
@@ -1504,6 +1545,17 @@ impl Perform for Terminal {
                 let s = format!("\x1b]1{which};rgb:{r:02x}{r:02x}/{g:02x}{g:02x}/{b:02x}{b:02x}\x1b\\");
                 self.respond(&s);
             }
+            // otterm's prompt bar (decision M4): `7777;bar;<base64 JSON>` starts one at the cursor,
+            // `7777;done;<exit code>;<ms>` finishes the last one with the command's result.
+            b"7777" => match params.get(1).copied() {
+                Some(b"bar") => self.start_bar(text(2)),
+                Some(b"done") => {
+                    if let (Ok(code), Ok(ms)) = (text(2).parse(), text(3).parse()) {
+                        self.finish_bar(code, ms);
+                    }
+                }
+                _ => {}
+            },
             b"52" => {
                 let data = text(2);
                 if data != "?" {

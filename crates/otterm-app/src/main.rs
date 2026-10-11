@@ -97,14 +97,14 @@ fn session_create(
         opts.args = p.args.clone();
         // A profile without arguments of its own still gets the shell integration (B6).
         if opts.args.is_empty() && config.shell.integration {
-            opts.args = shell::integration_args(&p.command);
+            opts.args = shell::integration_args(&p.command, config.shell.prompt);
         }
         opts.cwd = p.cwd.as_deref().filter(|c| !c.is_empty()).map(expand_home);
         opts.env = p.env.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     } else if config.shell.integration {
         // The platform shell, with otterm's integration loaded through its arguments (B6).
         let program = otterm_session::default_shell();
-        opts.args = shell::integration_args(&program);
+        opts.args = shell::integration_args(&program, config.shell.prompt);
         opts.program = Some(program);
     }
     // The folder of the pane this one came from, unless the profile names its own. That folder

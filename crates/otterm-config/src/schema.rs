@@ -472,12 +472,28 @@ pub struct Shell {
     pub integration: bool,
     /// How integration hooks are loaded (decision B6). `args` touches no user files.
     pub integration_install: IntegrationInstall,
+    /// Who draws the prompt (decision M4). Needs `integration`.
+    pub prompt: PromptStyle,
 }
 
 impl Default for Shell {
     fn default() -> Self {
-        Self { default_profile: String::new(), integration: true, integration_install: IntegrationInstall::Args }
+        Self {
+            default_profile: String::new(),
+            integration: true,
+            integration_install: IntegrationInstall::Args,
+            prompt: PromptStyle::Otterm,
+        }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum PromptStyle {
+    /// otterm draws a bar with the folder and the Git branch; the shell prints only `❯`.
+    Otterm,
+    /// The shell's own prompt (oh-my-posh, starship and the like).
+    Shell,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]

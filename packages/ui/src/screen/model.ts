@@ -1,4 +1,4 @@
-import type { Attr, Frame } from "./protocol";
+import type { Attr, Frame, RowBar } from "./protocol";
 
 export const DEFAULT_ATTR: Attr = Object.freeze({ fg: 0, bg: 0, underline: 0, flags: 0, link: 0 });
 
@@ -7,6 +7,7 @@ export interface Line {
   attrs: Attr[];
   extras: Map<number, string>;
   wrapped: boolean;
+  bar?: RowBar;
 }
 
 /** The UI's copy of one session's screen, kept up to date by applying frames. */
@@ -49,6 +50,7 @@ export class ScreenModel {
       for (let c = 0; c < n; c++) line.attrs[c] = row.attrs[c] ?? DEFAULT_ATTR;
       line.extras = row.extras;
       line.wrapped = row.wrapped;
+      line.bar = row.bar;
       this.lines[row.index] = line;
       this.dirty.add(row.index);
     }
