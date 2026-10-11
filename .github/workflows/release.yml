@@ -1,7 +1,7 @@
 name: Release
 
-# Manual only, and not while the repository is private: Actions minutes on a private repository
-# cost money once the free allowance is used up. On a public repository the runners are free.
+# Manual only. The repository is public, so the runners are free; the release itself stays a
+# deliberate step.
 # Builds the installers on all three OSes with scripts/release.mjs and keeps them as workflow
 # artifacts; the release itself and the winget / Homebrew steps stay manual (docs/release.md).
 on:

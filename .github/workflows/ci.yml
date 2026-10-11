@@ -1,7 +1,8 @@
 name: CI
 
-# Manual only: GitHub Actions minutes on this private repository cost money once the free
-# allowance is used up. Run `just check` (scripts/check.sh) locally instead.
+# Manual only: the repository is public, so the runners are free, but the maintainer runs the
+# workflows by hand (nothing that could cost money runs on its own). `just check` runs the same
+# checks locally.
 on:
   workflow_dispatch:
 
