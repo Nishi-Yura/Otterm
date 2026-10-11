@@ -681,9 +681,16 @@ export function TerminalView(props: TerminalViewProps) {
       classList={{ active: props.active(), flash: flash() }}
       role="application"
       aria-label={t("terminal-label")}
-      onMouseDown={() => {
+      onMouseDown={(e) => {
         props.onActivate();
-        setTimeout(() => input.focus());
+        if (e.target === canvas) {
+          // Keep the keyboard on the input: a click on the canvas would otherwise blur it until
+          // the refocus below, and a key pressed in between (right after a double-click) is lost.
+          e.preventDefault();
+          input.focus();
+        } else {
+          setTimeout(() => input.focus());
+        }
       }}
     >
       <div ref={viewport} id={viewportId} class="viewport">
