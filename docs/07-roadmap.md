@@ -58,6 +58,11 @@
 - マニフェスト、ローカルインストール、有効／無効、クラッシュ隔離、開発者モード
 - `create-otterm-mod` テンプレート
 - **完了条件**: ステータスバーに Git ブランチを出す mod を、外部の人がテンプレから作れる
+- 進み具合（2026-10-11）:
+  - 済み（Rust）: `otterm-modhost`（`otmod.toml` の読み込みと検証、`${cwd}` などのパス変数と glob、権限ブローカー: `fs.read` / `fs.write` の glob と保護リスト（判断 K8）、`process` の実行ファイル名、`network` のホスト照合、子プロセスの実行、`ctx.storage` の 10 MB KV、承認の保存（`mods/permissions.json`、判断 D5）、インストール（コピー／リンク、判断 K7）、`config.toml` の `[mods] enabled / disabled` と `[mods.settings]` の書き換え（toml_edit））。アプリ側の Tauri コマンド（`mods_list`、`mod_source`、`mod_grant`、`mod_set_enabled`、`mod_install`、`mod_fs`、`mod_process_run`、`mod_http_fetch`（ureq）、`mod_storage`、`mod_setting_set`、`mod_log`）、`mods/` の監視（追加・削除・リンク先の `dist/main.js` の更新で `mods-changed`）、CLI `otterm mod list | install <path> [--link] | link | remove | enable | disable | doctor`
+  - 済み（UI）: mod ごとの Web Worker + QuickJS（WASM、`quickjs-emscripten-core`。メモリ 64 MB、コールバック 1 回 5 秒で割り込み、判断 C2）、サンドボックス内 SDK（`packages/ui/src/mods/sdk.js`。権限のない名前空間は `ctx` に存在しない）、タイマー 4 関数のみ（判断 M1、deactivate で全停止）、宣言的 UI の 18 種のレンダラ（`render.tsx`。Reactive と Signal はサンドボックス側で解決し、関数は id に置き換えて postMessage）、Slot `statusbar.left/right` とステータスバー（フォルダ、直前の終了コード、mod の状態）、`sidebar.left/right` と `panel.bottom` のパネル、`ctx.ui.toast / dialog / contextMenu`、コマンドとキーの提案（ユーザー設定が優先）、イベント（session-created/closed、cwd-changed、focus-changed、title-changed、block-start/end）、権限の承認画面（05 §6.2）、`terminal.write` と `clipboard.read` の初回使用時の確認（判断 D5）、クラッシュ隔離（例外・5 秒無応答で deactivated、3 回で無効化）、開発者モード（`[mods] developer_mode`: mod 一覧パネルにログと API 呼び出しの回数・時間）、`<データ>/logs/mods.log`、リンクした mod のホットリロード
+  - 済み（テンプレ）: `create-otterm-mod`（対話で kind、extension は TypeScript + esbuild、`pnpm dev` = ビルド監視 + `mods/` へのリンク、theme テンプレ）。Windows の開発機で Git Status Bar をテンプレから作り、ブランチと変更数がステータスバーに出ることを確認した（activate 44 ms。QuickJS の起動を含む。判断 C2 の「50 ms 程度」のとおり）
+  - 残り: `ctx.ui.pickPath`、`ctx.fs.watch`、`ctx.process.spawn`、`ctx.terminal.screen / blocks / selection`（呼ぶと「まだ使えない」で reject）、`input-changed` / `before-execute`（入力行の取得は M4）、ワークスペース内 `.otterm/mods/`（信頼モデル K4 と一緒に）、`custom`（iframe）の `otmod:` スキーム、設定画面での mod 設定フォーム（設定画面自体が M5）、署名検証とレジストリ（M6）、macOS / Linux での確認、`otterm mod` の Windows リリースビルドでの標準出力（GUI サブシステムのためコンソールに出ない）
 
 ### M4: 同梱 mod と初心者体験（目安 8〜10 週）
 

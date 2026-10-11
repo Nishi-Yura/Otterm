@@ -16,17 +16,7 @@ struct Saved {
     maximized: bool,
 }
 
-/// The folder for otterm's own data: mods, state, logs (docs/06 §1).
-fn data_dir() -> Option<PathBuf> {
-    let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(PathBuf::from);
-    if cfg!(windows) {
-        env("LOCALAPPDATA").map(|d| d.join("otterm"))
-    } else if cfg!(target_os = "macos") {
-        env("HOME").map(|h| h.join("Library").join("Application Support").join("otterm"))
-    } else {
-        env("XDG_DATA_HOME").or_else(|| env("HOME").map(|h| h.join(".local").join("share"))).map(|d| d.join("otterm"))
-    }
-}
+use otterm_config::data_dir;
 
 fn state_file() -> Option<PathBuf> {
     // Automated UI tests and benches must not move or resize the user's window next time.

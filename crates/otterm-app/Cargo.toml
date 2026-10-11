@@ -19,7 +19,10 @@ tauri-build.workspace = true
 arboard = { version = "3.6", default-features = false }
 fontdb.workspace = true
 otterm-config.workspace = true
+otterm-modhost.workspace = true
 getrandom.workspace = true
+semver.workspace = true
+ureq = { version = "3", default-features = false, features = ["rustls", "gzip"] }
 otterm-session.workspace = true
 otterm-text.workspace = true
 serde.workspace = true

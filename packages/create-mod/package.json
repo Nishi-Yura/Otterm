@@ -5,6 +5,17 @@
   "license": "MIT",
   "private": true,
   "type": "module",
+  "bin": {
+    "create-otterm-mod": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "templates",
+    "!templates/extension/tsconfig.json"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "typecheck": "tsc -p templates/extension"
   },

@@ -67,6 +67,12 @@ pub struct UiConfig {
     pub confirm_close_running: bool,
     /// What happens to a pane when its shell exits.
     pub close_behavior: otterm_config::CloseBehavior,
+    /// `appearance.statusbar.visible`.
+    pub statusbar: bool,
+    /// `[mods] developer_mode`: per-mod logs and timings in the mods panel (docs/05 §8.2).
+    pub developer_mode: bool,
+    /// Where installed mods live, to tell the user.
+    pub mods_dir: Option<String>,
     /// Keys that were ignored, to show once.
     pub warnings: Vec<UiWarning>,
     pub config_path: Option<String>,
@@ -182,6 +188,9 @@ impl ConfigState {
             bell: c.terminal.bell,
             confirm_close_running: c.general.confirm_close_running,
             close_behavior: c.terminal.close_behavior,
+            statusbar: c.appearance.statusbar.visible,
+            developer_mode: c.mods.developer_mode,
+            mods_dir: otterm_config::data_dir().map(|d| otterm_modhost::mods_dir(&d).display().to_string()),
             warnings,
             config_path: self.path.as_ref().map(|p| p.display().to_string()),
         }

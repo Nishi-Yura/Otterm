@@ -1,0 +1,379 @@
+/* The window's parts for mods: status bar, panels, permission screen, toasts (docs/04 §1). */
+
+.statusbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--ot-statusbar-bg, color-mix(in srgb, var(--bg) 88%, #000));
+  color: var(--ot-statusbar-fg, var(--muted));
+  font:
+    12px system-ui,
+    sans-serif;
+  user-select: none;
+  overflow: hidden;
+}
+
+.statusbar-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.statusbar-side.right {
+  justify-content: flex-end;
+}
+
+.statusbar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.statusbar-item.failed {
+  color: var(--ot-danger, var(--ot-term-ansi-1, #e5484d));
+}
+
+.statusbar-button {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.statusbar-button:hover {
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+}
+
+.statusbar-button.attention {
+  color: var(--ot-warning, var(--ot-term-ansi-3, #f0c674));
+}
+
+/* The window body: panels left and right of the tabs and panes, a panel below. */
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.body-center {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.side-panel {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  min-height: 0;
+  background: color-mix(in srgb, var(--bg) 94%, #fff);
+  color: var(--fg);
+  font:
+    13px system-ui,
+    sans-serif;
+}
+
+.side-panel[data-slot="sidebar.left"],
+.side-panel[data-slot="sidebar.right"] {
+  width: 280px;
+}
+
+.side-panel[data-slot="sidebar.left"] {
+  border-right: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+}
+
+.side-panel[data-slot="sidebar.right"] {
+  border-left: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+}
+
+.side-panel[data-slot="panel.bottom"] {
+  height: 220px;
+  border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+}
+
+.side-panel-tabs {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.side-panel-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.side-panel-tab[aria-selected="true"] {
+  border-bottom-color: var(--ot-accent, #4f8cff);
+  color: var(--fg);
+}
+
+.side-panel-badge {
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--ot-accent, #4f8cff);
+  color: #fff;
+  font-size: 10px;
+}
+
+.side-panel-spacer {
+  flex: 1;
+}
+
+.side-panel-close {
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.side-panel-body {
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+}
+
+/* Permission screen and mod dialogs. */
+.mod-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.mod-dialog {
+  width: min(520px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--fg) 15%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 92%, #fff);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.5);
+  color: var(--fg);
+  font:
+    13px system-ui,
+    sans-serif;
+  overflow: auto;
+}
+
+.mod-dialog-from {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.mod-dialog-title {
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mod-dialog-body {
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+
+.mod-permissions {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.mod-permissions li {
+  margin: 4px 0;
+}
+
+.mod-permissions li.danger {
+  color: var(--ot-danger, var(--ot-term-ansi-1, #e5484d));
+  font-weight: 600;
+}
+
+.mod-dialog-note {
+  margin-bottom: 14px;
+  color: var(--muted);
+}
+
+.mod-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Toasts (ctx.ui.toast) at the top right, one above the other. */
+.toasts {
+  position: absolute;
+  top: 40px;
+  right: 12px;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: min(420px, calc(100% - 24px));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--ot-accent, #4f8cff);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg) 80%, #000);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.4);
+  color: var(--fg);
+  font:
+    12px system-ui,
+    sans-serif;
+  pointer-events: auto;
+}
+
+.toast.success {
+  border-left-color: var(--ot-success, var(--ot-term-ansi-2, #3fb950));
+}
+
+.toast.warning {
+  border-left-color: var(--ot-warning, var(--ot-term-ansi-3, #f0c674));
+}
+
+.toast.danger {
+  border-left-color: var(--ot-danger, var(--ot-term-ansi-1, #e5484d));
+}
+
+.toast-text {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.toast-from {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.toast-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.toast-close {
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* The mods list (Settings → mods, for now a panel). */
+.mods-panel .muted {
+  color: var(--muted);
+}
+
+.mods-dir {
+  font-family: monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.mods-entry {
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.mods-entry.broken {
+  box-shadow: inset 3px 0 0 var(--ot-danger, #e5484d);
+  padding-left: 8px;
+}
+
+.mods-entry-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mods-entry-status {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.mods-entry-status.active {
+  color: var(--ot-success, var(--ot-term-ansi-2, #3fb950));
+}
+
+.mods-entry-status.crashed,
+.mods-entry-status.error {
+  color: var(--ot-danger, var(--ot-term-ansi-1, #e5484d));
+}
+
+.mods-entry-id {
+  font-size: 11px;
+}
+
+.mods-entry-desc {
+  margin: 4px 0;
+}
+
+.mods-entry-message {
+  margin: 4px 0;
+  padding: 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ot-danger, #e5484d) 12%, transparent);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mods-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.mods-calls {
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.mods-log {
+  max-height: 240px;
+  margin: 6px 0 0;
+  padding: 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg) 80%, #000);
+  font-size: 11px;
+  overflow: auto;
+}

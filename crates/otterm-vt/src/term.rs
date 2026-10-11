@@ -142,8 +142,10 @@ pub enum Event {
     Cwd(String),
     /// OSC 52 write request. The host decides whether to allow it (decision H2).
     ClipboardWrite(String),
-    /// A command of the shell integration started (OSC 133 C); `command` may be empty.
+    /// A command of the shell integration started (OSC 133 C); `command` may be empty. `line` is
+    /// its block head.
     BlockStart {
+        line: u64,
         command: String,
     },
     /// That command ended with this exit code after `ms` (OSC 133 D). `line` is its block head.
@@ -714,13 +716,17 @@ impl Terminal {
         }
         let line = self.cursor_line();
         if let Some(at) = self.find_head(self.cursor.row) {
+            let head_line = match at {
+                HeadAt::Screen(r) => self.screen_top() + r as u64,
+                HeadAt::History(i) => self.history_base + i as u64,
+            };
             let h = self.head_mut(at);
             if matches!(h.state, BlockState::Prompt | BlockState::Input) {
                 h.state = BlockState::Running;
                 h.output_line = Some(line);
                 h.started = Some(std::time::Instant::now());
                 let command = h.command.as_deref().unwrap_or_default().to_owned();
-                self.events.push(Event::BlockStart { command });
+                self.events.push(Event::BlockStart { line: head_line, command });
                 self.touch_head(at);
             }
         }

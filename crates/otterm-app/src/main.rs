@@ -7,6 +7,7 @@
 
 mod config;
 mod launch;
+mod mods;
 mod open;
 mod profiles;
 mod quote;
@@ -56,8 +57,8 @@ enum UiEvent {
     Bell,
     Cwd { url: String },
     Clipboard { data: String },
-    BlockStart { command: String },
-    BlockEnd { exit: i32, ms: u32 },
+    BlockStart { line: u64, command: String },
+    BlockEnd { line: u64, exit: i32, ms: u32 },
     Exited { code: Option<u32> },
 }
 
@@ -200,8 +201,8 @@ fn session_create(
                         Some(data) => events.send(UiEvent::Clipboard { data }),
                         None => Ok(()),
                     },
-                    SessionEvent::BlockStart { command } => events.send(UiEvent::BlockStart { command }),
-                    SessionEvent::BlockEnd { exit, ms } => events.send(UiEvent::BlockEnd { exit, ms }),
+                    SessionEvent::BlockStart { line, command } => events.send(UiEvent::BlockStart { line, command }),
+                    SessionEvent::BlockEnd { line, exit, ms } => events.send(UiEvent::BlockEnd { line, exit, ms }),
                     SessionEvent::Exited { code } => events.send(UiEvent::Exited { code }),
                     SessionEvent::Output(_) => Ok(()),
                 };
@@ -655,6 +656,23 @@ fn expand_home(path: &str) -> std::path::PathBuf {
     }
 }
 
+/// `otterm mod …` runs without a window and exits (docs/06 §4). Release builds on Windows have
+/// no console, so there the output is only visible from a terminal that reads stdout.
+fn cli() -> bool {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.first().map(String::as_str) != Some("mod") {
+        return false;
+    }
+    match mods::cli(&args[1..]) {
+        Ok(text) => print!("{text}"),
+        Err(e) => {
+            eprintln!("{e}");
+            std::process::exit(2);
+        }
+    }
+    true
+}
+
 fn app_state() -> AppState {
     config::warm_up();
     let launch = launch::parse(std::env::args().skip(1));
@@ -736,10 +754,15 @@ fn watch_config(app: &tauri::App) {
 
 #[cfg(not(feature = "bench"))]
 fn main() {
+    if cli() {
+        return;
+    }
     tauri::Builder::default()
         .manage(app_state())
+        .manage(mods::ModsState::default())
         .setup(|app| {
             watch_config(app);
+            mods::watch(app);
             // The window starts hidden (tauri.conf.json); restore shows it once placed.
             match tauri::Manager::get_webview_window(app, "main") {
                 Some(window) => window_state::restore(&window),
@@ -788,6 +811,19 @@ fn main() {
             path_resolve,
             path_open,
             session_close,
+            mods::mods_list,
+            mods::mod_source,
+            mods::mod_grant,
+            mods::mod_revoke,
+            mods::mod_set_enabled,
+            mods::mod_install,
+            mods::mod_uninstall,
+            mods::mod_setting_set,
+            mods::mod_storage,
+            mods::mod_fs,
+            mods::mod_process_run,
+            mods::mod_http_fetch,
+            mods::mod_log,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run otterm");
@@ -801,9 +837,11 @@ fn main() {
     bench::STARTED.get_or_init(|| (std::time::Instant::now(), std::time::SystemTime::now()));
     tauri::Builder::default()
         .manage(app_state())
+        .manage(mods::ModsState::default())
         .manage(bench::BenchState::default())
         .setup(|app| {
             watch_config(app);
+            mods::watch(app);
             // The window starts hidden (tauri.conf.json); restore shows it once placed.
             match tauri::Manager::get_webview_window(app, "main") {
                 Some(window) => window_state::restore(&window),
@@ -852,6 +890,19 @@ fn main() {
             path_resolve,
             path_open,
             session_close,
+            mods::mods_list,
+            mods::mod_source,
+            mods::mod_grant,
+            mods::mod_revoke,
+            mods::mod_set_enabled,
+            mods::mod_install,
+            mods::mod_uninstall,
+            mods::mod_setting_set,
+            mods::mod_storage,
+            mods::mod_fs,
+            mods::mod_process_run,
+            mods::mod_http_fetch,
+            mods::mod_log,
             bench::bench_mode,
             bench::bench_ipc_start,
             bench::bench_ipc_ack,

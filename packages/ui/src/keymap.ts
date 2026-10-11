@@ -148,7 +148,7 @@ const SHIFTED: Record<string, string> = {
   "\\": "|",
 };
 
-function matches(c: Chord, e: KeyboardEvent): boolean {
+export function matches(c: Chord, e: KeyboardEvent): boolean {
   if (c.ctrl !== e.ctrlKey || c.shift !== e.shiftKey || c.alt !== e.altKey || c.meta !== e.metaKey) return false;
   const key = e.key.toLowerCase();
   if (key === c.key) return true;

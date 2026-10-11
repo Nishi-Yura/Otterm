@@ -40,6 +40,22 @@ pub fn config_dir() -> Option<PathBuf> {
     }
 }
 
+/// The folder for otterm's own data: mods, state, logs (docs/06 §1). `OTTERM_DATA_DIR` overrides
+/// it (tests, and `create-otterm-mod`'s link step use the same variable).
+pub fn data_dir() -> Option<PathBuf> {
+    let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(PathBuf::from);
+    if let Some(d) = env("OTTERM_DATA_DIR") {
+        return Some(d);
+    }
+    if cfg!(windows) {
+        env("LOCALAPPDATA").map(|d| d.join("otterm"))
+    } else if cfg!(target_os = "macos") {
+        env("HOME").map(|h| h.join("Library").join("Application Support").join("otterm"))
+    } else {
+        env("XDG_DATA_HOME").or_else(|| env("HOME").map(|h| h.join(".local").join("share"))).map(|d| d.join("otterm"))
+    }
+}
+
 /// Read the configuration at `path`. A missing file gives the defaults without warnings.
 pub fn load(path: &Path) -> (Config, Vec<Warning>) {
     match std::fs::read_to_string(path) {

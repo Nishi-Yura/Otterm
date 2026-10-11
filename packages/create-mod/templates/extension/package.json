@@ -1,0 +1,16 @@
+{
+  "name": "__ID__",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch",
+    "typecheck": "tsc -p .",
+    "link": "node scripts/link.mjs"
+  },
+  "devDependencies": {
+    "@otterm/api": "^0.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9"
+  }
+}

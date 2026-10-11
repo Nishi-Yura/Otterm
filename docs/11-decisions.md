@@ -183,6 +183,7 @@
 ### C2. mod 実行環境
 - 選択肢: **(a)** Web Worker 内で QuickJS（WASM）を動かす二重サンドボックス / **(b)** Web Worker に直接 JS を読み込み、グローバルを削って使う
 - 決定（2026-10-10、推奨どおり）: **(a)**。(b) は Worker のグローバル（`fetch`、`importScripts`、`indexedDB`）を完全には消せず、CPU 時間の制限や強制中断もできない。(a) は mod あたり数 MB のメモリと起動 50 ms 程度のコストがかかるが、「mod が暴走しても本体が落ちない」を保証できる。M3 で実測し、起動コストが問題なら Worker を事前に温めておく
+- 実装（2026-10-11）: `quickjs-emscripten-core` + `@jitl/quickjs-singlefile-browser-release-sync`（WASM を JS に埋め込んだ変種。Worker のバンドルは約 760 KB）。mod ごとに Runtime と Context を作り、メモリ上限 64 MB、スタック 1 MB、割り込みハンドラでコールバック 1 回を 5 秒までに制限する。開発機で Git Status Bar の activate は 44 ms（Worker の起動から `activate()` の完了まで）。見積もりどおりなので Worker の事前起動はしない
 - 影響: 02 §4.3、05 §4
 - 時期: M3
 
@@ -761,6 +762,21 @@ A〜H を決定した後に見つかった事項。同日に推奨どおり決�
 - 根拠: 一時フォルダは `otterm mod` などから参照しにくく、インストーラ任せだと開発ビルドで動かない。bash の `$BASH_COMMAND` が最初の単純コマンドしか返さない制限は受け入れる（zsh / fish / pwsh は行全体が取れる）
 - 影響: 03 §6.2、07 M2
 - 時期: M2
+
+### M6. 宣言的 UI と関数の受け渡し
+- 経緯: M3 で mod の UI ツリーを Worker から UI スレッドに渡すとき、`onClick` などの関数と `Reactive`（getter）、`Signal` は postMessage で送れない
+- 選択肢: UI スレッド側で mod のコードを評価する / **サンドボックス側でツリーを平らにして送る** / 関数を文字列化して送る
+- 決定（2026-10-11）: **サンドボックス側で解決する**。SDK（`sdk.js`）が描画のたびに getter を評価し、`LocalizedString` を現在の言語に解決し、関数を `{ $fn: id }`、Signal を `{ $sig: id, value }` に置き換えた JSON を送る。UI はクリックや入力を id で返し、SDK が元の関数を呼ぶ。Signal の `set()` か `ctx.ui.refresh()` で mod の全ツリーを描き直す（依存追跡はしない。v1 のツリーは小さい）。古い描画の id は 3 世代残し、描画直後のクリックが迷子にならないようにする
+- 根拠: mod のコードが UI スレッドに触れないことが隔離の前提（判断 C2）。関数の文字列化は閉包を失う
+- 影響: 05 §5.3、packages/ui/src/mods/tree.ts
+- 時期: M3
+
+### M7. 公式でない mod の既定と、無効化の記録
+- 経緯: 05 §4 は「有効／無効の切替」を言うが、どこに記録するかと、入れただけの mod が動くかは決めていなかった
+- 決定（2026-10-11）: `config.toml` の `[mods] enabled / disabled`（06 §2 のとおり）。`disabled` にあれば無効、`enabled` にあれば有効、どちらにもなければ **`otterm.*` だけ有効、それ以外は無効**。承認画面で「やめる」を選ぶと `disabled` に書き、次回から聞かない。3 回続けて落ちた mod も `disabled` に書く
+- 根拠: フォルダに置いただけ（または `pnpm dev` でリンクしただけ）で動き出すより、`otterm mod enable` か一覧パネルで明示的に有効にする方が、D6 の「clone しただけで動かない」と同じ姿勢になる
+- 影響: 05 §4、06 §2
+- 時期: M3
 
 ## 決定の記録方法
 

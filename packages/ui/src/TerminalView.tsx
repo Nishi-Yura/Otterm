@@ -51,6 +51,10 @@ export interface TerminalViewProps {
   onTitle: (title: string) => void;
   /** A command started (its line, maybe empty) or ended (""), from the shell integration. */
   onRunning: (command: string) => void;
+  /** A block started or ended (docs/03 §6.3), with its head line, for mods and the status bar. */
+  onBlock?: (e: { kind: "start" | "end"; line: number; exit?: number; ms?: number }) => void;
+  /** Extra right-click items, from mods (`context.terminal`). */
+  extraMenu?: () => MenuItem[];
   onCwd: (url: string) => void;
   onExit: (code: number | null) => void;
   /** The program rang the bell (BEL). */
@@ -210,8 +214,14 @@ export function TerminalView(props: TerminalViewProps) {
           }
           if (e.kind === "clipboard") clipboardRequest(e.data);
           if (e.kind === "bell") bell();
-          if (e.kind === "blockStart") props.onRunning(e.command);
-          if (e.kind === "blockEnd") props.onRunning("");
+          if (e.kind === "blockStart") {
+            props.onRunning(e.command);
+            props.onBlock?.({ kind: "start", line: e.line });
+          }
+          if (e.kind === "blockEnd") {
+            props.onRunning("");
+            props.onBlock?.({ kind: "end", line: e.line, exit: e.exit, ms: e.ms });
+          }
           // A view that is gone (its pane was closed) has nothing left to report.
           if (e.kind === "exited" && !closed) {
             setStatus(t("process-exited", { code: e.code ?? "none" }));
@@ -700,6 +710,8 @@ export function TerminalView(props: TerminalViewProps) {
         { label: t("menu-copy-link"), action: () => void clipboard.write(link.url) },
       );
     }
+    // Mods' items (docs/05 §5.2 `ctx.ui.contextMenu`) go last, under otterm's own.
+    items.push(...(props.extraMenu?.() ?? []));
     setMenu({ x: clientX - box.left, y: clientY - box.top, items });
   };
 

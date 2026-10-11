@@ -10,8 +10,8 @@ export type SessionEvent =
   | { kind: "cwd"; url: string }
   | { kind: "clipboard"; data: string }
   /** A command of the shell integration started (docs/03 §6); `command` may be empty. */
-  | { kind: "blockStart"; command: string }
-  | { kind: "blockEnd"; exit: number; ms: number }
+  | { kind: "blockStart"; line: number; command: string }
+  | { kind: "blockEnd"; line: number; exit: number; ms: number }
   | { kind: "exited"; code: number | null };
 
 /** A block of the shell integration (docs/03 §6.3), as `session_block` returns it. */

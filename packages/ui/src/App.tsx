@@ -5,7 +5,7 @@ import { batch, createEffect, createMemo, createSignal, For, onCleanup, onMount,
 import { benchMode, runIpcBench, runStartupBench, runTypingBench, setExposeInternals, startupMark } from "./bench";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
 import { applyThemeCss, loadConfig, onConfigChanged, type UiConfig } from "./config";
-import { setLanguage, t } from "./i18n";
+import { language, setLanguage, t } from "./i18n";
 import { Keymap } from "./keymap";
 import { type AppAction, platform } from "./keys";
 import {
@@ -22,8 +22,11 @@ import {
   setRatio,
   splitPane,
 } from "./layout";
+import { type DialogRequest, type HostEnv, ModHost, type SessionSnapshot } from "./mods/host";
+import { ModDialog, ModsPanel, Panels, PermissionDialog, StatusBar, type Toast, Toasts } from "./mods/ModUi";
+import type { ThemeInfo } from "./mods/protocol";
 import { PromptBar, type PromptProps } from "./PromptBar";
-import { folderName } from "./paths";
+import { folderName, urlToPath } from "./paths";
 import type { Frame } from "./screen/protocol";
 import { connectScreen } from "./session";
 import { type ScreenHub, TerminalView } from "./TerminalView";
@@ -86,6 +89,10 @@ export function App() {
   /** Session id of each pane, once started. */
   const sessionOf = new Map<number, number>();
   const [confirm, setConfirm] = createSignal<PromptProps>();
+  /** Exit code of the last command in each pane (shell integration), for the status bar. */
+  const [lastExit, setLastExit] = createSignal<Record<number, number>>({});
+  /** Panes whose shell integration has reported a block. */
+  const integrated = new Set<number>();
   const routes = new Map<number, (f: Frame) => void>();
   let area!: HTMLDivElement;
   let ws: WebSocket | undefined;
@@ -109,6 +116,145 @@ export function App() {
     noticeTimer = setTimeout(() => setNotice(undefined), NOTICE_MS);
   };
 
+  // --- mods (docs/05): the host runs them; the window shows what they register ---------------
+  const [toasts, setToasts] = createSignal<Toast[]>([]);
+  let nextToast = 1;
+  const dismissToast = (id: number) => setToasts(toasts().filter((x) => x.id !== id));
+  const [modDialog, setModDialog] = createSignal<{ req: DialogRequest; done: (id: string | null) => void }>();
+  /** The panel open in each panel slot, by panel id. */
+  const [shownPanel, setShownPanel] = createSignal<Record<string, string | undefined>>({});
+  const MODS_PANEL = "otterm.mods";
+  const snapshot = (pane: Pane): SessionSnapshot | undefined => {
+    const id = sessionOf.get(pane.id);
+    if (id === undefined) return undefined;
+    const url = cwds.get(pane.id);
+    return {
+      id,
+      cwd: url ? urlToPath(url) : undefined,
+      title: titles()[pane.id] ?? "",
+      profileId: pane.profile ?? config()?.defaultProfile ?? "",
+      shell: pane.profileName ?? pane.profile ?? config()?.defaultProfile ?? "",
+      integrated: integrated.has(pane.id),
+    };
+  };
+  const activePane = () => {
+    const tab = tabs().find((x) => x.id === activeTab());
+    return tab ? panes().find((p) => p.id === tab.active) : undefined;
+  };
+  const themeInfo = (): ThemeInfo => {
+    const th = config()?.theme;
+    const vars: Record<string, string> = {};
+    for (const [k, v] of Object.entries(th?.ui ?? {})) vars[`--ot-${k}`] = v;
+    return {
+      name: th?.name ?? "",
+      appearance: th?.appearance ?? "dark",
+      vars,
+      terminal: {
+        foreground: th?.terminal.foreground ?? "",
+        background: th?.terminal.background ?? "",
+        ansi: th?.terminal.ansi ?? [],
+        bright: th?.terminal.bright ?? [],
+      },
+    };
+  };
+  const env: HostEnv = {
+    activeSession: () => {
+      const p = activePane();
+      return p && snapshot(p);
+    },
+    sessions: () =>
+      panes()
+        .map(snapshot)
+        .filter((s): s is SessionSnapshot => s !== undefined),
+    insert: (id, text) => invoke("session_paste", { id, text }),
+    write: (id, text) => invoke("session_write", { id, data: text }),
+    toast(req) {
+      const id = nextToast++;
+      setToasts([...toasts(), { ...req, id }]);
+      const ms = req.durationMs ?? 5000;
+      if (ms > 0) setTimeout(() => dismissToast(id), ms);
+    },
+    dialog: (req) =>
+      new Promise((resolve) => {
+        setModDialog({
+          req,
+          done: (id) => {
+            setModDialog(undefined);
+            refocus();
+            resolve(id);
+          },
+        });
+      }),
+    confirm: (title, body) =>
+      new Promise((resolve) => {
+        const done = (answer: boolean) => {
+          setConfirm(undefined);
+          refocus();
+          resolve(answer);
+        };
+        setConfirm({
+          title,
+          body,
+          buttons: [
+            { label: t("action-yes"), action: () => done(true) },
+            { label: t("action-no"), action: () => done(false) },
+          ],
+          focus: 1,
+          cancel: () => done(false),
+        });
+      }),
+    theme: themeInfo,
+    locale: () => language(),
+    hostSetting(key) {
+      const c = config();
+      switch (key) {
+        case "general.guide_level":
+          return 2;
+        case "general.language":
+          return c?.language;
+        case "appearance.theme":
+          return c?.theme.name;
+        case "font.size":
+          return c?.font.size;
+        default:
+          return undefined;
+      }
+    },
+    runHostCommand(id, args) {
+      if (id === "otterm.panel.show") {
+        const target = String(args?.id ?? "");
+        const panel = host.panels().find((p) => p.id === target);
+        if (!panel) return false;
+        setShownPanel({ ...shownPanel(), [panel.slot]: panel.id });
+        return true;
+      }
+      if (id === "otterm.mods.show") {
+        setShownPanel({ ...shownPanel(), "sidebar.right": MODS_PANEL });
+        return true;
+      }
+      return false;
+    },
+    developerMode: () => config()?.developerMode ?? false,
+  };
+  const host = new ModHost(env);
+  const insertText = (text: string) => {
+    const s = env.activeSession();
+    if (s) void env.insert(s.id, text).catch((e) => showNotice(String(e)));
+  };
+  const copyText = (text: string) => void invoke("clipboard_write", { text }).catch(() => {});
+  /** Mods' right-click items for the terminal (docs/05 §5.2). */
+  const modMenu = (): MenuItem[] =>
+    host.menuItems("context.terminal").map((m) => ({
+      label: m.label,
+      disabled: !m.enabled,
+      action: () =>
+        void host.invoke(m.mod, m.fn, [{ sessionId: String(env.activeSession()?.id ?? "") }]).catch(() => {}),
+    }));
+  const emitFocus = () => {
+    const s = env.activeSession();
+    if (s) host.emit("focus-changed", { sessionId: String(s.id) });
+  };
+
   /** The configuration as loaded; `config()` is it with the theme for the OS mode filled in. */
   let loaded: UiConfig | undefined;
   const lightMode = window.matchMedia("(prefers-color-scheme: light)");
@@ -120,6 +266,7 @@ export function App() {
     const c = light ? { ...loaded, theme: loaded.themeLight as UiConfig["theme"] } : loaded;
     applyThemeCss(c.theme);
     setConfig(c);
+    host.themeChanged(themeInfo());
     // Programs ask for these (OSC 10/11) to pick light or dark colors of their own.
     const { foreground, background, cursor } = c.theme.terminal;
     void invoke("terminal_colors", { foreground, background, cursor }).catch(() => {});
@@ -137,6 +284,8 @@ export function App() {
       ...keymap.problems.map((p) => `keybindings.bindings.${p}`),
     ];
     if (warnings.length > 0) showNotice(t("config-ignored", { keys: warnings.join("; ") }));
+    // Enabled lists and mod settings live in config.toml too (docs/06 §2).
+    if (ready()) void host.refresh();
   };
 
   onMount(async () => {
@@ -165,6 +314,8 @@ export function App() {
     }
     newTab();
     setReady(true);
+    // Mods load after the first tab is up (docs/09 §3.5).
+    host.start().catch((e) => showNotice(String(e)));
     const unknown = await invoke<string[]>("launch_problems").catch(() => []);
     if (unknown.length > 0) showNotice(t("launch-unknown", { args: unknown.join(" ") }));
     if (mode === "startup") runStartupBench().catch((e) => setBench(`startup bench failed: ${String(e)}`));
@@ -226,6 +377,14 @@ export function App() {
     unlistenDrop?.();
     clearTimeout(noticeTimer);
     ws?.close();
+    host.dispose();
+  });
+
+  // Mods hear when the keyboard moves to another session.
+  createEffect(() => {
+    activeTab();
+    currentTab()?.active;
+    emitFocus();
   });
 
   const currentTab = () => tabs().find((x) => x.id === activeTab());
@@ -385,7 +544,13 @@ export function App() {
    */
   const onAppKey = (e: KeyboardEvent, altScreen: boolean): boolean => {
     const hit = keymap.match(e);
-    if (!hit) return false;
+    if (!hit) {
+      // A mod's suggested key, when the user bound nothing to the chord (docs/06 §5).
+      const command = host.matchKey(e, altScreen);
+      if (!command) return false;
+      void host.runCommand(command);
+      return true;
+    }
     if (altScreen && !hit.strong && (config()?.altScreenPassthrough ?? true)) return false;
     return run(hit.action);
   };
@@ -700,62 +865,164 @@ export function App() {
           ⌄
         </button>
       </div>
-      <div ref={area} class="panes">
-        <For each={panes()}>
-          {(p) => {
-            const rect = () => geometry().rects.get(p.id);
-            return (
-              <div
-                class="pane"
-                classList={{ hidden: !paneVisible(p), "drop-target": dropTarget() === p.id }}
-                data-pane={p.id}
-                style={{
-                  left: pct(rect()?.x ?? 0),
-                  top: pct(rect()?.y ?? 0),
-                  width: pct(rect()?.w ?? 1),
-                  height: pct(rect()?.h ?? 1),
-                }}
-              >
-                <TerminalView
-                  hub={hub}
-                  config={config}
-                  active={() => paneActive(p)}
-                  cwd={p.cwd}
-                  profile={p.profile}
-                  onTitle={(title) => setTitles({ ...titles(), [p.id]: title })}
-                  onRunning={(command) => setRunning({ ...running(), [p.id]: command })}
-                  onCwd={(url) => {
-                    cwds.set(p.id, url);
-                    setFolders({ ...folders(), [p.id]: folderName(url) });
-                  }}
-                  onExit={() => paneExited(p.id)}
-                  onSession={(id) => sessionOf.set(p.id, id)}
-                  onBell={() => {
-                    if (p.tab !== activeTab()) setRang(new Set([...rang(), p.tab]));
-                  }}
-                  onActivate={() => {
-                    setActiveTab(p.tab);
-                    activatePane(p.id);
-                  }}
-                  appKey={onAppKey}
-                  notify={showNotice}
+      <div class="body">
+        <Panels
+          host={host}
+          slot="sidebar.left"
+          shown={shownPanel()["sidebar.left"]}
+          onShow={(id) => setShownPanel({ ...shownPanel(), "sidebar.left": id })}
+          insert={insertText}
+          copy={copyText}
+        />
+        <div class="body-center">
+          <div ref={area} class="panes">
+            <For each={panes()}>
+              {(p) => {
+                const rect = () => geometry().rects.get(p.id);
+                return (
+                  <div
+                    class="pane"
+                    classList={{ hidden: !paneVisible(p), "drop-target": dropTarget() === p.id }}
+                    data-pane={p.id}
+                    style={{
+                      left: pct(rect()?.x ?? 0),
+                      top: pct(rect()?.y ?? 0),
+                      width: pct(rect()?.w ?? 1),
+                      height: pct(rect()?.h ?? 1),
+                    }}
+                  >
+                    <TerminalView
+                      hub={hub}
+                      config={config}
+                      active={() => paneActive(p)}
+                      cwd={p.cwd}
+                      profile={p.profile}
+                      onTitle={(title) => {
+                        setTitles({ ...titles(), [p.id]: title });
+                        const s = snapshot(p);
+                        if (s) host.emit("title-changed", { sessionId: String(s.id), title });
+                      }}
+                      onRunning={(command) => setRunning({ ...running(), [p.id]: command })}
+                      onBlock={(e) => {
+                        integrated.add(p.id);
+                        if (e.kind === "end" && e.exit !== undefined) setLastExit({ ...lastExit(), [p.id]: e.exit });
+                        const s = snapshot(p);
+                        if (s)
+                          void host.emitBlock(
+                            e.kind === "start" ? "block-start" : "block-end",
+                            s,
+                            e.line,
+                            e.exit,
+                            e.ms,
+                          );
+                      }}
+                      extraMenu={modMenu}
+                      onCwd={(url) => {
+                        cwds.set(p.id, url);
+                        setFolders({ ...folders(), [p.id]: folderName(url) });
+                        const s = snapshot(p);
+                        if (s) host.emit("cwd-changed", { sessionId: String(s.id), cwd: urlToPath(url) });
+                      }}
+                      onExit={(code) => {
+                        const s = snapshot(p);
+                        if (s) host.emit("session-closed", { sessionId: String(s.id), exitCode: code ?? undefined });
+                        paneExited(p.id);
+                      }}
+                      onSession={(id) => {
+                        sessionOf.set(p.id, id);
+                        const s = snapshot(p);
+                        if (s) host.emit("session-created", s);
+                        if (currentTab()?.active === p.id) emitFocus();
+                      }}
+                      onBell={() => {
+                        if (p.tab !== activeTab()) setRang(new Set([...rang(), p.tab]));
+                      }}
+                      onActivate={() => {
+                        setActiveTab(p.tab);
+                        activatePane(p.id);
+                      }}
+                      appKey={onAppKey}
+                      notify={showNotice}
+                    />
+                  </div>
+                );
+              }}
+            </For>
+            <For each={geometry().dividers}>
+              {(d) => (
+                <hr
+                  class="divider"
+                  aria-orientation={d.dir === "row" ? "vertical" : "horizontal"}
+                  classList={{ row: d.dir === "row", column: d.dir === "column" }}
+                  style={{ left: pct(d.rect.x), top: pct(d.rect.y), width: pct(d.rect.w), height: pct(d.rect.h) }}
+                  onMouseDown={(e) => dragDivider(d, e)}
                 />
-              </div>
-            );
-          }}
-        </For>
-        <For each={geometry().dividers}>
-          {(d) => (
-            <hr
-              class="divider"
-              aria-orientation={d.dir === "row" ? "vertical" : "horizontal"}
-              classList={{ row: d.dir === "row", column: d.dir === "column" }}
-              style={{ left: pct(d.rect.x), top: pct(d.rect.y), width: pct(d.rect.w), height: pct(d.rect.h) }}
-              onMouseDown={(e) => dragDivider(d, e)}
+              )}
+            </For>
+          </div>
+          <Panels
+            host={host}
+            slot="panel.bottom"
+            shown={shownPanel()["panel.bottom"]}
+            onShow={(id) => setShownPanel({ ...shownPanel(), "panel.bottom": id })}
+            insert={insertText}
+            copy={copyText}
+          />
+          <Show when={config()?.statusbar ?? true}>
+            <StatusBar
+              host={host}
+              folder={(() => {
+                const p = activePane();
+                return p ? folders()[p.id] || "" : "";
+              })()}
+              lastExit={(() => {
+                const p = activePane();
+                return p ? lastExit()[p.id] : undefined;
+              })()}
+              insert={insertText}
+              copy={copyText}
+              onModsClick={() => {
+                const open = shownPanel()["sidebar.right"] === MODS_PANEL;
+                setShownPanel({ ...shownPanel(), "sidebar.right": open ? undefined : MODS_PANEL });
+              }}
             />
-          )}
-        </For>
+          </Show>
+        </div>
+        <Panels
+          host={host}
+          slot="sidebar.right"
+          shown={shownPanel()["sidebar.right"]}
+          onShow={(id) => setShownPanel({ ...shownPanel(), "sidebar.right": id })}
+          insert={insertText}
+          copy={copyText}
+          builtin={[
+            {
+              id: MODS_PANEL,
+              title: t("mods-title"),
+              render: () => (
+                <ModsPanel
+                  host={host}
+                  developer={config()?.developerMode ?? false}
+                  modsDir={config()?.modsDir ?? undefined}
+                />
+              ),
+            },
+          ]}
+        />
       </div>
+      <Toasts toasts={toasts()} dismiss={dismissToast} />
+      <Show when={host.pendingGrants()[0]} keyed>
+        {(entry) => (
+          <PermissionDialog
+            entry={entry}
+            onAllow={() => void host.grant(entry.id).catch((e) => showNotice(String(e)))}
+            onDecline={() => void host.decline(entry.id).catch((e) => showNotice(String(e)))}
+          />
+        )}
+      </Show>
+      <Show when={modDialog()} keyed>
+        {(d) => <ModDialog req={d.req} insert={insertText} copy={copyText} onClose={d.done} />}
+      </Show>
       <Show when={profileMenu()} keyed>
         {(m) => (
           <ContextMenu

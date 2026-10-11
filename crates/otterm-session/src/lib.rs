@@ -45,12 +45,15 @@ pub enum SessionEvent {
     Cwd(String),
     /// OSC 52 request; the UI applies the clipboard policy (decision H2).
     ClipboardWrite(String),
-    /// A command of the shell integration started (OSC 133 C); `command` may be empty.
+    /// A command of the shell integration started (OSC 133 C); `command` may be empty. `line` is
+    /// the block's head row, for [`SessionManager::block`].
     BlockStart {
+        line: u64,
         command: String,
     },
     /// That command ended (OSC 133 D).
     BlockEnd {
+        line: u64,
         exit: i32,
         ms: u32,
     },
@@ -767,10 +770,10 @@ fn apply_output(session: &Session, sink: &EventSink, bytes: &[u8]) {
             Event::Title(t) => SessionEvent::Title(t),
             Event::Cwd(c) => SessionEvent::Cwd(c),
             Event::ClipboardWrite(d) => SessionEvent::ClipboardWrite(d),
-            Event::BlockStart { command } => SessionEvent::BlockStart { command },
+            Event::BlockStart { line, command } => SessionEvent::BlockStart { line, command },
             Event::BlockEnd { line, exit, ms } => {
                 session.fold_long_output(line);
-                SessionEvent::BlockEnd { exit, ms }
+                SessionEvent::BlockEnd { line, exit, ms }
             }
         });
     }

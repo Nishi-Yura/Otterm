@@ -1,0 +1,513 @@
+/* Mod UI (docs/05 §5.3): the markup mods/render.tsx produces. Every class is mt-*. */
+
+/* The variables are on :root too, so the window's own buttons (permission screen, toasts) share them. */
+:root {
+  --mt-line: color-mix(in srgb, var(--fg, #d8dee9) 25%, transparent);
+  --mt-hover: color-mix(in srgb, var(--fg, #d8dee9) 10%, transparent);
+  --mt-input: color-mix(in srgb, var(--bg, #1b1d23) 80%, #fff);
+  --mt-accent: var(--ot-accent, #4f8cff);
+}
+
+.mt-root {
+  color: var(--fg, #d8dee9);
+  font-family: system-ui, sans-serif;
+  min-width: 0;
+}
+.mt-root * {
+  box-sizing: border-box;
+}
+.mt-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.mt-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.mt-muted {
+  color: var(--muted, #7b8394);
+}
+.mt-clickable {
+  cursor: pointer;
+}
+.mt-clickable:focus-visible,
+.mt-button:focus-visible,
+.mt-input:focus-visible,
+.mt-select:focus-visible {
+  outline: 1px solid var(--mt-accent);
+  outline-offset: 1px;
+}
+.mt-icon {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  text-align: center;
+  font-family: "Symbols Nerd Font Mono", system-ui, sans-serif;
+}
+.mt-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Headings */
+.mt-heading {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.mt-heading-1 {
+  font-size: 1.15em;
+}
+.mt-heading-2 {
+  font-size: 1.05em;
+}
+.mt-heading-3 {
+  font-size: 1em;
+  color: var(--muted, #7b8394);
+}
+
+/* Layout: stacks, rows, gaps, spacers */
+.mt-stack,
+.mt-row {
+  display: flex;
+  min-width: 0;
+}
+.mt-stack {
+  flex-direction: column;
+}
+.mt-row {
+  flex-direction: row;
+  align-items: center;
+}
+.mt-gap-none {
+  gap: 0;
+}
+.mt-gap-s {
+  gap: 4px;
+}
+.mt-gap-m {
+  gap: 8px;
+}
+.mt-gap-l {
+  gap: 14px;
+}
+.mt-justify-center {
+  justify-content: center;
+}
+.mt-justify-end {
+  justify-content: flex-end;
+}
+.mt-justify-space-between {
+  justify-content: space-between;
+}
+.mt-spacer {
+  flex: 0 0 auto;
+}
+.mt-spacer-s {
+  flex-basis: 4px;
+}
+.mt-spacer-m {
+  flex-basis: 8px;
+}
+.mt-spacer-l {
+  flex-basis: 16px;
+}
+.mt-spacer-flex {
+  flex: 1 1 0;
+}
+.mt-divider {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--mt-line);
+}
+
+/* List and tree */
+.mt-list,
+.mt-tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mt-item,
+.mt-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+.mt-tree-row {
+  gap: 4px;
+  padding: 2px 4px;
+}
+.mt-item.mt-clickable:hover,
+.mt-tree-row:hover {
+  background: var(--mt-hover);
+}
+.mt-selected {
+  background: color-mix(in srgb, var(--mt-accent) 22%, transparent);
+}
+.mt-item-text,
+.mt-tree-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mt-item-secondary {
+  flex: none;
+  font-size: 0.92em;
+}
+.mt-tree-toggle {
+  flex: none;
+  width: 1em;
+  text-align: center;
+  color: var(--muted, #7b8394);
+  cursor: pointer;
+}
+.mt-empty,
+.mt-more {
+  padding: 4px 6px;
+}
+
+/* Table */
+.mt-table-wrap {
+  max-width: 100%;
+  overflow: auto;
+}
+.mt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.mt-table th,
+.mt-table td {
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--mt-line);
+  text-align: left;
+  white-space: nowrap;
+}
+.mt-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg, #1b1d23);
+  color: var(--muted, #7b8394);
+  font-weight: 600;
+}
+.mt-table tr.mt-clickable:hover td {
+  background: var(--mt-hover);
+}
+.mt-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.mt-sort-asc::after {
+  content: " ▲";
+}
+.mt-sort-desc::after {
+  content: " ▼";
+}
+.mt-align-right {
+  text-align: right;
+}
+
+/* Buttons */
+.mt-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 1px solid var(--mt-line);
+  border-radius: 4px;
+  background: var(--mt-input);
+  color: var(--fg, #d8dee9);
+  font: inherit;
+  cursor: pointer;
+}
+.mt-button:hover:not(:disabled) {
+  background: var(--mt-hover);
+}
+.mt-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.mt-button-primary {
+  border-color: transparent;
+  background: var(--mt-accent);
+  color: #fff;
+}
+.mt-button-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mt-accent) 85%, #000);
+}
+.mt-button-danger {
+  border-color: transparent;
+  background: var(--ot-danger, #e5484d);
+  color: #fff;
+}
+.mt-button-ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.mt-button-ghost:hover:not(:disabled) {
+  background: var(--mt-hover);
+}
+.mt-button-small {
+  min-height: 20px;
+  padding: 0 6px;
+  font-size: 0.92em;
+}
+
+/* Inputs and toggle (a visually hidden checkbox drives the switch track) */
+.mt-input,
+.mt-select {
+  min-width: 0;
+  min-height: 24px;
+  padding: 2px 6px;
+  border: 1px solid var(--mt-line);
+  border-radius: 4px;
+  background: var(--mt-input);
+  color: var(--fg, #d8dee9);
+  font: inherit;
+}
+.mt-input {
+  width: 100%;
+}
+.mt-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.mt-toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.mt-switch {
+  position: relative;
+  flex: none;
+  width: 26px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--mt-line);
+  transition: background 0.15s;
+}
+.mt-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--fg, #d8dee9);
+  transition: transform 0.15s;
+}
+.mt-toggle-input:focus-visible + .mt-switch {
+  outline: 1px solid var(--mt-accent);
+  outline-offset: 1px;
+}
+.mt-toggle-input:checked + .mt-switch {
+  background: var(--mt-accent);
+}
+.mt-toggle-input:checked + .mt-switch::after {
+  background: #fff;
+  transform: translateX(12px);
+}
+
+/* Badges and progress */
+.mt-badge {
+  display: inline-block;
+  flex: none;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--mt-hover);
+  font-size: 0.85em;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.mt-badge-info {
+  background: color-mix(in srgb, var(--mt-accent) 25%, transparent);
+}
+.mt-badge-success {
+  background: color-mix(in srgb, var(--ot-success, #3fb950) 25%, transparent);
+}
+.mt-badge-warning {
+  background: color-mix(in srgb, var(--ot-warning, #d29922) 25%, transparent);
+}
+.mt-badge-danger {
+  background: color-mix(in srgb, var(--ot-danger, #e5484d) 25%, transparent);
+}
+.mt-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mt-progress-bar {
+  flex: 1 1 auto;
+  min-width: 60px;
+  width: 100%;
+  height: 6px;
+  accent-color: var(--mt-accent);
+}
+.mt-progress-label {
+  flex: none;
+}
+
+/* Code and markdown */
+.mt-code-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.mt-code-body,
+.mt-md-code {
+  margin: 0;
+  padding: 6px 8px;
+  overflow: auto;
+  border-radius: 4px;
+  background: var(--mt-input);
+  font:
+    12px / 1.45 ui-monospace,
+    Consolas,
+    monospace;
+  white-space: pre;
+  tab-size: 4;
+}
+.mt-markdown {
+  overflow-wrap: anywhere;
+}
+.mt-markdown > :first-child {
+  margin-top: 0;
+}
+.mt-markdown > :last-child {
+  margin-bottom: 0;
+}
+.mt-markdown p,
+.mt-markdown ul {
+  margin: 0.4em 0;
+}
+.mt-markdown ul {
+  padding-left: 1.2em;
+}
+.mt-markdown h1,
+.mt-markdown h2,
+.mt-markdown h3 {
+  margin: 0.6em 0 0.3em;
+  line-height: 1.3;
+}
+.mt-markdown h1 {
+  font-size: 1.15em;
+}
+.mt-markdown h2 {
+  font-size: 1.05em;
+}
+.mt-markdown code {
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--mt-hover);
+  font:
+    0.92em ui-monospace,
+    Consolas,
+    monospace;
+}
+.mt-markdown .mt-md-code code {
+  padding: 0;
+  background: none;
+}
+.mt-markdown a {
+  color: var(--mt-accent);
+}
+
+/* Sparkline (stroke color is set inline from the --ot-* variables) and custom frame */
+.mt-spark {
+  display: block;
+  overflow: visible;
+}
+.mt-spark-status {
+  flex: none;
+  width: 64px;
+  height: 16px;
+}
+.mt-spark-panel {
+  width: 100%;
+  height: 32px;
+}
+.mt-spark polyline {
+  fill: none;
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.mt-custom {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+}
+
+/* Status bar: everything inline, compact, nothing taller than the bar */
+.mt-status * {
+  margin: 0;
+}
+.mt-status .mt-stack,
+.mt-status .mt-row,
+.mt-status .mt-list,
+.mt-status .mt-tree {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.mt-status .mt-heading {
+  font-size: 1em;
+}
+.mt-status .mt-divider {
+  width: 1px;
+  height: 12px;
+  margin: 0 2px;
+  border: 0;
+  background: var(--mt-line);
+}
+.mt-status .mt-item {
+  padding: 0 4px;
+}
+.mt-status .mt-button {
+  min-height: 18px;
+  padding: 0 6px;
+  font-size: 0.95em;
+}
+.mt-status .mt-input {
+  width: 120px;
+  min-height: 18px;
+  padding: 0 4px;
+}
+.mt-status .mt-select {
+  min-height: 18px;
+  padding: 0 4px;
+}
+.mt-status .mt-markdown,
+.mt-status .mt-code {
+  display: inline-block;
+}

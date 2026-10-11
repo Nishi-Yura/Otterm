@@ -24,6 +24,9 @@ getrandom = "0.4"
 unicode-width = "0.2"
 vte = "0.15"
 regex = "1"
+globset = "0.4"
+semver = "1"
+toml_edit = "0.25"
 sysinfo = { version = "0.39", default-features = false, features = ["system"] }
 fontdb = "0.24"
 rustybuzz = "0.20"
@@ -33,6 +36,7 @@ otterm-pty = { path = "crates/otterm-pty" }
 otterm-session = { path = "crates/otterm-session" }
 otterm-config = { path = "crates/otterm-config" }
 otterm-text = { path = "crates/otterm-text" }
+otterm-modhost = { path = "crates/otterm-modhost" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

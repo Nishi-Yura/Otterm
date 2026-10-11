@@ -27,8 +27,9 @@ export async function activate(ctx: ModContext) {
 
   async function refresh() {
     const session = await ctx.session.current();
-    if (!session) return;
-    const cwd = session.hostCwd ?? session.cwd;
+    // The shell reports its folder a moment after it starts (OSC 7); until then there is nothing to ask git about.
+    const cwd = session?.hostCwd ?? session?.cwd;
+    if (!cwd) return;
 
     const res = await proc.run("git", ["status", "--porcelain=v2", "--branch"], { cwd, timeoutMs: 3000 });
     if (res.code !== 0) {
@@ -55,7 +56,7 @@ export async function activate(ctx: ModContext) {
           ja: "現在のブランチ。クリックで Git パネルを開く",
           en: "Current branch. Click to open the Git panel",
         },
-        onClick: () => ctx.commands.run("git-status-bar.open-panel"),
+        onClick: () => ctx.commands.run("open-panel"),
       };
     },
     { order: 10 },
@@ -63,7 +64,7 @@ export async function activate(ctx: ModContext) {
 
   // Side panel listing changed files.
   ctx.ui.panel({
-    id: "git-status-bar.panel",
+    id: "__SHORT__.panel",
     title: "Git",
     icon: "git",
     slot: "sidebar.right",
@@ -119,11 +120,11 @@ export async function activate(ctx: ModContext) {
     title: { ja: "Git: ブランチ情報を更新", en: "Git: refresh branch info" },
     icon: "refresh-cw",
   });
-  ctx.commands.register("open-panel", () => ctx.commands.run("otterm.panel.show", { id: "git-status-bar.panel" }), {
+  ctx.commands.register("open-panel", () => ctx.commands.run("otterm.panel.show", { id: "__SHORT__.panel" }), {
     title: { ja: "Git: パネルを開く", en: "Git: open panel" },
     hidden: true,
   });
-  ctx.keybindings.suggest("git-status-bar.refresh", "ctrl+shift+g", "terminalFocus && !altScreen");
+  ctx.keybindings.suggest("refresh", "ctrl+shift+g", "terminalFocus && !altScreen");
 
   // --- events ---------------------------------------------------------------
 

@@ -5,6 +5,6 @@ mod load;
 pub mod schema;
 mod theme;
 
-pub use load::{Warning, config_dir, config_path, load, parse};
+pub use load::{Warning, config_dir, config_path, data_dir, load, parse};
 pub use schema::*;
 pub use theme::{TerminalColors, Theme, ThemeAppearance, all_themes, bundled_themes, find_theme, parse_theme};

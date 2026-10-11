@@ -1,9 +1,9 @@
 [mod]
-id = "example.git-status-bar"
-name = "Git Status Bar"
+id = "__ID__"
+name = "__NAME__"
 version = "0.1.0"
 description = "Shows the current branch and the number of changed files in the status bar."
-author = "example"
+author = "__NAMESPACE__"
 license = "MIT"
 kind = "extension"
 
@@ -20,7 +20,7 @@ slot = "statusbar.left"
 label = "Branch name and change count"
 
 [[adds]]
-command = "git-status-bar.refresh"
+command = "__SHORT__.refresh"
 label = "Refresh branch info"
 
 [permissions]

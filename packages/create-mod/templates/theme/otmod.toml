@@ -1,0 +1,13 @@
+[mod]
+id = "__ID__"
+name = "__NAME__"
+version = "0.1.0"
+description = "A color theme for otterm."
+author = "__NAMESPACE__"
+license = "MIT"
+kind = "theme"
+
+[compat]
+otterm = ">=1.0.0 <2.0.0"
+api = "1"
+platforms = ["windows", "macos", "linux"]

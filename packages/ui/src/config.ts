@@ -58,6 +58,12 @@ export interface UiConfig {
   confirmCloseRunning: boolean;
   /** When the shell exits: close the pane, keep it with the exit message, or start a new shell. */
   closeBehavior: "close" | "keep" | "restart";
+  /** `appearance.statusbar.visible`. */
+  statusbar: boolean;
+  /** `[mods] developer_mode`: logs and timings per mod. */
+  developerMode: boolean;
+  /** Where installed mods live, to tell the user. */
+  modsDir: string | null;
   warnings: { key: string; message: string }[];
   configPath: string | null;
 }

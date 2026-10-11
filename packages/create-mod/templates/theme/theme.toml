@@ -1,0 +1,27 @@
+# Colors for otterm. Values start from the bundled "otterm Dark" theme. Change them freely.
+
+[theme]
+name = "__NAME__"
+appearance = "dark"            # light | dark
+
+[theme.terminal]
+foreground = "#d8dee9"
+background = "#1b1d23"
+cursor     = "#88c0d0"
+selection  = "#3d4b63"
+ansi   = ["#2e3440", "#e06c75", "#98c379", "#e5c07b", "#61afef", "#c678dd", "#56b6c2", "#d8dee9"]
+bright = ["#5c6370", "#ef8891", "#a8d68a", "#f0d08a", "#7cc0ff", "#d690ea", "#6fcbd6", "#ffffff"]
+
+[theme.ui]
+bg          = "#1b1d23"
+bg-elevated = "#23262e"
+fg          = "#d8dee9"
+fg-muted    = "#9aa3b2"
+accent      = "#88c0d0"
+border      = "#2e3440"
+danger      = "#e06c75"
+success     = "#98c379"
+warning     = "#e5c07b"
+radius      = "8px"
+shadow      = "0 4px 16px rgba(0,0,0,.4)"
+font-ui     = "Inter, 'Noto Sans JP', system-ui"
