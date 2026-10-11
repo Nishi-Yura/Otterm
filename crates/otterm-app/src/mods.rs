@@ -570,6 +570,9 @@ pub struct StoreEntry {
     compatible: bool,
     /// The installed version, if any.
     installed: Option<String>,
+    /// The index it came from was signed by the registry key (an unsigned one is a registry the
+    /// user configured themselves).
+    signed: bool,
 }
 
 /// Whether the store may connect (decision K5); `allow` records a yes.
@@ -609,6 +612,7 @@ pub async fn store_list(state: State<'_, AppState>, refresh: bool) -> CmdResult<
                     latest: best.map(|(r, _)| r.version.clone()),
                     compatible: best.is_some_and(|(_, ok)| ok),
                     installed: installed.get(&e.id).cloned(),
+                    signed: index.signed,
                     entry: e.clone(),
                 }
             })
@@ -1120,13 +1124,15 @@ pub fn cli(args: &[String]) -> Result<String, String> {
             if hits.is_empty() {
                 return Ok("no mods found\n".into());
             }
-            Ok(hits
+            let note = if index.signed { "" } else { "(this registry is not signed)\n" };
+            let list: String = hits
                 .iter()
                 .map(|m| {
                     let newest = m.versions.first().map(|r| r.version.as_str()).unwrap_or("");
                     format!("{}\t{newest}\t{}\t{}\n", m.id, m.name, m.description)
                 })
-                .collect())
+                .collect();
+            Ok(format!("{note}{list}"))
         }
         Some("update") => {
             let source = registry_source(&config_path);

@@ -8,6 +8,8 @@ otterm の公式 mod レジストリのテンプレートです。GitHub 上の�
 - `index.json` … `scripts/build-index.mjs` が `mods/` から生成。otterm クライアントはこれを読む
 - `scripts/validate.mjs` … mod ファイルの形式と規則を検査（Node 22 以上、依存なし）
 - `scripts/build-index.mjs` … 検査に通ったときだけ `index.json` を書く
+- `scripts/sign.mjs` … `index.json` に署名して `index.json.sig` を書く（メンテナーのみ）
+- `registry-key.pub` … 署名の公開鍵。otterm に埋め込まれる
 - `examples/` … 形式の見本。`mods/` には入れない
 
 ## mod を登録する（作者向け）
@@ -42,9 +44,10 @@ node scripts/validate.mjs
 ```sh
 node scripts/validate.mjs
 node scripts/build-index.mjs
+node scripts/sign.mjs
 ```
 
-生成された `index.json` をコミットします。`mods/` の JSON を変更したら、必ず再生成してください。
+生成された `index.json` と署名 `index.json.sig` をコミットします。`mods/` の JSON を変更したら、必ず再生成して署名し直してください。otterm は署名が合わないインデックスを読みません（公開鍵は `registry-key.pub`、秘密鍵はメンテナーの手元の `~/.tauri/otterm-registry.key`）。
 
 ---
 
@@ -53,6 +56,6 @@ node scripts/build-index.mjs
 otterm's public mod registry. It is a static JSON index on GitHub, with the packages on GitHub Releases. There is no server; search runs in the client.
 
 - Authors: run `otterm mod publish`, upload the `.otmod` to your GitHub Release, then open a PR that adds `mods/<id>.json`. The PR author must be the GitHub user in the id's namespace.
-- Maintainers: run `node scripts/validate.mjs`, then `node scripts/build-index.mjs`, and commit `index.json`.
+- Maintainers: run `node scripts/validate.mjs`, `node scripts/build-index.mjs`, then `node scripts/sign.mjs`, and commit `index.json` with `index.json.sig`. otterm refuses an index whose signature does not match `registry-key.pub`.
 - Mods with `terminal.write` or `network:*` stay hidden until reviewed (D4). The registry lists free mods only (D9).
 - Report problems through GitHub Issues.

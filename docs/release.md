@@ -23,6 +23,19 @@ pnpm tauri signer generate -w ~/.tauri/otterm-updater.key
 - ローテーション: 新しい鍵を作り、**古い鍵で署名した版** に新しい公開鍵を入れて出す。利用者がその版に更新したあと、新しい鍵での署名に切り替える。古い鍵を失ったときは自動更新が途切れるので、リリースノートと Web ページで手動の入れ直しを案内する
 - 鍵がないビルドは動くが、自動更新はできない（「この版の otterm は自動更新できません」）
 
+### 2.1 レジストリの署名鍵（判断 M23）
+
+mod レジストリの `index.json` には、updater とは別の minisign 鍵で署名する。
+
+```bash
+pnpm tauri signer generate -w ~/.tauri/otterm-registry.key
+```
+
+- 公開鍵（`~/.tauri/otterm-registry.key.pub` の中身）を `registry/registry-key.pub` に置いてコミットする。ビルドに埋め込まれる（2026-10-12 に作成。鍵 ID `2736B83507A3D2B7`。パスワードなしで作ったので、付けたいときは作り直して公開鍵を差し替え、署名し直す）
+- `index.json` を作り直したら `node registry/scripts/sign.mjs` で署名し、`index.json.sig` も一緒にコミットする。鍵の場所は `OTTERM_REGISTRY_KEY`、パスワードは `OTTERM_REGISTRY_KEY_PASSWORD` で変えられる
+- `node registry/scripts/validate.mjs` は署名が `index.json` と合わないとエラーにする
+- 秘密鍵はリポジトリに入れない
+
 ## 3. ビルド（OS ごと）
 
 ```bash
@@ -68,4 +81,4 @@ macOS と Linux はこの開発機ではビルドできない。Mac と Linux �
 | macOS の署名と公証 | Apple Developer Program が年額で有料 | 署名しない。初回は Gatekeeper に止められ、「右クリック → 開く」が要る。homebrew/cask 本体には載らないので自前の tap で配る |
 | 3 OS の自動ビルド | public になったので無料 | `release.yml`（手動実行）か、各 OS の手元で `scripts/release.mjs` |
 | ドキュメントサイトのホスティング | public になったので GitHub Pages は無料 | 置き場所は未定。今はローカルでビルドだけする |
-| sigstore による mod の署名（判断 D2） | 署名は GitHub Actions（public なら無料）で行う設計 | 未実装。それまではインデックスの SHA-256 で配布物を検証する |
+| sigstore による mod の署名（判断 D2） | 署名は GitHub Actions（public なら無料）で行う設計 | 代わりにインデックスへメンテナの minisign 鍵で署名する（判断 M23、§2.1）。配布物はインデックスの SHA-256 で守られる |

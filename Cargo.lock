@@ -3001,10 +3001,12 @@ name = "otterm-app"
 version = "0.0.0"
 dependencies = [
  "arboard",
+ "base64 0.22.1",
  "fontdb",
  "getrandom 0.4.3",
  "interprocess",
  "keyring",
+ "minisign-verify",
  "notify",
  "otterm-config",
  "otterm-modhost",

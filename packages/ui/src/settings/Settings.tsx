@@ -1615,6 +1615,8 @@ interface StoreEntry {
   categories: string[];
   permissions: string[];
   reviewed: boolean;
+  /** The index was signed by the registry key; an unsigned one comes from a registry set in the config. */
+  signed: boolean;
   latest: string | null;
   compatible: boolean;
   installed: string | null;
@@ -1725,6 +1727,7 @@ function StoreSection(props: {
                 <div class="settings-desc mono">
                   {m.id} · {m.author}
                   {m.reviewed ? ` · ${t("store-reviewed")}` : ""}
+                  {m.signed ? "" : ` · ${t("store-unsigned")}`}
                 </div>
                 <Show when={m.permissions.length > 0}>
                   <div class="settings-desc">{t("store-permissions", { list: m.permissions.join(", ") })}</div>

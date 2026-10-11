@@ -64,7 +64,8 @@
   - 済み（テンプレ）: `create-otterm-mod`（対話で kind、extension は TypeScript + esbuild、`pnpm dev` = ビルド監視 + `mods/` へのリンク、theme テンプレ）。Windows の開発機で Git Status Bar をテンプレから作り、ブランチと変更数がステータスバーに出ることを確認した（activate 44 ms。QuickJS の起動を含む。判断 C2 の「50 ms 程度」のとおり）
   - 済み（2026-10-12）: `ctx.ui.pickPath`（`tauri-plugin-dialog` の開く・保存ダイアログ。選んだパスだけ、その mod が読み書きできる）、`ctx.fs.watch`（`notify` で監視し、100 ms ごとにまとめて送る）、`ctx.process.spawn`（出力と終了を Channel で送り、stdin と kill に対応。実行は `permissions.process` の許可リストに従う）。mod が止まる・休止するとき、その mod の監視とプロセスは止める（`mod_release`）。
   - 済み（2026-10-12）: `custom`（iframe）の `otmod:` スキーム（mod 自身のフォルダの画像・フォント・CSS・音声だけを返す。`crates/otterm-app/src/mod_assets.rs`）、ワークスペース内 `.otterm/mods/`（信頼したワークスペースだけ。自動では有効にせず権限一覧で確認し、承認は `state/workspace-mods.json` にマニフェストと本体のハッシュつきで保存。`terminal.write` を持つものは有効にできない）。`ctx.terminal.screen / blocks / selection`、`input-changed` / `before-execute`、mod 設定フォーム、レジストリは M4〜M6 で済み、`otterm mod` の標準出力は `otterm.com` で解決
-  - 残り: 署名検証（レジストリは sha256 とサイズの照合まで）、macOS / Linux での確認
+  - 済み（2026-10-12）: レジストリの署名検証（インデックスに minisign 署名、判断 M23）
+  - 残り: macOS / Linux での確認
 
 ### M4: 同梱 mod と初心者体験（目安 8〜10 週）
 

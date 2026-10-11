@@ -26,6 +26,8 @@ interprocess = "2"
 semver.workspace = true
 regex.workspace = true
 ureq = { version = "3", default-features = false, features = ["rustls", "gzip"] }
+minisign-verify = "0.2"
+base64 = "0.22"
 rusqlite = { version = "0.40", features = ["bundled"] }
 trash = "5"
 # `otterm config export|import` (docs/06 §3).

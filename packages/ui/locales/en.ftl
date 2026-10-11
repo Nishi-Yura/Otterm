@@ -402,6 +402,7 @@ store-refresh = Refresh
 store-error = Could not load the list: { $error }
 store-empty = Nothing found
 store-reviewed = reviewed
+store-unsigned = unsigned registry
 store-permissions = Permissions: { $list }
 store-incompatible = It does not say it runs on this otterm
 store-installed = Installed

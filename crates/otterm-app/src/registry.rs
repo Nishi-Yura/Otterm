@@ -28,6 +28,28 @@ pub struct Index {
     pub schema: u32,
     #[serde(default)]
     pub mods: Vec<Entry>,
+    /// Whether `index.json.sig` checked out against the registry key. Never read from the file
+    /// itself, so an index cannot claim it.
+    #[serde(skip_deserializing)]
+    pub signed: bool,
+}
+
+/// The registry's public key (minisign, base64 as `tauri signer` writes it). The private half
+/// stays with the maintainer; `registry/scripts/sign.mjs` signs `index.json` with it.
+const PUBLIC_KEY: &str = include_str!("../../../registry/registry-key.pub");
+
+/// Check `sig` (base64 of a `.minisig` file, as `tauri signer sign` writes it) over `data`.
+fn verify(data: &[u8], sig: &[u8]) -> Result<(), String> {
+    use base64::Engine;
+    let b64 = base64::engine::general_purpose::STANDARD;
+    let text = |v: &[u8]| -> Result<String, String> {
+        let raw = b64.decode(v.trim_ascii()).map_err(|e| format!("not base64: {e}"))?;
+        String::from_utf8(raw).map_err(|e| e.to_string())
+    };
+    let key = minisign_verify::PublicKey::decode(&text(PUBLIC_KEY.as_bytes())?).map_err(|e| e.to_string())?;
+    let sig = minisign_verify::Signature::decode(&text(sig)?).map_err(|e| e.to_string())?;
+    // Only the prehashed form `tauri signer` writes; the legacy one signs the whole file.
+    key.verify(data, &sig, false).map_err(|e| e.to_string())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,6 +127,16 @@ fn cache_path(data: &Path) -> PathBuf {
     data.join("state").join("registry-index.json")
 }
 
+/// Beside the cached index: the source it came from and whether it was signed, so a cache from
+/// another registry, or from before a signature failed, is not taken for this one.
+fn cache_meta(source: &str, signed: bool) -> String {
+    format!(
+        "{source}
+{signed}
+"
+    )
+}
+
 /// The index from `source` (an https URL, or a local path / `file:` URL for a registry checkout),
 /// cached in the data folder for an hour unless `refresh`.
 pub fn index(data: &Path, source: &str, refresh: bool) -> Result<Index, String> {
@@ -112,21 +144,44 @@ pub fn index(data: &Path, source: &str, refresh: bool) -> Result<Index, String> 
     if !refresh
         && let Ok(meta) = std::fs::metadata(&cache)
         && meta.modified().ok().and_then(|m| m.elapsed().ok()).is_some_and(|age| age < FRESH)
+        && let Ok(meta) = std::fs::read_to_string(cache.with_extension("meta"))
+        && let Some(signed) = [true, false].into_iter().find(|s| meta == cache_meta(source, *s))
         && let Ok(text) = std::fs::read_to_string(&cache)
-        && let Ok(index) = serde_json::from_str::<Index>(&text)
+        && let Ok(mut index) = serde_json::from_str::<Index>(&text)
     {
+        index.signed = signed;
         return Ok(index);
     }
     let bytes = fetch(source, MAX_INDEX, Duration::from_secs(20))?;
-    let index: Index = serde_json::from_slice(&bytes).map_err(|e| format!("the registry index is not valid: {e}"))?;
+    let signed = signature(source, &bytes)?;
+    let mut index: Index =
+        serde_json::from_slice(&bytes).map_err(|e| format!("the registry index is not valid: {e}"))?;
     if index.schema != 1 {
         return Err(format!("the registry index has schema {}; this otterm reads 1", index.schema));
     }
+    index.signed = signed;
     if let Some(dir) = cache.parent() {
         let _ = std::fs::create_dir_all(dir);
         let _ = std::fs::write(&cache, &bytes);
+        let _ = std::fs::write(cache.with_extension("meta"), cache_meta(source, signed));
     }
     Ok(index)
+}
+
+/// Check the index against `<source>.sig` (docs/05 §7.3). The index lists every package's SHA-256,
+/// so a good signature covers the packages as well. The official registry must be signed. Another
+/// registry the user configured may be unsigned (the store then says so), but a signature it does
+/// have must be good.
+fn signature(source: &str, bytes: &[u8]) -> Result<bool, String> {
+    let official = source == DEFAULT_INDEX;
+    match fetch(&format!("{source}.sig"), 4096, Duration::from_secs(20)) {
+        Ok(sig) => {
+            verify(bytes, &sig).map_err(|e| format!("the registry index signature is not valid ({e})"))?;
+            Ok(true)
+        }
+        Err(e) if official => Err(format!("the registry index is not signed: {e}")),
+        Err(_) => Ok(false),
+    }
 }
 
 /// Read `source` whole: https only for the network (never plain http), or a local file.

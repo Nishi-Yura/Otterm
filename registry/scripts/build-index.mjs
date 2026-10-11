@@ -29,7 +29,7 @@ async function main() {
 
   const index = { schema: 1, generated: new Date().toISOString(), mods };
   await writeFile(INDEX_FILE, `${JSON.stringify(index, null, 2)}\n`, "utf8");
-  console.log(`wrote index.json with ${mods.length} mod(s)`);
+  console.log(`wrote index.json with ${mods.length} mod(s); sign it next: node scripts/sign.mjs`);
 }
 
 await main();

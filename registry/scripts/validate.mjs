@@ -4,6 +4,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { verifyFile } from "./minisign.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const REGISTRY_DIR = resolve(here, "..");
@@ -194,6 +195,13 @@ async function main() {
       console.warn(`warning mods/${file}: ${msg}`);
       warningCount++;
     }
+  }
+  // The client refuses an index whose signature does not match (docs/05 §7.3).
+  try {
+    await verifyFile(INDEX_FILE);
+  } catch (err) {
+    console.error(`error   index.json.sig: ${err.message} (maintainers: run node scripts/sign.mjs)`);
+    errorCount++;
   }
   console.log(`${results.length} mod file(s) checked, ${errorCount} error(s), ${warningCount} warning(s)`);
   if (errorCount > 0) process.exitCode = 1;

@@ -402,6 +402,7 @@ store-refresh = 一覧を更新
 store-error = 一覧を読み込めませんでした: { $error }
 store-empty = 見つかりませんでした
 store-reviewed = 審査済み
+store-unsigned = 署名なしのレジストリ
 store-permissions = 権限: { $list }
 store-incompatible = この版の otterm に対応しているとは書かれていません
 store-installed = 入っています
