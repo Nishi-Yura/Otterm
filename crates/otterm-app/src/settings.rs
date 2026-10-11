@@ -23,10 +23,15 @@ const MAX_IMAGE: u64 = 30 << 20;
 pub struct Form {
     /// JSON Schema of [`Config`] (schemars), with `$defs`.
     schema: Value,
-    /// The configuration in effect, defaults filled in.
+    /// What config.toml says, defaults filled in (the workspace file's overrides left out: a
+    /// change here is written to config.toml).
     values: Value,
     /// Dotted paths the file sets itself, for "reset to default".
     set: Vec<String>,
+    /// Dotted leaf paths the workspace file changes, with the value in effect (docs/06 §1).
+    workspace: serde_json::Map<String, Value>,
+    /// The workspace's name, when there is one.
+    workspace_name: Option<String>,
     path: Option<String>,
 }
 
@@ -38,12 +43,37 @@ pub fn config_form(state: State<'_, AppState>) -> CmdResult<Form> {
     if let Ok(doc) = text.parse::<toml_edit::DocumentMut>() {
         collect_paths(doc.as_table(), "", &mut set);
     }
+    let values = serde_json::to_value(state.config.file_config()).map_err(err)?;
+    let effective = serde_json::to_value(state.config.config()).map_err(err)?;
+    let mut workspace = serde_json::Map::new();
+    overridden(&values, &effective, "", &mut workspace);
     Ok(Form {
         schema: serde_json::to_value(schemars::schema_for!(Config)).map_err(err)?,
-        values: serde_json::to_value(state.config.config()).map_err(err)?,
+        values,
         set,
+        workspace,
+        workspace_name: state
+            .config
+            .workspace()
+            .map(|(ws, _)| ws.config.name.clone().unwrap_or_else(|| ws.root.display().to_string())),
         path: path.map(|p| p.display().to_string()),
     })
+}
+
+/// Leaves where `effective` differs from `file`, by dotted path. Arrays count as one value.
+fn overridden(file: &Value, effective: &Value, prefix: &str, out: &mut serde_json::Map<String, Value>) {
+    match (file, effective) {
+        (Value::Object(a), Value::Object(b)) => {
+            for (k, v) in b {
+                let path = if prefix.is_empty() { k.clone() } else { format!("{prefix}.{k}") };
+                overridden(a.get(k).unwrap_or(&Value::Null), v, &path, out);
+            }
+        }
+        (a, b) if a != b => {
+            out.insert(prefix.to_owned(), b.clone());
+        }
+        _ => {}
+    }
 }
 
 fn collect_paths(table: &dyn toml_edit::TableLike, prefix: &str, out: &mut Vec<String>) {

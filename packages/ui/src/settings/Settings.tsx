@@ -22,6 +22,9 @@ interface Form {
   schema: Schema;
   values: Record<string, unknown>;
   set: string[];
+  /** Leaf paths the workspace file changes, with the value in effect. */
+  workspace: Record<string, unknown>;
+  workspaceName: string | null;
   path: string | null;
 }
 
@@ -337,6 +340,8 @@ function FieldView(props: { form: Form; path: string[]; write: Write; nested?: b
             isSet={props.form.set.includes(key())}
             write={props.write}
             schema={props.form.schema}
+            workspace={workspaceValue(props.form, key())}
+            workspaceName={props.form.workspaceName ?? ""}
           />
         }
       >
@@ -351,7 +356,24 @@ function FieldView(props: { form: Form; path: string[]; write: Write; nested?: b
   );
 }
 
-function Row(props: { path: string[]; field: Field; value: unknown; isSet: boolean; write: Write; schema: Schema }) {
+/** What the workspace file makes of a setting, if it changes it (the key or a key inside it). */
+function workspaceValue(form: Form, key: string): string | undefined {
+  const own = form.workspace[key];
+  if (own !== undefined) return typeof own === "string" ? own : JSON.stringify(own);
+  const inner = Object.keys(form.workspace).filter((k) => k.startsWith(`${key}.`));
+  return inner.length > 0 ? inner.map((k) => k.slice(key.length + 1)).join(", ") : undefined;
+}
+
+function Row(props: {
+  path: string[];
+  field: Field;
+  value: unknown;
+  isSet: boolean;
+  write: Write;
+  schema: Schema;
+  workspace?: string;
+  workspaceName?: string;
+}) {
   const id = () => `set-${props.path.join("-")}`;
   const desc = () => help(props.path, props.field);
   return (
@@ -363,6 +385,11 @@ function Row(props: { path: string[]; field: Field; value: unknown; isSet: boole
         </Show>
         <Show when={props.field.restart}>
           <div class="settings-desc">{t("settings-restart")}</div>
+        </Show>
+        <Show when={props.workspace !== undefined}>
+          <div class="settings-desc settings-workspace" data-ot="settings-workspace">
+            {t("settings-workspace-override", { name: props.workspaceName ?? "", value: props.workspace ?? "" })}
+          </div>
         </Show>
       </div>
       <div class="settings-control">

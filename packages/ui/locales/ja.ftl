@@ -899,6 +899,7 @@ settings-reset-all = すべて既定に戻す
 settings-reset-all-hint = config.toml を既定の状態にします。今のファイルは config.toml.bak-reset-… として残ります
 settings-reset-category = このカテゴリを既定に戻す
 settings-reset-confirm = もう一度押すと戻します
+settings-workspace-override = ワークスペース「{ $name }」が { $value } に上書きしています。ここで変えると config.toml に書きます
 
 ## キーバインドの操作名
 

@@ -25,6 +25,8 @@ pub struct ConfigState {
 
 struct Loaded {
     config: Config,
+    /// What config.toml alone says, before the workspace file: the settings screen edits this.
+    file_config: Config,
     themes: Vec<Theme>,
     /// Saved layouts (`<config>/layouts/*.toml`).
     layouts: Vec<Layout>,
@@ -249,6 +251,11 @@ impl ConfigState {
         self.loaded.lock().unwrap().config.clone()
     }
 
+    /// config.toml without the workspace's overrides.
+    pub fn file_config(&self) -> Config {
+        self.loaded.lock().unwrap().file_config.clone()
+    }
+
     pub fn ui(&self) -> UiConfig {
         let l = self.loaded.lock().unwrap();
         let safe = self.safe();
@@ -468,6 +475,7 @@ fn read(path: Option<&PathBuf>, start: Option<&std::path::Path>) -> Loaded {
         Some(p) => otterm_config::load(p),
         None => (Config::default(), Vec::new()),
     };
+    let file_config = config.clone();
     let workspace = start.and_then(|s| workspace(s, &mut config, &mut warnings));
     let dir = path.and_then(|p| p.parent());
     let (mut themes, theme_warnings) = otterm_config::all_themes(dir.map(|d| d.join("themes")).as_deref());
@@ -488,7 +496,7 @@ fn read(path: Option<&PathBuf>, start: Option<&std::path::Path>) -> Loaded {
     warnings.extend(layout_warnings);
     let user_css = dir.and_then(|d| std::fs::read_to_string(d.join("user.css")).ok()).unwrap_or_default();
     let modified = newest_change(path).max(workspace.as_ref().and_then(|(ws, _)| mtime(&ws.file)));
-    Loaded { config, themes, layouts, user_css, warnings, workspace, modified }
+    Loaded { config, file_config, themes, layouts, user_css, warnings, workspace, modified }
 }
 
 /// The workspace above `start`, applied to `config` as far as its trust allows (K4): untrusted,

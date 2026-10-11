@@ -2443,6 +2443,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "otterm-console"
+version = "0.0.0"
+
+[[package]]
 name = "otterm-modhost"
 version = "0.0.0"
 dependencies = [

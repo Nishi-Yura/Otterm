@@ -24,6 +24,12 @@ dev:
 build-ui:
     pnpm --filter @otterm/ui build
 
+# A release build. On Windows also `otterm.com` next to `otterm.exe`: the console program that
+# `otterm config get` and the other subcommands print through (docs/06 §4).
+release: build-mods build-ui
+    cargo build --release -p otterm-app -p otterm-console
+    node -e "if (process.platform === 'win32') require('fs').copyFileSync('target/release/otterm-console.exe', 'target/release/otterm.com')"
+
 # The mods that ship with otterm (mods/*), bundled into the executable by crates/otterm-app/build.rs.
 build-mods:
     pnpm -r --filter "./mods/*" build

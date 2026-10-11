@@ -899,6 +899,7 @@ settings-reset-all = Reset everything
 settings-reset-all-hint = Puts config.toml back to the defaults. The current file stays as config.toml.bak-reset-…
 settings-reset-category = Reset this category
 settings-reset-confirm = Press again to reset
+settings-workspace-override = The workspace “{ $name }” overrides this with { $value }. Changes here go to config.toml
 
 ## Key binding action names
 

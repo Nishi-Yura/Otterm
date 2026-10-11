@@ -1,0 +1,16 @@
+[package]
+name = "otterm-console"
+description = "otterm.com: runs otterm's subcommands with the console attached (Windows)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "otterm-console"
+path = "src/main.rs"
+
+[lints]
+workspace = true

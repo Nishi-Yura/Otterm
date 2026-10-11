@@ -975,13 +975,23 @@ export function App() {
     await openFirstTabs();
     setReady(true);
     // A later `otterm` launch (docs/06 §4): a tab, a workflow, or a question for the AI mod.
+    const reply = (id: number, ok: boolean, message: string) =>
+      invoke("instance_reply", { id, ok, message }).catch(() => {});
     const unlisten = await Promise.all([
       listen<number>("instance-open", (e) => newTab(undefined, undefined, undefined, e.payload)),
-      listen<string>("instance-workflow", (e) => void runKeyCommand("workflow.run", { name: e.payload })),
-      listen<string | null>("instance-ask", (e) => {
-        void host.runCommand("ai.ask", e.payload ? { question: e.payload } : undefined).then((ok) => {
-          if (!ok) showNotice(t("ai-unavailable"));
-        });
+      // The answer says whether the command exists; running it may wait for the user (a
+      // workflow asks for its fields), longer than the command line should.
+      listen<{ id: number; name: string }>("instance-workflow", (e) => {
+        const ok = host.hasCommand(`workflows.run.${e.payload.name}`);
+        void reply(e.payload.id, ok, ok ? "" : `no workflow ${e.payload.name}`);
+        void runKeyCommand("workflow.run", { name: e.payload.name });
+      }),
+      listen<{ id: number; question: string | null }>("instance-ask", (e) => {
+        const q = e.payload.question;
+        const ok = host.hasCommand("ai.ask");
+        void reply(e.payload.id, ok, ok ? "" : "the AI mod (otterm.ai-assist) is not running");
+        if (ok) void host.runCommand("ai.ask", q ? { question: q } : undefined);
+        else showNotice(t("ai-unavailable"));
       }),
     ]);
     onCleanup(() => {
@@ -1319,7 +1329,7 @@ export function App() {
   };
 
   /** A `[[keybindings.custom]]` command: otterm's (`workflow.run`), a mod's, or one of the host's. */
-  const runKeyCommand = async (id: string, args: Record<string, unknown> = {}) => {
+  const runKeyCommand = async (id: string, args: Record<string, unknown> = {}): Promise<boolean> => {
     let command = id;
     let rest: Record<string, unknown> | undefined = args;
     // The workflows mod registers one command per workflow (mods/workflows).
@@ -1327,7 +1337,9 @@ export function App() {
       command = `workflows.run.${String(args.name ?? "")}`;
       rest = undefined;
     }
-    if (!(await host.runCommand(command, rest))) showNotice(t("command-unknown", { id: command }));
+    const ok = await host.runCommand(command, rest);
+    if (!ok) showNotice(t("command-unknown", { id: command }));
+    return ok;
   };
 
   /**

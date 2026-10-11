@@ -62,6 +62,8 @@ struct AppState {
     first: std::sync::Mutex<Option<TabLaunch>>,
     /// Tabs later launches asked for, by the id the UI gets in `instance-open`.
     launches: std::sync::Mutex<std::collections::HashMap<u32, TabLaunch>>,
+    /// Later launches waiting for the UI's answer (`otterm workflow run`, `otterm ask`).
+    replies: std::sync::Mutex<std::collections::HashMap<u32, std::sync::mpsc::Sender<instance::Reply>>>,
     /// Command-line arguments that were not understood.
     unknown_args: Vec<String>,
     /// The shell each session started, to quote dropped paths for it.
@@ -873,7 +875,8 @@ fn expand_home(path: &str) -> std::path::PathBuf {
 }
 
 /// `otterm mod …` runs without a window and exits (docs/06 §4). Release builds on Windows have
-/// no console, so there the output is only visible from a terminal that reads stdout.
+/// no console of their own; `otterm.com` (crates/otterm-console) runs this, copies the output
+/// to its console and passes the exit code on.
 fn cli() -> bool {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let result = match args.first().map(String::as_str) {
@@ -936,6 +939,7 @@ fn app_state(launch: launch::Launch) -> AppState {
             input: None,
         })),
         launches: Default::default(),
+        replies: Default::default(),
         unknown_args: launch.unknown,
         shells: Default::default(),
         history,
@@ -1084,26 +1088,53 @@ fn hand_over(launch: &launch::Launch) -> bool {
 fn on_request(app: &tauri::AppHandle, request: instance::Request) -> instance::Reply {
     use tauri::{Emitter, Manager};
     let state = app.state::<AppState>();
-    let result = match request {
-        instance::Request::Open { cwd, command, profile } => {
-            let id = add_launch(&state, TabLaunch { cwd, command, profile, input: None });
-            app.emit("instance-open", id)
-        }
-        instance::Request::Workflow { name } => app.emit("instance-workflow", name),
-        instance::Request::Ask { question } => {
-            if !state.config.config().ai.enabled {
-                return instance::Reply::error("AI is off: turn on [ai] enabled (the otterm.ai-assist mod)");
-            }
-            app.emit("instance-ask", question)
-        }
-    };
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.unminimize();
         let _ = window.set_focus();
     }
-    match result {
-        Ok(()) => instance::Reply::ok(),
+    match request {
+        instance::Request::Open { cwd, command, profile } => {
+            let id = add_launch(&state, TabLaunch { cwd, command, profile, input: None });
+            match app.emit("instance-open", id) {
+                Ok(()) => instance::Reply::ok(),
+                Err(e) => instance::Reply::error(e.to_string()),
+            }
+        }
+        instance::Request::Workflow { name } => ask_ui(app, "instance-workflow", serde_json::json!({ "name": name })),
+        instance::Request::Ask { question } => {
+            if !state.config.config().ai.enabled {
+                return instance::Reply::error("AI is off: turn on [ai] enabled (the otterm.ai-assist mod)");
+            }
+            ask_ui(app, "instance-ask", serde_json::json!({ "question": question }))
+        }
+    }
+}
+
+/// Hand a request to the UI and wait for its `instance_reply`, so that the command line can say
+/// whether it worked (an unknown workflow ends with an error).
+fn ask_ui(app: &tauri::AppHandle, event: &str, mut payload: serde_json::Value) -> instance::Reply {
+    use tauri::{Emitter, Manager};
+    static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1);
+    let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let (tx, rx) = std::sync::mpsc::channel();
+    let state = app.state::<AppState>();
+    state.replies.lock().unwrap().insert(id, tx);
+    payload["id"] = id.into();
+    let reply = match app.emit(event, payload) {
+        Ok(()) => rx
+            .recv_timeout(std::time::Duration::from_secs(4))
+            .unwrap_or_else(|_| instance::Reply::error("the otterm window did not answer")),
         Err(e) => instance::Reply::error(e.to_string()),
+    };
+    state.replies.lock().unwrap().remove(&id);
+    reply
+}
+
+/// The UI's answer to [`ask_ui`].
+#[tauri::command]
+fn instance_reply(state: State<'_, AppState>, id: u32, ok: bool, message: String) {
+    if let Some(tx) = state.replies.lock().unwrap().remove(&id) {
+        let _ = tx.send(instance::Reply { ok, message });
     }
 }
 
@@ -1152,6 +1183,7 @@ fn main() {
             launch_problems,
             workspace_trust,
             workspace_tabs,
+            instance_reply,
             config_tools::config_reset,
             config_tools::config_export,
             config_tools::config_import,

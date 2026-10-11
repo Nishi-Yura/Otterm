@@ -95,6 +95,10 @@
   max-width: 860px;
 }
 
+.settings-workspace {
+  color: var(--ot-warning-text);
+}
+
 .settings-title-row {
   display: flex;
   align-items: center;

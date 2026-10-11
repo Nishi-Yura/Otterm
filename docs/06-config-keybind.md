@@ -18,6 +18,7 @@
   - 信頼前に効くのは `theme` だけ（OS のライト追従でも上書きが見えるよう `theme_light` にも入れる）。信頼後も `shell`・`profiles`・`open`・`ai`・`mods`・`history`・`keybindings.custom`・`general.check_updates`・`general.update_channel` はワークスペースから変えられない（プログラムの起動や外部送信につながるため）。無視したキーは起動時の通知に出る
   - 信頼の確認は、コマンド・mod・設定の上書きを含むワークスペースだけで出す。Escape は「答えない」で、次回また聞く。`tabs[].command` は信頼後にシェルへ打ち込む
   - 1 つのウィンドウが扱うワークスペースは起動時の 1 つだけ。後から `otterm <別のフォルダ>` で開いたタブには別のワークスペースを適用しない
+  - 設定画面は `config.toml` の値を表示して編集する。ワークスペースが上書きしている項目には「ワークスペース「…」が … に上書きしています」と出す
 
 ## 2. `config.toml` 全体像
 
@@ -192,8 +193,8 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
 ```
 
 - 既に起動している場合はそのインスタンスに新タブとして開く（単一インスタンス、`--new-window` で別窓）
-  - 実装（2026-10-11）: `--new-window` は別プロセスとして起動する。`--config` と `--safe-mode` も設定が違うため引き継がず、別プロセスになる。`otterm workflow run <name>` は起動中のウィンドウでワークフロー mod のコマンド `workflows.run.<name>` を開く。`otterm ask` は AI mod が有効でないとエラーで終わる。どちらも otterm が起動していないとエラーになる
-  - リリースビルドの Windows 版は GUI サブシステムなので、`otterm config get` などの出力はコンソールに出ない場合がある（未対応。`AttachConsole` には `unsafe` が要る）
+  - 実装（2026-10-11）: `--new-window` は別プロセスとして起動する。`--config` と `--safe-mode` も設定が違うため引き継がず、別プロセスになる。`otterm workflow run <name>` は起動中のウィンドウでワークフロー mod のコマンド `workflows.run.<name>` を開き、そのワークフローがなければエラー（終了コード 2）で終わる。`otterm ask` は AI mod が有効でないとエラーで終わる。どちらも otterm が起動していないか、ウィンドウが 4 秒以内に答えないとエラーになる
+  - Windows のリリース版は GUI プログラムなので、コンソールを持たず、cmd や PowerShell も終了を待たない。そこで `otterm.exe` の隣に小さなコンソールプログラム `otterm.com`（`crates/otterm-console`、`just release` が作る）を置く。`PATHEXT` では `.COM` が `.EXE` より先なので、`otterm` と打つとこちらが動く。サブコマンドは `otterm.exe` の出力をパイプで受けてコンソールへ書き、終了コードをそのまま返す（GUI プロセスはコンソールにつながらないため、コンソールのハンドルを渡すだけでは何も出ない）。それ以外はウィンドウを起こしてすぐ戻る。`unsafe` は使わない（判断 M17 の方針どおり）。インストーラ（M6）は両方を同じフォルダに入れる
 - CLI と GUI の通信（判断 K6）: OS ネイティブの IPC（Windows: 名前付きパイプ、macOS / Linux: Unix ドメインソケット）。GUI は起動ごとにランダムなトークンをデータフォルダに書き（所有者のみ読み取り可）、CLI はそれを添えて接続する。同一ユーザー以外は接続できない
 
 ## 5. キーバインド
