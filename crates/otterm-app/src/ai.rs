@@ -173,7 +173,28 @@ pub fn redact(text: &str) -> (String, usize) {
         count += re.find_iter(&out).count();
         out = re.replace_all(&out, *to).into_owned();
     }
-    (out, count)
+    (shorten_home(&out), count)
+}
+
+/// The home folder becomes `~`, so the user name in it is not sent (docs/10 §4.2).
+fn shorten_home(text: &str) -> String {
+    static HOME: OnceLock<Option<Regex>> = OnceLock::new();
+    let home = HOME.get_or_init(|| {
+        let home = std::env::home_dir()?;
+        let home = home.to_string_lossy();
+        let home = home.trim_end_matches(['/', '\\']);
+        if home.len() < 3 {
+            return None;
+        }
+        // Either slash, and on Windows in any case: `C:\Users\me`, `c:/users/me`.
+        let parts: Vec<String> = home.split(['/', '\\']).map(regex::escape).collect();
+        let flags = if cfg!(windows) { "(?i)" } else { "" };
+        Regex::new(&format!(r"{flags}{}\b", parts.join(r"[/\\]"))).ok()
+    });
+    match home {
+        Some(re) => re.replace_all(text, "~").into_owned(),
+        None => text.to_owned(),
+    }
 }
 
 // --- rate limit, preview count, log ---------------------------------------------------------------
