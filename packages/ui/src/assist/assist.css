@@ -141,7 +141,7 @@
   justify-content: center;
   align-items: flex-start;
   padding-top: 10vh;
-  background: rgb(0 0 0 / 0.25);
+  background: var(--ot-scrim);
 }
 
 .palette {
@@ -192,7 +192,7 @@
 .palette-chip.on {
   border-color: transparent;
   background: var(--ot-accent);
-  color: #fff;
+  color: var(--ot-on-color);
 }
 
 .palette-prefix code {

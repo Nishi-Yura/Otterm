@@ -426,6 +426,7 @@ export class WebGLRenderer implements Renderer {
   draw(): void {
     if (this.lost || this.model.rows === 0) return;
     this.resize();
+    this.atlas.beginFrame();
     for (const row of this.model.dirty) this.buildRow(row);
     if (this.atlas.overflowed) {
       // Rows built before the atlas started over point at reused texels.

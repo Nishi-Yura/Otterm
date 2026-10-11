@@ -251,7 +251,7 @@
 .mt-button-primary {
   border-color: transparent;
   background: var(--mt-accent);
-  color: #fff;
+  color: var(--ot-on-color);
 }
 .mt-button-primary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--mt-accent) 85%, var(--ot-bg));
@@ -259,7 +259,7 @@
 .mt-button-danger {
   border-color: transparent;
   background: var(--ot-danger);
-  color: #fff;
+  color: var(--ot-on-color);
 }
 .mt-button-ghost {
   border-color: transparent;
@@ -335,7 +335,7 @@
   background: var(--mt-accent);
 }
 .mt-toggle-input:checked + .mt-switch::after {
-  background: #fff;
+  background: var(--ot-on-color);
   transform: translateX(12px);
 }
 

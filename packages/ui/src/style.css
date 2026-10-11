@@ -27,6 +27,10 @@
   --ot-danger-text: color-mix(in srgb, var(--ot-danger) 72%, var(--ot-fg));
   --ot-radius: 6px;
   --ot-shadow: 0 4px 16px rgb(0 0 0 / 0.4);
+  /* Scrims behind dialogs and palettes, and the text or knob color on a filled accent or danger. */
+  --ot-scrim: rgb(0 0 0 / 0.25);
+  --ot-scrim-strong: rgb(0 0 0 / 0.45);
+  --ot-on-color: #fff;
   --ot-font-ui: system-ui, "Segoe UI", "Noto Sans JP", sans-serif;
   /* Aliases kept for the existing rules and for older overrides. */
   --bg: var(--ot-bg);
