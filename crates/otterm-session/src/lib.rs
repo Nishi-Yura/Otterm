@@ -63,6 +63,8 @@ pub struct TerminalOptions {
     pub cursor_blink: bool,
     /// Applications may turn on the Kitty keyboard protocol (decision I3).
     pub kitty_keyboard: bool,
+    /// On the alternate screen the wheel sends arrow keys (decision I5).
+    pub wheel_arrows: bool,
 }
 
 impl Default for TerminalOptions {
@@ -73,6 +75,7 @@ impl Default for TerminalOptions {
             cursor_shape: CursorShape::Block,
             cursor_blink: true,
             kitty_keyboard: true,
+            wheel_arrows: true,
         }
     }
 }
@@ -375,6 +378,10 @@ impl SessionManager for LocalSessionManager {
         let modes = term.modes();
         if modes.alt_screen {
             drop(term);
+            // Read now, so a config change applies to open panes too.
+            if !self.options.lock().unwrap().wheel_arrows {
+                return Ok(());
+            }
             let key = Key::new(if lines > 0 { "ArrowUp" } else { "ArrowDown" });
             let bytes = otterm_vt::encode_key(&key, &modes).expect("arrow keys have an encoding");
             return session.with_pty(|p| p.write(&bytes.repeat(lines.unsigned_abs().min(100) as usize)));

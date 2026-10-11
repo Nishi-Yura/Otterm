@@ -162,6 +162,7 @@ export function TerminalView(props: TerminalViewProps) {
     applyFont();
     selection.setWordSeparators(c.wordSeparators);
     copyOnSelect = c.copyOnSelect;
+    host.style.padding = `${c.padding}px`;
   };
 
   onMount(async () => {

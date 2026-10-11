@@ -17,7 +17,7 @@ The name is otter + term. Otters pry shells open with their nimble paws; otterm 
 
 ## Status
 
-Milestone M1 (a working terminal) is under way. On Windows it is usable day to day: tabs and splits, scrollback and search, selection and copy, links, Japanese input (IME), config file and themes, mouse reporting, the Kitty keyboard protocol. Rendering is Canvas 2D for now (WebGL not started). macOS and Linux build and pass the automated tests in CI but have not been checked by hand. Progress: [docs/07-roadmap.md](docs/07-roadmap.md). Run `just setup`, then `just dev` to start the app or `just check` (needs Rust stable, Node.js 22+, pnpm and [just](https://github.com/casey/just)).
+Milestone M1 (a working terminal) is under way. On Windows it is usable day to day: tabs and splits, scrollback and search, selection and copy, links (URLs and file paths), dropping files to type their paths, Japanese input (IME), config file and themes, mouse reporting, the Kitty keyboard protocol. Rendering is Canvas 2D for now (WebGL not started). macOS and Linux build and pass the automated tests in CI but have not been checked by hand. Progress: [docs/07-roadmap.md](docs/07-roadmap.md). Run `just setup`, then `just dev` to start the app or `just check` (needs Rust stable, Node.js 22+, pnpm and [just](https://github.com/casey/just)).
 
 The Japanese specification in [`docs/`](docs/) is the source of truth; English translations will follow (overview first, the rest by milestone M3).
 

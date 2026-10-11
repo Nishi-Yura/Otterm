@@ -36,6 +36,8 @@ pub struct UiConfig {
     /// Used instead of `theme` while the OS is in light mode, when `follow_system` is on.
     pub theme_light: Option<Theme>,
     pub follow_system: bool,
+    /// Space around the terminal grid, CSS pixels (`appearance.window.padding`).
+    pub padding: u32,
     pub cursor_style: CursorStyle,
     pub cursor_blink: bool,
     pub copy_on_select: bool,
@@ -130,6 +132,7 @@ impl ConfigState {
             theme,
             theme_light,
             follow_system: c.appearance.follow_system,
+            padding: c.appearance.window.padding.min(64),
             cursor_style: c.terminal.cursor.style,
             cursor_blink: c.terminal.cursor.blink,
             copy_on_select: c.terminal.copy_on_select,
@@ -209,6 +212,7 @@ pub fn terminal_options(c: &Config) -> otterm_session::TerminalOptions {
         },
         cursor_blink: c.terminal.cursor.blink,
         kitty_keyboard: c.terminal.kitty_keyboard,
+        wheel_arrows: c.terminal.wheel_to_arrows_in_alt_screen,
     }
 }
 

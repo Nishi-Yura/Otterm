@@ -604,6 +604,9 @@ fn watch_config(app: &tauri::App) {
     let handle = app.handle().clone();
     let config = app.state::<AppState>().config;
     ConfigState::watch(config, move |ui| {
+        // Options read while a session runs (the wheel on the alternate screen) follow at once.
+        let state = handle.state::<AppState>();
+        state.sessions.set_terminal_options(config::terminal_options(&state.config.config()));
         let _ = handle.emit("config-changed", ui);
     });
 }

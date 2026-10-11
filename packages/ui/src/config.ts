@@ -29,6 +29,8 @@ export interface UiConfig {
   /** The light-mode theme, used while the OS is light and `followSystem` is on. */
   themeLight: UiConfig["theme"] | null;
   followSystem: boolean;
+  /** Space around the terminal grid in CSS pixels. */
+  padding: number;
   cursorStyle: "block" | "underline" | "bar";
   cursorBlink: boolean;
   copyOnSelect: boolean;
