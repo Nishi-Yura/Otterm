@@ -555,11 +555,17 @@ fn expand_home(path: &str) -> std::path::PathBuf {
 fn app_state() -> AppState {
     config::warm_up();
     let launch = launch::parse(std::env::args().skip(1));
+    // Lives as long as the app; the watcher thread holds it.
+    let config: &'static ConfigState = Box::leak(Box::new(ConfigState::load(launch.config)));
+    // Resolve the configured fonts while the WebView starts (decision C4).
+    std::thread::spawn(move || {
+        let font = config.ui().font;
+        text::prepare(&font.families, font.size);
+    });
     AppState {
         sessions: Box::new(LocalSessionManager::new()),
         screen: std::sync::Arc::new(ScreenServer::start().expect("start the screen socket")),
-        // Lives as long as the app; the watcher thread holds it.
-        config: Box::leak(Box::new(ConfigState::load(launch.config))),
+        config,
         first: std::sync::Mutex::new(Some((launch.cwd, launch.command))),
         unknown_args: launch.unknown,
         shells: Default::default(),

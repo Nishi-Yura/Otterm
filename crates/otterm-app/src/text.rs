@@ -70,6 +70,12 @@ fn with_rasterizer<R>(families: &[String], size: f32, f: impl FnOnce(&mut Raster
     Ok(f(rasterizer))
 }
 
+/// Resolve a font list ahead of its first use (reading the font files is the slow part), so the
+/// first window does not wait for it. Errors are left for the real request to report.
+pub fn prepare(families: &[String], size_px: f32) {
+    let _ = with_rasterizer(families, size_px, |_| ());
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MetricsRequest {
