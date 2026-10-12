@@ -1,0 +1,68 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "Resolve-DnsName",
+  "platforms": ["windows"],
+  "shells": ["pwsh", "powershell"],
+  "summary": {
+    "ja": "DNS に問い合わせて、ドメイン名のレコード（IP アドレスなど）を調べます（PowerShell の dig）",
+    "en": "Queries DNS for the records of a name, such as its IP addresses (PowerShell's dig)"
+  },
+  "description": {
+    "ja": "nslookup よりも結果が扱いやすい、Windows 標準の名前解決コマンドです。結果はオブジェクトなので、| Select-Object IPAddress のように絞れます。-Type MX でレコードの種類、-Server で問い合わせ先を指定できます",
+    "en": "The Windows name-lookup cmdlet, with results that are easier to work with than nslookup: they are objects, so you can pipe to Select-Object IPAddress. -Type MX picks the record type and -Server the DNS server"
+  },
+  "options": [
+    {
+      "flags": ["-Name"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "調べるドメイン名か IP アドレス", "en": "Name or IP address to look up" }
+    },
+    {
+      "flags": ["-Type"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "レコードの種類（A、AAAA、MX、TXT、NS、CNAME、PTR）",
+        "en": "Record type (A, AAAA, MX, TXT, NS, CNAME, PTR)"
+      }
+    },
+    {
+      "flags": ["-Server"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "問い合わせ先の DNS サーバー", "en": "DNS server to ask" }
+    },
+    {
+      "flags": ["-DnsOnly"],
+      "summary": {
+        "ja": "hosts ファイルやキャッシュを使わず DNS だけに聞く",
+        "en": "Ask DNS only, skipping the hosts file and cache"
+      }
+    },
+    { "flags": ["-NoHostsFile"], "summary": { "ja": "hosts ファイルを無視", "en": "Ignore the hosts file" } }
+  ],
+  "examples": [
+    {
+      "command": "Resolve-DnsName example.com",
+      "summary": { "ja": "example.com の IP アドレスを調べる", "en": "Look up the IP addresses of example.com" }
+    },
+    {
+      "command": "Resolve-DnsName example.com -Type MX -Server 1.1.1.1",
+      "summary": { "ja": "1.1.1.1 にメールサーバー（MX）を聞く", "en": "Ask 1.1.1.1 for the mail servers (MX)" }
+    },
+    {
+      "command": "Resolve-DnsName example.com | Select-Object Name, IPAddress",
+      "summary": { "ja": "名前と IP アドレスだけを表にする", "en": "Only the name and the IP address, as a table" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "(?<name>\\S+) : DNS name does not exist",
+      "hint": {
+        "ja": "{name} というドメイン名は存在しません。つづりを確認してください",
+        "en": "The name {name} does not exist. Check the spelling"
+      }
+    }
+  ]
+}

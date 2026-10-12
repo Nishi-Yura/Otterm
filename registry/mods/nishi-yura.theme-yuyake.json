@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.theme-yuyake",
+  "name": "夕焼け / Yuyake",
+  "description": "夕焼け空の、紫がかった暗い背景に橙のアクセントのテーマ / A dark sunset theme: dusk purple with warm orange accents",
+  "author": "nishi-yura",
+  "kind": "theme",
+  "categories": ["theme"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-yuyake",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-yuyake-1.0.0.otmod",
+      "sha256": "0200dc0bc5f4a5bae982db399986b722197b2e02ca0d4103f8bf97c96c471972",
+      "size": 1309,
+      "published": "2026-10-12"
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "hyperfine",
+  "summary": {
+    "ja": "コマンドを何回も実行して、かかる時間を統計つきで測ります（time の丁寧な版）",
+    "en": "Runs a command many times and reports its timing with statistics (a thorough time)"
+  },
+  "description": {
+    "ja": "hyperfine 'コマンド' で、ウォームアップのあと複数回実行し、平均・ばらつき・最小・最大を表示します。コマンドを 2 つ以上渡すと比較して「何倍速いか」も出ます。コマンドはクォートで囲みます。-w でウォームアップ回数、-r で実行回数、--export-markdown で表にできます",
+    "en": "hyperfine 'command' runs the command several times after a warm-up and prints mean, spread, min and max. Give two or more commands and it also says how many times faster one is. Quote each command. -w sets warm-up runs, -r the number of runs, --export-markdown writes a table"
+  },
+  "install": {
+    "winget": "winget install sharkdp.hyperfine",
+    "scoop": "scoop install hyperfine",
+    "brew": "brew install hyperfine",
+    "apt": "sudo apt install hyperfine",
+    "dnf": "sudo dnf install hyperfine",
+    "pacman": "sudo pacman -S hyperfine",
+    "cargo": "cargo install hyperfine",
+    "url": "https://github.com/sharkdp/hyperfine"
+  },
+  "options": [
+    {
+      "flags": ["-w", "--warmup"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": {
+        "ja": "計測前に捨てる実行回数（キャッシュを温める）",
+        "en": "Warm-up runs before measuring (fills caches)"
+      }
+    },
+    {
+      "flags": ["-r", "--runs"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "計測する実行回数", "en": "Number of measured runs" }
+    },
+    {
+      "flags": ["-m", "--min-runs"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "最低の実行回数（既定 10）", "en": "Minimum runs (default 10)" }
+    },
+    {
+      "flags": ["-p", "--prepare"],
+      "takesValue": true,
+      "valueType": "command",
+      "summary": {
+        "ja": "毎回の実行前に走らせるコマンド（キャッシュ消去など）",
+        "en": "Command run before each timed run (e.g. clearing a cache)"
+      }
+    },
+    {
+      "flags": ["-N", "--shell=none"],
+      "summary": {
+        "ja": "シェルを通さず直接実行（シェルの起動時間を含めない）",
+        "en": "Run without a shell (excludes shell start-up time)"
+      }
+    },
+    {
+      "flags": ["-i", "--ignore-failure"],
+      "summary": { "ja": "コマンドが失敗しても続ける", "en": "Keep going when the command fails" }
+    },
+    {
+      "flags": ["--export-markdown"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "結果を Markdown の表に書き出す", "en": "Write the results as a Markdown table" }
+    },
+    {
+      "flags": ["--export-json"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "結果を JSON に書き出す", "en": "Write the results as JSON" }
+    }
+  ],
+  "args": [
+    {
+      "name": "command",
+      "type": "command",
+      "variadic": true,
+      "summary": {
+        "ja": "測るコマンド（クォートで囲む。複数なら比較）",
+        "en": "Commands to time (quoted; several are compared)"
+      }
+    }
+  ],
+  "examples": [
+    { "command": "hyperfine 'cargo build'", "summary": { "ja": "ビルドにかかる時間を測る", "en": "Time a build" } },
+    {
+      "command": "hyperfine -w 3 'rg TODO' 'grep -r TODO .'",
+      "summary": {
+        "ja": "3 回温めてから 2 つのコマンドを比べる",
+        "en": "Warm up three times, then compare two commands"
+      }
+    },
+    {
+      "command": "hyperfine -N --export-markdown bench.md 'fd -e rs'",
+      "summary": {
+        "ja": "シェルなしで測り、結果を Markdown に書く",
+        "en": "Time without a shell and write a Markdown table"
+      }
+    }
+  ]
+}

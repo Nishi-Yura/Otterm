@@ -1,0 +1,78 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "tldr",
+  "aliases": ["tlrc", "tealdeer"],
+  "summary": {
+    "ja": "コマンドの使い方を、よく使う例だけで短く表示します（man の要約版）",
+    "en": "Shows a command's most common uses as short examples (a summary of man)"
+  },
+  "description": {
+    "ja": "tldr tar のように打つと、コミュニティが書いた数行の例が出ます。長い man ページを読む前の入口に向いています。例のページはローカルに保存され、tldr --update で更新します。クライアントは複数あり（tlrc、tealdeer、npm 版）、どれも同じページを表示します",
+    "en": "tldr tar prints a handful of community-written examples: a good first stop before the full man page. Pages are cached locally and refreshed with tldr --update. Several clients exist (tlrc, tealdeer, the npm one) and all show the same pages"
+  },
+  "install": {
+    "winget": "winget install tldr-pages.tlrc",
+    "scoop": "scoop install tlrc",
+    "brew": "brew install tlrc",
+    "apt": "sudo apt install tldr",
+    "dnf": "sudo dnf install tldr",
+    "pacman": "sudo pacman -S tlrc",
+    "npm": "npm install -g tldr",
+    "cargo": "cargo install tlrc",
+    "url": "https://tldr.sh/"
+  },
+  "options": [
+    { "flags": ["-u", "--update"], "summary": { "ja": "ページの保存を更新する", "en": "Refresh the cached pages" } },
+    {
+      "flags": ["-l", "--list"],
+      "summary": { "ja": "ページのあるコマンドを一覧", "en": "List every command that has a page" }
+    },
+    {
+      "flags": ["-p", "--platform"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "OS を指定（windows、osx、linux、common）", "en": "Platform (windows, osx, linux, common)" }
+    },
+    {
+      "flags": ["-L", "--language"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "言語を指定（例: ja）", "en": "Language (e.g. ja)" }
+    },
+    {
+      "flags": ["-r", "--render"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "手元の Markdown ファイルをページとして表示", "en": "Render a local Markdown file as a page" }
+    }
+  ],
+  "args": [
+    {
+      "name": "command",
+      "type": "command",
+      "optional": true,
+      "summary": {
+        "ja": "調べるコマンド（サブコマンドは git-commit のようにハイフンで）",
+        "en": "Command to look up (subcommands as git-commit)"
+      }
+    }
+  ],
+  "examples": [
+    { "command": "tldr tar", "summary": { "ja": "tar のよく使う例を見る", "en": "Common examples for tar" } },
+    { "command": "tldr git-rebase", "summary": { "ja": "git rebase の例を見る", "en": "Examples for git rebase" } },
+    {
+      "command": "tldr -L ja curl",
+      "summary": { "ja": "日本語のページがあれば日本語で見る", "en": "Show the Japanese page when there is one" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "[Pp]age not found|[Nn]o page for",
+      "hint": {
+        "ja": "そのコマンドのページがまだありません。tldr --update で最新にするか、man や --help を見てください",
+        "en": "There is no page for that command yet. Try tldr --update, or man and --help"
+      },
+      "fix": "tldr --update"
+    }
+  ]
+}

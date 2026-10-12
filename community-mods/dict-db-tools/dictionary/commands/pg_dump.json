@@ -1,0 +1,101 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "pg_dump",
+  "summary": {
+    "ja": "PostgreSQL のデータベースをバックアップ（SQL やアーカイブに書き出し）します",
+    "en": "Backs up a PostgreSQL database to SQL or an archive file"
+  },
+  "description": {
+    "ja": "pg_dump -U ユーザー データベース > backup.sql で、表の定義とデータを SQL として書き出します。-Fc でカスタム形式にすると圧縮され、pg_restore で表単位の復元ができます。読み取るだけなので、サーバーを止めずに実行できます。接続のオプション（-h、-p、-U）は psql と同じです",
+    "en": "pg_dump -U user database > backup.sql writes the schema and data as SQL. -Fc produces the compressed custom format, which pg_restore can restore table by table. It only reads, so the server keeps running. Connection options (-h, -p, -U) match psql"
+  },
+  "install": {
+    "winget": "winget install PostgreSQL.PostgreSQL",
+    "brew": "brew install libpq",
+    "apt": "sudo apt install postgresql-client",
+    "dnf": "sudo dnf install postgresql",
+    "url": "https://www.postgresql.org/download/"
+  },
+  "options": [
+    {
+      "flags": ["-U", "--username"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続するユーザー名", "en": "User name to connect as" }
+    },
+    {
+      "flags": ["-h", "--host"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続先のホスト", "en": "Server host" }
+    },
+    {
+      "flags": ["-p", "--port"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "ポート（既定 5432）", "en": "Port (default 5432)" }
+    },
+    {
+      "flags": ["-f", "--file"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "出力先のファイル（省略時は標準出力）", "en": "Output file (default: standard output)" }
+    },
+    {
+      "flags": ["-F", "--format"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "形式: p（SQL）、c（カスタム、圧縮）、t（tar）、d（ディレクトリ）",
+        "en": "Format: p (SQL), c (custom, compressed), t (tar), d (directory)"
+      }
+    },
+    {
+      "flags": ["-t", "--table"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "この表だけ書き出す（複数可）", "en": "Only this table (repeatable)" }
+    },
+    { "flags": ["-s", "--schema-only"], "summary": { "ja": "定義だけ、データなし", "en": "Schema only, no data" } },
+    { "flags": ["-a", "--data-only"], "summary": { "ja": "データだけ、定義なし", "en": "Data only, no schema" } },
+    {
+      "flags": ["--no-owner"],
+      "summary": {
+        "ja": "所有者の設定を書き出さない（別環境への復元向け）",
+        "en": "Skip ownership commands (for restoring elsewhere)"
+      }
+    },
+    {
+      "flags": ["-c", "--clean"],
+      "summary": {
+        "ja": "作り直す前に DROP する文を含める（復元先の既存データが消える）",
+        "en": "Include DROP statements before creating (existing data at the restore target is lost)"
+      },
+      "danger": "warn",
+      "dangerMessage": {
+        "ja": "このダンプを復元すると、復元先の同名の表を先に削除します",
+        "en": "Restoring this dump drops the same-named tables at the target first"
+      }
+    }
+  ],
+  "args": [
+    { "name": "database", "type": "string", "summary": { "ja": "書き出すデータベース", "en": "Database to dump" } }
+  ],
+  "examples": [
+    {
+      "command": "pg_dump -U postgres mydb > mydb.sql",
+      "summary": { "ja": "mydb を SQL ファイルに書き出す", "en": "Dump mydb to a SQL file" }
+    },
+    {
+      "command": "pg_dump -U postgres -Fc mydb -f mydb.dump",
+      "summary": {
+        "ja": "圧縮されたカスタム形式で書き出す（pg_restore で戻す）",
+        "en": "Dump in the compressed custom format (restore with pg_restore)"
+      }
+    },
+    {
+      "command": "pg_dump -U postgres -s mydb > schema.sql",
+      "summary": { "ja": "表の定義だけを書き出す", "en": "Dump only the schema" }
+    }
+  ]
+}

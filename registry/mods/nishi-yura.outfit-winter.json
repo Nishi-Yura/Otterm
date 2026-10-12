@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.outfit-winter",
+  "name": "コツメ 冬支度 / Pebble in winter",
+  "description": "ニット帽とミトン。設定 › コツメで着替えます。 / A knit hat and mittens. Change outfits in Settings › Pebble.",
+  "author": "nishi-yura",
+  "kind": "outfit",
+  "categories": ["outfit"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/outfit-winter",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.outfit-winter-1.0.0.otmod",
+      "sha256": "cc07b00691fbfb62547b55d037d455c682822f73289900e0d42cccbf1badc76d",
+      "size": 1653,
+      "published": "2026-10-12"
+    }
+  ]
+}

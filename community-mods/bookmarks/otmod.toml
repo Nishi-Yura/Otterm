@@ -1,0 +1,31 @@
+[mod]
+id = "nishi-yura.bookmarks"
+name = "フォルダのしおり / Folder bookmarks"
+version = "1.0.0"
+description = "よく行くフォルダをサイドパネルに登録し、クリックで cd を入力欄に入れます / Keep your frequently used folders in a side panel; click to put a cd command in the input line."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/bookmarks"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+panel = "nishi-yura.bookmarks.panel"
+label = "フォルダのしおり / Folder bookmarks"
+
+[[adds]]
+command = "nishi-yura.bookmarks.add"
+label = "このフォルダをしおりに追加 / Bookmark this folder"
+
+[[adds]]
+command = "nishi-yura.bookmarks.open"
+label = "フォルダのしおりを開く / Open folder bookmarks"
+
+# No permissions: the folder comes from the session info, the list lives in the mod's storage,
+# and a click only inserts text into the input line (never executes).

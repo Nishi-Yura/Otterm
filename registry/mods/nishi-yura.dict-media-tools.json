@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.dict-media-tools",
+  "name": "メディア変換ツールの辞書 / Media tools dictionary",
+  "description": "ffmpeg、ffprobe、magick（ImageMagick）、7z、pandoc、yt-dlp の主な使い方 / Main usage of ffmpeg, ffprobe, magick (ImageMagick), 7z, pandoc and yt-dlp",
+  "author": "nishi-yura",
+  "kind": "dictionary",
+  "categories": ["input"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-media-tools",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-media-tools-1.0.0.otmod",
+      "sha256": "9f41d59d5e480f9558c6ba247092ae353806fc31dcc2a7400a74f17120dfb19b",
+      "size": 16339,
+      "published": "2026-10-12"
+    }
+  ]
+}

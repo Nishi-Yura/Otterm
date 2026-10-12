@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.command-stats",
+  "name": "コマンド統計 / Command stats",
+  "description": "今日と最近 30 日に打ったコマンドの数と、よく使うコマンドをサイドパネルに表示します。記録はこの PC の中だけ / Counts the commands you run today and over the last 30 days, with your most-used programs, in a side panel. Everything stays on this PC.",
+  "author": "nishi-yura",
+  "kind": "extension",
+  "categories": ["fun", "workflow"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/command-stats",
+  "permissions": ["terminal.read"],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.command-stats-1.0.0.otmod",
+      "sha256": "2b6b1f74e470d7aa3570a2225cb43c0975611b561020da5fc97b9b5dc2760877",
+      "size": 8882,
+      "published": "2026-10-12"
+    }
+  ]
+}

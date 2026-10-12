@@ -1,0 +1,98 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "nc",
+  "aliases": ["netcat", "ncat"],
+  "summary": {
+    "ja": "TCP / UDP で直接つないだり待ち受けたりする、ネットワークの万能ナイフです",
+    "en": "Connects to or listens on TCP / UDP ports: the network Swiss army knife"
+  },
+  "description": {
+    "ja": "nc -zv host 443 で「ポートが開いているか」を確かめるのがいちばんよく使う形です。nc -l 8080 でポートを待ち受けて受信内容を表示したり、パイプでファイルを送ったりもできます。実装がいくつかあり（OpenBSD 版、GNU 版、Nmap の ncat）、オプションが少し違います。Windows には標準で入っていないので Test-NetConnection を使うか、Nmap の ncat を入れます",
+    "en": "nc -zv host 443 is the most common use: check whether a port is open. nc -l 8080 listens on a port and prints what arrives, and pipes can send files through it. Several implementations exist (OpenBSD, GNU, Nmap's ncat) with slightly different options. Windows does not ship it: use Test-NetConnection or install Nmap's ncat"
+  },
+  "install": {
+    "apt": "sudo apt install netcat-openbsd",
+    "dnf": "sudo dnf install nmap-ncat",
+    "pacman": "sudo pacman -S openbsd-netcat",
+    "winget": "winget install Insecure.Nmap",
+    "scoop": "scoop install nmap",
+    "url": "https://nmap.org/ncat/"
+  },
+  "options": [
+    {
+      "flags": ["-z"],
+      "summary": {
+        "ja": "データを送らず、つながるかだけ確かめる（ポートスキャン）",
+        "en": "Send no data; only check whether the port is open"
+      }
+    },
+    { "flags": ["-v"], "summary": { "ja": "つながったかどうかを表示", "en": "Say whether the connection succeeded" } },
+    {
+      "flags": ["-l"],
+      "summary": { "ja": "待ち受けモード（サーバー側になる）", "en": "Listen mode (act as the server)" }
+    },
+    {
+      "flags": ["-p"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "待ち受け（または送信元）のポート", "en": "Local port to listen on (or source port)" }
+    },
+    { "flags": ["-u"], "summary": { "ja": "TCP ではなく UDP を使う", "en": "Use UDP instead of TCP" } },
+    {
+      "flags": ["-w"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "接続を待つ秒数（タイムアウト）", "en": "Connection timeout in seconds" }
+    },
+    {
+      "flags": ["-k"],
+      "summary": {
+        "ja": "1 回切れても待ち受けを続ける（-l と一緒に）",
+        "en": "Keep listening after a client disconnects (with -l)"
+      }
+    }
+  ],
+  "args": [
+    {
+      "name": "host",
+      "type": "string",
+      "optional": true,
+      "summary": { "ja": "接続先のホスト", "en": "Host to connect to" }
+    },
+    {
+      "name": "port",
+      "type": "number",
+      "optional": true,
+      "summary": { "ja": "ポート番号か範囲（例: 80、20-25）", "en": "Port or range (e.g. 80, 20-25)" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "nc -zv example.com 443",
+      "summary": {
+        "ja": "example.com の 443 番ポートが開いているか確かめる",
+        "en": "Check whether port 443 of example.com is open"
+      }
+    },
+    {
+      "command": "nc -l 8080",
+      "summary": {
+        "ja": "ポート 8080 で待ち受け、届いた内容を表示する",
+        "en": "Listen on port 8080 and print what arrives"
+      }
+    },
+    {
+      "command": "nc -zv 192.168.1.10 20-25",
+      "summary": { "ja": "ポート 20〜25 をまとめて確かめる", "en": "Check ports 20 to 25 at once" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "Connection refused",
+      "hint": {
+        "ja": "そのポートでは何も待ち受けていません。ポート番号と、相手側のサービスが起動しているかを確認してください",
+        "en": "Nothing is listening on that port. Check the port number and whether the service is running"
+      }
+    }
+  ]
+}

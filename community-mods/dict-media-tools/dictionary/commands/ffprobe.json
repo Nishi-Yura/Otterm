@@ -1,0 +1,83 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "ffprobe",
+  "summary": {
+    "ja": "動画や音声ファイルの情報（長さ、解像度、コーデック、ビットレート）を表示します",
+    "en": "Shows what is inside a media file: duration, resolution, codecs, bitrate"
+  },
+  "description": {
+    "ja": "ffmpeg と一緒に入っている調査用のコマンドです。ffprobe ファイル で概要、-show_streams で映像・音声の各ストリームの詳細、-show_format でファイル全体の情報が出ます。-v error -hide_banner で余計な出力を消し、-of json で JSON にすると、スクリプトから使いやすくなります",
+    "en": "The inspection tool that ships with ffmpeg. ffprobe file prints a summary, -show_streams the details of each video and audio stream, -show_format the file-level information. -v error -hide_banner silences the noise and -of json gives JSON for scripts"
+  },
+  "install": {
+    "winget": "winget install Gyan.FFmpeg",
+    "scoop": "scoop install ffmpeg",
+    "brew": "brew install ffmpeg",
+    "apt": "sudo apt install ffmpeg",
+    "dnf": "sudo dnf install ffmpeg",
+    "pacman": "sudo pacman -S ffmpeg",
+    "url": "https://ffmpeg.org/download.html"
+  },
+  "options": [
+    {
+      "flags": ["-show_streams"],
+      "summary": {
+        "ja": "各ストリーム（映像・音声・字幕）の詳細",
+        "en": "Details of every stream (video, audio, subtitles)"
+      }
+    },
+    {
+      "flags": ["-show_format"],
+      "summary": {
+        "ja": "ファイル全体の情報（形式、長さ、サイズ、ビットレート）",
+        "en": "File-level information (format, duration, size, bitrate)"
+      }
+    },
+    {
+      "flags": ["-show_entries"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "欲しい項目だけ（例: format=duration）", "en": "Only these fields (e.g. format=duration)" }
+    },
+    {
+      "flags": ["-select_streams"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "ストリームを絞る（v:0 で最初の映像、a で音声）",
+        "en": "Pick streams (v:0 first video, a audio)"
+      }
+    },
+    {
+      "flags": ["-of", "-print_format"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "出力の形式（json、csv、flat、default=noprint_wrappers=1）",
+        "en": "Output format (json, csv, flat, default=noprint_wrappers=1)"
+      }
+    },
+    {
+      "flags": ["-v"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "ログの量（error で静かに）", "en": "Log level (error keeps it quiet)" }
+    },
+    { "flags": ["-hide_banner"], "summary": { "ja": "バージョン情報を出さない", "en": "Hide the version banner" } }
+  ],
+  "args": [{ "name": "file", "type": "file", "summary": { "ja": "調べるファイル", "en": "File to inspect" } }],
+  "examples": [
+    {
+      "command": "ffprobe -hide_banner input.mp4",
+      "summary": { "ja": "ファイルの概要を見る", "en": "Summary of a file" }
+    },
+    {
+      "command": "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 input.mp4",
+      "summary": { "ja": "長さ（秒）だけを表示", "en": "Only the duration in seconds" }
+    },
+    {
+      "command": "ffprobe -v error -select_streams v:0 -show_entries stream=width,height,codec_name -of json input.mp4",
+      "summary": { "ja": "解像度とコーデックを JSON で", "en": "Resolution and codec as JSON" }
+    }
+  ]
+}

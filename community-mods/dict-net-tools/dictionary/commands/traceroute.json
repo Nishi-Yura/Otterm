@@ -1,0 +1,76 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "traceroute",
+  "platforms": ["macos", "linux"],
+  "summary": {
+    "ja": "宛先までパケットが通る経路（経由するルーター）と、各区間の往復時間を表示します",
+    "en": "Shows the route packets take to a host (each router on the way) and the round-trip time per hop"
+  },
+  "description": {
+    "ja": "どこで通信が止まっているかを調べる道具です。1 行が 1 つの経由地（ホップ）で、3 回の往復時間が出ます。* は応答がなかった印で、途中の * だけなら問題ないことが多いです。Windows では tracert を使います。macOS と Linux に入っていますが、Linux の一部では別途インストールが要ります",
+    "en": "Finds where traffic stops. Each line is one hop with three round-trip times; * means no reply, which is often fine for hops in the middle. On Windows use tracert. Ships with macOS; some Linux distributions need a package"
+  },
+  "install": {
+    "apt": "sudo apt install traceroute",
+    "dnf": "sudo dnf install traceroute",
+    "pacman": "sudo pacman -S traceroute"
+  },
+  "options": [
+    {
+      "flags": ["-n"],
+      "summary": {
+        "ja": "ホスト名を引かず IP アドレスのまま表示（速い）",
+        "en": "Do not resolve names; show IP addresses (faster)"
+      }
+    },
+    {
+      "flags": ["-m"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "たどる最大ホップ数（既定 30 か 64）", "en": "Maximum number of hops (default 30 or 64)" }
+    },
+    {
+      "flags": ["-q"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "1 ホップあたりの試行回数（既定 3）", "en": "Probes per hop (default 3)" }
+    },
+    {
+      "flags": ["-w"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "応答を待つ秒数", "en": "Seconds to wait for a reply" }
+    },
+    {
+      "flags": ["-I"],
+      "summary": {
+        "ja": "UDP ではなく ICMP echo を使う（root が要ることがある）",
+        "en": "Use ICMP echo instead of UDP (may need root)"
+      }
+    },
+    {
+      "flags": ["-T"],
+      "summary": {
+        "ja": "TCP SYN を使う（ファイアウォール越しに便利）",
+        "en": "Use TCP SYN probes (useful through firewalls)"
+      }
+    }
+  ],
+  "args": [
+    {
+      "name": "host",
+      "type": "string",
+      "summary": { "ja": "宛先のホスト名か IP アドレス", "en": "Destination host name or IP address" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "traceroute example.com",
+      "summary": { "ja": "example.com までの経路を表示", "en": "Show the route to example.com" }
+    },
+    {
+      "command": "traceroute -n 1.1.1.1",
+      "summary": { "ja": "名前を引かずに速く表示", "en": "Faster, without name lookups" }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.dict-modern-cli",
+  "name": "モダン CLI ツールの辞書 / Modern CLI tools dictionary",
+  "description": "rg、fd、bat、fzf、eza、zoxide、tldr、hyperfine の主な使い方 / Main usage of rg, fd, bat, fzf, eza, zoxide, tldr and hyperfine",
+  "author": "nishi-yura",
+  "kind": "dictionary",
+  "categories": ["input"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-modern-cli",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-modern-cli-1.0.0.otmod",
+      "sha256": "6151d10be04ee3153c29f7a4473248830d326341c38bdebf3ef91f01732487a2",
+      "size": 15545,
+      "published": "2026-10-12"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.theme-yuki"
+name = "雪 / Yuki"
+version = "1.0.0"
+description = "雪景色のような、青みがかった白の明るいテーマ / A light theme in cool snow whites and winter blues"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-yuki"
+kind = "theme"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

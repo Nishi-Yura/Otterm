@@ -15,7 +15,7 @@
 <img alt="SolidJS" src="https://img.shields.io/badge/SolidJS-3b2414?style=flat-square&logo=solid&logoColor=f5ecdc">
 <img alt="WebGL2" src="https://img.shields.io/badge/WebGL2-3b2414?style=flat-square&logo=webgl&logoColor=f5ecdc">
 <img alt="No telemetry" src="https://img.shields.io/badge/telemetry-none-3e8f8a?style=flat-square">
-<img alt="Mods" src="https://img.shields.io/badge/mods-11_in_the_store-3e8f8a?style=flat-square">
+<img alt="Mods" src="https://img.shields.io/badge/mods-24_in_the_store-3e8f8a?style=flat-square">
 
 <h3>A friendly app instead of a black screen.<br>A light, fast tool you can reshape without limit, for people who live in a terminal.</h3>
 
@@ -193,10 +193,12 @@ export async function activate(ctx: ModContext) {
 
 | In the store | |
 | --- | --- |
-| 🎨 Themes | Kawauso Night, Sakura, Matcha |
-| 📊 Status bar | Git status, clock, pomodoro |
-| 📚 Dictionaries | Containers, JavaScript tools, Python tools |
-| 🔔 Other | Cheat sheet, done notifications for long commands |
+| 🎨 Themes | Kawauso Night, Sakura, Matcha, Yuki, Yuyake, Shinkai |
+| 📊 Status bar | Git status, clock, pomodoro, exit code and duration |
+| 🗂️ Panels | Project scripts (package.json / justfile / Makefile), folder bookmarks, command stats, key cheat sheet |
+| 📚 Dictionaries | Containers, JavaScript tools, Python tools, network tools, database clients, modern CLI tools, media tools |
+| 🦦 Pebble | Winter outfit (knit hat and mittens), command of the day |
+| 🔔 Other | Done notifications for long commands |
 
 <br>
 

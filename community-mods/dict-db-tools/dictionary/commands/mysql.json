@@ -1,0 +1,118 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "mysql",
+  "aliases": ["mariadb"],
+  "summary": {
+    "ja": "MySQL / MariaDB に接続して SQL を打つ、対話式のクライアントです",
+    "en": "The interactive client for MySQL / MariaDB: connect and type SQL"
+  },
+  "description": {
+    "ja": "mysql -u ユーザー -p データベース で接続します（-p のあとにスペースを空けるとパスワードを聞かれます）。SHOW TABLES; で表の一覧、DESCRIBE 表名; で列、exit で終了。-e で 1 文だけ実行、< ファイル でスクリプトを流し込めます。MariaDB では mariadb コマンドも同じです",
+    "en": "mysql -u user -p database connects (a space after -p makes it prompt for the password). SHOW TABLES; lists tables, DESCRIBE table; lists columns, exit quits. -e runs one statement; < file feeds a script. On MariaDB the mariadb command works the same"
+  },
+  "install": {
+    "winget": "winget install Oracle.MySQL",
+    "scoop": "scoop install mysql",
+    "brew": "brew install mysql-client",
+    "apt": "sudo apt install mysql-client",
+    "dnf": "sudo dnf install mysql",
+    "pacman": "sudo pacman -S mariadb-clients",
+    "url": "https://dev.mysql.com/downloads/"
+  },
+  "options": [
+    {
+      "flags": ["-u", "--user"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続するユーザー名", "en": "User name to connect as" }
+    },
+    {
+      "flags": ["-p", "--password"],
+      "summary": {
+        "ja": "パスワードを聞く（-pXXX と続けて書くと直接渡すが、履歴に残るので避ける）",
+        "en": "Prompt for the password (-pXXX passes it inline, but it lands in the history; avoid)"
+      }
+    },
+    {
+      "flags": ["-h", "--host"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続先のホスト", "en": "Server host" }
+    },
+    {
+      "flags": ["-P", "--port"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "ポート（既定 3306）", "en": "Port (default 3306)" }
+    },
+    {
+      "flags": ["-D", "--database"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "使うデータベース", "en": "Database to use" }
+    },
+    {
+      "flags": ["-e", "--execute"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "この SQL を 1 回実行して終了", "en": "Run this statement and exit" }
+    },
+    {
+      "flags": ["-B", "--batch"],
+      "summary": { "ja": "タブ区切りで出力（スクリプト向け）", "en": "Tab-separated output (for scripts)" }
+    },
+    {
+      "flags": ["-N", "--skip-column-names"],
+      "summary": { "ja": "列名の行を出さない", "en": "Omit the column-name row" }
+    }
+  ],
+  "args": [
+    {
+      "name": "database",
+      "type": "string",
+      "optional": true,
+      "summary": { "ja": "接続後に使うデータベース", "en": "Database to use after connecting" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "mysql -u root -p",
+      "summary": { "ja": "root でパスワードを聞かれて接続する", "en": "Connect as root, prompting for the password" }
+    },
+    {
+      "command": "mysql -u app -p -h db.example.com appdb",
+      "summary": { "ja": "別のホストの appdb に接続する", "en": "Connect to appdb on another host" }
+    },
+    {
+      "command": "mysql -u app -p appdb -e 'SELECT COUNT(*) FROM users'",
+      "summary": { "ja": "SQL を 1 文だけ実行する", "en": "Run a single statement" }
+    },
+    {
+      "command": "mysql -u app -p appdb < schema.sql",
+      "summary": { "ja": "ファイルの SQL を流し込む", "en": "Feed a SQL file" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "ERROR 1045 .*Access denied for user '(?<user>[^']+)'",
+      "hint": {
+        "ja": "ユーザー {user} で認証に失敗しました。ユーザー名、パスワード、接続元ホストの許可を確認してください",
+        "en": "Authentication failed for user {user}. Check the user name, the password and whether that host is allowed"
+      }
+    },
+    {
+      "pattern": "ERROR 1049 .*Unknown database '(?<db>[^']+)'",
+      "hint": {
+        "ja": "データベース {db} がありません。SHOW DATABASES; で一覧を確かめてください",
+        "en": "Database {db} does not exist. Check with SHOW DATABASES;"
+      }
+    },
+    {
+      "pattern": "ERROR 2002 .*Can't connect to (local )?MySQL server",
+      "hint": {
+        "ja": "MySQL サーバーに接続できません。サーバーが起動しているか、-h と -P が合っているか確認してください",
+        "en": "Could not reach the MySQL server. Check that it is running and that -h and -P are right"
+      }
+    }
+  ]
+}

@@ -15,7 +15,7 @@
 <img alt="SolidJS" src="https://img.shields.io/badge/SolidJS-3b2414?style=flat-square&logo=solid&logoColor=f5ecdc">
 <img alt="WebGL2" src="https://img.shields.io/badge/WebGL2-3b2414?style=flat-square&logo=webgl&logoColor=f5ecdc">
 <img alt="テレメトリなし" src="https://img.shields.io/badge/テレメトリ-なし-3e8f8a?style=flat-square">
-<img alt="mod 対応" src="https://img.shields.io/badge/mod-11_個がストアに-3e8f8a?style=flat-square">
+<img alt="mod 対応" src="https://img.shields.io/badge/mod-24_個がストアに-3e8f8a?style=flat-square">
 
 <h3>黒い画面を、親切なアプリに。<br>毎日使う人には、軽くて速くて、好きなだけ改造できる道具に。</h3>
 
@@ -193,10 +193,12 @@ export async function activate(ctx: ModContext) {
 
 | ストアにある mod | |
 | --- | --- |
-| 🎨 テーマ | カワウソの夜 / さくら / 抹茶 |
-| 📊 ステータスバー | Git ステータス、時計、ポモドーロ |
-| 📚 辞書 | コンテナ、JavaScript ツール、Python ツール |
-| 🔔 そのほか | チートシート、長いコマンドの完了通知 |
+| 🎨 テーマ | カワウソの夜 / さくら / 抹茶 / 雪 / 夕焼け / 深海 |
+| 📊 ステータスバー | Git ステータス、時計、ポモドーロ、終了コードと実行時間 |
+| 🗂️ パネル | プロジェクトのスクリプト（package.json / justfile / Makefile）、フォルダのしおり、コマンド統計、キー早見表 |
+| 📚 辞書 | コンテナ、JavaScript ツール、Python ツール、ネットワーク診断、データベース、モダン CLI、メディア変換 |
+| 🦦 コツメ | 冬支度（ニット帽とミトン）、今日のコマンド |
+| 🔔 そのほか | 長いコマンドの完了通知 |
 
 <br>
 

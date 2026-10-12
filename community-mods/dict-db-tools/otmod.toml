@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.dict-db-tools"
+name = "データベースクライアントの辞書 / Database clients dictionary"
+version = "1.0.0"
+description = "psql、mysql、sqlite3、redis-cli、mongosh、pg_dump、mysqldump の主な使い方と、データを消す操作への注意 / Main usage of psql, mysql, sqlite3, redis-cli, mongosh, pg_dump and mysqldump, with warnings for operations that delete data"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-db-tools"
+kind = "dictionary"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

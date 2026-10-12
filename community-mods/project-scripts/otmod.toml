@@ -1,0 +1,34 @@
+[mod]
+id = "nishi-yura.project-scripts"
+name = "プロジェクトのスクリプト / Project scripts"
+version = "1.0.0"
+description = "今いるフォルダの package.json のスクリプト、justfile のレシピ、Makefile のターゲットをサイドパネルに一覧し、クリックで入力欄に入れます / Lists the package.json scripts, justfile recipes and Makefile targets of the current folder in a side panel; click to put the command in the input line."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/project-scripts"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+panel = "nishi-yura.project-scripts.panel"
+label = "プロジェクトのスクリプト / Project scripts"
+
+[[adds]]
+command = "nishi-yura.project-scripts.open"
+label = "プロジェクトのスクリプトを開く / Open project scripts"
+
+[[adds]]
+command = "nishi-yura.project-scripts.refresh"
+label = "プロジェクトのスクリプトを読み直す / Reload project scripts"
+
+# Reads package.json, justfile, Makefile and the lock files in the terminal's folder only.
+# Nothing is executed: a click inserts the command into the input line, and you press Enter.
+[permissions]
+fs.read = ["${cwd}/**"]
+events = ["cwd-changed", "focus-changed", "block-end"]

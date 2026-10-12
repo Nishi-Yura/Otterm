@@ -1,0 +1,22 @@
+[theme]
+name = "Yuyake"
+appearance = "dark"
+
+[theme.terminal]
+foreground = "#f3e3d3"
+background = "#2a1f2d"
+cursor = "#f08a4b"
+selection = "#4d3448"
+ansi = ["#352838", "#e2645e", "#a3bd6a", "#eab35c", "#7f9fd6", "#c88ab8", "#62b8b5", "#e2cfc0"]
+bright = ["#7c6a7c", "#f07f78", "#b9d184", "#f5c77c", "#9ab6e4", "#dba6cc", "#82cfcb", "#fbf0e4"]
+
+[theme.ui]
+bg = "#2a1f2d"
+bg-elevated = "#372a3a"
+fg = "#f3e3d3"
+fg-muted = "#b7a3a6"
+accent = "#f08a4b"
+border = "#4a3a4c"
+danger = "#f07f78"
+success = "#b9d184"
+warning = "#f5c77c"

@@ -1,0 +1,120 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "redis-cli",
+  "aliases": ["valkey-cli"],
+  "summary": {
+    "ja": "Redis / Valkey に接続してコマンドを打つクライアントです",
+    "en": "The client for Redis / Valkey: connect and type commands"
+  },
+  "description": {
+    "ja": "redis-cli で localhost:6379 に接続して対話モードに入ります。引数にコマンドを続けると 1 回実行して終了します（redis-cli PING → PONG）。KEYS * は本番では重いので SCAN を使います。FLUSHALL と FLUSHDB はデータを全部消すので、打つ前に接続先を確かめてください",
+    "en": "redis-cli connects to localhost:6379 interactively. A command after it runs once and exits (redis-cli PING prints PONG). KEYS * is heavy in production; use SCAN. FLUSHALL and FLUSHDB delete everything, so check which server you are on first"
+  },
+  "install": {
+    "brew": "brew install redis",
+    "apt": "sudo apt install redis-tools",
+    "dnf": "sudo dnf install redis",
+    "pacman": "sudo pacman -S redis",
+    "scoop": "scoop install redis",
+    "url": "https://redis.io/docs/latest/operate/oss_and_stack/install/"
+  },
+  "options": [
+    {
+      "flags": ["-h"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続先のホスト（既定 127.0.0.1）", "en": "Server host (default 127.0.0.1)" }
+    },
+    {
+      "flags": ["-p"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "ポート（既定 6379）", "en": "Port (default 6379)" }
+    },
+    {
+      "flags": ["-a"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "パスワード（履歴に残るので、環境変数 REDISCLI_AUTH のほうが安全）",
+        "en": "Password (lands in the history; the REDISCLI_AUTH variable is safer)"
+      }
+    },
+    {
+      "flags": ["-n"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "データベース番号（既定 0）", "en": "Database number (default 0)" }
+    },
+    {
+      "flags": ["-u"],
+      "takesValue": true,
+      "valueType": "url",
+      "summary": {
+        "ja": "redis://user:pass@host:port/db の形で接続先を指定",
+        "en": "Target as a redis://user:pass@host:port/db URL"
+      }
+    },
+    { "flags": ["--tls"], "summary": { "ja": "TLS で接続", "en": "Connect with TLS" } },
+    {
+      "flags": ["--scan"],
+      "summary": {
+        "ja": "キーを SCAN で安全に一覧（--pattern で絞る）",
+        "en": "List keys safely with SCAN (narrow with --pattern)"
+      }
+    },
+    {
+      "flags": ["--pattern"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "--scan で表示するキーのパターン", "en": "Key pattern for --scan" }
+    },
+    {
+      "flags": ["--stat"],
+      "summary": { "ja": "キー数やメモリの統計を流し続ける", "en": "Keep printing key count and memory statistics" }
+    },
+    { "flags": ["--bigkeys"], "summary": { "ja": "大きなキーを探す", "en": "Find the biggest keys" } }
+  ],
+  "args": [
+    {
+      "name": "command",
+      "type": "string",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "1 回だけ実行する Redis コマンド", "en": "A Redis command to run once" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "redis-cli PING",
+      "summary": {
+        "ja": "サーバーが応答するか確かめる（PONG が返る）",
+        "en": "Check that the server answers (prints PONG)"
+      }
+    },
+    {
+      "command": "redis-cli -h cache.example.com -p 6380 --tls",
+      "summary": { "ja": "別のホストに TLS で接続する", "en": "Connect to another host with TLS" }
+    },
+    {
+      "command": "redis-cli --scan --pattern 'session:*'",
+      "summary": { "ja": "session: で始まるキーを安全に一覧する", "en": "List keys starting with session: safely" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "Could not connect to Redis at (?<addr>\\S+): Connection refused",
+      "hint": {
+        "ja": "{addr} に Redis がいません。サーバーが起動しているか、-h と -p が合っているか確認してください",
+        "en": "No Redis at {addr}. Check that the server is running and that -h and -p are right"
+      }
+    },
+    {
+      "pattern": "NOAUTH Authentication required",
+      "hint": {
+        "ja": "パスワードが要ります。-a か、環境変数 REDISCLI_AUTH で渡してください",
+        "en": "A password is required. Pass it with -a or the REDISCLI_AUTH variable"
+      }
+    }
+  ]
+}

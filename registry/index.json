@@ -1,7 +1,32 @@
 {
   "schema": 1,
-  "generated": "2026-10-11T16:06:44.269Z",
+  "generated": "2026-10-12T07:05:52.728Z",
   "mods": [
+    {
+      "id": "nishi-yura.bookmarks",
+      "name": "フォルダのしおり / Folder bookmarks",
+      "description": "よく行くフォルダをサイドパネルに登録し、クリックで cd を入力欄に入れます / Keep your frequently used folders in a side panel; click to put a cd command in the input line.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["workflow"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/bookmarks",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.bookmarks-1.0.0.otmod",
+          "sha256": "31dc0d9a7071397a7a846cf285645d64c5ef932c5ac9ca0fbd2ea3ff17134569",
+          "size": 7455,
+          "published": "2026-10-12"
+        }
+      ]
+    },
     {
       "id": "nishi-yura.cheatsheet",
       "name": "キー早見表 / Key cheatsheet",
@@ -53,6 +78,56 @@
       ]
     },
     {
+      "id": "nishi-yura.command-stats",
+      "name": "コマンド統計 / Command stats",
+      "description": "今日と最近 30 日に打ったコマンドの数と、よく使うコマンドをサイドパネルに表示します。記録はこの PC の中だけ / Counts the commands you run today and over the last 30 days, with your most-used programs, in a side panel. Everything stays on this PC.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["fun", "workflow"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/command-stats",
+      "permissions": ["terminal.read"],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.command-stats-1.0.0.otmod",
+          "sha256": "2b6b1f74e470d7aa3570a2225cb43c0975611b561020da5fc97b9b5dc2760877",
+          "size": 8882,
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.daily-tip",
+      "name": "今日のコマンド / Command of the day",
+      "description": "1 日 1 回、コツメが辞書からコマンドを 1 つ紹介します。例は入力欄に入るだけで、実行はしません / Once a day, Pebble introduces one command from the dictionary. The example goes into the input line only; nothing runs.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["fun", "input"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/daily-tip",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.daily-tip-1.0.0.otmod",
+          "sha256": "9f2c3e402d54f240132957d25f2601cfb4316779f9bb755f22f535ea66cba07f",
+          "size": 6823,
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
       "id": "nishi-yura.dict-containers",
       "name": "コンテナ周りの辞書 / Container tools dictionary",
       "description": "podman、docker-compose、minikube、kind の主な使い方と、データを消す操作への注意 / Main usage of podman, docker-compose, minikube and kind, with warnings for operations that delete data",
@@ -78,6 +153,31 @@
       ]
     },
     {
+      "id": "nishi-yura.dict-db-tools",
+      "name": "データベースクライアントの辞書 / Database clients dictionary",
+      "description": "psql、mysql、sqlite3、redis-cli、mongosh、pg_dump、mysqldump の主な使い方と、データを消す操作への注意 / Main usage of psql, mysql, sqlite3, redis-cli, mongosh, pg_dump and mysqldump, with warnings for operations that delete data",
+      "author": "nishi-yura",
+      "kind": "dictionary",
+      "categories": ["input"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-db-tools",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-db-tools-1.0.0.otmod",
+          "sha256": "eb8ad458071b920ceff08a259f19f20e99412a4b7256f3ab27c042da589b47c0",
+          "size": 16338,
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
       "id": "nishi-yura.dict-js-tools",
       "name": "JS 開発ツールの辞書 / JS dev tools dictionary",
       "description": "vite、eslint、prettier、jest、vitest、tsx、turbo の主な使い方 / Main usage of vite, eslint, prettier, jest, vitest, tsx and turbo",
@@ -99,6 +199,81 @@
           "sha256": "270ac9d04089f1a3785978e0cbd78ceeedd21c3a0775e381fced66e12f70f664",
           "size": 10901,
           "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.dict-media-tools",
+      "name": "メディア変換ツールの辞書 / Media tools dictionary",
+      "description": "ffmpeg、ffprobe、magick（ImageMagick）、7z、pandoc、yt-dlp の主な使い方 / Main usage of ffmpeg, ffprobe, magick (ImageMagick), 7z, pandoc and yt-dlp",
+      "author": "nishi-yura",
+      "kind": "dictionary",
+      "categories": ["input"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-media-tools",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-media-tools-1.0.0.otmod",
+          "sha256": "9f41d59d5e480f9558c6ba247092ae353806fc31dcc2a7400a74f17120dfb19b",
+          "size": 16339,
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.dict-modern-cli",
+      "name": "モダン CLI ツールの辞書 / Modern CLI tools dictionary",
+      "description": "rg、fd、bat、fzf、eza、zoxide、tldr、hyperfine の主な使い方 / Main usage of rg, fd, bat, fzf, eza, zoxide, tldr and hyperfine",
+      "author": "nishi-yura",
+      "kind": "dictionary",
+      "categories": ["input"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-modern-cli",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-modern-cli-1.0.0.otmod",
+          "sha256": "6151d10be04ee3153c29f7a4473248830d326341c38bdebf3ef91f01732487a2",
+          "size": 15545,
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.dict-net-tools",
+      "name": "ネットワーク診断の辞書 / Network tools dictionary",
+      "description": "dig、nslookup、traceroute / tracert、netstat、ss、ip、nc、Test-NetConnection、Resolve-DnsName の主な使い方 / Main usage of dig, nslookup, traceroute / tracert, netstat, ss, ip, nc, Test-NetConnection and Resolve-DnsName",
+      "author": "nishi-yura",
+      "kind": "dictionary",
+      "categories": ["input"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-net-tools",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-net-tools-1.0.0.otmod",
+          "sha256": "11610050d069919169beb620c8c4dbc0838508dbb285825443957860c18fee32",
+          "size": 16695,
+          "published": "2026-10-12"
         }
       ]
     },
@@ -153,6 +328,31 @@
       ]
     },
     {
+      "id": "nishi-yura.exit-status",
+      "name": "終了コードと実行時間 / Exit code and duration",
+      "description": "直前のコマンドの終了コードと実行時間をステータスバーに表示します / Shows the exit code and duration of the last command in the status bar.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["workflow"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/exit-status",
+      "permissions": ["terminal.read"],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.exit-status-1.0.0.otmod",
+          "sha256": "7f0255b8fc91298489f41892e8317df15f5ce89187a33115ad3b7778223107c7",
+          "size": 5026,
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
       "id": "nishi-yura.git-status-bar",
       "name": "Git ブランチと変更数 / Git branch and changes",
       "description": "ステータスバーに現在の Git ブランチと変更ファイル数を表示します / Shows the Git branch and changed file count in the status bar.",
@@ -178,6 +378,31 @@
       ]
     },
     {
+      "id": "nishi-yura.outfit-winter",
+      "name": "コツメ 冬支度 / Pebble in winter",
+      "description": "ニット帽とミトン。設定 › コツメで着替えます。 / A knit hat and mittens. Change outfits in Settings › Pebble.",
+      "author": "nishi-yura",
+      "kind": "outfit",
+      "categories": ["outfit"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/outfit-winter",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.outfit-winter-1.0.0.otmod",
+          "sha256": "cc07b00691fbfb62547b55d037d455c682822f73289900e0d42cccbf1badc76d",
+          "size": 1653,
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
       "id": "nishi-yura.pomodoro",
       "name": "ポモドーロタイマー / Pomodoro timer",
       "description": "ステータスバーのポモドーロタイマー。作業と休憩の終わりを通知します / Pomodoro timer in the status bar. Notifies you when a work or break period ends.",
@@ -199,6 +424,31 @@
           "sha256": "e18e91d02ddb74b15eb7ebc2c7631b83f15a541413fe3c8d5f838aa8c19a66f6",
           "size": 6228,
           "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.project-scripts",
+      "name": "プロジェクトのスクリプト / Project scripts",
+      "description": "今いるフォルダの package.json のスクリプト、justfile のレシピ、Makefile のターゲットをサイドパネルに一覧し、クリックで入力欄に入れます / Lists the package.json scripts, justfile recipes and Makefile targets of the current folder in a side panel; click to put the command in the input line.",
+      "author": "nishi-yura",
+      "kind": "extension",
+      "categories": ["workflow", "language"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/project-scripts",
+      "permissions": ["fs.read:${cwd}/**"],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.project-scripts-1.0.0.otmod",
+          "sha256": "c7325f8dc2d7af8f0d806c41614414d1b4ed057078ec291996b543b8e8c280c9",
+          "size": 9667,
+          "published": "2026-10-12"
         }
       ]
     },
@@ -274,6 +524,81 @@
           "sha256": "93845f71818d7c3bc1bbef7bfb07c6ae1e5fb480ee43245fd0c928a63f9ab554",
           "size": 1292,
           "published": "2026-10-11"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.theme-shinkai",
+      "name": "深海 / Shinkai",
+      "description": "深い海の底のような、濃紺に青緑のアクセントの暗いテーマ / A dark deep-sea theme: navy depths with teal highlights",
+      "author": "nishi-yura",
+      "kind": "theme",
+      "categories": ["theme"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-shinkai",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-shinkai-1.0.0.otmod",
+          "sha256": "dcdb966a47cac7d91cf2a520cb45e707d2764960a0894e71d079c48e68642b3f",
+          "size": 1328,
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.theme-yuki",
+      "name": "雪 / Yuki",
+      "description": "雪景色のような、青みがかった白の明るいテーマ / A light theme in cool snow whites and winter blues",
+      "author": "nishi-yura",
+      "kind": "theme",
+      "categories": ["theme"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-yuki",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-yuki-1.0.0.otmod",
+          "sha256": "6c7d4db2a3e1dfb510b0e12087e0e6b2a30865cb7e71be7601c1a866fa4d8389",
+          "size": 1306,
+          "published": "2026-10-12"
+        }
+      ]
+    },
+    {
+      "id": "nishi-yura.theme-yuyake",
+      "name": "夕焼け / Yuyake",
+      "description": "夕焼け空の、紫がかった暗い背景に橙のアクセントのテーマ / A dark sunset theme: dusk purple with warm orange accents",
+      "author": "nishi-yura",
+      "kind": "theme",
+      "categories": ["theme"],
+      "license": "MIT",
+      "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-yuyake",
+      "permissions": [],
+      "reviewed": true,
+      "hidden": false,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-yuyake-1.0.0.otmod",
+          "sha256": "0200dc0bc5f4a5bae982db399986b722197b2e02ca0d4103f8bf97c96c471972",
+          "size": 1309,
+          "published": "2026-10-12"
         }
       ]
     }

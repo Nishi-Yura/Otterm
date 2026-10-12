@@ -1,0 +1,138 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "rg",
+  "aliases": ["ripgrep"],
+  "summary": {
+    "ja": "フォルダの中の全ファイルから文字列を高速に検索します（grep -r の速い版）",
+    "en": "Searches every file in a folder for text, very fast (a faster grep -r)"
+  },
+  "description": {
+    "ja": "rg パターン で、今いるフォルダ以下を再帰的に検索し、ファイル名と行番号つきで表示します。.gitignore に書かれたファイルと隠しファイルは最初から除きます。-i で大文字小文字を無視、-n は既定でオン、-t で言語（-t py）、-g で名前のパターン（-g '*.toml'）に絞れます。パターンは正規表現で、固定文字列なら -F",
+    "en": "rg pattern searches the current folder recursively and prints file names and line numbers. Files listed in .gitignore and hidden files are skipped by default. -i ignores case, -t restricts to a language (-t py), -g to a name pattern (-g '*.toml'). The pattern is a regex; use -F for a literal string"
+  },
+  "install": {
+    "winget": "winget install BurntSushi.ripgrep.MSVC",
+    "scoop": "scoop install ripgrep",
+    "choco": "choco install ripgrep",
+    "brew": "brew install ripgrep",
+    "apt": "sudo apt install ripgrep",
+    "dnf": "sudo dnf install ripgrep",
+    "pacman": "sudo pacman -S ripgrep",
+    "cargo": "cargo install ripgrep",
+    "url": "https://github.com/BurntSushi/ripgrep"
+  },
+  "options": [
+    { "flags": ["-i", "--ignore-case"], "summary": { "ja": "大文字小文字を区別しない", "en": "Case-insensitive" } },
+    {
+      "flags": ["-S", "--smart-case"],
+      "summary": {
+        "ja": "小文字だけなら区別せず、大文字を含むなら区別する",
+        "en": "Case-insensitive unless the pattern has capitals"
+      }
+    },
+    {
+      "flags": ["-F", "--fixed-strings"],
+      "summary": {
+        "ja": "正規表現ではなく、そのままの文字列として探す",
+        "en": "Treat the pattern as a literal string, not a regex"
+      }
+    },
+    { "flags": ["-w", "--word-regexp"], "summary": { "ja": "単語として一致するものだけ", "en": "Whole words only" } },
+    {
+      "flags": ["-l", "--files-with-matches"],
+      "summary": { "ja": "一致したファイル名だけを表示", "en": "Only the names of matching files" }
+    },
+    { "flags": ["-c", "--count"], "summary": { "ja": "ファイルごとの一致行数", "en": "Matching line count per file" } },
+    {
+      "flags": ["-t", "--type"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "ファイルの種類で絞る（py、js、rust など。rg --type-list で一覧）",
+        "en": "Restrict to a file type (py, js, rust, ...; rg --type-list)"
+      }
+    },
+    {
+      "flags": ["-g", "--glob"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "名前のパターンで絞る（!で除外）", "en": "Include or (with !) exclude by name pattern" }
+    },
+    {
+      "flags": ["-C", "--context"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "前後 N 行も表示", "en": "Show N lines of context" }
+    },
+    { "flags": ["--hidden"], "summary": { "ja": "隠しファイルも検索", "en": "Also search hidden files" } },
+    {
+      "flags": ["--no-ignore"],
+      "summary": { "ja": ".gitignore を無視してすべて検索", "en": "Ignore .gitignore and search everything" }
+    },
+    {
+      "flags": ["-e", "--regexp"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": {
+        "ja": "パターンを複数指定（- で始まるパターンにも）",
+        "en": "Give a pattern explicitly (repeatable; for patterns starting with -)"
+      }
+    },
+    {
+      "flags": ["-r", "--replace"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "表示上で置き換えた結果を見せる（ファイルは変えない）",
+        "en": "Show matches replaced with this text (files are not changed)"
+      }
+    }
+  ],
+  "args": [
+    {
+      "name": "pattern",
+      "type": "pattern",
+      "summary": { "ja": "探す文字列か正規表現", "en": "Text or regex to search for" }
+    },
+    {
+      "name": "path",
+      "type": "path",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "探す場所（省略時は今のフォルダ）", "en": "Where to search (default: the current folder)" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "rg TODO",
+      "summary": { "ja": "今のフォルダ以下から TODO を探す", "en": "Find TODO under the current folder" }
+    },
+    {
+      "command": "rg -i 'error' -t py",
+      "summary": {
+        "ja": "Python ファイルだけから、大文字小文字を無視して探す",
+        "en": "Only Python files, ignoring case"
+      }
+    },
+    {
+      "command": "rg -l 'fn main' src/",
+      "summary": { "ja": "一致するファイル名だけを並べる", "en": "List only the matching file names" }
+    },
+    {
+      "command": "rg -F 'a.b(c)' -g '!node_modules'",
+      "summary": {
+        "ja": "記号をそのままの文字として探し、node_modules を除く",
+        "en": "Search a literal string and skip node_modules"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "regex parse error",
+      "hint": {
+        "ja": "正規表現として読めません。記号をそのまま探すなら -F を付けてください",
+        "en": "The pattern is not a valid regex. Add -F to search for the literal text"
+      }
+    }
+  ]
+}

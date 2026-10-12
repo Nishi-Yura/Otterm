@@ -1,0 +1,56 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "ss",
+  "platforms": ["linux"],
+  "summary": {
+    "ja": "開いているポートと接続中の通信を一覧します（Linux の新しい netstat）",
+    "en": "Lists open ports and connections (the modern netstat on Linux)"
+  },
+  "description": {
+    "ja": "netstat の後継で、Linux に標準で入っています（iproute2）。ss -tulnp で、待ち受け中の TCP / UDP ポートと、それを使っているプログラムが分かります（プログラム名には root が要ることがあります）。オプションの文字は netstat とほぼ同じです",
+    "en": "The successor of netstat, shipped with Linux (iproute2). ss -tulnp shows listening TCP / UDP ports and the programs using them (program names may need root). The option letters match netstat"
+  },
+  "options": [
+    { "flags": ["-t"], "summary": { "ja": "TCP だけ表示", "en": "TCP only" } },
+    { "flags": ["-u"], "summary": { "ja": "UDP だけ表示", "en": "UDP only" } },
+    { "flags": ["-l"], "summary": { "ja": "待ち受け中だけ表示", "en": "Listening sockets only" } },
+    { "flags": ["-n"], "summary": { "ja": "名前を引かず数字で表示", "en": "Numeric addresses and ports" } },
+    {
+      "flags": ["-p"],
+      "summary": { "ja": "使っているプログラムと PID を表示", "en": "Show the process using each socket" }
+    },
+    {
+      "flags": ["-a"],
+      "summary": { "ja": "待ち受け以外も含めてすべて表示", "en": "All sockets, not only listening ones" }
+    },
+    { "flags": ["-s"], "summary": { "ja": "種類ごとの数を要約", "en": "Summary counts per type" } }
+  ],
+  "args": [
+    {
+      "name": "filter",
+      "type": "string",
+      "optional": true,
+      "summary": {
+        "ja": "絞り込み（例: sport = :22、dst 10.0.0.0/8）",
+        "en": "Filter (e.g. sport = :22, dst 10.0.0.0/8)"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "command": "ss -tulnp",
+      "summary": {
+        "ja": "待ち受け中の TCP / UDP ポートとプログラムを一覧",
+        "en": "Listening TCP / UDP ports with their programs"
+      }
+    },
+    {
+      "command": "ss -tn state established",
+      "summary": { "ja": "接続中の TCP だけを表示", "en": "Only established TCP connections" }
+    },
+    {
+      "command": "ss -tlnp 'sport = :8080'",
+      "summary": { "ja": "ポート 8080 で待ち受けているプログラムを探す", "en": "Find what listens on port 8080" }
+    }
+  ]
+}

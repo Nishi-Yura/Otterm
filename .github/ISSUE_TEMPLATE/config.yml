@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability / 脆弱性の報告
+    url: https://github.com/Nishi-Yura/Otterm/security/advisories/new
+    about: Report privately; do not open a public issue. / 非公開で報告してください。
+  - name: Publish a mod / mod をレジストリに載せる
+    url: https://github.com/Nishi-Yura/Otterm/blob/main/registry/README.md
+    about: How to submit a mod to the store (a pull request adding registry/mods/<id>.json). / ストアへの登録手順。
+  - name: Report a mod in the store / ストアの mod を報告する
+    url: https://github.com/Nishi-Yura/Otterm/issues/new?labels=mod-report&title=%5Bmod%5D+
+    about: A mod that misbehaves, asks for more than it needs, or breaks the rules. / 問題のある mod の報告。

@@ -1,0 +1,112 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "mongosh",
+  "summary": {
+    "ja": "MongoDB に接続して JavaScript 風のコマンドを打つシェルです",
+    "en": "The MongoDB shell: connect and type JavaScript-style commands"
+  },
+  "description": {
+    "ja": "mongosh で localhost:27017 に接続します。接続先は mongodb://host:port/db や mongodb+srv:// の URL で指定します。show dbs でデータベース、use 名前 で切り替え、show collections でコレクション、db.users.find() でドキュメントを見ます。exit で終了。db.dropDatabase() はデータベースごと消すので注意",
+    "en": "mongosh connects to localhost:27017; a mongodb://host:port/db or mongodb+srv:// URL picks another target. show dbs lists databases, use name switches, show collections lists collections, db.users.find() shows documents, exit quits. db.dropDatabase() deletes the whole database"
+  },
+  "install": {
+    "winget": "winget install MongoDB.Shell",
+    "scoop": "scoop install mongosh",
+    "brew": "brew install mongosh",
+    "npm": "npm install -g mongosh",
+    "url": "https://www.mongodb.com/docs/mongodb-shell/install/"
+  },
+  "options": [
+    {
+      "flags": ["--host"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続先のホスト", "en": "Server host" }
+    },
+    {
+      "flags": ["--port"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "ポート（既定 27017）", "en": "Port (default 27017)" }
+    },
+    {
+      "flags": ["-u", "--username"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "ユーザー名", "en": "User name" }
+    },
+    {
+      "flags": ["-p", "--password"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "パスワード（省略すると聞かれる。履歴に残さないため省略がよい）",
+        "en": "Password (prompted when omitted; omit it to keep it out of the history)"
+      }
+    },
+    {
+      "flags": ["--authenticationDatabase"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "ユーザーが登録されているデータベース（多くは admin）",
+        "en": "Database where the user is defined (often admin)"
+      }
+    },
+    {
+      "flags": ["--eval"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "このコードを実行して終了", "en": "Run this code and exit" }
+    },
+    {
+      "flags": ["-f", "--file"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "ファイルのスクリプトを実行", "en": "Run a script file" }
+    },
+    { "flags": ["--quiet"], "summary": { "ja": "起動メッセージを出さない", "en": "No startup messages" } },
+    { "flags": ["--tls"], "summary": { "ja": "TLS で接続", "en": "Connect with TLS" } }
+  ],
+  "args": [
+    {
+      "name": "connection",
+      "type": "url",
+      "optional": true,
+      "summary": {
+        "ja": "接続先（mongodb://host:port/db、または mongodb+srv://...）",
+        "en": "Target (mongodb://host:port/db or mongodb+srv://...)"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "command": "mongosh",
+      "summary": { "ja": "ローカルの MongoDB に接続する", "en": "Connect to the local MongoDB" }
+    },
+    {
+      "command": "mongosh 'mongodb://localhost:27017/app'",
+      "summary": { "ja": "app データベースを開いて接続する", "en": "Connect with the app database selected" }
+    },
+    {
+      "command": "mongosh --quiet --eval 'db.users.countDocuments()' app",
+      "summary": { "ja": "件数を数えて終了する", "en": "Count documents and exit" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "MongoServerSelectionError: connect ECONNREFUSED (?<addr>\\S+)",
+      "hint": {
+        "ja": "{addr} に MongoDB がいません。サーバーが起動しているか、ホストとポートが合っているか確認してください",
+        "en": "No MongoDB at {addr}. Check that the server is running and that the host and port are right"
+      }
+    },
+    {
+      "pattern": "MongoServerError: Authentication failed",
+      "hint": {
+        "ja": "認証に失敗しました。ユーザー名、パスワード、--authenticationDatabase を確認してください",
+        "en": "Authentication failed. Check the user name, the password and --authenticationDatabase"
+      }
+    }
+  ]
+}

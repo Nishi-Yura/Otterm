@@ -1,0 +1,30 @@
+[mod]
+id = "nishi-yura.exit-status"
+name = "終了コードと実行時間 / Exit code and duration"
+version = "1.0.0"
+description = "直前のコマンドの終了コードと実行時間をステータスバーに表示します / Shows the exit code and duration of the last command in the status bar."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/exit-status"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+slot = "statusbar.left"
+label = "直前のコマンドの結果 / Result of the last command"
+
+# block-end gives the finished block (command line, duration, exit code). Output is never read.
+# focus-changed keeps the item in step with the focused terminal.
+[permissions]
+terminal.read = true
+events = ["block-end", "focus-changed"]
+
+[settings.schema]
+show_success = { type = "boolean", default = true, label = "成功したときも表示する / Also show successful commands" }
+show_duration = { type = "boolean", default = true, label = "実行時間を表示する / Show the duration" }

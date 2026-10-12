@@ -1,0 +1,37 @@
+[mod]
+id = "nishi-yura.command-stats"
+name = "コマンド統計 / Command stats"
+version = "1.0.0"
+description = "今日と最近 30 日に打ったコマンドの数と、よく使うコマンドをサイドパネルに表示します。記録はこの PC の中だけ / Counts the commands you run today and over the last 30 days, with your most-used programs, in a side panel. Everything stays on this PC."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/command-stats"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+panel = "nishi-yura.command-stats.panel"
+label = "コマンド統計 / Command stats"
+
+[[adds]]
+command = "nishi-yura.command-stats.open"
+label = "コマンド統計を開く / Open command stats"
+
+[[adds]]
+command = "nishi-yura.command-stats.reset"
+label = "コマンド統計を消す / Clear command stats"
+
+# block-end gives the finished block. Only the first word (the program name) is kept, never the
+# arguments or the output. Counts live in the mod's own storage on this PC.
+[permissions]
+terminal.read = true
+events = ["block-end"]
+
+[settings.schema]
+top_count = { type = "integer", default = 10, min = 3, max = 30, label = "よく使うコマンドの表示数 / How many top commands to list" }

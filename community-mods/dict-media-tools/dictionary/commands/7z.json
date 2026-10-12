@@ -1,0 +1,161 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "7z",
+  "aliases": ["7za", "7zz", "7zr"],
+  "summary": {
+    "ja": "7z、zip、tar、rar など多くの形式の書庫を作成・展開します（7-Zip）",
+    "en": "Creates and extracts archives in many formats: 7z, zip, tar, rar and more (7-Zip)"
+  },
+  "description": {
+    "ja": "7z a 書庫 ファイル... で作成、7z x 書庫 でフォルダ構造を保って展開、7z l 書庫 で中身の一覧です。形式は書庫の拡張子で決まります（.7z、.zip、.tar）。-p でパスワード、-o出力先（スペースなし）で展開先を指定。Linux では p7zip の 7z か、公式の 7zz です",
+    "en": "7z a archive files... creates, 7z x archive extracts with folders, 7z l archive lists. The format follows the archive extension (.7z, .zip, .tar). -p sets a password, -ofolder (no space) picks the output folder. On Linux the command is 7z from p7zip or the official 7zz"
+  },
+  "install": {
+    "winget": "winget install 7zip.7zip",
+    "scoop": "scoop install 7zip",
+    "choco": "choco install 7zip",
+    "brew": "brew install sevenzip",
+    "apt": "sudo apt install 7zip",
+    "dnf": "sudo dnf install p7zip p7zip-plugins",
+    "pacman": "sudo pacman -S 7zip",
+    "url": "https://www.7-zip.org/download.html"
+  },
+  "options": [
+    {
+      "flags": ["-o"],
+      "takesValue": true,
+      "valueType": "dir",
+      "summary": {
+        "ja": "展開先のフォルダ（-o の直後にスペースなしで書く: -oout）",
+        "en": "Output folder (no space after -o: -oout)"
+      }
+    },
+    {
+      "flags": ["-p"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "パスワード（-p だけなら聞かれる。コマンドに書くと履歴に残る）",
+        "en": "Password (-p alone prompts; writing it lands in the history)"
+      }
+    },
+    { "flags": ["-r"], "summary": { "ja": "サブフォルダも含める", "en": "Recurse into subfolders" } },
+    {
+      "flags": ["-t"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "形式を明示（-tzip、-t7z、-ttar）", "en": "Force a format (-tzip, -t7z, -ttar)" }
+    },
+    {
+      "flags": ["-mx"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "圧縮の強さ（-mx0 無圧縮〜-mx9 最高）", "en": "Compression level (-mx0 store to -mx9 ultra)" }
+    },
+    {
+      "flags": ["-y"],
+      "summary": { "ja": "質問にすべて Yes（上書きも）", "en": "Answer yes to everything, including overwrites" },
+      "danger": "warn",
+      "dangerMessage": {
+        "ja": "展開先にある同名のファイルを確認なしで上書きします",
+        "en": "Overwrites existing files in the output folder without asking"
+      }
+    },
+    {
+      "flags": ["-x"],
+      "takesValue": true,
+      "valueType": "pattern",
+      "summary": { "ja": "除外するパターン（-x!*.log）", "en": "Exclude pattern (-x!*.log)" }
+    },
+    {
+      "flags": ["-mhe"],
+      "summary": {
+        "ja": "ファイル名も暗号化する（7z 形式、-p と一緒に）",
+        "en": "Also encrypt file names (7z format, with -p)"
+      }
+    }
+  ],
+  "subcommands": [
+    {
+      "name": "a",
+      "summary": { "ja": "書庫を作る（既にあれば追加する）", "en": "Add to an archive (creating it if needed)" },
+      "args": [
+        { "name": "archive", "type": "file", "summary": { "ja": "作る書庫", "en": "Archive to create" } },
+        {
+          "name": "files",
+          "type": "path",
+          "variadic": true,
+          "summary": { "ja": "入れるファイルやフォルダ", "en": "Files and folders to add" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "7z a backup.7z docs/",
+          "summary": { "ja": "docs フォルダを 7z にまとめる", "en": "Pack the docs folder into a 7z archive" }
+        },
+        {
+          "command": "7z a -tzip -p site.zip site/",
+          "summary": { "ja": "パスワードつきの zip を作る", "en": "Make a password-protected zip" }
+        }
+      ]
+    },
+    {
+      "name": "x",
+      "summary": { "ja": "フォルダ構造を保って展開する", "en": "Extract with full paths" },
+      "args": [{ "name": "archive", "type": "file", "summary": { "ja": "展開する書庫", "en": "Archive to extract" } }],
+      "examples": [
+        {
+          "command": "7z x archive.zip -oout",
+          "summary": { "ja": "out フォルダに展開する", "en": "Extract into the out folder" }
+        }
+      ]
+    },
+    {
+      "name": "e",
+      "summary": {
+        "ja": "フォルダ構造を無視して、全部を 1 つのフォルダに展開する",
+        "en": "Extract everything into one folder, ignoring paths"
+      }
+    },
+    {
+      "name": "l",
+      "summary": { "ja": "中身を一覧する（展開しない）", "en": "List the contents without extracting" },
+      "args": [{ "name": "archive", "type": "file", "summary": { "ja": "書庫", "en": "Archive" } }]
+    },
+    {
+      "name": "t",
+      "summary": { "ja": "書庫が壊れていないか検査する", "en": "Test the archive for errors" }
+    },
+    {
+      "name": "d",
+      "summary": { "ja": "書庫からファイルを削除する", "en": "Delete files from an archive" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "7z l archive.7z",
+      "summary": { "ja": "展開する前に中身を見る", "en": "Look inside before extracting" }
+    },
+    { "command": "7z x archive.7z -oout", "summary": { "ja": "out フォルダに展開する", "en": "Extract into out" } },
+    {
+      "command": "7z a -mx9 logs.7z *.log",
+      "summary": { "ja": "ログを最高圧縮でまとめる", "en": "Pack logs with maximum compression" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "Wrong password\\?",
+      "hint": {
+        "ja": "パスワードが違います。-p のあとに正しいパスワードを付けるか、-p だけにして聞かれたときに入力してください",
+        "en": "Wrong password. Pass the right one after -p, or use -p alone to be prompted"
+      }
+    },
+    {
+      "pattern": "Can not open the file as archive",
+      "hint": {
+        "ja": "書庫として読めません。ダウンロードが途中で止まっていないか、形式を -t で明示する必要がないか確認してください",
+        "en": "The file could not be read as an archive. Check that the download completed, or force the format with -t"
+      }
+    }
+  ]
+}

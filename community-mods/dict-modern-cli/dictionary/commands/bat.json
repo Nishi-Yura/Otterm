@@ -1,0 +1,83 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "bat",
+  "aliases": ["batcat"],
+  "summary": {
+    "ja": "ファイルの中身を、色つき・行番号つきで表示します（cat の見やすい版）",
+    "en": "Shows a file with syntax colors and line numbers (a nicer cat)"
+  },
+  "description": {
+    "ja": "bat ファイル で、言語に合わせて色を付け、行番号と Git の変更マークを付けて表示します。長いときは自動でページャ（less）になります。パイプで使うときは色などが自動で消えるので、cat の代わりにそのまま使えます。-p で素の表示、-A で見えない文字を表示。Debian / Ubuntu ではコマンド名が batcat です",
+    "en": "bat file prints the file with syntax highlighting, line numbers and Git change marks, paging through less when it is long. In a pipe the decorations are dropped automatically, so it can replace cat. -p shows plain text, -A reveals invisible characters. On Debian / Ubuntu the command is called batcat"
+  },
+  "install": {
+    "winget": "winget install sharkdp.bat",
+    "scoop": "scoop install bat",
+    "choco": "choco install bat",
+    "brew": "brew install bat",
+    "apt": "sudo apt install bat",
+    "dnf": "sudo dnf install bat",
+    "pacman": "sudo pacman -S bat",
+    "cargo": "cargo install bat",
+    "url": "https://github.com/sharkdp/bat"
+  },
+  "options": [
+    {
+      "flags": ["-p", "--plain"],
+      "summary": { "ja": "行番号や枠を出さず、色だけ", "en": "No line numbers or frame, only colors" }
+    },
+    { "flags": ["-n", "--number"], "summary": { "ja": "行番号だけ付ける", "en": "Only line numbers" } },
+    {
+      "flags": ["-A", "--show-all"],
+      "summary": {
+        "ja": "タブや改行などの見えない文字を表示",
+        "en": "Show tabs, line endings and other invisible characters"
+      }
+    },
+    {
+      "flags": ["-l", "--language"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "色付けの言語を指定（例: -l json）", "en": "Language for highlighting (e.g. -l json)" }
+    },
+    {
+      "flags": ["-r", "--line-range"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "表示する行の範囲（例: 10:20）", "en": "Line range to show (e.g. 10:20)" }
+    },
+    {
+      "flags": ["--paging"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "ページャを使うか（always / never / auto）", "en": "Whether to page (always / never / auto)" }
+    },
+    {
+      "flags": ["--theme"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "配色テーマ（bat --list-themes で一覧）", "en": "Color theme (bat --list-themes)" }
+    },
+    {
+      "flags": ["-d", "--diff"],
+      "summary": { "ja": "Git で変わった行の周りだけ表示", "en": "Only lines changed in Git, with context" }
+    }
+  ],
+  "args": [
+    {
+      "name": "file",
+      "type": "file",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "表示するファイル（省略時は標準入力）", "en": "Files to show (default: standard input)" }
+    }
+  ],
+  "examples": [
+    { "command": "bat src/main.rs", "summary": { "ja": "ファイルを色つきで表示", "en": "Show a file with colors" } },
+    { "command": "bat -r 40:60 config.toml", "summary": { "ja": "40〜60 行目だけ表示", "en": "Show lines 40 to 60" } },
+    {
+      "command": "curl -s https://api.github.com/zen | bat -l txt",
+      "summary": { "ja": "パイプの出力を表示", "en": "Show piped output" }
+    }
+  ]
+}

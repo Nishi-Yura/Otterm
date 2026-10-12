@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.dict-modern-cli"
+name = "モダン CLI ツールの辞書 / Modern CLI tools dictionary"
+version = "1.0.0"
+description = "rg、fd、bat、fzf、eza、zoxide、tldr、hyperfine の主な使い方 / Main usage of rg, fd, bat, fzf, eza, zoxide, tldr and hyperfine"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-modern-cli"
+kind = "dictionary"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

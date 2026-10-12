@@ -1,0 +1,22 @@
+[theme]
+name = "Yuki"
+appearance = "light"
+
+[theme.terminal]
+foreground = "#2b3440"
+background = "#f7f9fc"
+cursor = "#3b7dd8"
+selection = "#d6e4f7"
+ansi = ["#2b3440", "#c23d4f", "#3f8a4e", "#9a6d10", "#2f6fc6", "#8a4fb0", "#1f8a96", "#dde4ec"]
+bright = ["#6b7684", "#d9607a", "#5fa56e", "#b88a2a", "#5b8fdc", "#a56fcc", "#3faab6", "#f7f9fc"]
+
+[theme.ui]
+bg = "#f7f9fc"
+bg-elevated = "#eef2f8"
+fg = "#2b3440"
+fg-muted = "#687381"
+accent = "#2f6fc6"
+border = "#d7dee8"
+danger = "#b4323f"
+success = "#2f7a3f"
+warning = "#8a5f0a"

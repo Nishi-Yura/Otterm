@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.dict-net-tools"
+name = "ネットワーク診断の辞書 / Network tools dictionary"
+version = "1.0.0"
+description = "dig、nslookup、traceroute / tracert、netstat、ss、ip、nc、Test-NetConnection、Resolve-DnsName の主な使い方 / Main usage of dig, nslookup, traceroute / tracert, netstat, ss, ip, nc, Test-NetConnection and Resolve-DnsName"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-net-tools"
+kind = "dictionary"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

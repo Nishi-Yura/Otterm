@@ -1,0 +1,56 @@
+name: Bug report / バグ報告
+description: Something does not work as described. / 説明どおりに動かない。
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Issues are written in English (Japanese is fine if that is easier; we will answer in both). For security problems use **Security → Report a vulnerability** instead.
+        報告ありがとうございます。Issue は英語が基本ですが、日本語でもかまいません。セキュリティの問題は Issue ではなく **Security → Report a vulnerability** からお願いします。
+  - type: input
+    id: version
+    attributes:
+      label: otterm version
+      description: Settings › About, or `otterm --version`. The crash log dialog fills this in when you use "create an issue".
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS
+        - Linux (say which distribution below)
+    validations:
+      required: true
+  - type: input
+    id: shell
+    attributes:
+      label: Shell and shell integration
+      description: pwsh / bash / zsh / fish / cmd, and whether the status bar shows shell integration as on.
+      placeholder: "pwsh 7.5, integration on"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you did, what you expected, what happened. Screenshots or a short recording help.
+      placeholder: |
+        1. Open a tab, type ...
+        2. Press ...
+        3. Expected ..., got ...
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: Mods and settings involved
+      description: Which non-bundled mods are enabled (Settings › Mods), and anything unusual in `config.toml`. Try once with the mod disabled if a mod seems involved.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant lines from `%LOCALAPPDATA%\otterm\logs` (Windows) or `~/.local/share/otterm/logs`. Remove anything private; the logs never leave your PC unless you paste them here.
+      render: text

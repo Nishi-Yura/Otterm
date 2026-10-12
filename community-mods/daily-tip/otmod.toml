@@ -1,0 +1,26 @@
+[mod]
+id = "nishi-yura.daily-tip"
+name = "今日のコマンド / Command of the day"
+version = "1.0.0"
+description = "1 日 1 回、コツメが辞書からコマンドを 1 つ紹介します。例は入力欄に入るだけで、実行はしません / Once a day, Pebble introduces one command from the dictionary. The example goes into the input line only; nothing runs."
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/daily-tip"
+kind = "extension"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"
+
+[entry]
+main = "dist/main.js"
+
+[[adds]]
+command = "nishi-yura.daily-tip.show"
+label = "今日のコマンドを見る / Show a command of the day"
+
+# No permissions: the dictionary lookup, the mascot bubble and the input-line insert need none.
+# The day of the last tip is kept in the mod's storage.
+
+[settings.schema]
+auto_show = { type = "boolean", default = true, label = "起動したとき 1 日 1 回 自動で出す / Show one tip a day on startup" }

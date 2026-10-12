@@ -1,0 +1,122 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "fd",
+  "aliases": ["fdfind"],
+  "summary": {
+    "ja": "名前でファイルやフォルダを探します（find の速くて簡単な版）",
+    "en": "Finds files and folders by name (a faster, simpler find)"
+  },
+  "description": {
+    "ja": "fd パターン で、今いるフォルダ以下から名前にパターンを含むものを探します。.gitignore のファイルと隠しファイルは最初から除きます。-e で拡張子、-t f でファイルだけ、-t d でフォルダだけ。-x で見つけたものごとにコマンドを実行できます。Debian / Ubuntu ではコマンド名が fdfind です",
+    "en": "fd pattern finds everything under the current folder whose name contains the pattern, skipping .gitignore entries and hidden files. -e picks an extension, -t f files only, -t d folders only, and -x runs a command on each result. On Debian / Ubuntu the command is called fdfind"
+  },
+  "install": {
+    "winget": "winget install sharkdp.fd",
+    "scoop": "scoop install fd",
+    "choco": "choco install fd",
+    "brew": "brew install fd",
+    "apt": "sudo apt install fd-find",
+    "dnf": "sudo dnf install fd-find",
+    "pacman": "sudo pacman -S fd",
+    "cargo": "cargo install fd-find",
+    "url": "https://github.com/sharkdp/fd"
+  },
+  "options": [
+    {
+      "flags": ["-e", "--extension"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "拡張子で絞る（例: -e md）", "en": "Filter by extension (e.g. -e md)" }
+    },
+    {
+      "flags": ["-t", "--type"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "種類で絞る: f（ファイル）、d（フォルダ）、l（リンク）、x（実行可能）",
+        "en": "Filter by type: f (file), d (directory), l (symlink), x (executable)"
+      }
+    },
+    { "flags": ["-H", "--hidden"], "summary": { "ja": "隠しファイルも探す", "en": "Include hidden files" } },
+    {
+      "flags": ["-I", "--no-ignore"],
+      "summary": { "ja": ".gitignore を無視してすべて探す", "en": "Ignore .gitignore and search everything" }
+    },
+    { "flags": ["-i", "--ignore-case"], "summary": { "ja": "大文字小文字を区別しない", "en": "Case-insensitive" } },
+    {
+      "flags": ["-g", "--glob"],
+      "summary": {
+        "ja": "パターンを正規表現ではなくグロブ（*.txt）として扱う",
+        "en": "Treat the pattern as a glob (*.txt), not a regex"
+      }
+    },
+    {
+      "flags": ["-d", "--max-depth"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "何階層まで降りるか", "en": "How many levels deep to go" }
+    },
+    {
+      "flags": ["-x", "--exec"],
+      "takesValue": true,
+      "valueType": "command",
+      "summary": {
+        "ja": "見つけたものごとにコマンドを実行（{} が各パス）",
+        "en": "Run a command per result ({} is the path)"
+      }
+    },
+    {
+      "flags": ["-X", "--exec-batch"],
+      "takesValue": true,
+      "valueType": "command",
+      "summary": {
+        "ja": "見つけたもの全部を引数にして 1 回だけ実行",
+        "en": "Run one command with every result as arguments"
+      }
+    },
+    {
+      "flags": ["--changed-within"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "最近変更されたものだけ（例: 1d、2h）", "en": "Only files changed recently (e.g. 1d, 2h)" }
+    }
+  ],
+  "args": [
+    {
+      "name": "pattern",
+      "type": "pattern",
+      "optional": true,
+      "summary": {
+        "ja": "名前に含まれる文字列か正規表現（省略時はすべて）",
+        "en": "Text or regex the name contains (default: everything)"
+      }
+    },
+    {
+      "name": "path",
+      "type": "dir",
+      "optional": true,
+      "summary": { "ja": "探す場所（省略時は今のフォルダ）", "en": "Where to search (default: the current folder)" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "fd config",
+      "summary": { "ja": "名前に config を含むファイルとフォルダを探す", "en": "Find names containing config" }
+    },
+    {
+      "command": "fd -e png -e jpg",
+      "summary": { "ja": "画像ファイルをすべて並べる", "en": "List every PNG and JPG" }
+    },
+    {
+      "command": "fd -t d node_modules -X rm -r",
+      "summary": {
+        "ja": "node_modules フォルダを全部探して削除する（確認してから）",
+        "en": "Find every node_modules folder and delete them (check first)"
+      }
+    },
+    {
+      "command": "fd --changed-within 1d -t f",
+      "summary": { "ja": "この 1 日で変わったファイル", "en": "Files changed in the last day" }
+    }
+  ]
+}

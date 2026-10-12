@@ -1,0 +1,85 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "nslookup",
+  "summary": {
+    "ja": "ドメイン名から IP アドレスを（またはその逆を）DNS に問い合わせます",
+    "en": "Asks DNS for the IP address of a name, or the name of an address"
+  },
+  "description": {
+    "ja": "Windows にも macOS にも Linux にも入っている、いちばん手軽な名前解決の確認コマンドです。nslookup example.com で IP アドレス、2 つ目の引数に DNS サーバーを書くと問い合わせ先を変えられます。-type=MX のようにレコードの種類も指定できます。引数なしで実行すると対話モードになります（exit で抜けます）",
+    "en": "The simplest way to check name resolution; it ships with Windows, macOS and Linux. nslookup example.com prints the address, a second argument picks the DNS server, and -type=MX chooses the record type. Without arguments it enters an interactive mode (leave with exit)"
+  },
+  "options": [
+    {
+      "flags": ["-type"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "レコードの種類（-type=A、MX、TXT、NS、CNAME、ANY）",
+        "en": "Record type (-type=A, MX, TXT, NS, CNAME, ANY)"
+      }
+    },
+    {
+      "flags": ["-debug"],
+      "summary": { "ja": "問い合わせと応答の詳細を表示", "en": "Show the full query and response" }
+    },
+    {
+      "flags": ["-port"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "問い合わせ先のポート（既定 53）", "en": "Port of the DNS server (default 53)" }
+    },
+    {
+      "flags": ["-timeout"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "応答を待つ秒数", "en": "Seconds to wait for an answer" }
+    }
+  ],
+  "args": [
+    {
+      "name": "name",
+      "type": "string",
+      "summary": { "ja": "調べるドメイン名か IP アドレス", "en": "Domain name or IP address to look up" }
+    },
+    {
+      "name": "server",
+      "type": "string",
+      "optional": true,
+      "summary": {
+        "ja": "問い合わせ先の DNS サーバー（省略時は OS の設定）",
+        "en": "DNS server to ask (default: the OS setting)"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "command": "nslookup example.com",
+      "summary": { "ja": "example.com の IP アドレスを調べる", "en": "Look up the IP address of example.com" }
+    },
+    {
+      "command": "nslookup example.com 8.8.8.8",
+      "summary": { "ja": "Google の DNS（8.8.8.8）に聞く", "en": "Ask Google DNS (8.8.8.8)" }
+    },
+    {
+      "command": "nslookup -type=MX example.com",
+      "summary": { "ja": "メールサーバー（MX レコード）を調べる", "en": "Look up the mail servers (MX records)" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "(Non-existent domain|NXDOMAIN|can't find .*: Non-existent)",
+      "hint": {
+        "ja": "そのドメイン名は存在しません。つづりを確認してください",
+        "en": "The domain name does not exist. Check the spelling"
+      }
+    },
+    {
+      "pattern": "(DNS request timed out|no servers could be reached)",
+      "hint": {
+        "ja": "DNS サーバーが応答しません。ネットワーク接続と DNS の設定を確認してください",
+        "en": "The DNS server did not answer. Check the network connection and the DNS settings"
+      }
+    }
+  ]
+}

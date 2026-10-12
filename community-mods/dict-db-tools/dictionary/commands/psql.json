@@ -1,0 +1,122 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "psql",
+  "summary": {
+    "ja": "PostgreSQL に接続して SQL を打つ、対話式のクライアントです",
+    "en": "The interactive client for PostgreSQL: connect and type SQL"
+  },
+  "description": {
+    "ja": "psql -U ユーザー -d データベース で接続すると、SQL を打てるプロンプトになります。\\dt で表の一覧、\\d 表名 で列の一覧、\\q で終了。-c で 1 文だけ実行、-f でファイルの SQL を実行できます。パスワードは聞かれるか、環境変数 PGPASSWORD か ~/.pgpass から読みます。接続先は postgresql://user@host/db の形でも書けます",
+    "en": "psql -U user -d database opens a prompt where you type SQL. \\dt lists tables, \\d table lists columns, \\q quits. -c runs one statement, -f runs a file. The password is prompted for, or read from PGPASSWORD or ~/.pgpass. The target can also be a postgresql://user@host/db URL"
+  },
+  "install": {
+    "winget": "winget install PostgreSQL.PostgreSQL",
+    "scoop": "scoop install postgresql",
+    "brew": "brew install libpq",
+    "apt": "sudo apt install postgresql-client",
+    "dnf": "sudo dnf install postgresql",
+    "pacman": "sudo pacman -S postgresql-libs",
+    "url": "https://www.postgresql.org/download/"
+  },
+  "options": [
+    {
+      "flags": ["-h", "--host"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続先のホスト（既定はローカルのソケット）", "en": "Server host (default: local socket)" }
+    },
+    {
+      "flags": ["-p", "--port"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "ポート（既定 5432）", "en": "Port (default 5432)" }
+    },
+    {
+      "flags": ["-U", "--username"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続するユーザー名", "en": "User name to connect as" }
+    },
+    {
+      "flags": ["-d", "--dbname"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続するデータベース名", "en": "Database to connect to" }
+    },
+    {
+      "flags": ["-W", "--password"],
+      "summary": { "ja": "必ずパスワードを聞く", "en": "Always prompt for the password" }
+    },
+    {
+      "flags": ["-c", "--command"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "この SQL を 1 回実行して終了", "en": "Run this one statement and exit" }
+    },
+    {
+      "flags": ["-f", "--file"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "ファイルの SQL を実行", "en": "Run the SQL in a file" }
+    },
+    {
+      "flags": ["-l", "--list"],
+      "summary": { "ja": "データベースの一覧を表示して終了", "en": "List databases and exit" }
+    },
+    {
+      "flags": ["-t", "--tuples-only"],
+      "summary": { "ja": "見出しや件数を省き、行だけ出力", "en": "Rows only, no headers or footers" }
+    },
+    {
+      "flags": ["-A", "--no-align"],
+      "summary": { "ja": "桁揃えしない（スクリプト向け）", "en": "Unaligned output (for scripts)" }
+    },
+    { "flags": ["--csv"], "summary": { "ja": "CSV で出力", "en": "CSV output" } }
+  ],
+  "examples": [
+    {
+      "command": "psql -U postgres -d mydb",
+      "summary": { "ja": "postgres ユーザーで mydb に接続する", "en": "Connect to mydb as the postgres user" }
+    },
+    {
+      "command": "psql -h localhost -U app -d app -c 'SELECT count(*) FROM users;'",
+      "summary": { "ja": "SQL を 1 文だけ実行する", "en": "Run a single statement" }
+    },
+    { "command": "psql -U postgres -l", "summary": { "ja": "データベースの一覧を見る", "en": "List the databases" } },
+    {
+      "command": "psql postgresql://app@localhost/app --csv -c 'SELECT * FROM users' > users.csv",
+      "summary": { "ja": "問い合わせの結果を CSV ファイルに書き出す", "en": "Write a query result to a CSV file" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "password authentication failed for user \"(?<user>[^\"]+)\"",
+      "hint": {
+        "ja": "ユーザー {user} のパスワードが違います。-U のユーザー名とパスワードを確認してください",
+        "en": "Wrong password for user {user}. Check the -U user name and the password"
+      }
+    },
+    {
+      "pattern": "database \"(?<db>[^\"]+)\" does not exist",
+      "hint": {
+        "ja": "データベース {db} がありません。psql -l で一覧を確かめるか、createdb {db} で作ります",
+        "en": "Database {db} does not exist. Check with psql -l, or create it with createdb {db}"
+      },
+      "fix": "psql -l"
+    },
+    {
+      "pattern": "connection to server .* failed: Connection refused",
+      "hint": {
+        "ja": "PostgreSQL サーバーに接続できません。サーバーが起動しているか、-h と -p が合っているか確認してください",
+        "en": "Could not reach the PostgreSQL server. Check that it is running and that -h and -p are right"
+      }
+    },
+    {
+      "pattern": "role \"(?<user>[^\"]+)\" does not exist",
+      "hint": {
+        "ja": "ユーザー（ロール）{user} がありません。-U で正しいユーザーを指定してください",
+        "en": "The user (role) {user} does not exist. Pass the right user with -U"
+      }
+    }
+  ]
+}

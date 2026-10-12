@@ -1,0 +1,79 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "fzf",
+  "summary": {
+    "ja": "行の一覧をあいまい検索で絞り込み、選んだものを出力します",
+    "en": "Fuzzy-filters a list of lines interactively and prints what you pick"
+  },
+  "description": {
+    "ja": "何かの一覧をパイプで渡すと、文字を打つたびに候補が絞られ、Enter で選んだ行が出力されます。ファイル選び（fd | fzf）、履歴やブランチの選択（git branch | fzf）などに使います。引数なしなら今のフォルダ以下のファイルが候補になります。-m で複数選択、--preview で右側に中身を表示できます。シェル連携を入れると Ctrl+R の履歴検索などが fzf になります",
+    "en": "Pipe any list in; each keystroke narrows the candidates and Enter prints the chosen line. Use it to pick files (fd | fzf), history entries or branches (git branch | fzf). Without input it lists the files under the current folder. -m allows multiple picks and --preview shows contents on the right. Its shell integration turns Ctrl+R history search into fzf"
+  },
+  "install": {
+    "winget": "winget install junegunn.fzf",
+    "scoop": "scoop install fzf",
+    "choco": "choco install fzf",
+    "brew": "brew install fzf",
+    "apt": "sudo apt install fzf",
+    "dnf": "sudo dnf install fzf",
+    "pacman": "sudo pacman -S fzf",
+    "url": "https://github.com/junegunn/fzf"
+  },
+  "options": [
+    {
+      "flags": ["-m", "--multi"],
+      "summary": { "ja": "Tab で複数選べるようにする", "en": "Allow several picks with Tab" }
+    },
+    {
+      "flags": ["-q", "--query"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "最初から入っている検索文字列", "en": "Initial query" }
+    },
+    {
+      "flags": ["-e", "--exact"],
+      "summary": { "ja": "あいまいではなく、そのままの文字列で絞る", "en": "Exact matching instead of fuzzy" }
+    },
+    {
+      "flags": ["--preview"],
+      "takesValue": true,
+      "valueType": "command",
+      "summary": {
+        "ja": "選択中の行で実行して右側に表示するコマンド（{} が行）",
+        "en": "Command run on the highlighted line, shown on the right ({} is the line)"
+      }
+    },
+    {
+      "flags": ["--height"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "画面全体ではなく、この高さで表示（例: 40%）",
+        "en": "Use this height instead of the full screen (e.g. 40%)"
+      }
+    },
+    { "flags": ["--reverse", "--layout"], "summary": { "ja": "入力欄を上にする", "en": "Put the prompt at the top" } },
+    {
+      "flags": ["-1", "--select-1"],
+      "summary": { "ja": "候補が 1 つならすぐ選ぶ", "en": "Pick immediately when there is only one candidate" }
+    },
+    {
+      "flags": ["-0", "--exit-0"],
+      "summary": { "ja": "候補がなければすぐ終了", "en": "Exit immediately when there is no candidate" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "fd -t f | fzf",
+      "summary": { "ja": "ファイルをあいまい検索で選ぶ", "en": "Pick a file with fuzzy search" }
+    },
+    {
+      "command": "git branch | fzf | xargs git checkout",
+      "summary": { "ja": "ブランチを選んで切り替える", "en": "Pick a branch and check it out" }
+    },
+    {
+      "command": "fzf --preview 'bat --color=always {}'",
+      "summary": { "ja": "右側に中身を見ながらファイルを選ぶ", "en": "Pick a file while previewing it on the right" }
+    }
+  ]
+}

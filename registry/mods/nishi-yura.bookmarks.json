@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.bookmarks",
+  "name": "フォルダのしおり / Folder bookmarks",
+  "description": "よく行くフォルダをサイドパネルに登録し、クリックで cd を入力欄に入れます / Keep your frequently used folders in a side panel; click to put a cd command in the input line.",
+  "author": "nishi-yura",
+  "kind": "extension",
+  "categories": ["workflow"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/bookmarks",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.bookmarks-1.0.0.otmod",
+      "sha256": "31dc0d9a7071397a7a846cf285645d64c5ef932c5ac9ca0fbd2ea3ff17134569",
+      "size": 7455,
+      "published": "2026-10-12"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "Test-NetConnection",
+  "aliases": ["tnc"],
+  "platforms": ["windows"],
+  "shells": ["pwsh", "powershell"],
+  "summary": {
+    "ja": "相手に届くか、ポートが開いているかを確かめます（PowerShell の ping と nc）",
+    "en": "Checks whether a host answers and whether a port is open (PowerShell's ping and nc in one)"
+  },
+  "description": {
+    "ja": "Windows でポートの疎通を確かめる標準の方法です。Test-NetConnection example.com -Port 443 で TcpTestSucceeded が True なら、そのポートにつながります。-TraceRoute で経路も表示できます。引数なしなら既定でインターネットへの疎通を確かめます",
+    "en": "The standard way to test a port on Windows. Test-NetConnection example.com -Port 443 reports TcpTestSucceeded True when the port accepts connections. -TraceRoute also shows the route. Without arguments it tests internet connectivity"
+  },
+  "options": [
+    {
+      "flags": ["-ComputerName"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "相手のホスト名か IP アドレス", "en": "Target host name or IP address" }
+    },
+    {
+      "flags": ["-Port"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "確かめる TCP ポート", "en": "TCP port to test" }
+    },
+    {
+      "flags": ["-CommonTCPPort"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "よく使うポートを名前で指定（HTTP、RDP、SMB、WINRM）",
+        "en": "A well-known port by name (HTTP, RDP, SMB, WINRM)"
+      }
+    },
+    { "flags": ["-TraceRoute"], "summary": { "ja": "経路（tracert）も表示", "en": "Also show the route (tracert)" } },
+    {
+      "flags": ["-InformationLevel"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "Quiet で True / False だけ、Detailed で詳細",
+        "en": "Quiet for True / False only, Detailed for more"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "command": "Test-NetConnection example.com -Port 443",
+      "summary": {
+        "ja": "example.com の 443 番ポートにつながるか確かめる",
+        "en": "Check whether port 443 of example.com accepts connections"
+      }
+    },
+    {
+      "command": "Test-NetConnection 192.168.1.1 -InformationLevel Quiet",
+      "summary": {
+        "ja": "ping が通るかを True / False だけで見る",
+        "en": "Just True / False for whether the host answers"
+      }
+    },
+    {
+      "command": "tnc example.com -TraceRoute",
+      "summary": { "ja": "経路も表示する（tnc は短い別名）", "en": "Also show the route (tnc is the short alias)" }
+    }
+  ]
+}

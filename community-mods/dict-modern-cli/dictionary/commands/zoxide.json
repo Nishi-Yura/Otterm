@@ -1,0 +1,82 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "zoxide",
+  "aliases": ["z", "zi"],
+  "summary": {
+    "ja": "よく行くフォルダを覚えて、名前の一部だけで移動できるようにします（賢い cd）",
+    "en": "Remembers the folders you visit so a few letters take you there (a smarter cd)"
+  },
+  "description": {
+    "ja": "シェルの設定に zoxide init を入れると z コマンドが使えるようになり、z proj のように名前の一部を打つだけで、よく行く一致フォルダへ移動します。zi は候補を fzf で選びます。zoxide query で候補の確認、zoxide add で手動登録。実際の移動はシェルの関数（z）が cd を呼んで行います",
+    "en": "After adding zoxide init to your shell config, z proj jumps to the best-matching folder you have visited; zi lets you pick with fzf. zoxide query lists candidates and zoxide add registers a folder by hand. The jump itself is done by the shell function z calling cd"
+  },
+  "install": {
+    "winget": "winget install ajeetdsouza.zoxide",
+    "scoop": "scoop install zoxide",
+    "brew": "brew install zoxide",
+    "apt": "sudo apt install zoxide",
+    "dnf": "sudo dnf install zoxide",
+    "pacman": "sudo pacman -S zoxide",
+    "cargo": "cargo install zoxide",
+    "url": "https://github.com/ajeetdsouza/zoxide"
+  },
+  "subcommands": [
+    {
+      "name": "init",
+      "summary": {
+        "ja": "シェル用の設定を出力する（bash、zsh、fish、powershell など）",
+        "en": "Print the shell setup (bash, zsh, fish, powershell, ...)"
+      },
+      "args": [{ "name": "shell", "type": "string", "summary": { "ja": "シェルの名前", "en": "Shell name" } }],
+      "examples": [
+        {
+          "command": "zoxide init powershell",
+          "summary": {
+            "ja": "PowerShell のプロファイルに入れる設定を表示",
+            "en": "Print the lines for the PowerShell profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "query",
+      "summary": {
+        "ja": "一致するフォルダを表示する（移動はしない）",
+        "en": "Show the matching folders without jumping"
+      },
+      "options": [
+        { "flags": ["-l", "--list"], "summary": { "ja": "一致をすべて並べる", "en": "List every match" } },
+        { "flags": ["-s", "--score"], "summary": { "ja": "スコアも表示", "en": "Show scores too" } },
+        { "flags": ["-i", "--interactive"], "summary": { "ja": "fzf で選ぶ", "en": "Pick with fzf" } }
+      ]
+    },
+    {
+      "name": "add",
+      "summary": { "ja": "フォルダを手動で登録する", "en": "Register a folder by hand" },
+      "args": [{ "name": "path", "type": "dir", "summary": { "ja": "登録するフォルダ", "en": "Folder to add" } }]
+    },
+    {
+      "name": "remove",
+      "summary": { "ja": "フォルダを記録から外す", "en": "Forget a folder" },
+      "args": [{ "name": "path", "type": "dir", "summary": { "ja": "外すフォルダ", "en": "Folder to remove" } }]
+    },
+    {
+      "name": "edit",
+      "summary": { "ja": "記録を対話的に整理する", "en": "Edit the database interactively" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "z otterm",
+      "summary": {
+        "ja": "名前に otterm を含む、よく行くフォルダへ移動",
+        "en": "Jump to the frequently visited folder matching otterm"
+      }
+    },
+    { "command": "zi", "summary": { "ja": "候補を fzf で選んで移動", "en": "Pick a folder with fzf and jump" } },
+    {
+      "command": "zoxide query -l",
+      "summary": { "ja": "覚えているフォルダを一覧する", "en": "List the folders it remembers" }
+    }
+  ]
+}

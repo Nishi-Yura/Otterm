@@ -1,0 +1,154 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "yt-dlp",
+  "summary": {
+    "ja": "動画サイトから動画や音声をダウンロードします（youtube-dl の後継）",
+    "en": "Downloads video or audio from video sites (the successor of youtube-dl)"
+  },
+  "description": {
+    "ja": "yt-dlp URL で最高画質の動画を今のフォルダに保存します。-x で音声だけ（--audio-format mp3 で MP3 に。ffmpeg が必要）、-F で選べる形式の一覧、-f で形式を指定、-o で保存名のひな形を決めます。サイトの変更で動かなくなったら yt-dlp -U で更新します。ダウンロードが許されている動画かどうかは、サイトの規約と著作権に従ってください",
+    "en": "yt-dlp URL saves the best-quality video into the current folder. -x keeps only the audio (--audio-format mp3 converts; needs ffmpeg), -F lists the available formats, -f picks one, -o sets the file-name template. When a site changes and it stops working, update with yt-dlp -U. Whether a download is allowed depends on the site's terms and copyright"
+  },
+  "install": {
+    "winget": "winget install yt-dlp.yt-dlp",
+    "scoop": "scoop install yt-dlp",
+    "choco": "choco install yt-dlp",
+    "brew": "brew install yt-dlp",
+    "pip": "pip install -U yt-dlp",
+    "apt": "sudo apt install yt-dlp",
+    "dnf": "sudo dnf install yt-dlp",
+    "pacman": "sudo pacman -S yt-dlp",
+    "url": "https://github.com/yt-dlp/yt-dlp#installation"
+  },
+  "options": [
+    {
+      "flags": ["-F", "--list-formats"],
+      "summary": { "ja": "選べる形式（画質、コーデック）を一覧して終了", "en": "List available formats and exit" }
+    },
+    {
+      "flags": ["-f", "--format"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "形式を指定（例: 'bv*[height<=1080]+ba'、22、best）",
+        "en": "Pick a format (e.g. 'bv*[height<=1080]+ba', 22, best)"
+      }
+    },
+    {
+      "flags": ["-x", "--extract-audio"],
+      "summary": { "ja": "音声だけを取り出す（ffmpeg が必要）", "en": "Keep only the audio (needs ffmpeg)" }
+    },
+    {
+      "flags": ["--audio-format"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "音声の形式（mp3、m4a、opus、flac など）", "en": "Audio format (mp3, m4a, opus, flac, ...)" }
+    },
+    {
+      "flags": ["-o", "--output"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "保存名のひな形（例: '%(title)s.%(ext)s'）",
+        "en": "File-name template (e.g. '%(title)s.%(ext)s')"
+      }
+    },
+    {
+      "flags": ["-P", "--paths"],
+      "takesValue": true,
+      "valueType": "dir",
+      "summary": { "ja": "保存先のフォルダ", "en": "Folder to save into" }
+    },
+    {
+      "flags": ["--merge-output-format"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "映像と音声を結合する形式（mp4、mkv）",
+        "en": "Container for merged video and audio (mp4, mkv)"
+      }
+    },
+    { "flags": ["--write-subs"], "summary": { "ja": "字幕も保存する", "en": "Also save subtitles" } },
+    {
+      "flags": ["--sub-langs"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "字幕の言語（ja、en、all）", "en": "Subtitle languages (ja, en, all)" }
+    },
+    {
+      "flags": ["--no-playlist"],
+      "summary": {
+        "ja": "URL が再生リストでも、その 1 本だけ",
+        "en": "Only the single video, even if the URL is a playlist"
+      }
+    },
+    { "flags": ["--yes-playlist"], "summary": { "ja": "再生リスト全体を保存", "en": "Download the whole playlist" } },
+    { "flags": ["-U", "--update"], "summary": { "ja": "yt-dlp 自体を最新にする", "en": "Update yt-dlp itself" } },
+    {
+      "flags": ["--cookies-from-browser"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "ブラウザのログイン状態を使う（chrome、firefox など）",
+        "en": "Use the login of a browser (chrome, firefox, ...)"
+      }
+    }
+  ],
+  "args": [
+    {
+      "name": "url",
+      "type": "url",
+      "variadic": true,
+      "summary": { "ja": "動画や再生リストの URL", "en": "Video or playlist URL" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "yt-dlp 'https://www.youtube.com/watch?v=...'",
+      "summary": { "ja": "動画を最高画質で保存する", "en": "Save a video at the best quality" }
+    },
+    {
+      "command": "yt-dlp -x --audio-format mp3 'https://...'",
+      "summary": { "ja": "音声だけを MP3 で保存する", "en": "Save only the audio as MP3" }
+    },
+    {
+      "command": "yt-dlp -f 'bv*[height<=720]+ba' --merge-output-format mp4 'https://...'",
+      "summary": { "ja": "720p 以下の MP4 で保存する", "en": "Save as MP4 at 720p or lower" }
+    },
+    {
+      "command": "yt-dlp -F 'https://...'",
+      "summary": { "ja": "選べる形式を確認する", "en": "See which formats are available" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "ERROR: Postprocessing: ffprobe and ffmpeg not found",
+      "hint": {
+        "ja": "音声の変換や結合には ffmpeg が要ります。ffmpeg を入れてからやり直してください",
+        "en": "Converting or merging needs ffmpeg. Install it and try again"
+      }
+    },
+    {
+      "pattern": "ERROR: \\[\\w+\\] .*: (Video unavailable|Private video|This video is not available)",
+      "hint": {
+        "ja": "その動画は非公開か、削除されたか、この地域では見られません。URL を確かめてください",
+        "en": "The video is private, removed or unavailable in your region. Check the URL"
+      }
+    },
+    {
+      "pattern": "ERROR: Unsupported URL: (?<url>\\S+)",
+      "hint": {
+        "ja": "{url} には対応していません。動画ページそのものの URL を渡してください",
+        "en": "{url} is not supported. Pass the URL of the video page itself"
+      }
+    },
+    {
+      "pattern": "(Requested format is not available|HTTP Error 403)",
+      "hint": {
+        "ja": "サイト側が変わったのかもしれません。yt-dlp -U で最新にしてからやり直してください",
+        "en": "The site may have changed. Update with yt-dlp -U and try again"
+      },
+      "fix": "yt-dlp -U"
+    }
+  ]
+}

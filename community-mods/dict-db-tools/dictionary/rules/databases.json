@@ -1,0 +1,89 @@
+{
+  "$comment": "Danger rules for danger-guard. Shape mirrors DangerRule in packages/api/src/index.d.ts.",
+  "rules": [
+    {
+      "id": "dict-db-tools.psql-drop",
+      "level": "confirm",
+      "match": { "regex": "\\bpsql\\b.*\\bDROP\\s+(DATABASE|TABLE|SCHEMA)\\b" },
+      "message": {
+        "ja": "psql で DROP を実行しようとしています。データベース、表、スキーマが丸ごと消え、戻せません",
+        "en": "This runs a DROP through psql. The database, table or schema is deleted and cannot be recovered"
+      },
+      "alternatives": [
+        {
+          "label": { "ja": "先にバックアップを取る", "en": "Back up first" },
+          "command": "pg_dump -U postgres -Fc <database> -f backup.dump"
+        }
+      ]
+    },
+    {
+      "id": "dict-db-tools.psql-truncate",
+      "level": "confirm",
+      "match": { "regex": "\\bpsql\\b.*\\bTRUNCATE\\b" },
+      "message": {
+        "ja": "TRUNCATE は表の全行を削除します。WHERE で絞れず、戻せません",
+        "en": "TRUNCATE deletes every row of the table. There is no WHERE, and it cannot be undone"
+      }
+    },
+    {
+      "id": "dict-db-tools.mysql-drop",
+      "level": "confirm",
+      "match": { "regex": "\\b(mysql|mariadb)\\b.*\\bDROP\\s+(DATABASE|SCHEMA|TABLE)\\b" },
+      "message": {
+        "ja": "mysql で DROP を実行しようとしています。データベースや表が丸ごと消え、戻せません",
+        "en": "This runs a DROP through mysql. The database or table is deleted and cannot be recovered"
+      },
+      "alternatives": [
+        {
+          "label": { "ja": "先にバックアップを取る", "en": "Back up first" },
+          "command": "mysqldump -u root -p --single-transaction <database> > backup.sql"
+        }
+      ]
+    },
+    {
+      "id": "dict-db-tools.mysql-truncate",
+      "level": "confirm",
+      "match": { "regex": "\\b(mysql|mariadb)\\b.*\\bTRUNCATE\\b" },
+      "message": {
+        "ja": "TRUNCATE は表の全行を削除します。WHERE で絞れず、戻せません",
+        "en": "TRUNCATE deletes every row of the table. There is no WHERE, and it cannot be undone"
+      }
+    },
+    {
+      "id": "dict-db-tools.redis-flush",
+      "level": "confirm",
+      "match": { "regex": "\\b(redis-cli|valkey-cli)\\b.*\\bFLUSH(ALL|DB)\\b" },
+      "message": {
+        "ja": "FLUSHALL / FLUSHDB は Redis の全キーを削除します。本番サーバーに接続していないか確かめてください",
+        "en": "FLUSHALL / FLUSHDB deletes every key in Redis. Make sure you are not connected to a production server"
+      },
+      "alternatives": [
+        { "label": { "ja": "キー数を先に確認", "en": "Check the key count first" }, "command": "redis-cli DBSIZE" }
+      ]
+    },
+    {
+      "id": "dict-db-tools.mongosh-drop",
+      "level": "confirm",
+      "match": { "regex": "\\bmongosh\\b.*\\.(dropDatabase|drop)\\(" },
+      "message": {
+        "ja": "dropDatabase() / drop() はデータベースやコレクションを丸ごと削除します。戻せません",
+        "en": "dropDatabase() / drop() deletes the whole database or collection. It cannot be undone"
+      }
+    },
+    {
+      "id": "dict-db-tools.sqlite-drop",
+      "level": "confirm",
+      "match": { "regex": "\\bsqlite3?\\b.*\\bDROP\\s+TABLE\\b" },
+      "message": {
+        "ja": "DROP TABLE は表とその全データを削除します。戻せません",
+        "en": "DROP TABLE deletes the table and all its data. It cannot be undone"
+      },
+      "alternatives": [
+        {
+          "label": { "ja": "先に SQL として書き出す", "en": "Dump to SQL first" },
+          "command": "sqlite3 <file> .dump > backup.sql"
+        }
+      ]
+    }
+  ]
+}

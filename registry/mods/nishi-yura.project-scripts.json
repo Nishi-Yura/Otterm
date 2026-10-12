@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.project-scripts",
+  "name": "プロジェクトのスクリプト / Project scripts",
+  "description": "今いるフォルダの package.json のスクリプト、justfile のレシピ、Makefile のターゲットをサイドパネルに一覧し、クリックで入力欄に入れます / Lists the package.json scripts, justfile recipes and Makefile targets of the current folder in a side panel; click to put the command in the input line.",
+  "author": "nishi-yura",
+  "kind": "extension",
+  "categories": ["workflow", "language"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/project-scripts",
+  "permissions": ["fs.read:${cwd}/**"],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.project-scripts-1.0.0.otmod",
+      "sha256": "c7325f8dc2d7af8f0d806c41614414d1b4ed057078ec291996b543b8e8c280c9",
+      "size": 9667,
+      "published": "2026-10-12"
+    }
+  ]
+}

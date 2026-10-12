@@ -1,0 +1,71 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "netstat",
+  "summary": {
+    "ja": "開いているポートと接続中の通信を一覧します",
+    "en": "Lists open ports and current network connections"
+  },
+  "description": {
+    "ja": "「どのポートを誰が使っているか」を調べるときの定番です。Windows では netstat -ano で、待ち受け（LISTENING）と接続中の一覧に PID が付くので、tasklist や Get-Process でプログラムを突き止められます。Linux では ss のほうが新しく速い（netstat は net-tools パッケージ）。macOS の netstat はオプションが違い、ポートを使うプログラムは lsof -i で調べます",
+    "en": "The classic way to see which port is used by what. On Windows, netstat -ano lists listening and established sockets with the PID, which tasklist or Get-Process turns into a program name. On Linux, ss is newer and faster (netstat comes from net-tools). macOS netstat has different options; use lsof -i to find the program on a port"
+  },
+  "install": {
+    "apt": "sudo apt install net-tools",
+    "dnf": "sudo dnf install net-tools",
+    "pacman": "sudo pacman -S net-tools"
+  },
+  "options": [
+    {
+      "flags": ["-a"],
+      "summary": { "ja": "待ち受け中のポートも含めてすべて表示", "en": "Show all sockets, including listening ones" }
+    },
+    {
+      "flags": ["-n"],
+      "summary": {
+        "ja": "名前を引かず数字（IP アドレスとポート番号）で表示",
+        "en": "Numeric addresses and ports, no name lookups"
+      }
+    },
+    { "flags": ["-o"], "summary": { "ja": "各接続の PID を表示（Windows）", "en": "Show the owning PID (Windows)" } },
+    {
+      "flags": ["-b"],
+      "summary": {
+        "ja": "各接続のプログラム名を表示（Windows、管理者が必要）",
+        "en": "Show the program name (Windows, needs administrator)"
+      }
+    },
+    {
+      "flags": ["-p"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "Windows: プロトコルを指定（TCP / UDP）。Linux: PID とプログラム名を表示（値なし）",
+        "en": "Windows: protocol (TCP / UDP). Linux: show PID and program (no value)"
+      }
+    },
+    { "flags": ["-t"], "summary": { "ja": "TCP だけ表示（Linux）", "en": "TCP only (Linux)" } },
+    { "flags": ["-u"], "summary": { "ja": "UDP だけ表示（Linux）", "en": "UDP only (Linux)" } },
+    { "flags": ["-l"], "summary": { "ja": "待ち受け中だけ表示（Linux）", "en": "Listening sockets only (Linux)" } },
+    { "flags": ["-r"], "summary": { "ja": "ルーティングテーブルを表示", "en": "Show the routing table" } }
+  ],
+  "examples": [
+    {
+      "command": "netstat -ano | findstr :3000",
+      "summary": {
+        "ja": "Windows: ポート 3000 を使っている接続と PID を探す",
+        "en": "Windows: find what uses port 3000, with its PID"
+      }
+    },
+    {
+      "command": "netstat -tulnp",
+      "summary": {
+        "ja": "Linux: 待ち受け中の TCP / UDP ポートとプログラム",
+        "en": "Linux: listening TCP / UDP ports with their programs"
+      }
+    },
+    {
+      "command": "netstat -rn",
+      "summary": { "ja": "ルーティングテーブルを数字で表示", "en": "Routing table with numeric addresses" }
+    }
+  ]
+}

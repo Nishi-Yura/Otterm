@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.theme-shinkai",
+  "name": "深海 / Shinkai",
+  "description": "深い海の底のような、濃紺に青緑のアクセントの暗いテーマ / A dark deep-sea theme: navy depths with teal highlights",
+  "author": "nishi-yura",
+  "kind": "theme",
+  "categories": ["theme"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-shinkai",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-shinkai-1.0.0.otmod",
+      "sha256": "dcdb966a47cac7d91cf2a520cb45e707d2764960a0894e71d079c48e68642b3f",
+      "size": 1328,
+      "published": "2026-10-12"
+    }
+  ]
+}

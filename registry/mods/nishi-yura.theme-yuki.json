@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.theme-yuki",
+  "name": "雪 / Yuki",
+  "description": "雪景色のような、青みがかった白の明るいテーマ / A light theme in cool snow whites and winter blues",
+  "author": "nishi-yura",
+  "kind": "theme",
+  "categories": ["theme"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-yuki",
+  "permissions": [],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-yuki-1.0.0.otmod",
+      "sha256": "6c7d4db2a3e1dfb510b0e12087e0e6b2a30865cb7e71be7601c1a866fa4d8389",
+      "size": 1306,
+      "published": "2026-10-12"
+    }
+  ]
+}

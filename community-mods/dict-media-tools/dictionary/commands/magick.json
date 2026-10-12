@@ -1,0 +1,166 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "magick",
+  "aliases": ["convert", "mogrify"],
+  "summary": {
+    "ja": "画像を変換・縮小・切り抜き・結合します（ImageMagick）",
+    "en": "Converts, resizes, crops and combines images (ImageMagick)"
+  },
+  "description": {
+    "ja": "magick 入力 [操作...] 出力 が基本で、出力の拡張子から形式を決めます。-resize 50% や -resize 800x で縮小、-crop で切り抜き、-quality で JPEG の画質、-strip でメタデータ削除。操作は書いた順に適用されます。magick mogrify は入力ファイルそのものを書き換えるので注意。ImageMagick 6 では convert という名前でした",
+    "en": "magick input [operations...] output is the basic form; the output extension picks the format. -resize 50% or -resize 800x shrinks, -crop cuts, -quality sets JPEG quality, -strip removes metadata. Operations apply in the order written. magick mogrify rewrites the input files in place, so take care. ImageMagick 6 called this convert"
+  },
+  "install": {
+    "winget": "winget install ImageMagick.ImageMagick",
+    "scoop": "scoop install imagemagick",
+    "choco": "choco install imagemagick",
+    "brew": "brew install imagemagick",
+    "apt": "sudo apt install imagemagick",
+    "dnf": "sudo dnf install ImageMagick",
+    "pacman": "sudo pacman -S imagemagick",
+    "url": "https://imagemagick.org/script/download.php"
+  },
+  "options": [
+    {
+      "flags": ["-resize"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "大きさを変える（50%、800x、x600、800x600 は比率を保って収める）",
+        "en": "Resize (50%, 800x, x600; 800x600 fits inside keeping the ratio)"
+      }
+    },
+    {
+      "flags": ["-crop"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "切り抜く（幅x高さ+左+上、例: 300x200+10+20）",
+        "en": "Crop (WxH+left+top, e.g. 300x200+10+20)"
+      }
+    },
+    {
+      "flags": ["-quality"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "JPEG / WebP の画質（1〜100）", "en": "JPEG / WebP quality (1 to 100)" }
+    },
+    { "flags": ["-strip"], "summary": { "ja": "EXIF などのメタデータを削除", "en": "Remove EXIF and other metadata" } },
+    {
+      "flags": ["-rotate"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "回転（度）", "en": "Rotate by degrees" }
+    },
+    { "flags": ["-flip"], "summary": { "ja": "上下反転", "en": "Flip vertically" } },
+    { "flags": ["-flop"], "summary": { "ja": "左右反転", "en": "Flip horizontally" } },
+    {
+      "flags": ["-background"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "背景色（透過を塗りつぶすとき）",
+        "en": "Background color (e.g. when flattening transparency)"
+      }
+    },
+    {
+      "flags": ["-flatten"],
+      "summary": { "ja": "レイヤーや透過を 1 枚にまとめる", "en": "Merge layers or transparency into one image" }
+    },
+    {
+      "flags": ["-colorspace"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "色空間（Gray で白黒）", "en": "Color space (Gray for black and white)" }
+    },
+    {
+      "flags": ["-density"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": {
+        "ja": "PDF などを読むときの解像度（dpi）",
+        "en": "Resolution (dpi) when rasterizing PDF and vectors"
+      }
+    },
+    {
+      "flags": ["-append"],
+      "summary": {
+        "ja": "複数の画像を縦に並べる（+append で横）",
+        "en": "Stack images vertically (+append for horizontally)"
+      }
+    }
+  ],
+  "subcommands": [
+    {
+      "name": "identify",
+      "summary": { "ja": "画像の形式、大きさ、色深度などを表示する", "en": "Show format, size, depth and more" },
+      "options": [
+        {
+          "flags": ["-verbose"],
+          "summary": { "ja": "メタデータも含めて詳しく", "en": "Everything, including metadata" }
+        }
+      ],
+      "examples": [
+        {
+          "command": "magick identify photo.jpg",
+          "summary": { "ja": "画像の大きさと形式を見る", "en": "See the size and format" }
+        }
+      ]
+    },
+    {
+      "name": "mogrify",
+      "summary": {
+        "ja": "複数の画像をその場で（上書きで）まとめて処理する",
+        "en": "Process many images in place, overwriting them"
+      },
+      "danger": "confirm",
+      "dangerMessage": {
+        "ja": "mogrify は入力ファイルそのものを書き換えます。元の画像は残りません。-path 出力先 を付けると別のフォルダに書き出せます",
+        "en": "mogrify rewrites the input files themselves; the originals are gone. Add -path folder to write elsewhere"
+      },
+      "alternative": {
+        "label": { "ja": "別のフォルダに書き出す", "en": "Write to another folder" },
+        "command": "magick mogrify -path out {args}"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "command": "magick photo.png photo.jpg",
+      "summary": { "ja": "PNG を JPEG に変換する", "en": "Convert PNG to JPEG" }
+    },
+    {
+      "command": "magick photo.jpg -resize 50% small.jpg",
+      "summary": { "ja": "半分の大きさにする", "en": "Shrink to half size" }
+    },
+    {
+      "command": "magick photo.jpg -resize 1200x -quality 85 -strip web.jpg",
+      "summary": { "ja": "幅 1200 にして Web 向けに軽くする", "en": "Make a 1200-wide, lightweight web version" }
+    },
+    {
+      "command": "magick a.png b.png +append side.png",
+      "summary": { "ja": "2 枚を横に並べる", "en": "Put two images side by side" }
+    },
+    {
+      "command": "magick -density 150 doc.pdf page-%d.png",
+      "summary": { "ja": "PDF の各ページを PNG にする", "en": "Turn each PDF page into a PNG" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "unable to open image '(?<file>[^']+)': No such file or directory",
+      "hint": {
+        "ja": "{file} が見つかりません。ファイル名と今いるフォルダを確認してください",
+        "en": "{file} was not found. Check the name and the current folder"
+      },
+      "fix": "ls"
+    },
+    {
+      "pattern": "no decode delegate for this image format `(?<fmt>[^']+)'",
+      "hint": {
+        "ja": "{fmt} 形式を読む部品が入っていません。HEIC や PDF は追加のライブラリ（libheif、Ghostscript）が要ります",
+        "en": "No decoder for the {fmt} format is installed. HEIC and PDF need extra libraries (libheif, Ghostscript)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "dig",
+  "summary": {
+    "ja": "DNS に問い合わせて、ドメイン名に対応する IP アドレスなどのレコードを調べます",
+    "en": "Queries DNS for the records (such as IP addresses) of a domain name"
+  },
+  "description": {
+    "ja": "名前解決の様子を詳しく見るための道具です。dig example.com で A レコード（IPv4 アドレス）、dig example.com MX でメールサーバー、@8.8.8.8 のように問い合わせ先の DNS サーバーを指定できます。ANSWER SECTION に結果が出ます。短く見たいときは +short。Windows には標準で入っていないので、nslookup か Resolve-DnsName を使うか、BIND のツールを入れます",
+    "en": "Shows how a name resolves in detail. dig example.com asks for the A record (IPv4 address), dig example.com MX for the mail servers, and @8.8.8.8 picks the DNS server to ask. The result is in the ANSWER SECTION; +short prints only the values. Windows does not ship it: use nslookup or Resolve-DnsName, or install the BIND tools"
+  },
+  "install": {
+    "brew": "brew install bind",
+    "apt": "sudo apt install dnsutils",
+    "dnf": "sudo dnf install bind-utils",
+    "pacman": "sudo pacman -S bind",
+    "scoop": "scoop install bind",
+    "url": "https://www.isc.org/bind/"
+  },
+  "options": [
+    { "flags": ["+short"], "summary": { "ja": "結果の値だけを表示", "en": "Print only the answer values" } },
+    {
+      "flags": ["+trace"],
+      "summary": { "ja": "ルートサーバーから順にたどって表示", "en": "Follow the delegation from the root servers" }
+    },
+    {
+      "flags": ["+noall", "+answer"],
+      "summary": {
+        "ja": "ANSWER セクションだけ表示（2 つ一緒に使う）",
+        "en": "Show only the ANSWER section (use both together)"
+      }
+    },
+    {
+      "flags": ["-x"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "IP アドレスから名前を逆引き", "en": "Reverse lookup: name for an IP address" }
+    },
+    {
+      "flags": ["-t"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "レコードの種類（A、AAAA、MX、TXT、NS、CNAME など）",
+        "en": "Record type (A, AAAA, MX, TXT, NS, CNAME, ...)"
+      }
+    },
+    {
+      "flags": ["-p"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "問い合わせ先のポート（既定 53）", "en": "Port of the DNS server (default 53)" }
+    }
+  ],
+  "args": [
+    {
+      "name": "name",
+      "type": "string",
+      "summary": {
+        "ja": "調べるドメイン名。@サーバー を前に付けると問い合わせ先を指定",
+        "en": "Domain name to look up; prefix @server to choose the DNS server"
+      }
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "optional": true,
+      "summary": { "ja": "レコードの種類（省略時は A）", "en": "Record type (default A)" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "dig example.com",
+      "summary": {
+        "ja": "example.com の IPv4 アドレス（A レコード）を調べる",
+        "en": "Look up the IPv4 address (A record) of example.com"
+      }
+    },
+    {
+      "command": "dig +short example.com MX",
+      "summary": { "ja": "メールサーバー（MX）だけを短く表示", "en": "Print only the mail servers (MX)" }
+    },
+    {
+      "command": "dig @1.1.1.1 example.com AAAA",
+      "summary": { "ja": "1.1.1.1 に IPv6 アドレスを聞く", "en": "Ask 1.1.1.1 for the IPv6 address" }
+    },
+    {
+      "command": "dig -x 93.184.216.34",
+      "summary": { "ja": "IP アドレスからドメイン名を逆引き", "en": "Reverse lookup of an IP address" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "connection timed out; no servers could be reached",
+      "hint": {
+        "ja": "DNS サーバーに届きませんでした。ネットワーク接続と、@ で指定したサーバーのアドレスを確認してください",
+        "en": "The DNS server did not answer. Check the network connection and the server given after @"
+      }
+    },
+    {
+      "pattern": "status: NXDOMAIN",
+      "hint": {
+        "ja": "そのドメイン名は存在しません（NXDOMAIN）。つづりを確認してください",
+        "en": "The domain name does not exist (NXDOMAIN). Check the spelling"
+      }
+    }
+  ]
+}

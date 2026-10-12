@@ -1,0 +1,13 @@
+[mod]
+id = "nishi-yura.theme-shinkai"
+name = "深海 / Shinkai"
+version = "1.0.0"
+description = "深い海の底のような、濃紺に青緑のアクセントの暗いテーマ / A dark deep-sea theme: navy depths with teal highlights"
+author = "nishi-yura"
+license = "MIT"
+homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/theme-shinkai"
+kind = "theme"
+
+[compat]
+otterm = ">=0.0.0 <2.0.0"
+api = "1"

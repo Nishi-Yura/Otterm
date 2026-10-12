@@ -34,6 +34,19 @@ const CATEGORIES = {
   pomodoro: ["fun", "workflow"],
   "done-notify": ["workflow"],
   cheatsheet: ["input"],
+  "theme-yuki": ["theme"],
+  "theme-yuyake": ["theme"],
+  "theme-shinkai": ["theme"],
+  "outfit-winter": ["outfit"],
+  "dict-net-tools": ["input"],
+  "dict-db-tools": ["input"],
+  "dict-modern-cli": ["input"],
+  "dict-media-tools": ["input"],
+  "exit-status": ["workflow"],
+  "command-stats": ["fun", "workflow"],
+  "project-scripts": ["workflow", "language"],
+  bookmarks: ["workflow"],
+  "daily-tip": ["fun", "input"],
 };
 
 const run = (cmd, cmdArgs, cwd = root) =>

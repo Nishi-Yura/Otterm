@@ -1,0 +1,39 @@
+name: Feature request / 機能の要望
+description: Something otterm or a mod should do. / otterm や mod にしてほしいこと。
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Many features fit better as a mod than in the core (see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md)). If you can say whether this should be a mod, a bundled mod or a core change, that helps.
+        多くの機能は本体ではなく mod として作るほうが合います。mod・同梱 mod・本体のどれが合うか、分かれば書いてください。
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation, not the solution. Who is it for, a beginner or someone who lives in a terminal?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like otterm to do?
+      description: How it would look or behave. Sketches and examples from other terminals are welcome.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where should it live?
+      options:
+        - Not sure
+        - A mod in the registry (I might write it)
+        - A bundled mod
+        - The core (renderer, VT, PTY, sessions)
+        - Kotsume / Pebble
+        - Documentation
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Constraints you know of, for example privacy (otterm has no server) or performance (keystrokes never wait for a mod).

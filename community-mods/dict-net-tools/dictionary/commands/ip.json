@@ -1,0 +1,72 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "ip",
+  "platforms": ["linux"],
+  "summary": {
+    "ja": "IP アドレス、ネットワークインターフェース、ルーティングを表示・設定します（Linux）",
+    "en": "Shows and configures IP addresses, network interfaces and routes (Linux)"
+  },
+  "description": {
+    "ja": "ifconfig と route の後継（iproute2）です。ip a で自分の IP アドレス、ip r でデフォルトゲートウェイ、ip link でインターフェースの状態が分かります。表示は誰でもできますが、設定の変更（add、del、set）には root が要り、間違えると通信が切れます",
+    "en": "The successor of ifconfig and route (iproute2). ip a shows your IP addresses, ip r the default gateway, ip link the interface state. Viewing is open to everyone; changing things (add, del, set) needs root and can cut your connection"
+  },
+  "options": [
+    { "flags": ["-4"], "summary": { "ja": "IPv4 だけ表示", "en": "IPv4 only" } },
+    { "flags": ["-6"], "summary": { "ja": "IPv6 だけ表示", "en": "IPv6 only" } },
+    { "flags": ["-br", "-brief"], "summary": { "ja": "1 行ずつの短い表示", "en": "Brief one-line output" } },
+    { "flags": ["-c", "-color"], "summary": { "ja": "色付きで表示", "en": "Colored output" } },
+    { "flags": ["-j", "-json"], "summary": { "ja": "JSON で出力", "en": "JSON output" } }
+  ],
+  "subcommands": [
+    {
+      "name": "address",
+      "aliases": ["addr", "a"],
+      "summary": { "ja": "IP アドレスを表示・追加・削除", "en": "Show, add or delete IP addresses" },
+      "examples": [
+        {
+          "command": "ip -br a",
+          "summary": {
+            "ja": "インターフェースごとの IP アドレスを短く表示",
+            "en": "IP addresses per interface, briefly"
+          }
+        }
+      ]
+    },
+    {
+      "name": "route",
+      "aliases": ["r"],
+      "summary": { "ja": "ルーティングテーブルを表示・変更", "en": "Show or change the routing table" },
+      "examples": [
+        {
+          "command": "ip r",
+          "summary": {
+            "ja": "デフォルトゲートウェイなどの経路を表示",
+            "en": "Show routes, including the default gateway"
+          }
+        }
+      ]
+    },
+    {
+      "name": "link",
+      "aliases": ["l"],
+      "summary": {
+        "ja": "インターフェースの状態（UP / DOWN、MAC アドレス）を表示・変更",
+        "en": "Show or change interface state (UP / DOWN, MAC address)"
+      },
+      "danger": "warn",
+      "dangerMessage": {
+        "ja": "ip link set ... down でインターフェースを落とすと、そのネットワークの通信が切れます。SSH 越しなら接続が失われます",
+        "en": "ip link set ... down disconnects that network. Over SSH you will lose the session"
+      }
+    },
+    {
+      "name": "neigh",
+      "aliases": ["n"],
+      "summary": { "ja": "近隣（ARP / NDP）テーブルを表示", "en": "Show the neighbour (ARP / NDP) table" }
+    }
+  ],
+  "examples": [
+    { "command": "ip -br a", "summary": { "ja": "自分の IP アドレスを確認する", "en": "See your own IP addresses" } },
+    { "command": "ip r", "summary": { "ja": "デフォルトゲートウェイを確認する", "en": "See the default gateway" } }
+  ]
+}

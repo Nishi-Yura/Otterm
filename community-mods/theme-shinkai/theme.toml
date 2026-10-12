@@ -1,0 +1,22 @@
+[theme]
+name = "Shinkai"
+appearance = "dark"
+
+[theme.terminal]
+foreground = "#d7e3ea"
+background = "#0f1b26"
+cursor = "#4fc3c9"
+selection = "#1f3a4a"
+ansi = ["#1a2a38", "#e0706c", "#7fc08a", "#d9b86a", "#5e9fd8", "#a98fd0", "#4fc3c9", "#c3d1da"]
+bright = ["#5a7284", "#ef8c86", "#9bd4a3", "#e8cb86", "#7fb6ea", "#c0aae2", "#74d9dd", "#eaf2f7"]
+
+[theme.ui]
+bg = "#0f1b26"
+bg-elevated = "#172636"
+fg = "#d7e3ea"
+fg-muted = "#8fa3b2"
+accent = "#4fc3c9"
+border = "#243849"
+danger = "#ef8c86"
+success = "#9bd4a3"
+warning = "#e8cb86"

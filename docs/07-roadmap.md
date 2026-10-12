@@ -143,6 +143,7 @@
   - 済み（配布、2026-10-12。費用のかかることはしない方針で、判断 M18）: Windows の NSIS インストーラ（`otterm.com` 同梱、ユーザーの PATH に追加）と `scripts/release.mjs`（配布物・SHA256SUMS・updater 用 `latest.json`・winget と Homebrew のマニフェストを作る。アップロードはしない）、Tauri updater（公開鍵はビルド時に埋め込み、パレットの「更新を確認」と起動 10 秒後の確認）、`.otmod` パッケージ（作成・K7 の検査付き展開）、mod レジストリのクライアント（`otterm mod search|install <id>|update|publish`、SHA-256 の検証、ストア画面と初回の接続確認）とレジストリのひな形（`registry/`）、ドキュメントサイト（`site/`、Starlight、日英、TypeDoc の API リファレンス）、クラッシュログと「Issue を作る」、リリース手順（[release.md](release.md)）
   - 確認済み（Windows、開発機）: ローカルのレジストリで publish → 検索 → インストール → 更新、改ざんしたチェックサムの拒否、インストーラのビルド
   - 済み（2026-10-12）: リポジトリを public に、updater の鍵（`packaging/updater.pub`）。レジストリは本体リポジトリの `registry/` に置き、同梱以外の mod を 11 個登録した（`community-mods/`: テーマ 3、辞書 3、拡張 5。`node scripts/publish-community-mods.mjs` で `registry/packages/` に入る）。11 個すべてをレジストリからインストールし、拡張 5 個の動作を Windows で確かめた
+  - 済み（2026-10-12、v1.0 公開後）: 同梱以外の mod を 24 個に（テーマ 6、辞書 7、拡張 10、衣装 1）。追加したのはテーマ「雪」「夕焼け」「深海」、衣装「冬支度」、辞書（ネットワーク診断、データベースクライアント、モダン CLI、メディア変換。31 コマンドと危険ルール 7 本）、拡張（終了コードと実行時間、コマンド統計、プロジェクトのスクリプト、フォルダのしおり、今日のコマンド）。13 個すべてを `.otmod` からインストールし、拡張 5 個、テーマ、衣装、辞書の危険ルール（`redis-cli FLUSHALL` の確認）を Windows で確かめた。GitHub の About（説明、トピック）、`SECURITY.md`、Issue / PR テンプレート、`CHANGELOG.md` も追加
   - 残り: v1.0 のバージョンを決めてのビルドと GitHub Releases への公開、winget への PR、Homebrew の tap、macOS / Linux でのビルド、ドキュメントサイトの置き場所、sigstore（D2）
 
 ### v1.x

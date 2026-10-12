@@ -1,0 +1,62 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "tracert",
+  "platforms": ["windows"],
+  "summary": {
+    "ja": "宛先までパケットが通る経路（経由するルーター）と、各区間の往復時間を表示します（Windows）",
+    "en": "Shows the route packets take to a host and the round-trip time per hop (Windows)"
+  },
+  "description": {
+    "ja": "Windows 版の traceroute です。1 行が 1 つの経由地（ホップ）で、3 回の往復時間が出ます。「要求がタイムアウトしました」は応答がなかった印で、途中だけなら問題ないことが多いです。-d を付けると名前を引かないので速くなります",
+    "en": "The Windows traceroute. Each line is one hop with three round-trip times; \"Request timed out\" means no reply, which is often fine for hops in the middle. -d skips name lookups and is faster"
+  },
+  "options": [
+    {
+      "flags": ["-d"],
+      "summary": {
+        "ja": "ホスト名を引かず IP アドレスのまま表示（速い）",
+        "en": "Do not resolve names; show IP addresses (faster)"
+      }
+    },
+    {
+      "flags": ["-h"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "たどる最大ホップ数（既定 30）", "en": "Maximum number of hops (default 30)" }
+    },
+    {
+      "flags": ["-w"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "応答を待つミリ秒", "en": "Milliseconds to wait for a reply" }
+    },
+    { "flags": ["-4"], "summary": { "ja": "IPv4 を使う", "en": "Use IPv4" } },
+    { "flags": ["-6"], "summary": { "ja": "IPv6 を使う", "en": "Use IPv6" } }
+  ],
+  "args": [
+    {
+      "name": "host",
+      "type": "string",
+      "summary": { "ja": "宛先のホスト名か IP アドレス", "en": "Destination host name or IP address" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "tracert example.com",
+      "summary": { "ja": "example.com までの経路を表示", "en": "Show the route to example.com" }
+    },
+    {
+      "command": "tracert -d 1.1.1.1",
+      "summary": { "ja": "名前を引かずに速く表示", "en": "Faster, without name lookups" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "Unable to resolve target system name (?<host>\\S+)",
+      "hint": {
+        "ja": "{host} の名前を解決できませんでした。つづりと DNS の設定を確認してください",
+        "en": "The name {host} could not be resolved. Check the spelling and the DNS settings"
+      }
+    }
+  ]
+}

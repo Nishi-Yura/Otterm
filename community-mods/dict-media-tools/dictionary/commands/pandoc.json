@@ -1,0 +1,147 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "pandoc",
+  "summary": {
+    "ja": "文書を変換します。Markdown から HTML、Word（docx）、PDF、またその逆など",
+    "en": "Converts documents: Markdown to HTML, Word (docx), PDF and back, among many formats"
+  },
+  "description": {
+    "ja": "pandoc 入力 -o 出力 が基本で、入力と出力の形式は拡張子から判断されます（-f と -t で明示もできます）。PDF にするには LaTeX（または --pdf-engine で wkhtmltopdf や typst）が要ります。-s で単体で開ける完全な文書、--toc で目次、--reference-doc で Word のひな形を指定できます",
+    "en": "pandoc input -o output is the basic form; formats are guessed from extensions (-f and -t set them explicitly). PDF output needs LaTeX, or another engine via --pdf-engine such as wkhtmltopdf or typst. -s makes a standalone document, --toc adds a table of contents, --reference-doc applies a Word template"
+  },
+  "install": {
+    "winget": "winget install JohnMacFarlane.Pandoc",
+    "scoop": "scoop install pandoc",
+    "choco": "choco install pandoc",
+    "brew": "brew install pandoc",
+    "apt": "sudo apt install pandoc",
+    "dnf": "sudo dnf install pandoc",
+    "pacman": "sudo pacman -S pandoc-cli",
+    "url": "https://pandoc.org/installing.html"
+  },
+  "options": [
+    {
+      "flags": ["-o", "--output"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "出力ファイル（拡張子で形式が決まる）", "en": "Output file (its extension picks the format)" }
+    },
+    {
+      "flags": ["-f", "--from"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "入力の形式（markdown、html、docx、latex など）",
+        "en": "Input format (markdown, html, docx, latex, ...)"
+      }
+    },
+    {
+      "flags": ["-t", "--to"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "出力の形式（html、docx、pdf、gfm、plain など）",
+        "en": "Output format (html, docx, pdf, gfm, plain, ...)"
+      }
+    },
+    {
+      "flags": ["-s", "--standalone"],
+      "summary": {
+        "ja": "ヘッダーやスタイルを含む、単体で開ける文書にする",
+        "en": "Produce a complete document with header and styles"
+      }
+    },
+    { "flags": ["--toc", "--table-of-contents"], "summary": { "ja": "目次を付ける", "en": "Add a table of contents" } },
+    {
+      "flags": ["-c", "--css"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "HTML に使う CSS", "en": "CSS for HTML output" }
+    },
+    {
+      "flags": ["--pdf-engine"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "PDF を作るエンジン（xelatex、wkhtmltopdf、typst など。日本語は xelatex か lualatex）",
+        "en": "PDF engine (xelatex, wkhtmltopdf, typst, ...; Japanese needs xelatex or lualatex)"
+      }
+    },
+    {
+      "flags": ["--reference-doc"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "Word / PowerPoint のスタイルのひな形", "en": "Word / PowerPoint template for styles" }
+    },
+    {
+      "flags": ["-V", "--variable"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "テンプレート変数（例: -V geometry:margin=2cm）",
+        "en": "Template variable (e.g. -V geometry:margin=2cm)"
+      }
+    },
+    {
+      "flags": ["--extract-media"],
+      "takesValue": true,
+      "valueType": "dir",
+      "summary": {
+        "ja": "docx などに埋め込まれた画像をこのフォルダに取り出す",
+        "en": "Extract embedded images (e.g. from docx) into this folder"
+      }
+    },
+    {
+      "flags": ["--wrap"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "行の折り返し（none で折り返さない）", "en": "Line wrapping (none to keep lines)" }
+    }
+  ],
+  "args": [
+    {
+      "name": "input",
+      "type": "file",
+      "variadic": true,
+      "summary": { "ja": "入力ファイル（複数なら結合）", "en": "Input files (several are concatenated)" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "pandoc README.md -s -o readme.html",
+      "summary": { "ja": "Markdown を単体で開ける HTML にする", "en": "Markdown to a standalone HTML page" }
+    },
+    {
+      "command": "pandoc report.md -o report.docx",
+      "summary": { "ja": "Markdown を Word 文書にする", "en": "Markdown to a Word document" }
+    },
+    {
+      "command": "pandoc report.docx -t gfm --extract-media=img -o report.md",
+      "summary": {
+        "ja": "Word を Markdown にして、画像は img フォルダへ",
+        "en": "Word to Markdown, with the images in img"
+      }
+    },
+    {
+      "command": "pandoc paper.md --pdf-engine=xelatex -V mainfont='Noto Sans CJK JP' -o paper.pdf",
+      "summary": { "ja": "日本語の Markdown を PDF にする", "en": "Japanese Markdown to PDF" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "pdflatex not found\\. Please select a different --pdf-engine or install pdflatex",
+      "hint": {
+        "ja": "PDF を作るには LaTeX が要ります。TeX Live か MiKTeX を入れるか、--pdf-engine=wkhtmltopdf や typst など別のエンジンを使ってください",
+        "en": "PDF output needs LaTeX. Install TeX Live or MiKTeX, or use another engine such as --pdf-engine=wkhtmltopdf or typst"
+      }
+    },
+    {
+      "pattern": "Unknown (input|output) format (?<fmt>\\S+)",
+      "hint": {
+        "ja": "{fmt} という形式はありません。pandoc --list-input-formats / --list-output-formats で名前を確かめてください",
+        "en": "There is no format called {fmt}. See pandoc --list-input-formats / --list-output-formats"
+      },
+      "fix": "pandoc --list-output-formats"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "nishi-yura.exit-status",
+  "name": "終了コードと実行時間 / Exit code and duration",
+  "description": "直前のコマンドの終了コードと実行時間をステータスバーに表示します / Shows the exit code and duration of the last command in the status bar.",
+  "author": "nishi-yura",
+  "kind": "extension",
+  "categories": ["workflow"],
+  "license": "MIT",
+  "repository": "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/exit-status",
+  "permissions": ["terminal.read"],
+  "reviewed": true,
+  "hidden": false,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.exit-status-1.0.0.otmod",
+      "sha256": "7f0255b8fc91298489f41892e8317df15f5ce89187a33115ad3b7778223107c7",
+      "size": 5026,
+      "published": "2026-10-12"
+    }
+  ]
+}

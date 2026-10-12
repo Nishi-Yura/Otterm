@@ -1,0 +1,191 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "ffmpeg",
+  "summary": {
+    "ja": "動画と音声を変換・切り出し・圧縮する万能ツールです",
+    "en": "Converts, trims and compresses video and audio: the all-purpose media tool"
+  },
+  "description": {
+    "ja": "ffmpeg -i 入力 出力 が基本で、出力の拡張子から形式を決めます（mp4 → mp3 なら音声だけ取り出し）。-ss と -t で切り出し、-vf scale=... で縮小、-c:v libx264 -crf 23 で圧縮、-c copy で変換せずに箱だけ変えます（速い）。オプションは入力の前に置くと入力に、後ろに置くと出力に効きます。出力ファイルが既にあると上書きするか聞かれます（-y で黙って上書き）",
+    "en": "ffmpeg -i input output is the basic form; the output extension picks the format (mp4 to mp3 extracts the audio). -ss and -t trim, -vf scale=... resizes, -c:v libx264 -crf 23 compresses, -c copy changes the container without re-encoding (fast). Options before -i apply to the input, after it to the output. An existing output file prompts before overwriting (-y overwrites silently)"
+  },
+  "install": {
+    "winget": "winget install Gyan.FFmpeg",
+    "scoop": "scoop install ffmpeg",
+    "choco": "choco install ffmpeg",
+    "brew": "brew install ffmpeg",
+    "apt": "sudo apt install ffmpeg",
+    "dnf": "sudo dnf install ffmpeg",
+    "pacman": "sudo pacman -S ffmpeg",
+    "url": "https://ffmpeg.org/download.html"
+  },
+  "options": [
+    {
+      "flags": ["-i"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": { "ja": "入力ファイル（複数可）", "en": "Input file (repeatable)" }
+    },
+    {
+      "flags": ["-y"],
+      "summary": { "ja": "出力が既にあっても聞かずに上書き", "en": "Overwrite the output without asking" },
+      "danger": "warn",
+      "dangerMessage": {
+        "ja": "同名の出力ファイルを確認なしで上書きします",
+        "en": "Overwrites an existing output file without confirmation"
+      }
+    },
+    {
+      "flags": ["-n"],
+      "summary": { "ja": "出力が既にあれば何もしない", "en": "Never overwrite; skip if the output exists" }
+    },
+    {
+      "flags": ["-ss"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "この位置から（例: 00:01:30 や 90）", "en": "Start at this position (e.g. 00:01:30 or 90)" }
+    },
+    {
+      "flags": ["-t"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "この長さだけ（例: 10 や 00:00:10）", "en": "Only this duration (e.g. 10 or 00:00:10)" }
+    },
+    {
+      "flags": ["-to"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "この位置まで", "en": "Stop at this position" }
+    },
+    {
+      "flags": ["-c", "-codec"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "コーデック（copy で変換せずそのまま）。-c:v は映像、-c:a は音声",
+        "en": "Codec (copy keeps the stream as is). -c:v is video, -c:a audio"
+      }
+    },
+    {
+      "flags": ["-crf"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": {
+        "ja": "画質（小さいほど高画質で大きいファイル。x264 は 18〜28 が目安）",
+        "en": "Quality (lower is better and bigger; 18 to 28 is typical for x264)"
+      }
+    },
+    {
+      "flags": ["-vf"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "映像フィルター（scale=1280:-2、fps=30、crop=... など）",
+        "en": "Video filter (scale=1280:-2, fps=30, crop=..., ...)"
+      }
+    },
+    {
+      "flags": ["-af"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "音声フィルター（volume=0.5 など）", "en": "Audio filter (e.g. volume=0.5)" }
+    },
+    { "flags": ["-an"], "summary": { "ja": "音声を入れない", "en": "Drop the audio" } },
+    {
+      "flags": ["-vn"],
+      "summary": { "ja": "映像を入れない（音声だけ取り出す）", "en": "Drop the video (extract audio)" }
+    },
+    {
+      "flags": ["-b:a"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "音声のビットレート（例: 192k）", "en": "Audio bitrate (e.g. 192k)" }
+    },
+    {
+      "flags": ["-r"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "フレームレート", "en": "Frame rate" }
+    },
+    {
+      "flags": ["-f"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "形式を拡張子ではなく明示（例: -f gif）",
+        "en": "Force a format instead of guessing from the extension (e.g. -f gif)"
+      }
+    },
+    {
+      "flags": ["-hide_banner"],
+      "summary": { "ja": "起動時のバージョン情報を出さない", "en": "Hide the version banner" }
+    }
+  ],
+  "args": [
+    {
+      "name": "output",
+      "type": "file",
+      "summary": { "ja": "出力ファイル（拡張子で形式が決まる）", "en": "Output file (its extension picks the format)" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "ffmpeg -i input.mov output.mp4",
+      "summary": { "ja": "MOV を MP4 に変換する", "en": "Convert MOV to MP4" }
+    },
+    {
+      "command": "ffmpeg -i input.mp4 -vn -b:a 192k output.mp3",
+      "summary": { "ja": "動画から音声だけを MP3 で取り出す", "en": "Extract the audio as MP3" }
+    },
+    {
+      "command": "ffmpeg -ss 00:01:00 -i input.mp4 -t 30 -c copy clip.mp4",
+      "summary": {
+        "ja": "1 分の位置から 30 秒を、変換せずに切り出す",
+        "en": "Cut 30 seconds from the 1-minute mark without re-encoding"
+      }
+    },
+    {
+      "command": "ffmpeg -i input.mp4 -vf scale=1280:-2 -c:v libx264 -crf 23 -c:a copy small.mp4",
+      "summary": {
+        "ja": "幅 1280 に縮小して圧縮する（音声はそのまま）",
+        "en": "Resize to 1280 wide and compress (audio untouched)"
+      }
+    },
+    {
+      "command": "ffmpeg -i input.mp4 -vf 'fps=12,scale=480:-1' output.gif",
+      "summary": { "ja": "動画を GIF にする", "en": "Turn a video into a GIF" }
+    }
+  ],
+  "errors": [
+    {
+      "pattern": "(?<file>\\S+): No such file or directory",
+      "hint": {
+        "ja": "{file} が見つかりません。ファイル名と今いるフォルダを確認してください。スペースを含む名前はクォートで囲みます",
+        "en": "{file} was not found. Check the name and the current folder; quote names with spaces"
+      },
+      "fix": "ls"
+    },
+    {
+      "pattern": "File '(?<file>[^']+)' already exists\\. Overwrite\\? \\[y/N\\]",
+      "hint": {
+        "ja": "出力 {file} が既にあります。y で上書き、N でやめます。毎回聞かれたくなければ -y か -n を付けます",
+        "en": "The output {file} already exists: y overwrites, N cancels. Add -y or -n to skip the question"
+      }
+    },
+    {
+      "pattern": "Unknown encoder '(?<enc>[^']+)'",
+      "hint": {
+        "ja": "このビルドの ffmpeg には {enc} が入っていません。ffmpeg -encoders で使えるものを確認してください",
+        "en": "This ffmpeg build lacks the encoder {enc}. See ffmpeg -encoders for what is available"
+      },
+      "fix": "ffmpeg -hide_banner -encoders"
+    },
+    {
+      "pattern": "Invalid data found when processing input",
+      "hint": {
+        "ja": "入力ファイルを読めません。壊れているか、拡張子と中身が違うか、動画ではないファイルかもしれません。ffprobe で確認してください",
+        "en": "The input could not be read: it may be corrupt, mislabeled or not a media file. Check it with ffprobe"
+      }
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "mysqldump",
+  "aliases": ["mariadb-dump"],
+  "summary": {
+    "ja": "MySQL / MariaDB のデータベースをバックアップ（SQL に書き出し）します",
+    "en": "Backs up a MySQL / MariaDB database as SQL"
+  },
+  "description": {
+    "ja": "mysqldump -u ユーザー -p データベース > backup.sql で、表の定義とデータを SQL として書き出します。戻すときは mysql -u ユーザー -p データベース < backup.sql。InnoDB なら --single-transaction を付けると、表をロックせずに一貫したバックアップが取れます。接続のオプションは mysql と同じです",
+    "en": "mysqldump -u user -p database > backup.sql writes the schema and data as SQL; restore with mysql -u user -p database < backup.sql. With InnoDB, --single-transaction gives a consistent backup without locking tables. Connection options match mysql"
+  },
+  "install": {
+    "winget": "winget install Oracle.MySQL",
+    "brew": "brew install mysql-client",
+    "apt": "sudo apt install mysql-client",
+    "dnf": "sudo dnf install mysql",
+    "pacman": "sudo pacman -S mariadb-clients",
+    "url": "https://dev.mysql.com/downloads/"
+  },
+  "options": [
+    {
+      "flags": ["-u", "--user"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続するユーザー名", "en": "User name to connect as" }
+    },
+    { "flags": ["-p", "--password"], "summary": { "ja": "パスワードを聞く", "en": "Prompt for the password" } },
+    {
+      "flags": ["-h", "--host"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": { "ja": "接続先のホスト", "en": "Server host" }
+    },
+    {
+      "flags": ["--single-transaction"],
+      "summary": {
+        "ja": "ロックせずに一貫したバックアップを取る（InnoDB）",
+        "en": "Consistent backup without locking (InnoDB)"
+      }
+    },
+    {
+      "flags": ["--all-databases", "-A"],
+      "summary": { "ja": "すべてのデータベースを書き出す", "en": "Dump every database" }
+    },
+    {
+      "flags": ["--databases", "-B"],
+      "summary": {
+        "ja": "複数のデータベースを名前で指定する（CREATE DATABASE も含まれる）",
+        "en": "Name several databases (CREATE DATABASE is included)"
+      }
+    },
+    { "flags": ["--no-data", "-d"], "summary": { "ja": "定義だけ、データなし", "en": "Schema only, no data" } },
+    { "flags": ["--no-create-info", "-t"], "summary": { "ja": "データだけ、定義なし", "en": "Data only, no schema" } },
+    {
+      "flags": ["--result-file", "-r"],
+      "takesValue": true,
+      "valueType": "file",
+      "summary": {
+        "ja": "出力先のファイル（リダイレクトより文字コードが安全）",
+        "en": "Output file (safer than redirection for encodings)"
+      }
+    },
+    {
+      "flags": ["--add-drop-table"],
+      "summary": {
+        "ja": "作る前に DROP TABLE する文を含める（既定でオン。復元先の既存データが消える）",
+        "en": "Include DROP TABLE before CREATE (on by default; existing data at the restore target is lost)"
+      }
+    }
+  ],
+  "args": [
+    { "name": "database", "type": "string", "summary": { "ja": "書き出すデータベース", "en": "Database to dump" } },
+    {
+      "name": "tables",
+      "type": "string",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "この表だけ書き出す", "en": "Only these tables" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "mysqldump -u root -p appdb > appdb.sql",
+      "summary": { "ja": "appdb を SQL ファイルに書き出す", "en": "Dump appdb to a SQL file" }
+    },
+    {
+      "command": "mysqldump -u root -p --single-transaction appdb users orders > part.sql",
+      "summary": { "ja": "2 つの表だけを、ロックせずに書き出す", "en": "Dump two tables without locking" }
+    },
+    {
+      "command": "mysqldump -u root -p --all-databases > all.sql",
+      "summary": { "ja": "すべてのデータベースを書き出す", "en": "Dump every database" }
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "$schema": "../../../../packages/api/schemas/dictionary.schema.json",
+  "name": "eza",
+  "aliases": ["exa"],
+  "summary": {
+    "ja": "ファイルの一覧を色つき・アイコンつきで表示します（ls の見やすい版）",
+    "en": "Lists files with colors and icons (a nicer ls)"
+  },
+  "description": {
+    "ja": "ls とほぼ同じ使い方で、種類ごとの色、Git の状態、ツリー表示（-T）が使えます。-l で詳細、-a で隠しファイル、--icons でアイコン（Nerd Font が要ります）。exa の後継で、オプションは同じです",
+    "en": "Used like ls, with colors per file type, Git status and a tree view (-T). -l for details, -a for hidden files, --icons for icons (needs a Nerd Font). It succeeds exa with the same options"
+  },
+  "install": {
+    "winget": "winget install eza-community.eza",
+    "scoop": "scoop install eza",
+    "brew": "brew install eza",
+    "apt": "sudo apt install eza",
+    "dnf": "sudo dnf install eza",
+    "pacman": "sudo pacman -S eza",
+    "cargo": "cargo install eza",
+    "url": "https://github.com/eza-community/eza"
+  },
+  "options": [
+    {
+      "flags": ["-l", "--long"],
+      "summary": { "ja": "権限、サイズ、更新日時つきの詳細表示", "en": "Long listing with permissions, size and date" }
+    },
+    { "flags": ["-a", "--all"], "summary": { "ja": "隠しファイルも表示", "en": "Include hidden files" } },
+    { "flags": ["-T", "--tree"], "summary": { "ja": "ツリーで表示", "en": "Tree view" } },
+    {
+      "flags": ["-L", "--level"],
+      "takesValue": true,
+      "valueType": "number",
+      "summary": { "ja": "ツリーの深さ", "en": "Tree depth" }
+    },
+    {
+      "flags": ["--icons"],
+      "summary": { "ja": "アイコンを付ける（Nerd Font が必要）", "en": "Show icons (needs a Nerd Font)" }
+    },
+    { "flags": ["--git"], "summary": { "ja": "Git の状態（変更、未追跡）を表示", "en": "Show Git status per file" } },
+    {
+      "flags": ["-s", "--sort"],
+      "takesValue": true,
+      "valueType": "string",
+      "summary": {
+        "ja": "並び順（name、size、modified、type など）",
+        "en": "Sort order (name, size, modified, type, ...)"
+      }
+    },
+    { "flags": ["-r", "--reverse"], "summary": { "ja": "逆順", "en": "Reverse order" } },
+    { "flags": ["--group-directories-first"], "summary": { "ja": "フォルダを先に並べる", "en": "List folders first" } },
+    {
+      "flags": ["-h", "--header"],
+      "summary": { "ja": "詳細表示に見出し行を付ける", "en": "Add a header row to the long view" }
+    }
+  ],
+  "args": [
+    {
+      "name": "path",
+      "type": "path",
+      "optional": true,
+      "variadic": true,
+      "summary": { "ja": "表示する場所（省略時は今のフォルダ）", "en": "What to list (default: the current folder)" }
+    }
+  ],
+  "examples": [
+    {
+      "command": "eza -la --git",
+      "summary": {
+        "ja": "隠しファイルも含めて詳細と Git の状態を表示",
+        "en": "Long view with hidden files and Git status"
+      }
+    },
+    { "command": "eza -T -L 2", "summary": { "ja": "2 階層までのツリー", "en": "Tree two levels deep" } },
+    { "command": "eza -l -s modified -r", "summary": { "ja": "新しい順に並べる", "en": "Newest first" } }
+  ]
+}
