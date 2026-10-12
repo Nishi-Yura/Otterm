@@ -4,6 +4,13 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
+### Changed
+
+- Mods have a screen of their own, over the whole window like the settings: installed mods and the store on the left, the chosen mod on the right with its description, what it may use, its settings and an on/off button. It replaces the mods list in the right sidebar and the mods page in Settings (which now opens it). The status bar's "mod" and the palette open it.
+- The intro and the "recommended set" button show only while no mod is on, and not again once closed.
+- The "type ls to try it" hint is gone from the window; the tutorial (the onboarding mod) covers it. A tutorial left halfway no longer opens itself at every start; starting it again carries on where it stopped.
+- Mod switches say "オンにする / オフにする" (Turn on / Turn off).
+
 ## [1.2.0] - 2026-10-12
 
 ### Added

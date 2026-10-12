@@ -59,7 +59,8 @@ import {
   sessionInfo,
   type ToastRequest,
 } from "./mods/host";
-import { ModDialog, ModsPanel, Panels, PermissionDialog, StatusBar, type Toast, Toasts } from "./mods/ModUi";
+import { ModsScreen } from "./mods/ModsScreen";
+import { ModDialog, Panels, PermissionDialog, StatusBar, type Toast, Toasts } from "./mods/ModUi";
 import type { ThemeInfo } from "./mods/protocol";
 import { PromptBar, type PromptProps } from "./PromptBar";
 import { folderName, urlToPath } from "./paths";
@@ -386,9 +387,10 @@ export function App() {
   const modDialog = () => dialogs()[dialogs().length - 1];
   /** The panel open in each panel slot, by panel id. */
   const [shownPanel, setShownPanel] = createSignal<Record<string, string | undefined>>({});
-  const MODS_PANEL = "otterm.mods";
   /** The settings screen (docs/04 §6). */
   const [settingsOpen, setSettingsOpen] = createSignal(false);
+  /** The mods screen: installed mods, the store, each mod in full. */
+  const [modsOpen, setModsOpen] = createSignal(false);
   /** A theme being edited in the settings: shown in the window until saved or dropped. */
   const [previewTheme, setPreviewTheme] = createSignal<UiConfig["theme"]>();
   /** A panel tab being dragged to another slot. */
@@ -584,7 +586,8 @@ export function App() {
         return true;
       }
       if (id === "otterm.mods.show") {
-        setShownPanel({ ...shownPanel(), [slotOf(MODS_PANEL, "sidebar.right")]: MODS_PANEL });
+        setSettingsOpen(false);
+        setModsOpen(true);
         return true;
       }
       return false;
@@ -1234,7 +1237,6 @@ export function App() {
     await openFirstTabs();
     setReady(true);
     if (config()?.safeMode) mascotSay("first", t("mascot-safe-mode"));
-    else firstTime("first-tab", t("mascot-first-tab"));
     void offerCrashLog();
     // The only connection otterm makes by itself, when the user allowed it (decision K5).
     if (config()?.checkUpdates) setTimeout(() => void checkForUpdate(false), UPDATE_DELAY_MS);
@@ -2138,24 +2140,6 @@ export function App() {
     });
   };
 
-  /** The window's own panels (the mods list) for the slot they are placed in. */
-  const builtinPanels = (slot: string) =>
-    slotOf(MODS_PANEL, "sidebar.right") === slot
-      ? [
-          {
-            id: MODS_PANEL,
-            title: t("mods-title"),
-            render: () => (
-              <ModsPanel
-                host={host}
-                developer={config()?.developerMode ?? false}
-                modsDir={config()?.modsDir ?? undefined}
-              />
-            ),
-          },
-        ]
-      : [];
-
   /**
    * Under the cursor, or above it when the cursor is near the bottom. The terminal's hidden input
    * sits at the cursor (it anchors the IME), so its box is the cursor's.
@@ -2170,13 +2154,11 @@ export function App() {
   };
 
   /** Panel ids that go in a slot, built-in ones included. */
-  const panelsIn = (slot: string): string[] => [
-    ...(slotOf(MODS_PANEL, "sidebar.right") === slot ? [MODS_PANEL] : []),
-    ...host
+  const panelsIn = (slot: string): string[] =>
+    host
       .panels()
       .filter((p) => slotOf(p.id, p.slot) === slot)
-      .map((p) => p.id),
-  ];
+      .map((p) => p.id);
 
   /**
    * The layout (docs/04 §1.2) decides which slots start open: a slot it shows gets its first panel
@@ -2199,7 +2181,7 @@ export function App() {
       layoutKey = key;
       opened.clear();
       for (const [slot, on] of slots) {
-        if (!on && next[slot] && next[slot] !== MODS_PANEL) {
+        if (!on && next[slot]) {
           next[slot] = undefined;
           changed = true;
         }
@@ -2207,7 +2189,7 @@ export function App() {
     }
     for (const [slot, on] of slots) {
       if (!on || opened.has(slot) || next[slot]) continue;
-      const first = panelsIn(slot).find((id) => id !== MODS_PANEL);
+      const first = panelsIn(slot)[0];
       if (first) {
         next[slot] = first;
         opened.add(slot);
@@ -2219,10 +2201,7 @@ export function App() {
       const id = next[slot];
       if (id && !panelsIn(slot).includes(id)) {
         next[slot] = undefined;
-        const to =
-          id === MODS_PANEL
-            ? slotOf(id, "sidebar.right")
-            : slotOf(id, host.panels().find((p) => p.id === id)?.slot ?? slot);
+        const to = slotOf(id, host.panels().find((p) => p.id === id)?.slot ?? slot);
         if (to !== slot) next[to] = id;
         changed = true;
       }
@@ -2370,7 +2349,6 @@ export function App() {
           copy={copyText}
           slotOf={slotOf}
           onDrag={setDragPanel}
-          builtin={builtinPanels("sidebar.left")}
         />
         <div class="body-center">
           <div ref={area} class="panes">
@@ -2545,7 +2523,6 @@ export function App() {
             copy={copyText}
             slotOf={slotOf}
             onDrag={setDragPanel}
-            builtin={builtinPanels("panel.bottom")}
           />
           <Show when={config()?.statusbar ?? true}>
             <StatusBar
@@ -2575,11 +2552,7 @@ export function App() {
                   showNotice(String(e)),
                 )
               }
-              onModsClick={() => {
-                const slot = slotOf(MODS_PANEL, "sidebar.right");
-                const open = shownPanel()[slot] === MODS_PANEL;
-                setShownPanel({ ...shownPanel(), [slot]: open ? undefined : MODS_PANEL });
-              }}
+              onModsClick={() => setModsOpen(!modsOpen())}
             />
           </Show>
         </div>
@@ -2592,7 +2565,6 @@ export function App() {
           copy={copyText}
           slotOf={slotOf}
           onDrag={setDragPanel}
-          builtin={builtinPanels("sidebar.right")}
         />
       </div>
       <Show when={palette()}>
@@ -2639,18 +2611,33 @@ export function App() {
           )}
         </For>
       </Show>
+      <Show when={modsOpen()}>
+        <ModsScreen
+          host={host}
+          developer={config()?.developerMode ?? false}
+          modsDir={config()?.modsDir ?? undefined}
+          notify={showNotice}
+          say={(text) => mascotSay("info", text, { mood: "happy" })}
+          onOutfitsChanged={loadMascot}
+          onClose={() => {
+            setModsOpen(false);
+            refocus();
+          }}
+        />
+      </Show>
       <Show when={settingsOpen()}>
         <Settings
+          onOpenMods={() => {
+            setSettingsOpen(false);
+            setModsOpen(true);
+          }}
           say={(text) => mascotSay("info", text, { mood: "happy" })}
           onOutfitsChanged={loadMascot}
           onSeenReset={() => setSeen(new Set<string>())}
           restart={restart}
           config={config()}
           host={host}
-          panels={[
-            { id: MODS_PANEL, title: t("mods-title"), slot: slotOf(MODS_PANEL, "sidebar.right") },
-            ...host.panels().map((p) => ({ id: p.id, title: p.title, slot: slotOf(p.id, p.slot) })),
-          ]}
+          panels={[...host.panels().map((p) => ({ id: p.id, title: p.title, slot: slotOf(p.id, p.slot) }))]}
           onClose={() => {
             setSettingsOpen(false);
             setPreviewTheme(undefined);

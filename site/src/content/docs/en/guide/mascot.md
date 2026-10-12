@@ -7,7 +7,7 @@ sidebar:
 
 Pebble (コツメ, Kotsume, in Japanese) is the otter who lives in otterm. The model is the Asian small-clawed otter. Pebble is not a sea otter.
 
-> Pebble is a mod (`otterm.mascot`). Turn it on in Settings › Mods.
+> Pebble is a mod (`otterm.mascot`). Turn it on in the mods screen (click "mod" in the status bar).
 
 Pebble talks in short messages. It warns you before a dangerous command and tells you when a long task finishes. It never runs a command or presses Enter for you.
 

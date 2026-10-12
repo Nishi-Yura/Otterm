@@ -528,3 +528,149 @@
 .status-order li > span:first-child {
   flex: 1;
 }
+
+/* The mods screen (ModsScreen): the settings screen's frame with a list on the left and the chosen
+   mod on the right, so a description and its permissions have room to read. */
+.mods-screen-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 10px;
+  width: 340px;
+  padding: 16px 12px 12px;
+  border-right: 1px solid var(--ot-border);
+  background: var(--ot-bg-elevated);
+}
+
+.mods-screen-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.mods-screen .mods-screen-tabs button {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: none;
+  color: var(--ot-fg-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.mods-screen .mods-screen-tabs button[aria-selected="true"] {
+  border-color: var(--ot-accent);
+  background: color-mix(in srgb, var(--ot-accent) 14%, transparent);
+  color: var(--ot-fg);
+}
+
+.mods-screen .mods-screen-search {
+  flex: none;
+  max-width: none;
+}
+
+.mods-screen-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.mods-screen .mods-screen-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--ot-radius);
+  background: none;
+  color: var(--ot-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mods-screen .mods-screen-item:hover {
+  background: color-mix(in srgb, var(--ot-fg) 6%, transparent);
+}
+
+.mods-screen .mods-screen-item[aria-current="true"] {
+  background: color-mix(in srgb, var(--ot-accent) 18%, transparent);
+}
+
+.mods-screen-item-name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mods-screen-item-state {
+  color: var(--ot-fg-muted);
+  font-size: 12px;
+}
+
+.mods-screen-item-state.on {
+  color: var(--ot-accent);
+}
+
+.mods-screen-item-desc {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--ot-fg-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mods-intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mods-screen-empty {
+  margin-top: 24px;
+}
+
+.mods-detail {
+  padding-top: 8px;
+}
+
+.mods-detail-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.mods-detail-head h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.mods-detail-actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.mods-detail-state {
+  color: var(--ot-fg-muted);
+}
+
+.mods-detail-desc {
+  max-width: 62ch;
+  line-height: 1.7;
+}
+
+.mods-detail-section {
+  margin-top: 24px;
+}
+
+.mods-detail-section h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}

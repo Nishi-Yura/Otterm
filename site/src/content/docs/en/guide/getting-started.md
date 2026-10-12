@@ -7,7 +7,7 @@ sidebar:
 
 otterm is a terminal emulator for people who have never used a terminal and for people who use one all day. It runs bash, zsh, PowerShell and cmd as they are.
 
-A fresh otterm is a plain terminal with nothing added. Pebble, the typing help, the file tree, history search and the prompt bar are all mods: turn on the ones you want in Settings › Mods (the "mod" item in the status bar), or use "Turn on the recommended set".
+A fresh otterm is a plain terminal with nothing added. Pebble, the typing help, the file tree, history search and the prompt bar are all mods: turn on the ones you want on the mods screen (the "mod" item in the status bar), or use "Turn on the recommended set".
 
 > **Note**: v1.0 is for Windows (x64). macOS and Linux builds follow in 1.0.x once they have been checked on real machines; until then, build the [repository](https://github.com/Nishi-Yura/Otterm) from source.
 

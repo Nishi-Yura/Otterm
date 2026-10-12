@@ -7,7 +7,7 @@ sidebar:
 
 コツメ（海外名 Pebble）は、otterm に住むカワウソです。モチーフは、コツメカワウソ（Asian small-clawed otter）です。ラッコ（sea otter）とは別の動物です。
 
-> コツメは mod（`otterm.mascot`）です。設定 › mod でオンにすると現れます。
+> コツメは mod（`otterm.mascot`）です。mod の画面（ステータスバーの「mod」）でオンにすると現れます。
 
 コツメは、ロゴというより画面の一部として振る舞います。
 

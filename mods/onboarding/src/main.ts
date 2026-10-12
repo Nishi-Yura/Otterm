@@ -348,19 +348,6 @@ export async function activate(ctx: ModContext) {
     }
   }
 
-  async function resumeTutorial(saved: Progress): Promise<void> {
-    if (!(await resolveFolder())) return;
-    const session = await currentSession();
-    bound = session?.id;
-    view.set({ ...saved, hint: "none", family: familyOf(session?.shellKind) });
-    judging = true;
-    try {
-      await ctx.commands.run("otterm.panel.show", { id: PANEL_ID });
-    } catch (err) {
-      ctx.log.warn("could not show the tutorial panel", err);
-    }
-  }
-
   async function resetTutorial(): Promise<void> {
     judging = false;
     bound = undefined;
@@ -562,8 +549,10 @@ export async function activate(ctx: ModContext) {
   if (onboarded === undefined) {
     void runOnboarding();
   } else {
+    // A tutorial left halfway does not open itself again: someone who stopped may not want it.
+    // The panel shows where it stopped, and "start the tutorial" carries on from there.
     const saved = await loadProgress();
-    if (saved && !saved.finished) await resumeTutorial(saved);
+    if (saved && !saved.finished) view.set({ ...saved, hint: "none", family: view.get().family });
   }
 }
 

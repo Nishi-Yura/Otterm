@@ -7,7 +7,7 @@ sidebar:
 
 otterm reads the command line you type and explains it, completes it, and asks before risky actions. Typing itself is still done by your shell, so Tab completion, `Ctrl+R`, and shell plugins keep working.
 
-> Each feature on this page is a mod (`otterm.cmd-explain`, `otterm.completion`, `otterm.danger-guard`, `otterm.error-hint`, `otterm.history-search`, `otterm.multiline-editor`, and the `otterm.dictionary-core` dictionary). Turn them on in Settings › Mods. While they are off, `Ctrl+R`, `Ctrl+Space` and `Shift+Enter` go to the shell.
+> Each feature on this page is a mod (`otterm.cmd-explain`, `otterm.completion`, `otterm.danger-guard`, `otterm.error-hint`, `otterm.history-search`, `otterm.multiline-editor`, and the `otterm.dictionary-core` dictionary). Turn them on in the mods screen (click "mod" in the status bar). While they are off, `Ctrl+R`, `Ctrl+Space` and `Shift+Enter` go to the shell.
 
 ## Guide levels
 

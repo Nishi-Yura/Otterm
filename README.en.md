@@ -70,7 +70,7 @@ Not there yet: showing images (sixel, the kitty graphics protocol) and the macOS
 
 ## Add what you want with mods
 
-Turn mods on in Settings › Mods (the "mod" item in the status bar). "Turn on the recommended set" adds Pebble, the dictionary, explanations, completion, the danger guard, error hints, history search and the file tree in one step.
+Turn mods on in the mods screen (the "mod" item in the status bar). "Turn on the recommended set" adds Pebble, the dictionary, explanations, completion, the danger guard, error hints, history search and the file tree in one step.
 
 <table>
 <tr>

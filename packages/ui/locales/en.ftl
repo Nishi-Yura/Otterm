@@ -50,8 +50,6 @@ onboarding-done = All set. Type something and see.
 
 ## Empty tab (first time)
 
-empty-tab-first = Type here and press Enter to run. Try { $command }.
-empty-tab-first-hint = What you type is explained right below.
 
 ## Assist bar
 
@@ -196,8 +194,8 @@ mod-status-disabled = Disabled
 mod-status-needs-grant = Waiting for permission
 mod-status-error = Cannot load
 mod-status-stopping = Stopping
-mod-enable = Enable
-mod-disable = Disable
+mod-enable = Turn on
+mod-disable = Turn off
 mod-uninstall = Remove
 mod-logs = Logs ({ $n })
 mod-linked = linked
@@ -205,6 +203,31 @@ mod-source-workspace = workspace
 mod-workspace-note = From this workspace's .otterm/mods/ ({ $root }). It is on only in this workspace.
 mod-workspace-no-write = A workspace mod cannot type into the terminal, so it cannot be turned on from a workspace.
 mods-none = No mods are installed. Put a mod folder in the mods directory, or link one with create-otterm-mod's `pnpm dev`.
+mods-no-results = No mod matches.
+mods-tab-installed = Installed
+mods-tab-store = Store
+mods-intro-close = Close
+mods-pick-installed = Pick a mod on the left to see what it does, what it may use, and its settings.
+mods-pick-store = Pick a mod from the store to see what it does and what it may use before you install it.
+mods-state-on = On
+mods-state-off = Off
+mods-state-error = Stopped
+mods-kind-theme = Theme
+mods-kind-layout = Layout
+mods-kind-dictionary = Dictionary
+mods-kind-workflows = Workflows
+mods-kind-outfit = Outfit
+mods-kind-extension = Extension
+mods-kind-pack = Pack
+mods-kind-feature = Part of otterm
+mods-detail-permissions = What this mod may use
+mods-detail-settings = Settings
+mods-bundled = Comes with otterm
+mods-open-installed = Show the installed mod
+mods-not-reviewed = Not reviewed yet
+mods-store-note = An installed mod does nothing until you turn it on. Its permissions are shown again when you do.
+settings-mods-open = Open the mods screen
+settings-mods-open-desc = Install mods, turn them on or off, and change each mod's settings.
 sessions-kept = { $count ->
     [one] Back to the shell from the last window.
    *[other] Back to the { $count } shells from the last window.
@@ -385,7 +408,6 @@ ai-workspace-off-done = AI is now off in this workspace
 ai-cancelled = Not sent
 mascot-click = Pebble (click for the command palette)
 mascot-done = Done. It took { $seconds } seconds
-mascot-first-tab = Type here and press Enter to run it. Try typing ls
 mascot-safe-mode = Started without themes and mods. You can go back from Settings
 mascot-mod-installed = Installed { $name }. Turn it on in Settings › mod
 mascot-settings-intro = Change how I appear here. You can also hide me
@@ -955,7 +977,7 @@ settings-keys-custom = Keys with arguments and conditions
 settings-keys-custom-hint = Entries from [[keybindings.custom]] in config.toml (key, command, args, when). Shown here only
 settings-keys-mods = Keys suggested by mods
 settings-keys-mod-lost = Off: otterm or you use the same key. Change one of them in the table above
-settings-mod-enabled = Enabled
+settings-mod-enabled = On
 settings-css = Your CSS (user.css)
 settings-css-hint = Shown as you type. Select elements with [data-ot="…"].
 settings-css-save = Save

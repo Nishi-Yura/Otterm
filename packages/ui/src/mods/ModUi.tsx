@@ -330,9 +330,9 @@ export function Panels(props: PanelsProps) {
 }
 
 /** The permission screen a mod gets before its first start (docs/05 §6.2, decision D5). */
-export function PermissionDialog(props: { entry: ModEntry; onAllow: () => void; onDecline: () => void }) {
-  const p = () => props.entry.permissions;
-  /** `${cwd}/**` reads as "the current folder" (docs/05 §6.2). */
+/** A mod's permissions as sentences, the risky ones marked (docs/05 §6.2). */
+export function permissionLines(p: ModEntry["permissions"]): { text: string; danger?: boolean }[] {
+  /** `${cwd}/**` reads as "the current folder". */
   const scope = (globs: string[]) =>
     globs
       .map((g) => {
@@ -340,19 +340,22 @@ export function PermissionDialog(props: { entry: ModEntry; onAllow: () => void; 
         return m ? t(`scope-${m[1]}`) : g;
       })
       .join(", ");
-  const lines = createMemo(() => {
-    const out: { text: string; danger?: boolean }[] = [];
-    if (p().fsRead.length) out.push({ text: t("mod-permission-fs-read", { scope: scope(p().fsRead) }) });
-    if (p().fsWrite.length) out.push({ text: t("mod-permission-fs-write", { scope: scope(p().fsWrite) }) });
-    if (p().process.length) out.push({ text: t("mod-permission-process", { commands: p().process.join(", ") }) });
-    if (p().network.length) out.push({ text: t("mod-permission-network", { hosts: p().network.join(", ") }) });
-    if (p().clipboard) out.push({ text: t("mod-permission-clipboard") });
-    if (p().terminalRead) out.push({ text: t("mod-permission-terminal-read") });
-    if (p().events.includes("output")) out.push({ text: t("mod-permission-output"), danger: true });
-    if (p().terminalWrite) out.push({ text: t("mod-permission-terminal-write"), danger: true });
-    if (p().ai) out.push({ text: t("mod-permission-ai") });
-    return out;
-  });
+  const out: { text: string; danger?: boolean }[] = [];
+  if (p.fsRead.length) out.push({ text: t("mod-permission-fs-read", { scope: scope(p.fsRead) }) });
+  if (p.fsWrite.length) out.push({ text: t("mod-permission-fs-write", { scope: scope(p.fsWrite) }) });
+  if (p.process.length) out.push({ text: t("mod-permission-process", { commands: p.process.join(", ") }) });
+  if (p.network.length) out.push({ text: t("mod-permission-network", { hosts: p.network.join(", ") }) });
+  if (p.clipboard) out.push({ text: t("mod-permission-clipboard") });
+  if (p.terminalRead) out.push({ text: t("mod-permission-terminal-read") });
+  if (p.events.includes("output")) out.push({ text: t("mod-permission-output"), danger: true });
+  if (p.terminalWrite) out.push({ text: t("mod-permission-terminal-write"), danger: true });
+  if (p.ai) out.push({ text: t("mod-permission-ai") });
+  return out;
+}
+
+export function PermissionDialog(props: { entry: ModEntry; onAllow: () => void; onDecline: () => void }) {
+  const p = () => props.entry.permissions;
+  const lines = createMemo(() => permissionLines(p()));
   return (
     <div class="mod-dialog-backdrop">
       <div
@@ -516,145 +519,6 @@ export function Toasts(props: { toasts: Toast[]; dismiss: (id: number) => void }
             >
               ×
             </button>
-          </div>
-        )}
-      </For>
-    </div>
-  );
-}
-
-const STATUS_KEY: Record<ModState["status"], string> = {
-  inactive: "mod-status-inactive",
-  starting: "mod-status-starting",
-  active: "mod-status-active",
-  crashed: "mod-status-crashed",
-  disabled: "mod-status-disabled",
-  "needs-grant": "mod-status-needs-grant",
-  error: "mod-status-error",
-  stopping: "mod-status-stopping",
-};
-
-/** What "turn on the recommended set" turns on: otterm's own help for typing and reading commands. */
-const RECOMMENDED = [
-  "otterm.mascot",
-  "otterm.dictionary-core",
-  "otterm.cmd-explain",
-  "otterm.completion",
-  "otterm.danger-guard",
-  "otterm.error-hint",
-  "otterm.history-search",
-  "otterm.file-tree",
-];
-
-/** The installed mods, with logs and API timings in developer mode (docs/05 §8.2). */
-export function ModsPanel(props: { host: ModHost; developer: boolean; modsDir: string | undefined }) {
-  const [open, setOpen] = createSignal<string>();
-  const fmt = (n: number) => new Date(n).toLocaleTimeString();
-  const recommended = () => RECOMMENDED.filter((id) => props.host.mods().some((m) => m.entry.id === id));
-  const allOn = () => recommended().every((id) => props.host.isOn(id));
-  return (
-    <div class="mods-panel">
-      {/* otterm starts as a plain terminal; everything here is opt-in (docs/05 §9). */}
-      <div class="mods-intro" data-ot="mods-intro">
-        <p class="muted">{t("mods-intro")}</p>
-        <Show when={recommended().length > 0 && !allOn()}>
-          <button
-            type="button"
-            class="mt-button mt-button-small"
-            onClick={() => void props.host.enableAll(recommended())}
-          >
-            {t("mods-enable-recommended")}
-          </button>
-        </Show>
-      </div>
-      <Show when={props.host.mods().length === 0}>
-        <p class="muted">{t("mods-none")}</p>
-        <Show when={props.modsDir}>
-          <p class="muted mods-dir">{props.modsDir}</p>
-        </Show>
-      </Show>
-      <For each={props.host.mods()}>
-        {(m) => (
-          <div
-            class="mods-entry"
-            data-ot="mod-row"
-            classList={{ broken: m.status === "crashed" || m.status === "error" }}
-          >
-            <div class="mods-entry-head">
-              <div class="mods-entry-name">
-                <strong>{m.entry.name}</strong> <span class="muted">v{m.entry.version}</span>
-                <Show when={m.entry.linked}>
-                  <span class="mt-badge mt-badge-neutral">{t("mod-linked")}</span>
-                </Show>
-                <Show when={m.entry.source === "workspace"}>
-                  <span class="mt-badge mt-badge-neutral">{t("mod-source-workspace")}</span>
-                </Show>
-              </div>
-              <span
-                class="mods-entry-status"
-                classList={{ [m.status]: true, active: !m.entry.hasEntry && m.entry.enabled }}
-              >
-                {/* Mods without code (dictionaries, themes) have nothing to run: they are on or off. */}
-                {!m.entry.hasEntry && m.entry.enabled ? t("mod-status-enabled") : t(STATUS_KEY[m.status])}
-                <Show when={m.activateMs !== undefined && props.developer}> · {m.activateMs} ms</Show>
-              </span>
-            </div>
-            <div class="muted mods-entry-id">{m.entry.id}</div>
-            <Show when={m.entry.description}>
-              <div class="mods-entry-desc">{m.entry.description}</div>
-            </Show>
-            <Show when={m.message}>
-              <pre class="mods-entry-message">{m.message}</pre>
-            </Show>
-            <Show when={m.entry.source === "workspace" && m.entry.permissions.terminalWrite}>
-              <div class="mods-entry-desc muted">{t("mod-workspace-no-write")}</div>
-            </Show>
-            <div class="mods-entry-actions">
-              <button
-                type="button"
-                class="mt-button mt-button-small"
-                disabled={m.entry.source === "workspace" && m.entry.permissions.terminalWrite}
-                onClick={() => void props.host.setEnabled(m.entry.id, !m.entry.enabled)}
-              >
-                {m.entry.enabled ? t("mod-disable") : t("mod-enable")}
-              </button>
-              <Show when={m.entry.enabled && !m.entry.granted && m.entry.hasEntry}>
-                <span class="muted">{t("mod-status-needs-grant")}</span>
-              </Show>
-              <Show when={props.developer}>
-                <button
-                  type="button"
-                  class="mt-button mt-button-small mt-button-ghost"
-                  onClick={() => setOpen(open() === m.entry.id ? undefined : m.entry.id)}
-                >
-                  {t("mod-logs", { n: m.logs.length })}
-                </button>
-              </Show>
-              {/* Mods that ship with otterm can be turned off but not removed (decision M8). */}
-              <Show when={m.entry.source === "user"}>
-                <button
-                  type="button"
-                  class="mt-button mt-button-small mt-button-ghost"
-                  onClick={() => void props.host.uninstall(m.entry.id)}
-                >
-                  {t("mod-uninstall")}
-                </button>
-              </Show>
-            </div>
-            <Show when={props.developer && open() === m.entry.id}>
-              <div class="mods-calls">
-                <For each={Object.entries(m.calls)}>
-                  {([method, s]) => (
-                    <div>
-                      <span class="muted">{method}</span> ×{s.n} · {(s.ms / s.n).toFixed(1)} ms
-                    </div>
-                  )}
-                </For>
-              </div>
-              <pre class="mods-log">
-                <For each={m.logs}>{(l) => `${fmt(l.at)} ${l.level.padEnd(5)} ${l.text}\n`}</For>
-              </pre>
-            </Show>
           </div>
         )}
       </For>

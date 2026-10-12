@@ -15,6 +15,7 @@ import { defaults as defaultKeys, Keymap } from "../keymap";
 import { MascotSprite } from "../mascot/Mascot";
 import { MOODS, type OutfitInfo } from "../mascot/sprite";
 import type { ModHost } from "../mods/host";
+import { bilingual } from "../mods/ModsScreen";
 import { describe, type Field, help, label, leaves, optionLabel, resolve, type Schema, tidy, valueAt } from "./schema";
 import "./settings.css";
 
@@ -49,6 +50,8 @@ export interface SettingsProps {
   onOutfitsChanged?: () => void;
   /** "Show the first-time hints again" was pressed (decision E5). */
   onSeenReset?: () => void;
+  /** Open the mods screen (it replaces the settings screen while open). */
+  onOpenMods?: () => void;
 }
 
 /** Keys the generic form leaves to a page of its own. */
@@ -297,12 +300,7 @@ export function Settings(props: SettingsProps) {
                   <KeysPage {...props} write={write} />
                 </Show>
                 <Show when={current().page === "mods"}>
-                  <ModsPage
-                    host={props.host}
-                    notify={props.notify}
-                    say={props.say}
-                    onOutfitsChanged={props.onOutfitsChanged}
-                  />
+                  <ModsPage onOpenMods={props.onOpenMods} />
                 </Show>
                 <Show when={current().page === "advanced"}>
                   <AdvancedPage {...props} form={f()} />
@@ -1585,284 +1583,23 @@ function ConfirmButton(props: { label: string; confirm: string; onConfirm: () =>
 }
 
 // ---------------------------------------------------------------------------
-// Mods: on/off and each mod's own settings (`[settings.schema]`, docs/05 §3.1)
+// Mods: they have a screen of their own (ModsScreen); this page points there
 // ---------------------------------------------------------------------------
 
-interface ModSetting {
-  type?: string;
-  default?: unknown;
-  label?: string;
-  min?: number;
-  max?: number;
-  values?: { value: string; label?: string }[];
-}
-
-/** `"日本語 / English"` labels in manifests: the part for the UI language. */
-function bilingual(s: string | undefined): string {
-  if (!s) return "";
-  const parts = s.split(" / ");
-  if (parts.length !== 2) return s;
-  return document.documentElement.lang === "ja" ? (parts[0] as string) : (parts[1] as string);
-}
-
-/** A registry mod as `store_list` returns it (crates/otterm-app/src/mods.rs). */
-interface StoreEntry {
-  id: string;
-  name: string;
-  description: string;
-  author: string;
-  kind: string;
-  categories: string[];
-  permissions: string[];
-  reviewed: boolean;
-  /** The index was signed by the registry key; an unsigned one comes from a registry set in the config. */
-  signed: boolean;
-  latest: string | null;
-  compatible: boolean;
-  installed: string | null;
-}
-
-/**
- * The store (docs/05 §7.2): the registry's mods, searched here. It connects only after the user
- * said yes once (decision K5); installed mods stay off until their permissions are granted.
- */
-function StoreSection(props: {
-  host: ModHost;
-  notify: (s: string) => void;
-  say?: (s: string) => void;
-  onOutfitsChanged?: () => void;
-}) {
-  const [allowed, setAllowed] = createSignal<boolean>();
-  const [list, setList] = createSignal<StoreEntry[]>();
-  const [error, setError] = createSignal<string>();
-  const [query, setQuery] = createSignal("");
-  const [busy, setBusy] = createSignal<string>();
-  const load = (refresh: boolean) => {
-    setError(undefined);
-    void invoke<StoreEntry[]>("store_list", { refresh })
-      .then(setList)
-      .catch((e) => setError(String(e)));
-  };
-  onMount(
-    () =>
-      void invoke<boolean>("store_consent", { allow: false })
-        .then((ok) => {
-          setAllowed(ok);
-          if (ok) load(false);
-        })
-        .catch(() => setAllowed(false)),
-  );
-  const shown = () => {
-    const words = query().toLowerCase().split(/\s+/).filter(Boolean);
-    return (list() ?? []).filter((m) => {
-      const hay = `${m.id} ${m.name} ${m.description} ${m.author} ${m.categories.join(" ")}`.toLowerCase();
-      return words.every((w) => hay.includes(w));
-    });
-  };
-  const install = (m: StoreEntry) => {
-    setBusy(m.id);
-    void invoke<string>("store_install", { id: m.id })
-      .then((report) => {
-        if (props.say) props.say(t("mascot-mod-installed", { name: bilingual(m.name) }));
-        else props.notify(report.trim().split("\n").join(" · "));
-        if (m.kind === "outfit") props.onOutfitsChanged?.();
-        void props.host.refresh();
-        load(false);
-      })
-      .catch((e) => props.notify(String(e)))
-      .finally(() => setBusy(undefined));
-  };
-  return (
-    <fieldset class="settings-group" data-ot="store">
-      <legend>{t("store-title")}</legend>
-      <Show
-        when={allowed()}
-        fallback={
-          <div class="settings-row">
-            <div class="settings-label">
-              <div class="settings-desc">{t("store-consent")}</div>
-            </div>
-            <div class="settings-control">
-              <button
-                type="button"
-                onClick={() =>
-                  void invoke<boolean>("store_consent", { allow: true }).then((ok) => {
-                    setAllowed(ok);
-                    load(true);
-                  })
-                }
-              >
-                {t("store-connect")}
-              </button>
-            </div>
-          </div>
-        }
-      >
-        <div class="settings-actions">
-          <input
-            type="search"
-            class="settings-filter"
-            placeholder={t("store-search")}
-            aria-label={t("store-search")}
-            onInput={(e) => setQuery(e.currentTarget.value)}
-          />
-          <button type="button" class="settings-small" onClick={() => load(true)}>
-            {t("store-refresh")}
-          </button>
-        </div>
-        <Show when={error()}>
-          <p class="muted">{t("store-error", { error: error() ?? "" })}</p>
-        </Show>
-        <Show when={list() && shown().length === 0 && !error()}>
-          <p class="muted">{t("store-empty")}</p>
-        </Show>
-        <For each={shown()}>
-          {(m) => (
-            <div class="settings-row" data-ot="store-entry">
-              <div class="settings-label">
-                <span>
-                  {bilingual(m.name)} <span class="muted">{m.latest ? `v${m.latest}` : ""}</span>
-                </span>
-                <div class="settings-desc">{bilingual(m.description)}</div>
-                <div class="settings-desc mono">
-                  {m.id} · {m.author}
-                  {m.reviewed ? ` · ${t("store-reviewed")}` : ""}
-                  {m.signed ? "" : ` · ${t("store-unsigned")}`}
-                </div>
-                <Show when={m.permissions.length > 0}>
-                  <div class="settings-desc">{t("store-permissions", { list: m.permissions.join(", ") })}</div>
-                </Show>
-                <Show when={!m.compatible}>
-                  <div class="settings-desc settings-workspace">{t("store-incompatible")}</div>
-                </Show>
-              </div>
-              <div class="settings-control">
-                <Show when={m.installed !== m.latest} fallback={<span class="muted">{t("store-installed")}</span>}>
-                  <button type="button" disabled={busy() !== undefined || !m.latest} onClick={() => install(m)}>
-                    {busy() === m.id
-                      ? "…"
-                      : m.installed
-                        ? t("store-update", { version: m.installed })
-                        : t("store-install")}
-                  </button>
-                </Show>
-              </div>
-            </div>
-          )}
-        </For>
-      </Show>
-    </fieldset>
-  );
-}
-
-function ModsPage(props: {
-  host: ModHost;
-  notify: (s: string) => void;
-  say?: (s: string) => void;
-  onOutfitsChanged?: () => void;
-}) {
-  const set = (id: string, key: string, value: unknown) =>
-    void invoke("mod_setting_set", { id, key, value }).catch((e) => props.notify(String(e)));
+function ModsPage(props: { onOpenMods?: () => void }) {
   return (
     <section class="settings-section">
-      <StoreSection host={props.host} notify={props.notify} say={props.say} onOutfitsChanged={props.onOutfitsChanged} />
-      <For each={props.host.mods()}>
-        {(m) => {
-          const schema = () => Object.entries(m.entry.settingsSchema ?? {}) as [string, ModSetting][];
-          return (
-            <fieldset class="settings-group" data-ot="mod-settings">
-              <legend>
-                {m.entry.name} <span class="muted">v{m.entry.version}</span>
-                <Show when={m.entry.source === "workspace"}>
-                  {" "}
-                  <span class="mt-badge mt-badge-neutral">{t("mod-source-workspace")}</span>
-                </Show>
-              </legend>
-              <div class="settings-row">
-                <div class="settings-label">
-                  <label for={`mod-${m.entry.id}`}>{t("settings-mod-enabled")}</label>
-                  <div class="settings-desc mono">{m.entry.id}</div>
-                  <Show when={m.entry.source === "workspace"}>
-                    <div class="settings-desc">
-                      {m.entry.permissions.terminalWrite
-                        ? t("mod-workspace-no-write")
-                        : t("mod-workspace-note", { root: m.entry.workspaceRoot ?? "" })}
-                    </div>
-                  </Show>
-                </div>
-                <div class="settings-control">
-                  <input
-                    id={`mod-${m.entry.id}`}
-                    type="checkbox"
-                    class="settings-switch"
-                    checked={m.entry.enabled}
-                    disabled={m.entry.source === "workspace" && m.entry.permissions.terminalWrite}
-                    onChange={(e) => {
-                      const next = e.currentTarget.checked;
-                      // The switch follows the host's state: a workspace mod turns on only after its permission list.
-                      e.currentTarget.checked = m.entry.enabled;
-                      void props.host.setEnabled(m.entry.id, next).catch((err) => props.notify(String(err)));
-                    }}
-                  />
-                </div>
-              </div>
-              <For each={schema()}>
-                {([key, s]) => {
-                  const v = () => (m.entry.settings as Record<string, unknown>)[key] ?? s.default;
-                  const id = `mod-${m.entry.id}-${key}`;
-                  return (
-                    <div class="settings-row">
-                      <div class="settings-label">
-                        <label for={id}>{bilingual(s.label) || key}</label>
-                      </div>
-                      <div class="settings-control">
-                        <Show when={s.type === "boolean"}>
-                          <input
-                            id={id}
-                            type="checkbox"
-                            class="settings-switch"
-                            checked={v() === true}
-                            onChange={(e) => set(m.entry.id, key, e.currentTarget.checked)}
-                          />
-                        </Show>
-                        <Show when={s.type === "integer" || s.type === "number"}>
-                          <input
-                            id={id}
-                            type="number"
-                            min={s.min}
-                            max={s.max}
-                            value={Number(v() ?? 0)}
-                            onChange={(e) => set(m.entry.id, key, Number(e.currentTarget.value))}
-                          />
-                        </Show>
-                        <Show when={s.type === "string"}>
-                          <input
-                            id={id}
-                            type="text"
-                            value={String(v() ?? "")}
-                            onChange={(e) => set(m.entry.id, key, e.currentTarget.value)}
-                          />
-                        </Show>
-                        <Show when={s.type === "enum"}>
-                          <select
-                            id={id}
-                            value={String(v() ?? "")}
-                            onChange={(e) => set(m.entry.id, key, e.currentTarget.value)}
-                          >
-                            <For each={s.values ?? []}>
-                              {(o) => <option value={o.value}>{bilingual(o.label) || o.value}</option>}
-                            </For>
-                          </select>
-                        </Show>
-                      </div>
-                    </div>
-                  );
-                }}
-              </For>
-            </fieldset>
-          );
-        }}
-      </For>
+      <div class="settings-row">
+        <div class="settings-label">
+          <span>{t("settings-mods-open")}</span>
+          <div class="settings-desc">{t("settings-mods-open-desc")}</div>
+        </div>
+        <div class="settings-control">
+          <button type="button" class="primary" onClick={() => props.onOpenMods?.()}>
+            {t("settings-mods-open")}
+          </button>
+        </div>
+      </div>
     </section>
   );
 }

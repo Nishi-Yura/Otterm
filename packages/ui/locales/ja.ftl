@@ -50,8 +50,6 @@ onboarding-done = 準備ができました。何か打ってみましょう。
 
 ## 空のタブ（初回のみ）
 
-empty-tab-first = ここに文字を打って Enter を押すと実行されます。試しに { $command } と打ってみましょう。
-empty-tab-first-hint = 入力した文字の意味は、この下に表示されます。
 
 ## 入力支援バー
 
@@ -190,14 +188,14 @@ mod-crashed-toast = { $name } が停止しました: { $message }
 mod-status-inactive = 停止中
 mod-status-starting = 起動中
 mod-status-active = 動作中
-mod-status-enabled = 有効
+mod-status-enabled = オン
 mod-status-crashed = 停止（エラー）
 mod-status-disabled = 無効
 mod-status-needs-grant = 権限の承認待ち
 mod-status-error = 読み込めません
 mod-status-stopping = 停止中
-mod-enable = 有効にする
-mod-disable = 無効にする
+mod-enable = オンにする
+mod-disable = オフにする
 mod-uninstall = 削除
 mod-logs = ログ ({ $n })
 mod-linked = リンク
@@ -205,6 +203,31 @@ mod-source-workspace = ワークスペース
 mod-workspace-note = ワークスペース（{ $root }）の .otterm/mods/ にある mod です。このワークスペースでだけ有効になります。
 mod-workspace-no-write = ワークスペースの mod はターミナルに入力できないため、ここでは有効にできません。
 mods-none = mod は入っていません。mod のフォルダにディレクトリを置くか、create-otterm-mod の `pnpm dev` でリンクしてください。
+mods-no-results = 一致する mod はありません。
+mods-tab-installed = 入っているもの
+mods-tab-store = ストア
+mods-intro-close = 閉じる
+mods-pick-installed = 左の一覧から mod を選ぶと、説明、使う権限、設定がここに出ます。
+mods-pick-store = ストアの mod を選ぶと、説明と使う権限がここに出ます。入れるかどうかはそれを見てから決められます。
+mods-state-on = オン
+mods-state-off = オフ
+mods-state-error = 止まっています
+mods-kind-theme = テーマ
+mods-kind-layout = レイアウト
+mods-kind-dictionary = 辞書
+mods-kind-workflows = ワークフロー
+mods-kind-outfit = 着せ替え
+mods-kind-extension = 拡張
+mods-kind-pack = パック
+mods-kind-feature = otterm の機能
+mods-detail-permissions = この mod が使うもの
+mods-detail-settings = 設定
+mods-bundled = otterm に入っている
+mods-open-installed = 入っている mod を見る
+mods-not-reviewed = まだ見直していない
+mods-store-note = 入れたあとも、オンにするまでは動きません。使う権限はオンにするときにもう一度見せます。
+settings-mods-open = mod の画面を開く
+settings-mods-open-desc = mod を入れたり、オンとオフを切り替えたり、mod ごとの設定を変えたりする画面です。
 sessions-kept = 前のウィンドウで動いていたシェル（{ $count } 個）に戻りました。
 mods-intro = otterm は何も足していないターミナルとして始まります。ほしい機能の mod だけをオンにしてください。コツメや入力の手助けも mod です。
 mods-enable-recommended = おすすめをまとめてオンにする
@@ -382,7 +405,6 @@ ai-workspace-off-done = このワークスペースでは AI を使わないよ�
 ai-cancelled = 送信をやめました
 mascot-click = コツメ（クリックでコマンドパレット）
 mascot-done = 終わりました。{ $seconds } 秒かかりました
-mascot-first-tab = ここに文字を打って Enter を押すと実行されます。試しに ls と打ってみましょう
 mascot-safe-mode = テーマと mod を止めて起動しました。設定から戻せます
 mascot-mod-installed = { $name } を入れました。設定の mod で有効にできます
 mascot-settings-intro = ここで私の表示を変えられます。消すこともできます
@@ -952,7 +974,7 @@ settings-keys-custom = 引数・条件付きの割り当て
 settings-keys-custom-hint = config.toml の [[keybindings.custom]] に書いた割り当てです（key・command・args・when）。ここでは表示のみ
 settings-keys-mods = mod が提案したキー
 settings-keys-mod-lost = otterm かあなたの割り当てと重なるため無効です。上の表でどちらかのキーを変えてください
-settings-mod-enabled = 有効にする
+settings-mod-enabled = オンにする
 settings-css = 自分用の CSS（user.css）
 settings-css-hint = 入力すると画面にすぐ反映されます。要素は [data-ot="…"] で選べます。
 settings-css-save = 保存
