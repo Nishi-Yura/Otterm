@@ -214,6 +214,8 @@ struct Route {
 struct RouteState {
     owner: Option<Arc<Conn>>,
     program: String,
+    /// `OTTERM_PROFILE` of the session, so a window that takes it back opens new tabs with it.
+    profile: String,
     title: String,
     cwd: Option<String>,
     started_ms: u64,
@@ -386,11 +388,14 @@ fn handle(daemon: &Arc<Daemon>, conn: &Arc<Conn>, id: u64, req: Req) -> Option<B
         Ok(match req {
             Req::Create { opts } => {
                 let program = opts.program.clone().unwrap_or_else(crate::default_shell);
+                let profile =
+                    opts.env.iter().find(|(k, _)| k == "OTTERM_PROFILE").map(|(_, v)| v.clone()).unwrap_or_default();
                 let route = Arc::new(Route {
                     id: OnceLock::new(),
                     state: Mutex::new(RouteState {
                         owner: None,
                         program,
+                        profile,
                         title: String::new(),
                         cwd: None,
                         started_ms: now_ms(),
@@ -429,6 +434,7 @@ fn handle(daemon: &Arc<Daemon>, conn: &Arc<Conn>, id: u64, req: Req) -> Option<B
                         Some(DetachedSession {
                             id: *r.id.get()?,
                             program: st.program.clone(),
+                            profile: st.profile.clone(),
                             title: st.title.clone(),
                             cwd: st.cwd.clone(),
                             started_ms: st.started_ms,

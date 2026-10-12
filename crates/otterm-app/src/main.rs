@@ -216,11 +216,25 @@ fn session_create(
     // A shell the session daemon kept from an earlier window (decision M26): take it back.
     if let Some(id) = attach {
         let kept = state.kept.lock().unwrap().remove(&id);
+        let profile = kept.as_ref().map(|k| k.profile.clone()).unwrap_or_default();
         let id_cell = std::sync::Arc::new(std::sync::Mutex::new(Some(id)));
-        let sink = session_sink(&state, events, String::new(), id_cell);
+        let sink = session_sink(&state, events, profile.clone(), id_cell);
         state.sessions.attach(id, sink).map_err(err)?;
         if let Some(k) = kept {
             state.shells.lock().unwrap().insert(id, k.program);
+        }
+        // The profile it started from, so new tabs and splits from it run the same one; a WSL
+        // profile also names its distribution.
+        if !profile.is_empty() {
+            let config = state.config.config();
+            if let Some(p) = profiles::find(&config, &profile)
+                && p.command.to_ascii_lowercase().ends_with("wsl.exe")
+                && let Some(d) =
+                    p.args.iter().position(|a| a == "-d" || a == "--distribution").and_then(|i| p.args.get(i + 1))
+            {
+                state.wsl.lock().unwrap().insert(id, d.clone());
+            }
+            state.profiles.lock().unwrap().insert(id, profile);
         }
         state.sessions.resize(id, PtySize { cols, rows }).map_err(err)?;
         return Ok(id);
@@ -318,6 +332,11 @@ fn session_create(
         .and_then(|i| opts.args.get(i + 1).cloned());
     let shell = opts.program.clone().unwrap_or_else(otterm_session::default_shell);
     let profile_id = chosen.as_ref().map(|p| p.id.clone()).unwrap_or_default();
+    // The shell (and scripts) can tell which profile they run in; the session daemon keeps it for
+    // the window that takes the shell back after a crash or a restart.
+    if !profile_id.is_empty() {
+        opts.env.push(("OTTERM_PROFILE".into(), profile_id.clone()));
+    }
     let id_cell = std::sync::Arc::new(std::sync::Mutex::new(None::<SessionId>));
     let sink = session_sink(&state, events, profile_id.clone(), std::sync::Arc::clone(&id_cell));
     let id = state.sessions.create(opts, sink).map_err(err)?;

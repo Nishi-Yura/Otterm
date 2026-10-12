@@ -120,6 +120,7 @@ pub fn integrate(program: &str, args: Vec<String>, prompt: PromptStyle, user_fil
             let mut names = vec![
                 "OTTERM",
                 "OTTERM_SESSION_ID",
+                "OTTERM_PROFILE",
                 "OTTERM_PROMPT",
                 "OTTERM_USER_STARTUP",
                 "TERM_PROGRAM",

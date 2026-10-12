@@ -106,7 +106,7 @@ Rust コア （UI はコアを呼ぶが、コアは UI を知らない。イベ�
 
 | モジュール | 責務 |
 | --- | --- |
-| `otterm-pty` | OS ごとの PTY 生成（ConPTY / openpty）、リサイズ、シグナル、環境変数注入（`TERM=xterm-256color`, `COLORTERM=truecolor`, `OTTERM=1`, `OTTERM_SESSION_ID`） |
+| `otterm-pty` | OS ごとの PTY 生成（ConPTY / openpty）、リサイズ、シグナル、環境変数注入（`TERM=xterm-256color`, `COLORTERM=truecolor`, `OTTERM=1`, `OTTERM_SESSION_ID`。プロファイルから起動したときは `OTTERM_PROFILE` も。セッションデーモンはこれを覚えていて、開き直したウィンドウが同じプロファイルで新しいタブを開く） |
 | `otterm-text` | フォントの解決（fontdb、同梱の Symbols Nerd Font Mono を含む）、クラスタ単位の整形（rustybuzz）とラスタライズ（swash）。判断 C3、C4 |
 | `otterm-vt` | VT パーサ、グリッド（セル = 文字 + 属性 + 幅）、代替画面、スクロール領域、OSC/DCS ハンドリング、画像プロトコル |
 | `otterm-shell` | シェル統合: フックスクリプトの注入、OSC 133 / 633 / 7 / 1337 の解釈、ブロック生成（開始行・終了行・終了コード・CWD・コマンド文字列・経過時間） |

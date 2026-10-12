@@ -265,6 +265,10 @@ pub struct DetachedSession {
     pub started_ms: u64,
     /// The exit code once the process ended while no window was attached.
     pub exited: Option<Option<u32>>,
+    /// The profile id it started from (`OTTERM_PROFILE` in its environment), "" for the default.
+    /// A daemon from before 1.2.0's re-release does not send it.
+    #[serde(default)]
+    pub profile: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
