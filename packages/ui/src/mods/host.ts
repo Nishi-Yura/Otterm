@@ -1468,7 +1468,10 @@ export class ModHost {
         const [text, opts] = a as unknown as [string, { sessionId?: string; replaceLine?: boolean } | undefined];
         const target = opts?.sessionId ? Number(opts.sessionId) : active?.id;
         if (target === undefined) throw new Error("no session");
-        await this.env.insert(target, text);
+        // replaceLine clears the shell's input line first (the same path the history picker uses;
+        // Escape on PSReadLine, Ctrl+A Ctrl+K elsewhere), then pastes.
+        if (opts?.replaceLine) await invoke("session_replace_line", { id: target, text });
+        else await this.env.insert(target, text);
         return undefined;
       }
       case "terminal.write": {
