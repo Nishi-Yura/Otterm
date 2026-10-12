@@ -186,12 +186,12 @@ fn ctrl_byte(c: char) -> Option<u8> {
 }
 
 /// Bytes for pasted text: line breaks become CR (what Enter sends), and with bracketed paste the
-/// text is wrapped so the shell can tell it from typing. An embedded end marker is removed so pasted
-/// text cannot break out of the bracket.
+/// text is wrapped so the shell can tell it from typing. Every ESC is removed so pasted text cannot
+/// end the bracket early: removing only the end marker would let `ESC[20ESC[201~1~` rebuild one.
 pub fn encode_paste(text: &str, modes: &Modes) -> Vec<u8> {
     let normalized = text.replace("\r\n", "\r").replace('\n', "\r");
     if modes.bracketed_paste {
-        let safe = normalized.replace("\x1b[201~", "");
+        let safe = normalized.replace('\x1b', "");
         let mut out = b"\x1b[200~".to_vec();
         out.extend_from_slice(safe.as_bytes());
         out.extend_from_slice(b"\x1b[201~");

@@ -242,11 +242,15 @@ pub fn install(data: &Path, source: &str, id: &str, host: &Version) -> Result<St
 }
 
 fn install_entry(data: &Path, entry: &Entry, host: &Version) -> Result<String, String> {
+    // The id names the download's file, so an index from elsewhere must not put a path in it.
+    if !otterm_modhost::valid_id(&entry.id) {
+        return Err(format!("the registry lists an invalid mod id `{}`", entry.id));
+    }
     let platform = Platform::current();
     let (release, compatible) =
         entry.best(host, platform).ok_or_else(|| format!("{} has no release for this platform", entry.id))?;
     let file = download(data, entry, release)?;
-    let result = otterm_modhost::install_package(data, &file, platform, host);
+    let result = otterm_modhost::install_package(data, &file, Some(entry.id.as_str()), platform, host);
     let _ = std::fs::remove_file(&file);
     let m = result.map_err(|e| e.to_string())?;
     let mut out = format!("installed {} {} → {}\n", m.id, release.version, m.dir.display());

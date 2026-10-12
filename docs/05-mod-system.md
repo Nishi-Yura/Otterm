@@ -141,7 +141,7 @@ export function deactivate() {}
 | `ctx.terminal.onBeforeExecute(cb)` | 実行直前。`cancel()` / `replace(cmd)` / `confirm({...})` を返せる | `terminal.read` |
 | `ctx.terminal.onBlockEnd(cb)` | ブロック確定（コマンド、出力、終了コード、CWD、所要時間） | `terminal.read` |
 | `ctx.terminal.write(sessionId, text)` | ターミナルへ入力（**ユーザーに毎回トースト表示**） | `terminal.write` |
-| `ctx.terminal.insert(text)` | 入力欄に挿入するだけ（実行しない） | なし |
+| `ctx.terminal.insert(text)` | 入力欄に挿入するだけ（実行しない。改行は空白に、制御文字は取り除く） | なし |
 | `ctx.terminal.screen(sessionId)` | 画面テキストの取得 | `terminal.read` |
 | `ctx.session.current()` / `.onCwdChanged(cb)` / `.list()` | セッション情報 | なし |
 | `ctx.assist.completions.provide(provider)` | 補完候補ソースを追加 | なし |

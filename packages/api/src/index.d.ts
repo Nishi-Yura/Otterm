@@ -500,7 +500,10 @@ export type BeforeExecuteResult =
 
 export interface TerminalApi {
   // --- no permission ---
-  /** Insert text at the shell cursor without executing. Always available. */
+  /**
+   * Insert text at the shell cursor without executing. Always available. Line breaks become spaces and
+   * other control characters are dropped, so the text can never run a command.
+   */
   insert(text: string, opts?: { sessionId?: SessionId; replaceLine?: boolean }): Promise<void>;
 
   // --- terminal.read ---

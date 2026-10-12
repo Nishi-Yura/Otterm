@@ -199,7 +199,15 @@ fn top_folder(entries: &[(usize, PathBuf, bool)]) -> Result<Option<PathBuf>> {
 /// Unpack `archive` into a new folder under `data_dir/tmp`, install it with [`install`], and remove the folder.
 ///
 /// The folder is removed on error too. The package is never installed from the archive's own folder.
-pub fn install_package(data_dir: &Path, archive: &Path, platform: Platform, host: &Version) -> Result<Installed> {
+/// A package may not use the official `otterm.` namespace: otterm's own mods ship inside the app. With
+/// `expect_id` (a registry install), a package holding any other mod is refused, since it would replace that mod.
+pub fn install_package(
+    data_dir: &Path,
+    archive: &Path,
+    expect_id: Option<&str>,
+    platform: Platform,
+    host: &Version,
+) -> Result<Installed> {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let tmp_root = data_dir.join("tmp");
     fs::create_dir_all(&tmp_root).with_context(|| format!("cannot create {}", tmp_root.display()))?;
@@ -207,7 +215,18 @@ pub fn install_package(data_dir: &Path, archive: &Path, platform: Platform, host
     let nanos = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
     let n = COUNTER.fetch_add(1, Ordering::Relaxed);
     let dir = tmp_root.join(format!("unpack-{}-{nanos}-{n}", std::process::id()));
-    let result = unpack(archive, &dir).and_then(|()| install(data_dir, &dir, false, platform, host));
+    let result = unpack(archive, &dir).and_then(|()| {
+        let id = read_manifest(&dir)?.mod_.id;
+        if id.starts_with("otterm.") {
+            bail!("`{id}`: the otterm. namespace is for otterm's own mods, which ship inside the app");
+        }
+        if let Some(expected) = expect_id
+            && id != expected
+        {
+            bail!("the package for {expected} holds a different mod, {id}");
+        }
+        install(data_dir, &dir, false, platform, host)
+    });
     let _ = fs::remove_dir_all(&dir);
     result
 }

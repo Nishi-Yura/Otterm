@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc;
 use std::thread;
@@ -145,7 +145,7 @@ impl Grant {
         let canon = canonical(path).with_context(|| format!("cannot read {}", path.display()))?;
         // The mod's own data folder is judged by the path as written too: under per-app file
         // system redirection (MSIX) a file's resolved path can land in another tree than its folder's.
-        if self.read_allowed(&canon) || within(path, &self.data_plain) || within(&canon, &self.data_plain) {
+        if self.read_allowed(&canon) || within_as_written(path, &self.data_plain) || within(&canon, &self.data_plain) {
             Ok(canon)
         } else if canon != path {
             bail!("not in fs.read: {} (resolved from {})", canon.display(), path.display())
@@ -163,7 +163,10 @@ impl Grant {
         if self.picked_save.iter().any(|p| within(&canon, p)) {
             return Ok(canon);
         }
-        if within(&canon, &self.vars.data) || within(path, &self.data_plain) || within(&canon, &self.data_plain) {
+        if within(&canon, &self.vars.data)
+            || within_as_written(path, &self.data_plain)
+            || within(&canon, &self.data_plain)
+        {
             return Ok(canon);
         }
         let granted = self.write_roots.iter().any(|r| within(&canon, r))
@@ -318,6 +321,9 @@ impl Grant {
             Some(dir) => Some(self.check_read(&dir)?),
             None => None,
         };
+        if let Some(name) = env.keys().find(|k| steers_program(k)) {
+            bail!("env may not set {name}: it changes which program runs");
+        }
         let mut command = Command::new(cmd);
         command.args(args).envs(env).stdout(Stdio::piped()).stderr(Stdio::piped());
         if let Some(dir) = &cwd {
@@ -414,6 +420,20 @@ fn resolve(path: &Path) -> Result<PathBuf> {
     let mut out = canonical(cur).with_context(|| format!("cannot resolve {}", path.display()))?;
     out.extend(missing.iter().rev());
     Ok(out)
+}
+
+/// Whether `path`, as written, lies inside `root`. A `..` segment would let a path that starts inside `root`
+/// resolve outside it, so a path with one never counts.
+fn within_as_written(path: &Path, root: &Path) -> bool {
+    !path.components().any(|c| matches!(c, Component::ParentDir)) && within(path, root)
+}
+
+/// Environment variables a mod may not set for a process: they change which program a bare name starts
+/// (`PATH`, `PATHEXT`), or load other code into the program it does start (`LD_*`, `DYLD_*`). Names are
+/// compared ignoring case, as Windows does.
+fn steers_program(name: &str) -> bool {
+    let upper = name.to_ascii_uppercase();
+    matches!(upper.as_str(), "PATH" | "PATHEXT") || upper.starts_with("LD_") || upper.starts_with("DYLD_")
 }
 
 fn require_absolute(path: &Path) -> Result<()> {

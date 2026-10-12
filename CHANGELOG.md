@@ -13,6 +13,14 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 
 - Mod API: `ctx.terminal.insert(text, { replaceLine: true })` now clears the input line before pasting (it appended on every shell). Mod list items keep their name visible next to a long secondary text, which now ellipsizes.
 
+### Security
+
+- Mod file access: a path inside the mod's data folder that leads out of it with `..` is no longer allowed.
+- Mod processes: `env` may not set `PATH`, `PATHEXT`, `LD_*` or `DYLD_*`, which could swap the program a listed name starts.
+- `ctx.terminal.insert` turns line breaks into spaces and drops control characters, so it can never run a command. Bracketed paste drops every ESC, so pasted text cannot end the bracket early.
+- `input-changed`, `before-execute` and `ctx.terminal.selection` need `terminal.read` in the host too, not only in the SDK; the SDK's glue object is no longer reachable from a mod's code.
+- `.otmod` packages may not use the `otterm.` namespace, a mod counts as official only when it ships with otterm, and a registry package must hold the mod its index entry names.
+
 ## [1.0.0] - 2026-10-12
 
 First release, Windows x64. Highlights:

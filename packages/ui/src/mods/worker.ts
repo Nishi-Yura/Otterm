@@ -59,6 +59,8 @@ class Sandbox {
     this.enter(() => {
       this.vm.unwrapResult(this.vm.evalCode(sdkSource, "otterm-sdk.js", { type: "global" })).dispose();
       this.api = this.vm.getProp(this.vm.global, "__otterm");
+      // The glue keeps its handle; the mod's code, evaluated next, must not reach `init` or `activate`.
+      this.vm.unwrapResult(this.vm.evalCode("delete globalThis.__otterm", "otterm-sdk-hide.js")).dispose();
       this.callApi("init", this.vm.newString(JSON.stringify(this.init))).dispose();
     });
     if (this.dead) return;

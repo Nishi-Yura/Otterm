@@ -40,6 +40,8 @@ const PROVIDER_MS = 400;
 /** A mod with no activity for this long is suspended (docs/09 §5); checked every minute. */
 const SUSPEND_AFTER_MS = 10 * 60_000;
 const SUSPEND_CHECK_MS = 60_000;
+/** Events that carry what the user types or runs: only for mods with `terminal.read` (docs/05 §5.2). */
+const READ_EVENTS = new Set(["input-changed", "before-execute", "block-start", "block-end", "output"]);
 /** Messages that wait while a Worker is still starting (the others are sent at once). */
 const EARLY_QUEUED = new Set<HostToWorker["t"]>([
   "event",
@@ -808,11 +810,15 @@ export class ModHost {
     }
   }
 
-  /** Whether a mod may get an event. `output` needs the manifest's say-so (docs/05 §5.4, decision D11). */
+  /**
+   * Whether a mod may get an event. What the user types or runs needs `terminal.read`, and `output` the
+   * manifest's say-so too (docs/05 §5.4, decision D11). Checked here, not only in the SDK, because the
+   * mod's own code shares the SDK's sandbox.
+   */
   private mayReceive(id: string, name: string): boolean {
     const perms = this.states.get(id)?.entry.permissions;
     if (name === "output" && !perms?.events.includes("output")) return false;
-    if ((name === "block-start" || name === "block-end" || name === "output") && !perms?.terminalRead) return false;
+    if (READ_EVENTS.has(name) && !perms?.terminalRead) return false;
     return true;
   }
 
@@ -1465,9 +1471,10 @@ export class ModHost {
         return this.env.sessions().map(sessionInfo);
       // --- terminal
       case "terminal.insert": {
-        const [text, opts] = a as unknown as [string, { sessionId?: string; replaceLine?: boolean } | undefined];
+        const [raw, opts] = a as unknown as [string, { sessionId?: string; replaceLine?: boolean } | undefined];
         const target = opts?.sessionId ? Number(opts.sessionId) : active?.id;
         if (target === undefined) throw new Error("no session");
+        const text = insertable(raw);
         // replaceLine clears the shell's input line first (the same path the history picker uses;
         // Escape on PSReadLine, Ctrl+A Ctrl+K elsewhere), then pastes.
         if (opts?.replaceLine) await invoke("session_replace_line", { id: target, text });
@@ -1522,6 +1529,7 @@ export class ModHost {
           }));
       }
       case "terminal.selection":
+        if (!perms.terminalRead) throw new Error("terminal.read is not granted");
         return this.env.selection();
       // --- AI (docs/10 §7): only with the manifest's `ai` permission
       case "ai.complete": {
@@ -1784,6 +1792,20 @@ function sessionInfo(s: SessionSnapshot) {
     // Not tracked yet; 0 says so rather than inventing one.
     pid: 0,
   };
+}
+
+/**
+ * Text from `terminal.insert`, made unable to run anything (docs/05 §5.2: insert never executes). A line
+ * break is Enter to a shell without bracketed paste, so line breaks become spaces; other control characters
+ * (ESC and the C1 range included) are dropped, so no key sequence can be typed through it. Tab stays.
+ */
+function insertable(text: string): string {
+  let out = "";
+  for (const ch of String(text).replace(/\r\n?|\n/g, " ")) {
+    const c = ch.codePointAt(0) ?? 0;
+    if (c === 0x09 || (c >= 0x20 && c !== 0x7f && (c < 0x80 || c > 0x9f))) out += ch;
+  }
+  return out;
 }
 
 function platformName(): "windows" | "macos" | "linux" {

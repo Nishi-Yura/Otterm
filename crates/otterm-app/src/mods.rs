@@ -292,6 +292,9 @@ impl ModsState {
 /// the terminal (D6).
 fn entry(m: &Installed, config: &otterm_config::Config, data: &Path, workspace: Option<&str>) -> ModEntry {
     let mf = &m.manifest;
+    // Official only when it also ships with the app: a mod installed under `otterm.` (a linked one in
+    // development, say) gets no on-by-default and no host settings.
+    let official = mf.is_official() && is_bundled(m, data);
     let lists =
         otterm_modhost::EnabledLists { enabled: config.mods.enabled.clone(), disabled: config.mods.disabled.clone() };
     let (enabled, granted) = match workspace {
@@ -301,7 +304,7 @@ fn entry(m: &Installed, config: &otterm_config::Config, data: &Path, workspace: 
         }
         None => (
             // The AI mod follows `[ai] enabled` as well: off by default (docs/10 §5).
-            otterm_modhost::is_enabled(&lists, &m.id, mf.is_official())
+            otterm_modhost::is_enabled(&lists, &m.id, official)
                 && (m.id != "otterm.ai-assist" || config.ai.enabled),
             is_bundled(m, data) || otterm_modhost::granted(data, &m.id, &mf.mod_.version),
         ),
@@ -329,7 +332,7 @@ fn entry(m: &Installed, config: &otterm_config::Config, data: &Path, workspace: 
         description: mf.mod_.description.clone().unwrap_or_default(),
         author: mf.mod_.author.clone(),
         kind: serde_json::to_value(mf.mod_.kind).ok().and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_default(),
-        official: mf.is_official(),
+        official,
         linked: m.linked,
         bundled: is_bundled(m, data),
         source: source_of(workspace.is_some(), is_bundled(m, data)),
@@ -1110,7 +1113,7 @@ pub fn cli(args: &[String]) -> Result<String, String> {
         Some("install")
             if args.get(1).is_some_and(|s| s.ends_with(".otmod") && Path::new(s).is_file()) =>
         {
-            let m = otterm_modhost::install_package(&data, Path::new(&args[1]), platform, &version).map_err(err)?;
+            let m = otterm_modhost::install_package(&data, Path::new(&args[1]), None, platform, &version).map_err(err)?;
             Ok(format!("installed {} {} → {}\n", m.id, m.manifest.mod_.version, m.dir.display()))
         }
         // Not a folder: an id from the registry (docs/05 §7.1).
