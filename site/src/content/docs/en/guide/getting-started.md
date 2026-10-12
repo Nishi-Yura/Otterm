@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-otterm is a terminal emulator for people who are new to the command line and for developers who use it every day. It runs bash, zsh, PowerShell, and cmd as they are.
+otterm is a terminal emulator for people who have never used a terminal and for people who use one all day. It runs bash, zsh, PowerShell and cmd as they are.
 
 A fresh otterm is a plain terminal with nothing added. Pebble, the typing help, the file tree, history search and the prompt bar are all mods: turn on the ones you want in Settings › Mods (the "mod" item in the status bar), or use "Turn on the recommended set".
 

@@ -1,7 +1,7 @@
 {
   "id": "nishi-yura.dict-net-tools",
   "name": "ネットワーク診断の辞書 / Network tools dictionary",
-  "description": "dig、nslookup、traceroute / tracert、netstat、ss、ip、nc、Test-NetConnection、Resolve-DnsName の主な使い方 / Main usage of dig, nslookup, traceroute / tracert, netstat, ss, ip, nc, Test-NetConnection and Resolve-DnsName",
+  "description": "dig、nslookup、traceroute、tracert、netstat、ss、ip、nc、Test-NetConnection、Resolve-DnsName の説明と補完を追加します。ネットワークの設定を変える ip link には注意を出します。 / Adds explanations and completion for dig, nslookup, traceroute, tracert, netstat, ss, ip, nc, Test-NetConnection and Resolve-DnsName. Warns about ip link, which can change network settings.",
   "author": "nishi-yura",
   "kind": "dictionary",
   "categories": ["input"],
@@ -11,6 +11,16 @@
   "reviewed": true,
   "hidden": false,
   "versions": [
+    {
+      "version": "1.0.1",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-net-tools-1.0.1.otmod",
+      "sha256": "ed13c77c68f655a905f17dc899838420f1938fa7e0997cfd0b66bf38bc06d619",
+      "size": 16811,
+      "published": "2026-10-12"
+    },
     {
       "version": "1.0.0",
       "otterm": ">=0.0.0 <2.0.0",

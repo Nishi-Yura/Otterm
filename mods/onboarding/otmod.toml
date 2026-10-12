@@ -2,7 +2,7 @@
 id = "otterm.onboarding"
 name = "Onboarding and Tutorial"
 version = "1.0.0"
-description = "First-run setup with Kotsume, and a six-chapter tutorial for your first terminal."
+description = "初回起動時の設定（言語、ガイドレベル、シェル、見た目）と、全 6 章のチュートリアルです。 / First-run setup (language, guide level, shell, look) and a six-chapter tutorial for your first terminal."
 author = "otterm"
 license = "Apache-2.0"
 kind = "extension"

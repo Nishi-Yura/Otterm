@@ -1,8 +1,8 @@
 [mod]
 id = "nishi-yura.dict-db-tools"
 name = "データベースクライアントの辞書 / Database clients dictionary"
-version = "1.0.0"
-description = "psql、mysql、sqlite3、redis-cli、mongosh、pg_dump、mysqldump の主な使い方と、データを消す操作への注意 / Main usage of psql, mysql, sqlite3, redis-cli, mongosh, pg_dump and mysqldump, with warnings for operations that delete data"
+version = "1.0.1"
+description = "psql、mysql、sqlite3、redis-cli、mongosh、pg_dump、mysqldump の説明と補完を追加します。DROP、TRUNCATE、FLUSHALL、dropDatabase() を含む呼び出しは、実行前に確認します。 / Adds explanations and completion for psql, mysql, sqlite3, redis-cli, mongosh, pg_dump and mysqldump. Asks before a call that contains DROP, TRUNCATE, FLUSHALL or dropDatabase()."
 author = "nishi-yura"
 license = "MIT"
 homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-db-tools"

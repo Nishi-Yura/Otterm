@@ -1,5 +1,5 @@
 /**
- * otterm.ai-assist (docs/10, decisions F1 and F5). "Ask Pebble" on top of the provider the user chose.
+ * otterm.ai-assist (docs/10, decisions F1 and F5). "Ask an AI" on top of the provider the user chose.
  *
  * The host shows what is sent, redacts secrets, logs and rate-limits each request. This mod never sees a key
  * and never runs anything: its only write to the terminal is `insert`, which puts text at the prompt without Enter.
@@ -66,7 +66,7 @@ const COMMAND_SYSTEM = (lang: string): string =>
 const FAILURE_SYSTEM = (lang: string): string =>
   `The user's last command failed. Reply with only a JSON object: {"cause": string, "fix": string, "command": string}. "cause" and "fix" are short sentences in ${lang}. "command" is the corrected command line, or an empty string if there is none. Do not wrap the JSON in code fences.`;
 const FREE_SYSTEM = (lang: string): string =>
-  `You are Pebble, a calm helper inside a terminal. Answer in ${lang}, briefly. Put any shell command in a fenced code block and say what it does. Never suggest that the user runs something without explaining it.`;
+  `You are answering inside a terminal. Answer in ${lang}, briefly. Put any shell command in a fenced code block and say what it does.`;
 const SUMMARY_SYSTEM = (lang: string): string =>
   `Summarize what the user was doing from the recent commands listed (exit codes only, no output). Answer in ${lang} in at most five short lines. Mention failures.`;
 
@@ -97,7 +97,7 @@ export async function activate(ctx: ModContext): Promise<void> {
     ctx.commands.run("otterm.settings.open").catch(() => undefined);
   };
 
-  /** Connection, key or rate-limit trouble. Pebble does not scold: it points at the settings. */
+  /** Connection, key or rate-limit trouble. The mod does not scold: it points at the settings. */
   function reportFailure(err: unknown): void {
     ctx.log.warn("ai request failed", err);
     const message = err instanceof Error ? err.message : String(err);
@@ -139,8 +139,8 @@ export async function activate(ctx: ModContext): Promise<void> {
   }
 
   function startThinking(): void {
-    ctx.mascot.setMood("thinking", { for: THINKING_MS }).catch(() => undefined);
-    bubble(t("thinking"), { mood: "thinking", duration: BUBBLE_MS });
+    ctx.mascot.setMood("calm", { for: THINKING_MS }).catch(() => undefined);
+    bubble(t("thinking"), { mood: "calm", duration: BUBBLE_MS });
   }
 
   /**
@@ -157,18 +157,22 @@ export async function activate(ctx: ModContext): Promise<void> {
     finish: (reply: string | undefined) => Promise<Final> | Final;
   }): Promise<{ choice: Choice | null; final: Final }> {
     const live = ctx.signal<string>("");
+    const waited = ctx.signal<number>(0);
+    const startedAt = Date.now();
+    const tick = setInterval(() => waited.set(Math.floor((Date.now() - startedAt) / 1000)), 1000);
     const view = ctx.signal<UiNode[] | undefined>(undefined);
     const dialog = ctx.ui.dialog<Choice>({
       title: o.title,
       body: () => ({
         type: "stack",
         gap: "m",
-        children: view.get() ?? [liveNode(live.get())],
+        children: view.get() ?? [liveNode(live.get(), waited.get())],
       }),
       buttons: o.buttons,
       cancelId: o.cancelId,
     });
     const streaming = request(o.purpose, o.req, (s) => live.set(s)).then(async (reply) => {
+      clearInterval(tick);
       const done = await o.finish(reply);
       view.set(done.children);
       return done;
@@ -178,8 +182,15 @@ export async function activate(ctx: ModContext): Promise<void> {
     return { choice, final };
   }
 
-  function liveNode(text: string): UiNode {
-    return text === "" ? { type: "text", text: t("thinking"), muted: true } : { type: "markdown", source: text };
+  function liveNode(text: string, seconds: number): UiNode {
+    if (text !== "") return { type: "markdown", source: text };
+    const line = seconds > 0 ? t("thinking-elapsed", { seconds }) : t("thinking");
+    return { type: "text", text: line, muted: true };
+  }
+
+  /** Shown under every suggested command: the text came from a model, and nothing runs until the user presses Enter. */
+  function noticeNode(): UiNode {
+    return { type: "text", text: t("ai-notice"), muted: true };
   }
 
   // --- answer rendering -------------------------------------------------------------
@@ -199,9 +210,11 @@ export async function activate(ctx: ModContext): Promise<void> {
   }
 
   function renderParts(parts: Part[]): UiNode[] {
-    return parts.map((p): UiNode => {
-      if (p.kind === "code") return { type: "code", code: p.code, language: p.lang, insertable: true, copyable: true };
-      return { type: "markdown", source: p.text };
+    return parts.flatMap((p): UiNode[] => {
+      if (p.kind === "code") {
+        return [{ type: "code", code: p.code, language: p.lang, insertable: true, copyable: true }, noticeNode()];
+      }
+      return [{ type: "markdown", source: p.text }];
     });
   }
 
@@ -349,6 +362,7 @@ export async function activate(ctx: ModContext): Promise<void> {
     const children: UiNode[] = [];
     if (danger) children.push(...dangerBadge(danger));
     children.push({ type: "code", code: command, language: "shell", copyable: true });
+    children.push(noticeNode());
     const explanation = str(obj?.explanation);
     if (explanation) children.push({ type: "text", text: explanation });
     const notes = str(obj?.notes);
@@ -409,6 +423,7 @@ export async function activate(ctx: ModContext): Promise<void> {
     if (command) {
       children.push({ type: "heading", text: t("fixed-command-label"), level: 3 });
       children.push({ type: "code", code: command, language: "shell", insertable: true, copyable: true });
+      children.push(noticeNode());
     }
     return command ? { children, command } : { children };
   }

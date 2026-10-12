@@ -9,7 +9,7 @@ Pebble (コツメ, Kotsume, in Japanese) is the otter who lives in otterm. The m
 
 > Pebble is a mod (`otterm.mascot`). Turn it on in Settings › Mods.
 
-Pebble guides you with short messages, stops you before dangerous commands, and waits with you during long tasks. It never runs a command or presses Enter for you.
+Pebble talks in short messages. It warns you before a dangerous command and tells you when a long task finishes. It never runs a command or presses Enter for you.
 
 ```toml
 [mascot]

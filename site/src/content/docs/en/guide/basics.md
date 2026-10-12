@@ -17,6 +17,12 @@ The keys below are the Windows and Linux defaults. On macOS, use `Cmd` instead o
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
 | Go to tab 1 to 9 | `Ctrl+1` to `Ctrl+9` |
 
+## Shells keep running until you close them
+
+Shells run in a process of their own, apart from the otterm window. If the window crashes, or otterm restarts for an update or a setting, the shells keep running with their scrollback, and the next window opens the same tabs again.
+
+Closing the window normally ends the shells. To keep them even then, set `general.keep_sessions = "always"`. `"never"` runs them inside the window as before (takes effect after a restart).
+
 ## Panes
 
 | Action | Key |

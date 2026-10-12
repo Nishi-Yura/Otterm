@@ -1,7 +1,7 @@
 {
   "id": "nishi-yura.dict-modern-cli",
   "name": "モダン CLI ツールの辞書 / Modern CLI tools dictionary",
-  "description": "rg、fd、bat、fzf、eza、zoxide、tldr、hyperfine の主な使い方 / Main usage of rg, fd, bat, fzf, eza, zoxide, tldr and hyperfine",
+  "description": "rg、fd、bat、fzf、eza、zoxide、tldr、hyperfine の説明と補完を追加します。どれもファイルを消さないので、危険の印はありません。 / Adds explanations and completion for rg, fd, bat, fzf, eza, zoxide, tldr and hyperfine. None of them deletes files, so nothing is marked as dangerous.",
   "author": "nishi-yura",
   "kind": "dictionary",
   "categories": ["input"],
@@ -11,6 +11,16 @@
   "reviewed": true,
   "hidden": false,
   "versions": [
+    {
+      "version": "1.0.1",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-modern-cli-1.0.1.otmod",
+      "sha256": "22c80a9b8edcd8cb3bb9f8d52274672f73c21286adcf7aeaf500aae7bbd7f330",
+      "size": 15692,
+      "published": "2026-10-12"
+    },
     {
       "version": "1.0.0",
       "otterm": ">=0.0.0 <2.0.0",

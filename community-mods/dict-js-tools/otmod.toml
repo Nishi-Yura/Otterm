@@ -1,8 +1,8 @@
 [mod]
 id = "nishi-yura.dict-js-tools"
 name = "JS 開発ツールの辞書 / JS dev tools dictionary"
-version = "1.0.0"
-description = "vite、eslint、prettier、jest、vitest、tsx、turbo の主な使い方 / Main usage of vite, eslint, prettier, jest, vitest, tsx and turbo"
+version = "1.0.1"
+description = "vite、eslint、prettier、jest、vitest、tsx、turbo の説明と補完を追加します。jest と vitest の -u（スナップショットの上書き）には注意を出します。 / Adds explanations and completion for vite, eslint, prettier, jest, vitest, tsx and turbo. Warns about -u, which overwrites snapshots, in jest and vitest."
 author = "nishi-yura"
 license = "MIT"
 homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-js-tools"

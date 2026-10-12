@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-10-12T10:40:54.357Z",
+  "generated": "2026-10-12T12:07:18.170Z",
   "mods": [
     {
       "id": "nishi-yura.bookmarks",
@@ -130,7 +130,7 @@
     {
       "id": "nishi-yura.dict-containers",
       "name": "コンテナ周りの辞書 / Container tools dictionary",
-      "description": "podman、docker-compose、minikube、kind の主な使い方と、データを消す操作への注意 / Main usage of podman, docker-compose, minikube and kind, with warnings for operations that delete data",
+      "description": "podman、docker-compose、minikube、kind の説明と補完を追加します。podman system prune -a、podman volume prune、docker-compose down -v、minikube delete --all、kind delete cluster --all は、実行前に確認します。 / Adds explanations and completion for podman, docker-compose, minikube and kind. Asks before podman system prune -a, podman volume prune, docker-compose down -v, minikube delete --all and kind delete cluster --all.",
       "author": "nishi-yura",
       "kind": "dictionary",
       "categories": ["input", "docker"],
@@ -140,6 +140,16 @@
       "reviewed": true,
       "hidden": false,
       "versions": [
+        {
+          "version": "1.0.1",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-containers-1.0.1.otmod",
+          "sha256": "0ce7692c10a64d13b5ee823cce1f277515beb57ff628a9d4b79b886930663bb3",
+          "size": 11799,
+          "published": "2026-10-12"
+        },
         {
           "version": "1.0.0",
           "otterm": ">=0.0.0 <2.0.0",
@@ -155,7 +165,7 @@
     {
       "id": "nishi-yura.dict-db-tools",
       "name": "データベースクライアントの辞書 / Database clients dictionary",
-      "description": "psql、mysql、sqlite3、redis-cli、mongosh、pg_dump、mysqldump の主な使い方と、データを消す操作への注意 / Main usage of psql, mysql, sqlite3, redis-cli, mongosh, pg_dump and mysqldump, with warnings for operations that delete data",
+      "description": "psql、mysql、sqlite3、redis-cli、mongosh、pg_dump、mysqldump の説明と補完を追加します。DROP、TRUNCATE、FLUSHALL、dropDatabase() を含む呼び出しは、実行前に確認します。 / Adds explanations and completion for psql, mysql, sqlite3, redis-cli, mongosh, pg_dump and mysqldump. Asks before a call that contains DROP, TRUNCATE, FLUSHALL or dropDatabase().",
       "author": "nishi-yura",
       "kind": "dictionary",
       "categories": ["input"],
@@ -165,6 +175,16 @@
       "reviewed": true,
       "hidden": false,
       "versions": [
+        {
+          "version": "1.0.1",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-db-tools-1.0.1.otmod",
+          "sha256": "f9f88653d598f4dd62a2c1b8cfd48e969f5e9e9cc008bbea6546e90ae49d4a67",
+          "size": 16425,
+          "published": "2026-10-12"
+        },
         {
           "version": "1.0.0",
           "otterm": ">=0.0.0 <2.0.0",
@@ -180,7 +200,7 @@
     {
       "id": "nishi-yura.dict-js-tools",
       "name": "JS 開発ツールの辞書 / JS dev tools dictionary",
-      "description": "vite、eslint、prettier、jest、vitest、tsx、turbo の主な使い方 / Main usage of vite, eslint, prettier, jest, vitest, tsx and turbo",
+      "description": "vite、eslint、prettier、jest、vitest、tsx、turbo の説明と補完を追加します。jest と vitest の -u（スナップショットの上書き）には注意を出します。 / Adds explanations and completion for vite, eslint, prettier, jest, vitest, tsx and turbo. Warns about -u, which overwrites snapshots, in jest and vitest.",
       "author": "nishi-yura",
       "kind": "dictionary",
       "categories": ["input", "language"],
@@ -190,6 +210,16 @@
       "reviewed": true,
       "hidden": false,
       "versions": [
+        {
+          "version": "1.0.1",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-js-tools-1.0.1.otmod",
+          "sha256": "e35121a9ca9c2fde8a220691f95ce48d7aec84cc62f1bed7c18af9563c3db6cc",
+          "size": 11052,
+          "published": "2026-10-12"
+        },
         {
           "version": "1.0.0",
           "otterm": ">=0.0.0 <2.0.0",
@@ -205,7 +235,7 @@
     {
       "id": "nishi-yura.dict-media-tools",
       "name": "メディア変換ツールの辞書 / Media tools dictionary",
-      "description": "ffmpeg、ffprobe、magick（ImageMagick）、7z、pandoc、yt-dlp の主な使い方 / Main usage of ffmpeg, ffprobe, magick (ImageMagick), 7z, pandoc and yt-dlp",
+      "description": "ffmpeg、ffprobe、magick、7z、pandoc、yt-dlp の説明と補完を追加します。ffmpeg と 7z の -y（上書き）には注意を出し、magick mogrify は元のファイルを書き換えるので確認します。 / Adds explanations and completion for ffmpeg, ffprobe, magick, 7z, pandoc and yt-dlp. Warns about -y (overwrite) in ffmpeg and 7z, and asks before magick mogrify, which rewrites the original files.",
       "author": "nishi-yura",
       "kind": "dictionary",
       "categories": ["input"],
@@ -215,6 +245,16 @@
       "reviewed": true,
       "hidden": false,
       "versions": [
+        {
+          "version": "1.0.1",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-media-tools-1.0.1.otmod",
+          "sha256": "4093647f10b56ba72311c5a217d038ad1ec0782ba8e8c77fdc66f91f8eb0ac73",
+          "size": 16523,
+          "published": "2026-10-12"
+        },
         {
           "version": "1.0.0",
           "otterm": ">=0.0.0 <2.0.0",
@@ -230,7 +270,7 @@
     {
       "id": "nishi-yura.dict-modern-cli",
       "name": "モダン CLI ツールの辞書 / Modern CLI tools dictionary",
-      "description": "rg、fd、bat、fzf、eza、zoxide、tldr、hyperfine の主な使い方 / Main usage of rg, fd, bat, fzf, eza, zoxide, tldr and hyperfine",
+      "description": "rg、fd、bat、fzf、eza、zoxide、tldr、hyperfine の説明と補完を追加します。どれもファイルを消さないので、危険の印はありません。 / Adds explanations and completion for rg, fd, bat, fzf, eza, zoxide, tldr and hyperfine. None of them deletes files, so nothing is marked as dangerous.",
       "author": "nishi-yura",
       "kind": "dictionary",
       "categories": ["input"],
@@ -240,6 +280,16 @@
       "reviewed": true,
       "hidden": false,
       "versions": [
+        {
+          "version": "1.0.1",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-modern-cli-1.0.1.otmod",
+          "sha256": "22c80a9b8edcd8cb3bb9f8d52274672f73c21286adcf7aeaf500aae7bbd7f330",
+          "size": 15692,
+          "published": "2026-10-12"
+        },
         {
           "version": "1.0.0",
           "otterm": ">=0.0.0 <2.0.0",
@@ -255,7 +305,7 @@
     {
       "id": "nishi-yura.dict-net-tools",
       "name": "ネットワーク診断の辞書 / Network tools dictionary",
-      "description": "dig、nslookup、traceroute / tracert、netstat、ss、ip、nc、Test-NetConnection、Resolve-DnsName の主な使い方 / Main usage of dig, nslookup, traceroute / tracert, netstat, ss, ip, nc, Test-NetConnection and Resolve-DnsName",
+      "description": "dig、nslookup、traceroute、tracert、netstat、ss、ip、nc、Test-NetConnection、Resolve-DnsName の説明と補完を追加します。ネットワークの設定を変える ip link には注意を出します。 / Adds explanations and completion for dig, nslookup, traceroute, tracert, netstat, ss, ip, nc, Test-NetConnection and Resolve-DnsName. Warns about ip link, which can change network settings.",
       "author": "nishi-yura",
       "kind": "dictionary",
       "categories": ["input"],
@@ -265,6 +315,16 @@
       "reviewed": true,
       "hidden": false,
       "versions": [
+        {
+          "version": "1.0.1",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-net-tools-1.0.1.otmod",
+          "sha256": "ed13c77c68f655a905f17dc899838420f1938fa7e0997cfd0b66bf38bc06d619",
+          "size": 16811,
+          "published": "2026-10-12"
+        },
         {
           "version": "1.0.0",
           "otterm": ">=0.0.0 <2.0.0",
@@ -280,7 +340,7 @@
     {
       "id": "nishi-yura.dict-python-tools",
       "name": "Python 開発ツールの辞書 / Python dev tools dictionary",
-      "description": "pytest、ruff、black、mypy、jupyter、pre-commit の主な使い方 / Main usage of pytest, ruff, black, mypy, jupyter and pre-commit",
+      "description": "pytest、ruff、black、mypy、jupyter、pre-commit の説明と補完を追加します。pre-commit install -f（既存の git hook の上書き）には注意を出します。 / Adds explanations and completion for pytest, ruff, black, mypy, jupyter and pre-commit. Warns about pre-commit install -f, which overwrites an existing git hook.",
       "author": "nishi-yura",
       "kind": "dictionary",
       "categories": ["input", "language"],
@@ -290,6 +350,16 @@
       "reviewed": true,
       "hidden": false,
       "versions": [
+        {
+          "version": "1.0.1",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-python-tools-1.0.1.otmod",
+          "sha256": "b77719e57ed13914e8fd71a12a9acf1bfdef772408c0d4db3c05d685267428c0",
+          "size": 9576,
+          "published": "2026-10-12"
+        },
         {
           "version": "1.0.0",
           "otterm": ">=0.0.0 <2.0.0",
@@ -490,7 +560,7 @@
     {
       "id": "nishi-yura.theme-matcha",
       "name": "抹茶 / Matcha",
-      "description": "深い抹茶色の暗いテーマ / A dark green-tea theme in deep matcha greens",
+      "description": "抹茶の緑を基調にした暗いテーマ / A dark theme with a matcha green base and soft green accents",
       "author": "nishi-yura",
       "kind": "theme",
       "categories": ["theme"],
@@ -500,6 +570,16 @@
       "reviewed": true,
       "hidden": false,
       "versions": [
+        {
+          "version": "1.0.1",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.theme-matcha-1.0.1.otmod",
+          "sha256": "66b07f5b08e87046162d82cf24da237f5a97241714f58f27a6f86f58edb0af8a",
+          "size": 1235,
+          "published": "2026-10-12"
+        },
         {
           "version": "1.0.0",
           "otterm": ">=0.0.0 <2.0.0",

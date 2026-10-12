@@ -1,7 +1,7 @@
 {
   "id": "nishi-yura.dict-db-tools",
   "name": "データベースクライアントの辞書 / Database clients dictionary",
-  "description": "psql、mysql、sqlite3、redis-cli、mongosh、pg_dump、mysqldump の主な使い方と、データを消す操作への注意 / Main usage of psql, mysql, sqlite3, redis-cli, mongosh, pg_dump and mysqldump, with warnings for operations that delete data",
+  "description": "psql、mysql、sqlite3、redis-cli、mongosh、pg_dump、mysqldump の説明と補完を追加します。DROP、TRUNCATE、FLUSHALL、dropDatabase() を含む呼び出しは、実行前に確認します。 / Adds explanations and completion for psql, mysql, sqlite3, redis-cli, mongosh, pg_dump and mysqldump. Asks before a call that contains DROP, TRUNCATE, FLUSHALL or dropDatabase().",
   "author": "nishi-yura",
   "kind": "dictionary",
   "categories": ["input"],
@@ -11,6 +11,16 @@
   "reviewed": true,
   "hidden": false,
   "versions": [
+    {
+      "version": "1.0.1",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-db-tools-1.0.1.otmod",
+      "sha256": "f9f88653d598f4dd62a2c1b8cfd48e969f5e9e9cc008bbea6546e90ae49d4a67",
+      "size": 16425,
+      "published": "2026-10-12"
+    },
     {
       "version": "1.0.0",
       "otterm": ">=0.0.0 <2.0.0",

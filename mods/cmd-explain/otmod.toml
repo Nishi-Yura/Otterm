@@ -2,7 +2,7 @@
 id = "otterm.cmd-explain"
 name = "Command Explanations"
 version = "1.0.0"
-description = "Explains the command on the input line: what it does, its options, and which parts are dangerous (ja / en)."
+description = "入力欄のコマンドについて、何をするか、各オプションの意味、危険な部分を説明します。 / Explains the command on the input line: what it does, what each option means, and which parts are dangerous."
 author = "otterm"
 license = "Apache-2.0"
 kind = "extension"

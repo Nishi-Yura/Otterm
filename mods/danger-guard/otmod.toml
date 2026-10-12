@@ -2,7 +2,7 @@
 id = "otterm.danger-guard"
 name = "Danger Guard"
 version = "1.0.0"
-description = "Asks before risky commands run, and blocks the ones that must not run (ja / en)."
+description = "rm -rf や git push --force のような危ないコマンドは実行前に確認し、実行してはいけないものは止めます。 / Asks before risky commands such as rm -rf or git push --force run, and blocks the ones that must not run."
 author = "otterm"
 license = "Apache-2.0"
 kind = "extension"

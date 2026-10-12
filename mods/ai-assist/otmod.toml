@@ -1,8 +1,8 @@
 [mod]
 id = "otterm.ai-assist"
-name = "Ask Pebble (AI assist)"
+name = "AI に質問 / Ask an AI"
 version = "1.0.0"
-description = "コツメに聞きます。自然文からコマンドを作り、失敗の原因を説明し、出力について答えます。既定オフ。 / Ask Pebble: natural language to commands, failure explanations, and questions about output. Off by default."
+description = "設定した AI に、自然文からのコマンド作成、失敗の原因、出力についての質問を聞きます。初期設定はオフで、ユーザーが操作するまで何も実行しません。 / Asks the AI you configured to write a command from plain text, explain a failure, or answer a question about output. Off by default; nothing runs until you act."
 author = "otterm"
 license = "Apache-2.0"
 kind = "extension"
@@ -24,7 +24,7 @@ events = ["block-end", "before-execute"]
 
 [[adds]]
 command = "ai.ask"
-label = "コツメに聞く / Ask Pebble"
+label = "AI に聞く / Ask an AI"
 
 [[adds]]
 command = "ai.fix"
@@ -36,7 +36,7 @@ label = "今なにしてた？ / What was I doing?"
 
 [[adds]]
 panel = "ai-assist.answer"
-label = "コツメの回答 / Pebble's answer"
+label = "AI の回答 / The AI's answer"
 
 [dependencies]
 "otterm.dictionary-core" = ">=1.0.0"

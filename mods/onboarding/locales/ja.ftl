@@ -50,7 +50,7 @@ onboarding-network-question = 起動時に更新を確認してもいいです�
 onboarding-network-body = これ以外に otterm が自分から外部へ接続することはありません。
 onboarding-tutorial-offer = 「はじめてのターミナル」を一緒にやってみますか？ 10 分ほどです。
 onboarding-ai-title = AI について
-onboarding-ai-offer = コツメに AI の力を貸しますか？ あとから設定でも選べます。
+onboarding-ai-offer = AI に質問する機能を使いますか？ 使うときは、送る内容を毎回見せます。あとから設定でも変えられます。
 onboarding-done = 準備ができました。何か打ってみましょう。
 
 ## チュートリアル（docs/03 §11.3）

@@ -1,7 +1,7 @@
 {
   "id": "nishi-yura.dict-python-tools",
   "name": "Python 開発ツールの辞書 / Python dev tools dictionary",
-  "description": "pytest、ruff、black、mypy、jupyter、pre-commit の主な使い方 / Main usage of pytest, ruff, black, mypy, jupyter and pre-commit",
+  "description": "pytest、ruff、black、mypy、jupyter、pre-commit の説明と補完を追加します。pre-commit install -f（既存の git hook の上書き）には注意を出します。 / Adds explanations and completion for pytest, ruff, black, mypy, jupyter and pre-commit. Warns about pre-commit install -f, which overwrites an existing git hook.",
   "author": "nishi-yura",
   "kind": "dictionary",
   "categories": ["input", "language"],
@@ -11,6 +11,16 @@
   "reviewed": true,
   "hidden": false,
   "versions": [
+    {
+      "version": "1.0.1",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-python-tools-1.0.1.otmod",
+      "sha256": "b77719e57ed13914e8fd71a12a9acf1bfdef772408c0d4db3c05d685267428c0",
+      "size": 9576,
+      "published": "2026-10-12"
+    },
     {
       "version": "1.0.0",
       "otterm": ">=0.0.0 <2.0.0",

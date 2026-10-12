@@ -2,7 +2,7 @@
 id = "otterm.dictionary-core"
 name = "Command Dictionary"
 version = "1.0.0"
-description = "Explanations, completion data, danger marks and error hints for common commands (ja / en)."
+description = "よく使うコマンドの説明、補完の候補、危険の印、エラーの助言をまとめた辞書です。ほかの mod が読みます。 / A dictionary of explanations, completion data, danger marks and error hints for common commands. Other mods read it."
 author = "otterm"
 license = "Apache-2.0"
 kind = "dictionary"

@@ -1,7 +1,7 @@
 {
   "id": "nishi-yura.dict-containers",
   "name": "コンテナ周りの辞書 / Container tools dictionary",
-  "description": "podman、docker-compose、minikube、kind の主な使い方と、データを消す操作への注意 / Main usage of podman, docker-compose, minikube and kind, with warnings for operations that delete data",
+  "description": "podman、docker-compose、minikube、kind の説明と補完を追加します。podman system prune -a、podman volume prune、docker-compose down -v、minikube delete --all、kind delete cluster --all は、実行前に確認します。 / Adds explanations and completion for podman, docker-compose, minikube and kind. Asks before podman system prune -a, podman volume prune, docker-compose down -v, minikube delete --all and kind delete cluster --all.",
   "author": "nishi-yura",
   "kind": "dictionary",
   "categories": ["input", "docker"],
@@ -11,6 +11,16 @@
   "reviewed": true,
   "hidden": false,
   "versions": [
+    {
+      "version": "1.0.1",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-containers-1.0.1.otmod",
+      "sha256": "0ce7692c10a64d13b5ee823cce1f277515beb57ff628a9d4b79b886930663bb3",
+      "size": 11799,
+      "published": "2026-10-12"
+    },
     {
       "version": "1.0.0",
       "otterm": ">=0.0.0 <2.0.0",

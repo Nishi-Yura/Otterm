@@ -1,8 +1,8 @@
 [mod]
 id = "nishi-yura.dict-python-tools"
 name = "Python 開発ツールの辞書 / Python dev tools dictionary"
-version = "1.0.0"
-description = "pytest、ruff、black、mypy、jupyter、pre-commit の主な使い方 / Main usage of pytest, ruff, black, mypy, jupyter and pre-commit"
+version = "1.0.1"
+description = "pytest、ruff、black、mypy、jupyter、pre-commit の説明と補完を追加します。pre-commit install -f（既存の git hook の上書き）には注意を出します。 / Adds explanations and completion for pytest, ruff, black, mypy, jupyter and pre-commit. Warns about pre-commit install -f, which overwrites an existing git hook."
 author = "nishi-yura"
 license = "MIT"
 homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-python-tools"

@@ -1,2 +1,3 @@
-otterm 1.1 — new installs start with no mods; Pebble, history search, the multi-line editor and the prompt bar became mods. Your current setup is kept. / 新しく入れた otterm は mod なしで始まります。コツメ、履歴検索、複数行エディタ、プロンプトバーも mod になりました。今の設定はそのまま残ります。
+otterm 1.1: new installs start with no mods turned on. Pebble, history search, the multi-line editor and the prompt bar are mods now. Your current setup is kept.
+新しく入れた otterm は、mod が何もオンになっていない状態で始まります。コツメ、履歴検索、複数行エディタ、プロンプトバーも mod になりました。今の設定はそのまま残ります。
 https://github.com/Nishi-Yura/Otterm/releases/tag/v1.1.0

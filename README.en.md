@@ -2,166 +2,127 @@
 
 <b>English</b> ・ <a href="README.md">日本語</a>
 
-<img src="assets/readme/banner-en.png" alt="otterm — Kind to beginners. Fast for everyone." width="100%">
+<img src="assets/readme/banner-en.png" alt="otterm: a terminal whose shells outlive the window" width="100%">
+
+<a href="https://github.com/Nishi-Yura/Otterm/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Nishi-Yura/Otterm?style=flat-square&label=release&color=3e8f8a"></a>
+<a href="LICENSE"><img alt="License Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-8a5a3b?style=flat-square"></a>
+<img alt="Windows (macOS and Linux coming)" src="https://img.shields.io/badge/Windows-macOS%20and%20Linux%20coming-3b2414?style=flat-square">
 
 <br>
 
-<a href="https://github.com/Nishi-Yura/Otterm/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Nishi-Yura/Otterm?style=for-the-badge&label=release&color=3e8f8a"></a>
-<a href="LICENSE"><img alt="License Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-8a5a3b?style=for-the-badge"></a>
-<img alt="Windows / macOS / Linux" src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-f5ecdc?style=for-the-badge&logoColor=3b2414">
+[Install](#install) ・ [How it differs](#how-it-differs) ・ [Mods](#add-what-you-want-with-mods) ・ [Pebble](#pebble) ・ [Performance](#performance) ・ [Docs](#docs)
+
 <br>
-<img alt="Rust" src="https://img.shields.io/badge/Rust-3b2414?style=flat-square&logo=rust&logoColor=f5ecdc">
-<img alt="Tauri 2" src="https://img.shields.io/badge/Tauri_2-3b2414?style=flat-square&logo=tauri&logoColor=f5ecdc">
-<img alt="SolidJS" src="https://img.shields.io/badge/SolidJS-3b2414?style=flat-square&logo=solid&logoColor=f5ecdc">
-<img alt="WebGL2" src="https://img.shields.io/badge/WebGL2-3b2414?style=flat-square&logo=webgl&logoColor=f5ecdc">
-<img alt="No telemetry" src="https://img.shields.io/badge/telemetry-none-3e8f8a?style=flat-square">
-<img alt="Mods" src="https://img.shields.io/badge/mods-24_in_the_store-3e8f8a?style=flat-square">
-
-<h3>A friendly app instead of a black screen.<br>A light, fast tool you can reshape without limit, for people who live in a terminal.</h3>
-
-<a href="#-install"><b>Install</b></a> ・
-<a href="#-features"><b>Features</b></a> ・
-<a href="#-pebble"><b>Pebble</b></a> ・
-<a href="#-mods"><b>Mods</b></a> ・
-<a href="#-performance"><b>Performance</b></a> ・
-<a href="#-documentation"><b>Docs</b></a>
-
-<br><br>
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="assets/readme/shot-light-en.png">
-  <img src="assets/readme/shot-hero-en.png" alt="otterm with the Kawauso Night theme, command blocks and Pebble the otter" width="92%">
+  <img src="assets/readme/shot-hero-en.png" alt="otterm with a dark theme, showing command blocks and Pebble in the lower right corner" width="92%">
 </picture>
 
-<sub>The Kawauso Night theme (Sakura if you view this page in light mode). The otter in the corner is Pebble.</sub>
+<sub>The theme is Kawauso Night (Sakura if you view GitHub in light mode). Pebble sits in the lower right. Both are mods.</sub>
 
 </div>
 
 <br>
 
-## 🦦 What is otterm?
+## About otterm
 
-The name is **otter + term**. Otters pry shells open with their nimble paws; otterm cracks the shell open for you.
+otterm is a terminal built with Rust and Tauri. It ships for Windows today; macOS and Linux follow once they have been checked on real machines.
 
-- **For someone opening a terminal for the first time**, it explains the command *while you type it*, stops dangerous commands *before they run* and shows what would happen.
-- **For someone who lives in a terminal**, set the guide level to **0** and it gets out of the way: GPU rendering, blocks, splits, search, the Kitty keyboard protocol.
-- **Like a game, it takes mods, and it starts with none.** A fresh otterm is a plain terminal. Pebble, the typing help and the file tree are mods you turn on when you want them, and the store has more. The built-in features use the same mod system.
+The name is "otter" plus "term". Otters crack shellfish open with a stone, so: a terminal that cracks the shell open.
+
+What sets it apart most is that **your shells run in a process of their own, apart from the window**. If otterm crashes, or restarts for an update, your build or server keeps running, and the next window opens the same tabs again. No tmux needed, on Windows either.
+
+<p align="center">
+  <img src="assets/readme/keep-en.png" alt="1. npm run build is running. 2. The window crashed, but the shell keeps running. 3. Opened again, the build has gone from 42% to 78%" width="92%">
+</p>
+
+A fresh install is a plain terminal with nothing added. Pebble, the explanations as you type and the file tree are all mods, and you turn on only the ones you want.
 
 > [!NOTE]
-> otterm **never runs a command for you**. Suggestions go into the input line; you are always the one who presses Enter.
+> otterm never runs a command for you. Suggestions only fill the input line; you press Enter.
 
 <br>
 
-## ✨ Features
+## How it differs
 
-Each of these is a mod. Turn them all on with "Turn on the recommended set" in Settings › Mods, or pick them one by one.
+In October 2026 we compared the terminals people use most. How we checked, and the sources, are in [docs/13-positioning.md](docs/13-positioning.md) (in Japanese).
+
+| | otterm | Windows Terminal | WezTerm | Ghostty | Alacritty |
+| --- | :-: | :-: | :-: | :-: | :-: |
+| Runs on Windows | yes | yes | yes | no | yes |
+| Shells survive a crashed window | yes | no | with its multiplexer | no | with tmux |
+| Tabs and splits | yes | yes | yes | yes | no |
+| Extensions | mods with declared permissions, sandboxed | extensions (since 1.25) | Lua, unrestricted | none | none |
+| Japanese interface | yes | yes | no | no | no interface |
+
+Where otterm is behind: it cannot show images yet (sixel, the kitty graphics protocol). There are no macOS or Linux builds yet. On a long scrolling output it parses a little over twice as fast as 1.1, but still slower than Ghostty or kitty (see [Performance](#performance)).
+
+<br>
+
+## Add what you want with mods
+
+Turn mods on in Settings › Mods (the "mod" item in the status bar). "Turn on the recommended set" adds Pebble, the dictionary, explanations, completion, the danger guard, error hints, history search and the file tree in one step.
 
 <table>
 <tr>
 <td width="50%" valign="top">
-
-### 🧭 Understand as you type
-The command you are typing is read against a dictionary (**164 commands** bundled, more through mods) and its options are explained above the input line. PowerShell `Verb-Noun` cmdlets and `git` subcommands included.
-
+<img src="assets/readme/shot-assist-en.png" alt="An explanation of the git command being typed, shown above the input line">
 </td>
 <td width="50%" valign="top">
 
-<img src="assets/readme/shot-assist-en.png" alt="An explanation of the command being typed">
+### Explanations as you type
 
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-<img src="assets/readme/shot-danger-en.png" alt="The confirmation shown before a dangerous command">
-
-</td>
-<td width="50%" valign="top">
-
-### 🛑 A pause before the dangerous ones
-`rm -rf`, `git push --force`, `docker volume prune`… Right before they run, otterm shows **what would be lost** and **a safer way**, and asks. The guide level sets how strict it is.
+otterm reads the command you are typing with its bundled dictionary (164 commands) and shows what each option means above the input line. PowerShell's `Verb-Noun` names and `git` subcommands are in there. Mods can add more.
 
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### 🤖 Ask Pebble (AI, optional)
-Off by default. Use a local model such as Ollama, or your own key (Claude, OpenAI, Gemini or any compatible API). **You see what is sent before it goes**, and anything that looks like a token or password is masked. Suggested commands only fill the input line.
+### A pause before dangerous commands
+
+`rm -rf`, `git push --force`, `docker volume prune`. Right before one of these runs, otterm shows what would be lost and a safer way to do it, and asks. The guide level sets how strict it is.
 
 </td>
 <td width="50%" valign="top">
-
-<img src="assets/readme/shot-ai-en.png" alt="An AI answer with a suggested command">
-
+<img src="assets/readme/shot-danger-en.png" alt="The confirmation for rm -rf, showing what would be deleted and how to move it to the trash instead">
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
-
-<img src="assets/readme/shot-store-en.png" alt="The mod store in the settings">
-
+<img src="assets/readme/shot-ai-en.png" alt="An AI answer with a suggested command that can be put into the input line">
 </td>
 <td width="50%" valign="top">
 
-### 🧩 Mod store
-Themes, status bar items, a clock, a pomodoro timer, a cheat sheet, more dictionaries… Install from the settings and they are on at once. Mods **declare their permissions**, run sandboxed and cannot take the terminal down.
+### Asking an AI (if you want to)
+
+Off by default. It uses a local model through Ollama, or your own API key (Claude, OpenAI, Gemini or a compatible API). Each time, you see what will be sent first; strings that look like tokens or passwords are masked. A command that comes back only goes into the input line.
 
 </td>
 </tr>
 </table>
 
-<details>
-<summary><b>Everything else (click to open)</b></summary>
+The store also has mods made by other people.
 
-<br>
-
-| | |
+| Kind | In the store now |
 | --- | --- |
-| 🧱 **Blocks** | Shell integration (OSC 133): fold, re-run, copy the output of, and jump between commands. pwsh, bash, zsh, fish |
-| 🪟 **Tabs and splits** | Tabs, splits in both directions, workspaces (per-project settings and tabs in `.otterm/`, only once you trust the folder) |
-| 🔎 **Search and scrollback** | Old lines are kept LZ4-compressed; with unlimited scrollback they move to disk, and search still reaches them |
-| 🔗 **Links** | Ctrl+click URLs and file paths; drop files to type their paths |
-| 🈁 **Japanese and more** | IME, wide characters, ligatures, emoji. The UI and Pebble speak English and Japanese |
-| 🎨 **Themes** | 15 bundled, more as mods. Imports iTerm2, Windows Terminal, VS Code, Alacritty and WezTerm schemes. Background images, opacity, blur |
-| ⌨️ **Key bindings** | Key sequences, `when` conditions, a command palette, record a key in the settings |
-| ⚙️ **Settings** | `config.toml` and the settings screen are the same thing; a change in either applies at once |
-| 🔄 **Updates** | Signed auto-updates (checking is opt-in). Local crash logs with a "file an issue" button |
-| 🛡️ **Privacy** | No telemetry, no server, no account |
+| Themes | Kawauso Night, Sakura, Matcha, Yuki, Yuyake, Shinkai |
+| Status bar | Git status, a clock, a pomodoro timer, exit code and duration |
+| Panels | Project scripts (package.json, justfile, Makefile), folder bookmarks, command stats, a key cheat sheet |
+| Dictionaries | Containers, JavaScript and Python tools, networking, databases, modern CLI tools, video and image conversion |
+| Pebble | A winter outfit (knit hat and mittens), a command of the day |
+| Other | A notice when a long command finishes |
 
-</details>
-
-<p align="center">
-  <img src="assets/readme/shot-themes-en.png" width="49%" alt="The theme gallery in the settings">
-  <img src="assets/readme/shot-mascot-en.png" width="49%" alt="Pebble's page in the settings: moods and outfits">
-</p>
-<p align="center"><sub>15 bundled themes plus mods · Pebble's moods and outfits, tried on with a hover</sub></p>
+<details>
+<summary><b>Making a mod</b></summary>
 
 <br>
 
-## 🦦 Pebble
-
-<img align="right" src="assets/readme/kotsume.gif" width="160" alt="Pebble changing moods">
-
-A small-clawed otter named **Pebble** (コツメ, Kotsume, in Japanese) lives in the window.
-
-- **Thinking** while a long command runs, **happy** when it succeeds, **alert** when something is risky. The mood follows your work.
-- A short word the first time you do something, and never the same thing twice.
-- Outfit mods change the look (bundled: the developer set 👓☕).
-- Pebble is a mod too (`otterm.mascot`) and appears only once you turn it on.
-
-<br clear="right">
-
-<p align="center">
-  <img src="assets/readme/moods-en.png" width="80%" alt="Pebble's four moods: calm, thinking, alert, happy">
-</p>
-
-<br>
-
-## 🧩 Mods
+A mod is an `otmod.toml` and one JavaScript file.
 
 ```toml
-# otmod.toml — this is a whole mod
+# otmod.toml
 [mod]
 id = "you.hello"
 name = "Hello"
@@ -178,7 +139,7 @@ main = "dist/main.js"
 
 [[adds]]
 slot = "statusbar.right"
-label = "A greeting"
+label = "Greeting"
 ```
 
 ```ts
@@ -186,55 +147,81 @@ label = "A greeting"
 import type { ModContext } from "@otterm/api";
 
 export async function activate(ctx: ModContext) {
-  ctx.ui.slot("statusbar.right").add({ type: "text", text: "🦦 hello" });
+  ctx.ui.slot("statusbar.right").add({ type: "text", text: "hello" });
 }
 ```
 
-- **A typed API** ([`@otterm/api`](packages/api/), MIT) and a template ([`packages/create-mod`](packages/create-mod/))
-- **Declared permissions.** Files, network, writing to the terminal, AI: the user sees them before installing
-- **A QuickJS sandbox**, so a stuck mod never freezes the terminal
-- Publish with a pull request to [registry/](registry/README.md). It costs nothing
+- The API is typed ([`@otterm/api`](packages/api/), MIT). The template is in [`packages/create-mod`](packages/create-mod/).
+- A mod that uses files, the network, writing to the terminal or AI says so before it is installed.
+- Mods run in a QuickJS sandbox, so a stuck mod cannot freeze the terminal.
+- Publishing to the store is a pull request to [registry/](registry/README.md). It costs nothing.
 
-| In the store | |
-| --- | --- |
-| 🎨 Themes | Kawauso Night, Sakura, Matcha, Yuki, Yuyake, Shinkai |
-| 📊 Status bar | Git status, clock, pomodoro, exit code and duration |
-| 🗂️ Panels | Project scripts (package.json / justfile / Makefile), folder bookmarks, command stats, key cheat sheet |
-| 📚 Dictionaries | Containers, JavaScript tools, Python tools, network tools, database clients, modern CLI tools, media tools |
-| 🦦 Pebble | Winter outfit (knit hat and mittens), command of the day |
-| 🔔 Other | Done notifications for long commands |
+</details>
 
 <br>
 
-## ⚡ Performance
+## Pebble
 
-From key press to the character on screen, measured by the benchmarks ([docs/bench](docs/bench/baseline.md); development machine, Ryzen 7 3700X, Windows).
+<img align="right" src="assets/readme/kotsume.gif" width="150" alt="Pebble going through calm, thinking, happy and alert">
 
-| Metric | Value |
-| --- | --- |
-| ⌨️ Typing latency p99 (WebGL2) | **6.2 ms** (under half of a 16.7 ms frame) |
-| 🚀 Launch to prompt (median) | **694 ms** |
-| 📜 VT parsing | **62 MiB/s** |
-| 🧠 Scrollback | Old lines LZ4-compressed, at most 32 MB in memory |
+Pebble is a small-clawed otter (コツメ, Kotsume, in Japanese) who sits in a corner of the window. While a long command runs, Pebble thinks; when it succeeds, Pebble is happy; when something is risky, Pebble looks worried. Pebble says a short word only the first time you do something, and never the same thing twice.
 
-Keystrokes go straight to Rust and never wait for a mod. Rendering is WebGL2 (Canvas 2D as a fallback); glyphs are rasterized in Rust and packed into a texture.
+The pixel art is placed by hand on a 16 by 16 grid. Outfits are mods too; the bundled one is a developer set with glasses and a mug. Pebble is a mod as well (`otterm.mascot`), so Pebble appears only once you turn it on.
+
+<br clear="right">
+
+<p align="center">
+  <img src="assets/readme/moods-en.png" width="80%" alt="Pebble's four moods: calm, thinking, alert, happy">
+</p>
 
 <br>
 
-## 📦 Install
+## Other things it does
 
-v1.0 is for **Windows (x64)**. macOS and Linux builds follow in 1.0.x once they have been checked on real machines; until then, build from source.
+| | |
+| --- | --- |
+| Blocks | With shell integration (OSC 133), each command can be folded, run again, have its output copied, and jumped to. pwsh, bash, zsh, fish |
+| Tabs and splits | Tabs, vertical and horizontal splits, workspaces (`.otterm/` holds per-project settings and tabs; trusted ones only) |
+| Search and scrollback | Old lines are kept LZ4-compressed. With unlimited scrollback they move to disk, and search still reaches them |
+| Links | Ctrl+click URLs and file paths. Drop a file to type its path |
+| Japanese | IME, full-width characters, ligatures, emoji. The interface and Pebble's lines are in Japanese and English |
+| Themes | 15 bundled plus mods. Imports color schemes from iTerm2, Windows Terminal, VS Code, Alacritty and WezTerm |
+| Key bindings | Key sequences, `when` conditions, a command palette, recording a key in the settings screen |
+| Settings | `config.toml` and the settings screen are the same thing; a change in either applies at once |
+| Updates | Signed automatic updates (checking is optional). After a crash, the next start offers to open an issue |
+
+<br>
+
+## Performance
+
+We measure typing delay and throughput the same way every time ([docs/bench](docs/bench/baseline.md); the development machine has a Ryzen 7 3700X and Windows 11). Numbers where otterm is not ahead are listed too.
+
+| Measure | Value | Note |
+| --- | --- | --- |
+| Key press to drawn (p99) | 6.2 ms | Measured inside the WebView. Not yet measured to light on the screen with a camera |
+| Start to prompt (median) | 694 ms | About 380 ms of it is WebView2 starting |
+| VT parsing (scrolling output) | about 70 to 80 MiB/s | About 30 in 1.1. On Windows the PTY (about 30 to 35 MiB/s) is the limit first. Ghostty and kitty are still faster |
+| One million scrollback lines | about 155 MiB | About 160 bytes per line |
+
+Keys go straight to Rust without waiting for mods. Drawing uses WebGL2 (Canvas 2D when it is not available); glyphs are shaped in Rust and packed into a texture.
+
+<br>
+
+## Install
 
 | OS | How |
 | --- | --- |
-| 🪟 **Windows** | Run `otterm_<version>_x64-setup.exe` from [Releases](https://github.com/Nishi-Yura/Otterm/releases/latest) (per-user, no admin rights). Then `otterm` works in a new terminal. winget (`winget install otterm`) is pending |
-| 🍎 **macOS** | A `.dmg` and a Homebrew tap (`brew install --cask nishi-yura/otterm/otterm`) in 1.0.x. From source for now |
-| 🐧 **Linux** | An `.AppImage` in 1.0.x. From source for now |
+| Windows | Run `otterm_<version>_x64-setup.exe` from [Releases](https://github.com/Nishi-Yura/Otterm/releases/latest) (per user, no admin rights). Then `otterm` works in a new terminal. A winget package is under review |
+| macOS | Coming. Build from source for now |
+| Linux | Coming. Build from source for now |
 
 > [!NOTE]
-> The installer is not code-signed (certificates cost money). On Windows, SmartScreen needs "More info → Run anyway". `SHA256SUMS.txt` next to the installer lets you check the file. Updates are signed; the first-run guide asks whether otterm may check for them.
+> The installer is not code-signed (certificates cost money). On Windows, SmartScreen appears: choose "More info", then "Run anyway". `SHA256SUMS.txt` in Releases lets you check the file. Automatic updates do check signatures.
 
-**From source**:
+<details>
+<summary><b>Building from source</b></summary>
+
+<br>
 
 ```bash
 git clone https://github.com/Nishi-Yura/Otterm.git
@@ -243,73 +230,52 @@ just setup   # JS dependencies and, on Windows, the bundled ConPTY
 just dev     # run with hot reload
 ```
 
-You need Rust (stable), Node.js 22+, pnpm and [just](https://github.com/casey/just); on Linux also the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). To build an installer, run `node scripts/release.mjs` ([docs/release.md](docs/release.md), in Japanese).
+You need Rust (stable), Node.js 22 or later, pnpm and [just](https://github.com/casey/just). On Linux, also the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). To build an installer, run `node scripts/release.mjs` ([docs/release.md](docs/release.md)).
+
+</details>
 
 <br>
 
-## 🗺️ Roadmap
+## So far, and next
 
-| | Milestone | |
-| :-: | --- | --- |
-| ✅ | M0 Foundations | Monorepo, benchmarks, CI |
-| ✅ | M1 A working terminal | VT, tabs and splits, search, IME, WebGL2 |
-| ✅ | M2 Shell integration and blocks | OSC 133, blocks, prompt bar |
-| ✅ | M3 Mod system | Manifests, permissions, sandbox |
-| ✅ | M4 Input assist | Dictionary, explanations, danger guard, completion |
-| ✅ | M4.5 Pebble | Moods, lines, outfits |
-| ✅ | M5 Settings and themes | Settings screen, key bindings, workspaces |
-| ✅ | M5.5 AI assist | Local or your own key, preview of what is sent |
-| ✅ | M6 Distribution | Installer, signed auto-update, store, documentation site |
-| ✅ | v1.0 | Released for Windows |
-| ⏳ | v1.0.x | macOS and Linux builds, winget and Homebrew, measurements on the reference machine |
+1.0 (October 2026) made otterm usable as a terminal: VT, tabs and splits, shell integration, mods, the dictionary and danger guard, a settings screen, and distribution. 1.1 made a fresh install start with nothing added, and 1.2 moved the shells into a process of their own.
 
-Details: [docs/07-roadmap.md](docs/07-roadmap.md).
+Next:
+
+- Lighter screen updates (a "scroll by n rows" step in frames, so only new rows are built)
+- Images (sixel, the kitty graphics protocol)
+- macOS and Linux builds, winget and Homebrew
+- Measuring typing delay all the way to the screen with a camera
+
+More in [docs/07-roadmap.md](docs/07-roadmap.md).
 
 <br>
 
-## 📚 Documentation
+## Docs
 
-The user and mod author guides live in [site/](site/) (Starlight; not hosted yet, so read them on GitHub or run `pnpm --filter @otterm/site dev`).
+The user guide is in [site/](site/). It is not hosted yet, so read it on GitHub or open it locally with `pnpm --filter @otterm/site dev`.
 
-- 🧭 [User guide](site/src/content/docs/en/guide/getting-started.md): install, basics, input assist, settings, key bindings, themes, Pebble, troubleshooting
-- 🧩 [Mod author guide](site/src/content/docs/en/mods/index.md): writing a mod, the manifest, permissions, the API, packaging, publishing
+- [User guide](site/src/content/docs/en/guide/getting-started.md): install, basics, typing help, settings, key bindings, themes, Pebble, troubleshooting
+- [Mod author guide](site/src/content/docs/en/mods/index.md): making a mod, the manifest, permissions, the API, packaging, publishing
 
-The specification is written in Japanese and is the source of truth.
-
-| | File | About |
-| --- | --- | --- |
-| 🌱 | [00-overview](docs/00-overview.md) | Concept, audience, non-goals |
-| 📋 | [01-requirements](docs/01-requirements.md) | Functional and non-functional requirements |
-| 🏗️ | [02-architecture](docs/02-architecture.md) | Stack and processes |
-| 🧰 | [03-core-features](docs/03-core-features.md) | PTY, input assist, files, palette |
-| 🎨 | [04-ui-theme](docs/04-ui-theme.md) | Layout and themes |
-| 🧩 | [05-mod-system](docs/05-mod-system.md) | Manifest, API, permissions, distribution |
-| ⚙️ | [06-config-keybind](docs/06-config-keybind.md) | Config file and key bindings |
-| 🗺️ | [07-roadmap](docs/07-roadmap.md) | Milestones |
-| 🦦 | [08-character](docs/08-character.md) | Pebble: design, moods, outfits |
-| ⚡ | [09-performance](docs/09-performance.md) | Latency budget, renderers, benchmarks |
-| 🤖 | [10-ai-assist](docs/10-ai-assist.md) | AI assist and what is sent |
-| 🧭 | [11-decisions](docs/11-decisions.md) | Decision log |
-| 🎛️ | [12-design-system](docs/12-design-system.md) | UI tokens, type, icons |
+The specifications are written in Japanese, and the Japanese text is the reference.
 
 <br>
 
-## 🤝 Contributing
+## Contributing
 
-Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). Code, comments, commit messages and issues are in English.
+Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first. Code, comments, commit messages and issues are in English (the specifications are in Japanese).
 
-<br>
-
-## 📄 License
+## License
 
 - otterm: [Apache-2.0](LICENSE)
-- Mod SDK (`@otterm/api`): MIT
-- Pebble's artwork: character guideline ([assets/mascot/LICENSE.md](assets/mascot/LICENSE.md))
+- The mod SDK (`@otterm/api`): MIT
+- Pebble's images: the character guidelines ([assets/mascot/LICENSE.md](assets/mascot/LICENSE.md))
 
 <br>
 
 <div align="center">
 <img src="assets/mascot/png/calm-96.png" width="48" alt="">
 <br>
-<sub>No telemetry. No server. No account. Your terminal is yours.</sub>
+<sub>No account, no server, no telemetry. otterm only goes online for the update check if you turn it on, the store when you open it, the AI you set up, and mods you allowed to use the network.</sub>
 </div>

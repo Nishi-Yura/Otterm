@@ -50,7 +50,7 @@ onboarding-network-question = May I check for updates when you start?
 onboarding-network-body = Apart from this, otterm never connects anywhere on its own.
 onboarding-tutorial-offer = Shall we try "Your first terminal" together? It takes about 10 minutes.
 onboarding-ai-title = About AI
-onboarding-ai-offer = Shall Pebble get AI help? You can also decide later in Settings.
+onboarding-ai-offer = Want to ask an AI model questions from here? You see what is sent each time. You can change this later in Settings.
 onboarding-done = All set. Type something and see.
 
 ## Tutorial (docs/03 §11.3)
@@ -72,15 +72,15 @@ tutorial-ch4-run = Run hello.py with `{ $command }`.
 tutorial-alt-hint = If it isn't found, try one of these instead.
 tutorial-ch5-title = When things go wrong
 tutorial-ch5-interrupt = If something won't stop, press Ctrl+C. Run `{ $command }` and stop it with Ctrl+C.
-tutorial-ch5-error = Let's make a mistake on purpose. Run `{ $command }` and read the error.
+tutorial-ch5-error = Break something on purpose: run `{ $command }` and read the error.
 tutorial-ch5-card = A failed command shows a red card. The red card is advice for your next step.
 tutorial-ch6-title = Handy otterm features
 tutorial-ch6-history = Ctrl+R finds commands you typed before.
 tutorial-ch6-tree = The file tree on the left opens files.
 tutorial-ch6-rerun = Right-click a block and choose "Run again" to run the same command once more.
-tutorial-step-done = Nice!
+tutorial-step-done = Done.
 tutorial-step-retry = Almost. Try again; I'm looking for `{ $expected }`.
-tutorial-complete = You did it all! You can now use { $commands }.
+tutorial-complete = That's all six chapters. You can now use { $commands }.
 tutorial-commands-posix = cd and ls
 tutorial-commands-pwsh = Set-Location and Get-ChildItem
 tutorial-cleanup = Delete the practice folder { $path }?

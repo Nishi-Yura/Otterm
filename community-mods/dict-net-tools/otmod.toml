@@ -1,8 +1,8 @@
 [mod]
 id = "nishi-yura.dict-net-tools"
 name = "ネットワーク診断の辞書 / Network tools dictionary"
-version = "1.0.0"
-description = "dig、nslookup、traceroute / tracert、netstat、ss、ip、nc、Test-NetConnection、Resolve-DnsName の主な使い方 / Main usage of dig, nslookup, traceroute / tracert, netstat, ss, ip, nc, Test-NetConnection and Resolve-DnsName"
+version = "1.0.1"
+description = "dig、nslookup、traceroute、tracert、netstat、ss、ip、nc、Test-NetConnection、Resolve-DnsName の説明と補完を追加します。ネットワークの設定を変える ip link には注意を出します。 / Adds explanations and completion for dig, nslookup, traceroute, tracert, netstat, ss, ip, nc, Test-NetConnection and Resolve-DnsName. Warns about ip link, which can change network settings."
 author = "nishi-yura"
 license = "MIT"
 homepage = "https://github.com/Nishi-Yura/Otterm/tree/main/community-mods/dict-net-tools"

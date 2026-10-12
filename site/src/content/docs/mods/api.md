@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-Mod の入口は、`activate(ctx)` と `deactivate()` です。ここで受け取る `ctx` を通して、すべての機能を使います。
+mod の入口は、`activate(ctx)` と `deactivate()` です。ここで受け取る `ctx` を通して、すべての機能を使います。
 
 ```ts
 import type { ModContext } from "@otterm/api";
@@ -28,7 +28,7 @@ export function deactivate() {}
 - **すべての API は非同期**です。ワーカー、UI、Rust 本体の 3 つを通るため、同期の API はありません。
 - 登録したものは、すべて `Disposable` を返します。`deactivate` のときに、本体が自動で後片付けします。止め忘れたタイマーも、本体が止めます。
 - 宣言していない権限の API は、`ctx` に存在しません。`ctx.fs?.` のように、任意のものとして扱ってください。
-- Mod のサンドボックスには、`fetch` や DOM がありません。ES2022 の標準機能と、`setTimeout` などのタイマーだけがあります。
+- mod のサンドボックスには、`fetch` や DOM がありません。ES2022 の標準機能と、`setTimeout` などのタイマーだけがあります。
 
 ## 主な機能
 
@@ -40,7 +40,7 @@ export function deactivate() {}
 | `ctx.terminal` | 入力の変化、実行の直前、ブロックの終了、入力欄への挿入 |
 | `ctx.session` | セッションの情報、カレントフォルダの変化 |
 | `ctx.assist` | コマンドの説明、補完、危険ルール、エラー助言の追加 |
-| `ctx.settings` / `ctx.storage` | Mod の設定と、Mod 専用の保存領域（10 MB まで） |
+| `ctx.settings` / `ctx.storage` | mod の設定と、mod 専用の保存領域（10 MB まで） |
 | `ctx.theme` / `ctx.i18n` | テーマの変数、翻訳 |
 | `ctx.mascot` | コツメの吹き出し、表情、反応ルール |
 
@@ -72,4 +72,4 @@ ctx.ui.slot("statusbar.left").add({
 
 `session-created`、`cwd-changed`、`block-start`、`block-end`、`theme-changed`、`settings-changed` などがあります。`output` のように全出力を受け取るイベントは、マニフェストの `events` に明示的に書く必要があります。
 
-Mod どうしの連絡には、`ctx.events.emit` と `ctx.events.on` を使います。イベント名は `custom:<id>` の形になります。
+mod どうしの連絡には、`ctx.events.emit` と `ctx.events.on` を使います。イベント名は `custom:<id>` の形になります。

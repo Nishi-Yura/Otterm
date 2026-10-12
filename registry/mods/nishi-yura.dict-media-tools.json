@@ -1,7 +1,7 @@
 {
   "id": "nishi-yura.dict-media-tools",
   "name": "メディア変換ツールの辞書 / Media tools dictionary",
-  "description": "ffmpeg、ffprobe、magick（ImageMagick）、7z、pandoc、yt-dlp の主な使い方 / Main usage of ffmpeg, ffprobe, magick (ImageMagick), 7z, pandoc and yt-dlp",
+  "description": "ffmpeg、ffprobe、magick、7z、pandoc、yt-dlp の説明と補完を追加します。ffmpeg と 7z の -y（上書き）には注意を出し、magick mogrify は元のファイルを書き換えるので確認します。 / Adds explanations and completion for ffmpeg, ffprobe, magick, 7z, pandoc and yt-dlp. Warns about -y (overwrite) in ffmpeg and 7z, and asks before magick mogrify, which rewrites the original files.",
   "author": "nishi-yura",
   "kind": "dictionary",
   "categories": ["input"],
@@ -11,6 +11,16 @@
   "reviewed": true,
   "hidden": false,
   "versions": [
+    {
+      "version": "1.0.1",
+      "otterm": ">=0.0.0 <2.0.0",
+      "api": "1",
+      "platforms": ["windows", "macos", "linux"],
+      "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.dict-media-tools-1.0.1.otmod",
+      "sha256": "4093647f10b56ba72311c5a217d038ad1ec0782ba8e8c77fdc66f91f8eb0ac73",
+      "size": 16523,
+      "published": "2026-10-12"
+    },
     {
       "version": "1.0.0",
       "otterm": ">=0.0.0 <2.0.0",

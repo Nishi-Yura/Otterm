@@ -9,7 +9,7 @@ sidebar:
 
 ## 設定ファイルの場所
 
-| OS | ユーザー設定 | データ（Mod、状態、ログ） |
+| OS | ユーザー設定 | データ（mod、状態、ログ） |
 | --- | --- | --- |
 | Windows | `%APPDATA%\otterm\config.toml` | `%LOCALAPPDATA%\otterm\` |
 | macOS | `~/Library/Application Support/otterm/config.toml`（`~/.config/otterm/` があればそちらを優先） | 同じ |
@@ -58,11 +58,11 @@ otterm config get font.size        # 値を表示
 otterm config set font.size 16     # 値を書き換える
 otterm config path                 # 設定ファイルの場所を表示
 otterm config reset                # 既定に戻す（元の設定は .bak-reset-<時刻> に残ります）
-otterm config export               # 設定・テーマ・Mod 一覧を zip にまとめる
+otterm config export               # 設定・テーマ・mod 一覧を zip にまとめる
 otterm config import <file>        # zip から読み込む（今の設定は .bak-import-<時刻> に残ります）
 ```
 
-エクスポートの zip には、`config.toml`、テーマ、レイアウト、背景画像と、入っている Mod の一覧（`mods.toml`）が入ります。Mod 本体は入りません。
+エクスポートの zip には、`config.toml`、テーマ、レイアウト、背景画像と、入っている mod の一覧（`mods.toml`）が入ります。mod 本体は入りません。
 
 ## ワークスペース設定
 
@@ -81,11 +81,11 @@ tabs = [
 
 初めて開くワークスペースでは、「このフォルダの設定を信頼しますか？」と聞かれます。clone したばかりのリポジトリのコマンドが、勝手に走らないようにするためです。
 
-- **信頼する前**: テーマの上書きだけが効きます。`tabs[].command` は実行されず、ワークスペースの Mod も有効になりません。
+- **信頼する前**: テーマの上書きだけが効きます。`tabs[].command` は実行されず、ワークスペースの mod も有効になりません。
 - **信頼した後**: タブ構成や設定を使えます。ただし、`shell`、`profiles`、`open`、`ai`、`mods`、`history`、`keybindings.custom` などは、ワークスペースから変えられません。これらは外部のプログラムの起動や送信につながるためです。無視されたキーは起動時の通知に出ます。
 - 信頼の記録は `state/trusted-workspaces.json` に保存されます。設定画面から取り消せます。親フォルダを信頼すると、配下のフォルダも信頼されます。
 
-`terminal.write` 権限を持つ Mod は、ワークスペース側では有効になりません。
+`terminal.write` 権限を持つ mod は、ワークスペース側では有効になりません。
 
 ## 設定の項目
 

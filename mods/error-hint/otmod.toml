@@ -2,7 +2,7 @@
 id = "otterm.error-hint"
 name = "Error Hints"
 version = "1.0.0"
-description = "Explains common command errors and offers a fix you can insert, never run (ja / en)."
+description = "よくあるコマンドのエラーの原因を説明し、直し方のコマンドを入力欄に入れます。実行はしません。 / Explains the cause of common command errors and inserts a fix at the prompt. It never runs it."
 author = "otterm"
 license = "Apache-2.0"
 kind = "extension"

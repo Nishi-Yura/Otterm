@@ -1,11 +1,11 @@
 ---
 title: パッケージ（.otmod）
-description: Mod を配布用の .otmod ファイルにまとめる方法と、受け付けられる形式の制限。
+description: mod を配布用の .otmod ファイルにまとめる方法と、受け付けられる形式の制限。
 sidebar:
   order: 6
 ---
 
-`.otmod` は、Mod を配布するための zip 形式のファイルです。拡張子を `.otmod` にした zip と考えてください。
+`.otmod` は、mod を配布するための zip 形式のファイルです。拡張子を `.otmod` にした zip と考えてください。
 
 ## 中に入れるもの
 
@@ -45,4 +45,4 @@ otterm は、インストールされる `.otmod` を次の条件で検査しま
 - `.otmod` ファイル: `otterm mod install file.otmod`、またはドラッグ＆ドロップ
 - 開発中のフォルダ: `otterm mod install ./path`（`--link` でシンボリックリンク）
 
-外部で有料の Mod を販売することは禁止されていません。ただし、公式レジストリに載るのは無料の Mod だけです。
+外部で有料の mod を販売することは禁止されていません。ただし、公式レジストリに載るのは無料の mod だけです。

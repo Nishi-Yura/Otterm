@@ -28,7 +28,7 @@ sidebar:
 | `palette` コマンドパレット | `ctrl+shift+p` |
 | `history` 履歴 | `ctrl+r`（ガイドレベル 1 以上） |
 | `completion.trigger` 補完 | `ctrl+space` |
-| `ai.ask` コツメに聞く | `ctrl+shift+space`（AI 補助が有効なとき） |
+| `ai.ask` AI に聞く | `ctrl+shift+space`（AI 補助がオンのとき） |
 | `block.prev` ／ `block.next` ブロック移動 | `ctrl+arrowup` ／ `ctrl+arrowdown` |
 | `block.collapse` 出力の折りたたみ | `ctrl+shift+[` |
 | `sidebar.left.toggle` 左パネル | `ctrl+shift+b` |
@@ -61,7 +61,7 @@ args = { name = "deploy" }
 when = "terminalFocus && !altScreen"
 ```
 
-`command` には、アクション ID、`workflow.run`（`args.name` を指定）、Mod のコマンド、`otterm.*` のホストコマンドのどれかを指定できます。
+`command` には、アクション ID、`workflow.run`（`args.name` を指定）、mod のコマンド、`otterm.*` のホストコマンドのどれかを指定できます。
 
 ## when 条件
 
@@ -81,4 +81,4 @@ when = "terminalFocus && !altScreen"
 
 - vim などが使うキーは、代替画面の中では既定でシェルに渡されます。`Ctrl+Shift` と `Cmd` で始まる割り当てだけは、代替画面の中でも otterm が使います。
 - `keybindings.alt_screen_passthrough = false` にすると、代替画面の中でも常に otterm が優先されます。
-- Mod が提案するキーは、ユーザーの設定と競合すると無効になります。設定画面で解決を促されます。
+- mod が提案するキーは、ユーザーの設定と競合すると無効になります。設定画面で解決を促されます。

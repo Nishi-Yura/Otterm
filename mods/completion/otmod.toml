@@ -2,7 +2,7 @@
 id = "otterm.completion"
 name = "Completion"
 version = "1.0.0"
-description = "Completes subcommands, options and file names for the word under the cursor, from the command dictionary (ja / en)."
+description = "カーソル位置の語について、辞書をもとにサブコマンド、オプション、ファイル名を補完します。 / Completes subcommands, options and file names for the word under the cursor, using the command dictionary."
 author = "otterm"
 license = "Apache-2.0"
 kind = "extension"

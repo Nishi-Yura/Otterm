@@ -11,22 +11,23 @@
 /* UI tokens (docs/04 §2.2). The theme sets --ot-<key> on :root at runtime; these are the dark
    defaults. Everything below uses the tokens, never a fixed color, so a light theme works too. */
 :root {
-  --ot-bg: #1b1d23;
+  --ot-bg: #2a1f1a;
   --ot-bg-elevated: color-mix(in srgb, var(--ot-bg) 88%, var(--ot-fg) 12%);
-  --ot-fg: #d8dee9;
-  --ot-fg-muted: #7b8394;
-  --ot-accent: #4f8cff;
+  --ot-fg: #f5ecdc;
+  --ot-fg-muted: #ab9b8c;
+  --ot-accent: #4a9d97;
   --ot-border: color-mix(in srgb, var(--ot-fg) 12%, var(--ot-bg));
-  --ot-danger: #e06c75;
-  --ot-success: #98c379;
-  --ot-warning: #e5c07b;
+  --ot-danger: #e8826f;
+  --ot-success: #a3c48a;
+  --ot-warning: #e6bf78;
   /* The status colors as text: pulled toward the text color so they stay readable on light and
      dark backgrounds alike (WCAG 4.5:1 for small text). */
   --ot-success-text: color-mix(in srgb, var(--ot-success) 75%, var(--ot-fg));
   --ot-warning-text: color-mix(in srgb, var(--ot-warning) 75%, var(--ot-fg));
   --ot-danger-text: color-mix(in srgb, var(--ot-danger) 72%, var(--ot-fg));
   --ot-radius: 6px;
-  --ot-shadow: 0 4px 16px rgb(0 0 0 / 0.4);
+  /* Short and tight: the 1px borders separate surfaces, the shadow only seats them. */
+  --ot-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
   /* Scrims behind dialogs and palettes, and the text or knob color on a filled accent or danger. */
   --ot-scrim: rgb(0 0 0 / 0.25);
   --ot-scrim-strong: rgb(0 0 0 / 0.45);
