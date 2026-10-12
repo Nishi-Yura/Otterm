@@ -10,7 +10,7 @@
 
 <br>
 
-[Install](#install) ・ [How it differs](#how-it-differs) ・ [Mods](#add-what-you-want-with-mods) ・ [Pebble](#pebble) ・ [Performance](#performance) ・ [Docs](#docs)
+[Install](#install) ・ [What it is good at](#what-otterm-is-good-at) ・ [Mods](#add-what-you-want-with-mods) ・ [Pebble](#pebble) ・ [Performance](#performance) ・ [Docs](#docs)
 
 <br>
 
@@ -31,32 +31,40 @@ otterm is a terminal built with Rust and Tauri. It ships for Windows today; macO
 
 The name is "otter" plus "term". Otters crack shellfish open with a stone, so: a terminal that cracks the shell open.
 
-What sets it apart most is that **your shells run in a process of their own, apart from the window**. If otterm crashes, or restarts for an update, your build or server keeps running, and the next window opens the same tabs again. No tmux needed, on Windows either.
-
-<p align="center">
-  <img src="assets/readme/keep-en.png" alt="1. npm run build is running. 2. The window crashed, but the shell keeps running. 3. Opened again, the build has gone from 42% to 78%" width="92%">
-</p>
-
-A fresh install is a plain terminal with nothing added. Pebble, the explanations as you type and the file tree are all mods, and you turn on only the ones you want.
+A fresh install is a plain terminal with nothing added. You add only what you want.
 
 > [!NOTE]
 > otterm never runs a command for you. Suggestions only fill the input line; you press Enter.
 
 <br>
 
-## How it differs
+## What otterm is good at
 
-In October 2026 we compared the terminals people use most. How we checked, and the sources, are in [docs/13-positioning.md](docs/13-positioning.md) (in Japanese).
+### Shells that outlive the window
 
-| | otterm | Windows Terminal | WezTerm | Ghostty | Alacritty |
-| --- | :-: | :-: | :-: | :-: | :-: |
-| Runs on Windows | yes | yes | yes | no | yes |
-| Shells survive a crashed window | yes | no | with its multiplexer | no | with tmux |
-| Tabs and splits | yes | yes | yes | yes | no |
-| Extensions | mods with declared permissions, sandboxed | extensions (since 1.25) | Lua, unrestricted | none | none |
-| Japanese interface | yes | yes | no | no | no interface |
+Your shells run in a process of their own, apart from the otterm window. If otterm crashes, or restarts for an update or a setting, your build or server keeps running and the scrollback stays. The next window opens the same tabs again. No tmux needed, on Windows either.
 
-Where otterm is behind: it cannot show images yet (sixel, the kitty graphics protocol). There are no macOS or Linux builds yet. On a long scrolling output it parses a little over twice as fast as 1.1, but still slower than Ghostty or kitty (see [Performance](#performance)).
+<p align="center">
+  <img src="assets/readme/keep-en.png" alt="1. npm run build is running. 2. The window crashed, but the shell keeps running. 3. Opened again, the build has gone from 42% to 78%" width="92%">
+</p>
+
+### You choose what to add
+
+Pebble, the explanations as you type and the file tree are all mods. They all start off, so nothing you do not use gets in the way. A mod declares whether it uses files, the network, writing to the terminal or AI, and you see that before you install it. Mods run in a sandbox, so a stuck mod cannot freeze the terminal.
+
+### Japanese from the start
+
+The interface, Pebble's lines and the command dictionary come in Japanese and English. Text being composed with an IME appears at the cursor, and in apps that draw their own cursor, such as Claude Code, the candidate window opens next to it rather than somewhere else. Full-width and ambiguous-width characters are handled the way you choose.
+
+### Nothing leaves without you seeing it
+
+No account, no telemetry. Asking an AI is something you turn on yourself; each time, you see what will be sent first, and strings that look like tokens or passwords are masked.
+
+### Numbers, with how they were measured
+
+Typing delay and throughput are published together with how we measured them, including where otterm is not fast yet (see [Performance](#performance)).
+
+Not there yet: showing images (sixel, the kitty graphics protocol) and the macOS and Linux builds.
 
 <br>
 
@@ -200,7 +208,7 @@ We measure typing delay and throughput the same way every time ([docs/bench](doc
 | --- | --- | --- |
 | Key press to drawn (p99) | 6.2 ms | Measured inside the WebView. Not yet measured to light on the screen with a camera |
 | Start to prompt (median) | 694 ms | About 380 ms of it is WebView2 starting |
-| VT parsing (scrolling output) | about 70 to 80 MiB/s | About 30 in 1.1. On Windows the PTY (about 30 to 35 MiB/s) is the limit first. Ghostty and kitty are still faster |
+| VT parsing (scrolling output) | about 70 to 80 MiB/s | About 30 in 1.1. On Windows the PTY (about 30 to 35 MiB/s) is the limit first |
 | One million scrollback lines | about 155 MiB | About 160 bytes per line |
 
 Keys go straight to Rust without waiting for mods. Drawing uses WebGL2 (Canvas 2D when it is not available); glyphs are shaped in Rust and packed into a texture.
