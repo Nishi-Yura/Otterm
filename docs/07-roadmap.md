@@ -131,6 +131,7 @@
 
 ### M6: 配布（目安 3〜4 週）→ v1.0
 
+- **v1.0.0 を公開した（2026-10-12、Windows x64 のみ）**: https://github.com/Nishi-Yura/Otterm/releases/tag/v1.0.0 。自動更新の署名つき（`latest.json`）。残り: winget への提出、macOS / Linux 版（実機で確かめてから 1.0.x）、Homebrew cask（macOS 版と一緒に）
 - インストーラ（v1.0 は winget / Homebrew cask / AppImage の 3 チャネル。deb / rpm / Flatpak は v1.1）、Tauri updater による自動更新、署名（判断 A9、C10）
 - mod レジストリ（静的インデックス）、`otterm mod publish`、ストア画面
 - ドキュメントサイト（Starlight。ユーザーガイド、mod 作者ガイド、TypeDoc から生成する API リファレンス。判断 L3）
