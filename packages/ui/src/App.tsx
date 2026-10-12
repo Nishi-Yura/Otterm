@@ -64,7 +64,7 @@ import type { ThemeInfo } from "./mods/protocol";
 import { PromptBar, type PromptProps } from "./PromptBar";
 import { folderName, urlToPath } from "./paths";
 import type { Frame } from "./screen/protocol";
-import { connectScreen } from "./session";
+import { connectScreen, keptSessions } from "./session";
 import { Settings } from "./settings/Settings";
 import { type ScreenHub, TerminalView } from "./TerminalView";
 import type { WhenContext } from "./when";
@@ -116,6 +116,8 @@ interface Pane {
   started?: number;
   /** A later `otterm` launch it opened for (docs/06 §4). */
   launch?: number;
+  /** A shell the session daemon kept, taken back by this pane (decision M26). */
+  attach?: number;
 }
 
 /**
@@ -314,7 +316,7 @@ export function App() {
   /**
    * `ctx.ai` (docs/10 §4.3, §7): show what goes where, ask, then send. Mods other than otterm's
    * own ask every time; otterm's AI mod shows the full preview for the first requests only
-   * (`[ai] preview_first_n`). Kotsume thinks while the answer comes.
+   * (`[ai] preview_first_n`). The answer is the model's, so Kotsume does not act out thinking.
    */
   const askAi = async (
     mod: string,
@@ -361,27 +363,20 @@ export function App() {
     }
     const events = new Channel<{ kind: "delta"; text: string }>();
     events.onmessage = (e) => onChunk?.(e.text);
-    mascot.setReason("ai", "thinking");
-    try {
-      return await invoke<AiResult>("ai_complete", {
-        modId: mod,
-        purpose: req.purpose,
-        system: req.system ?? null,
-        prompt,
-        maxTokens: req.maxTokens ?? null,
-        jsonOut: req.json,
-        events,
-      });
-    } finally {
-      mascot.clearReason("ai");
-    }
+    return await invoke<AiResult>("ai_complete", {
+      modId: mod,
+      purpose: req.purpose,
+      system: req.system ?? null,
+      prompt,
+      maxTokens: req.maxTokens ?? null,
+      jsonOut: req.json,
+      events,
+    });
   };
 
-  const mascotClick = () => {
-    // Clicking Kotsume asks the AI when the AI mod is there (decision F1), else opens the palette.
-    if (host.hasCommand(AI_ASK)) void host.runCommand(AI_ASK);
-    else void openPalette();
-  };
+  // Clicking Kotsume always opens the palette: one place to find everything, AI included. A mascot
+  // that opens a chat would make the model's answers look like hers.
+  const mascotClick = () => void openPalette();
   /** Open dialogs, newest last: a dialog opened over another (the AI send preview over the
    * answer it is about to fill) hands the screen back when it closes. */
   const [dialogs, setDialogs] = createSignal<{ key: number; req: DialogRequest; done: (id: string | null) => void }[]>(
@@ -1343,9 +1338,24 @@ export function App() {
   const currentTab = () => tabs().find((x) => x.id === activeTab());
   const updateTab = (id: number, f: (tab: Tab) => Tab) => setTabs(tabs().map((x) => (x.id === id ? f(x) : x)));
 
+  // Remember the tabs for the next start (`general.restore_session`): the folder and profile of
+  // each tab's active pane, written a moment after the last change.
+  let saveTabsTimer: ReturnType<typeof setTimeout> | undefined;
+  createEffect(() => {
+    folders(); // a shell that changed folder changes what to reopen
+    const list = tabs().map((tab) => {
+      const pane = panes().find((p) => p.id === tab.active);
+      const cwd = (pane && cwds.get(pane.id)) ?? pane?.cwd ?? null;
+      return { cwd, profile: pane?.profile ?? null, name: tab.name ?? null };
+    });
+    clearTimeout(saveTabsTimer);
+    if (list.length === 0) return;
+    saveTabsTimer = setTimeout(() => void invoke("tabs_save", { tabs: list }).catch(() => {}), 1000);
+  });
+
   // Tabs and panes change together (batch), so a new pane is laid out and visible by the time its
   // terminal mounts and measures itself.
-  const newTab = (cwd?: string, profile?: string, profileName?: string, launch?: number) => {
+  const newTab = (cwd?: string, profile?: string, profileName?: string, launch?: number, attach?: number) => {
     const tabId = nextId++;
     const paneId = nextId++;
     const at = tabs().findIndex((x) => x.id === activeTab());
@@ -1354,7 +1364,10 @@ export function App() {
     batch(() => {
       setTabs(next);
       setActiveTab(tabId);
-      setPanes([...panes(), { id: paneId, tab: tabId, cwd, profile, profileName, launch, started: Date.now() }]);
+      setPanes([
+        ...panes(),
+        { id: paneId, tab: tabId, cwd, profile, profileName, launch, attach, started: Date.now() },
+      ]);
     });
   };
 
@@ -1476,6 +1489,17 @@ export function App() {
    * and asks again next time.
    */
   const openFirstTabs = async () => {
+    // Shells the session daemon kept (a crash, an update, or `keep_sessions = "always"`) come back
+    // first, one tab each, in the order they started (decision M26).
+    // One that ended while no window was open has nothing left to show.
+    const kept = (await keptSessions()).filter((k) => !k.exited);
+    if (kept.length > 0) {
+      for (const k of kept) newTab(k.cwd ?? undefined, undefined, undefined, undefined, k.id);
+      const first = tabs()[0];
+      if (first) setActiveTab(first.id);
+      showNotice(t("sessions-kept", { count: kept.length }));
+      return;
+    }
     const ws = config()?.workspace;
     if (ws && ws.trusted === null && ws.gated) {
       const trusted = await askTrust(ws);
@@ -1485,7 +1509,21 @@ export function App() {
       ws && ws.tabs > 0
         ? await invoke<{ launch: number; name: string | null }[]>("workspace_tabs").catch(() => [])
         : [];
-    if (list.length === 0) return newTab();
+    if (list.length === 0) {
+      // The tabs of the last run, in their folders (`general.restore_session`, off by default).
+      const saved = await invoke<{ cwd: string | null; profile: string | null; name: string | null }[]>(
+        "tabs_saved",
+      ).catch(() => []);
+      if (saved.length === 0) return newTab();
+      for (const tab of saved) newTab(tab.cwd ?? undefined, tab.profile ?? undefined);
+      saved.forEach((tab, i) => {
+        const id = tabs()[i]?.id;
+        if (tab.name && id !== undefined) updateTab(id, (x) => ({ ...x, name: tab.name ?? undefined }));
+      });
+      const first = tabs()[0];
+      if (first) setActiveTab(first.id);
+      return;
+    }
     for (const tab of list) newTab(undefined, undefined, tab.name ?? undefined, tab.launch);
     const first = tabs()[0];
     if (first) setActiveTab(first.id);
@@ -2359,6 +2397,7 @@ export function App() {
                       cwd={p.cwd}
                       profile={p.profile}
                       launch={p.launch}
+                      attach={p.attach}
                       onTitle={(title) => {
                         setTitles({ ...titles(), [p.id]: title });
                         const s = snapshot(p);

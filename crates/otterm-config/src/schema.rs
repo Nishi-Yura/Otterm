@@ -101,13 +101,30 @@ pub struct General {
     pub check_updates: bool,
     /// Update channel.
     pub update_channel: UpdateChannel,
-    /// Reopen tabs, panes and working directories from the previous run.
-    #[schemars(extend("x-hidden" = true))]
+    /// Reopen the tabs of the last run in their folders, with new shells. Splits are not restored.
+    /// Shells the session daemon kept come back without this (`keep_sessions`).
     pub restore_session: bool,
+    /// Keep the shells running in a background process (decision M26): `on-crash` keeps them when
+    /// the window crashes or restarts for an update or a setting, `always` also when you close it,
+    /// and the next window picks them up. `never` runs them inside the window, as before.
+    #[schemars(extend("x-restart" = true))]
+    pub keep_sessions: KeepSessions,
     /// Ask before closing a tab whose process is still running.
     pub confirm_close_running: bool,
     /// Remember window size and position per monitor (decision I7).
     pub remember_window: bool,
+}
+
+/// When the shells outlive the window (`general.keep_sessions`, decision M26).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum KeepSessions {
+    /// Inside the window: closing or losing it ends the shells.
+    Never,
+    /// A crash or a restart (an update, a setting) keeps them; closing the window ends them.
+    OnCrash,
+    /// Closing the window keeps them too; the next window opens them again.
+    Always,
 }
 
 impl Default for General {
@@ -117,7 +134,8 @@ impl Default for General {
             guide_level: 2,
             check_updates: true,
             update_channel: UpdateChannel::Stable,
-            restore_session: true,
+            restore_session: false,
+            keep_sessions: KeepSessions::OnCrash,
             confirm_close_running: true,
             remember_window: true,
         }
@@ -407,7 +425,8 @@ pub struct Terminal {
     pub ambiguous_width: AmbiguousWidth,
     /// Allow applications to write the clipboard via OSC 52.
     pub osc52_clipboard: Permission,
-    /// Inline images (Sixel / iTerm2 / Kitty).
+    /// Inline images (Sixel / iTerm2 / Kitty). Not drawn yet.
+    #[schemars(extend("x-hidden" = true))]
     pub images: bool,
     /// What happens when the shell exits.
     pub close_behavior: CloseBehavior,

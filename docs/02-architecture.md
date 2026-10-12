@@ -67,13 +67,20 @@
 +----------------------------------------------------------------------+
            | PTY
            v
-   シェルプロセス（bash / pwsh / ...）  <- v1.x では分離デーモンで生かす
+   シェルプロセス（bash / pwsh / ...）  <- 1.2 からはセッションデーモンが持つ（§2.1）
 ```
 
-### 2.1 v1.x で予定するデーモン分離
+### 2.1 セッションデーモン（1.2〜、判断 M26）
 
-v1.0 では Tauri プロセス内に PTY を持つ。v1.x で `ottermd`（Rust、ヘッドレス）を分離し、UI プロセスが落ちてもセッションが生き続ける構成に移行する。
-tmux のサーバ／クライアント構成と同じ考え方で、API 境界は v1.0 の時点で `SessionManager` を trait 化して用意しておく。
+PTY と VT の状態は、ウィンドウとは別のプロセス `otterm --daemon` に置く。ウィンドウが落ちても、更新で再起動しても、シェルとスクロールバックは残り、次のウィンドウがつなぎ直す。tmux のサーバ／クライアント構成と同じ考え方で、境界は `SessionManager` trait（v1.0 から）。
+
+```
+otterm（ウィンドウ）── RemoteSessionManager ──TCP 127.0.0.1 + トークン── otterm --daemon
+   │  フレームを WebView へ（M2 の WebSocket）                         LocalSessionManager
+   │                                                                     Session xN -- Pty -- Terminal
+```
+
+`general.keep_sessions = "never"` のとき、またはデーモンが起動できないときは、v1.0 と同じくウィンドウの中で動かす。
 
 ## 3. レイヤ設計と依存方向
 

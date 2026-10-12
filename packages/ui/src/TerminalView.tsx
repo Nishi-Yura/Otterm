@@ -51,6 +51,8 @@ export interface TerminalViewProps {
   profile?: string;
   /** The later `otterm` launch this pane opens for (docs/06 §4). */
   launch?: number;
+  /** A kept shell to take back (decision M26) instead of starting a new one. */
+  attach?: number;
   onTitle: (title: string) => void;
   /** A command started (its line, maybe empty) or ended (""), from the shell integration. */
   onRunning: (command: string) => void;
@@ -285,6 +287,7 @@ export function TerminalView(props: TerminalViewProps) {
         props.cwd,
         props.profile,
         props.launch,
+        props.attach,
       );
       startupMark("session created");
       props.onSession(session.id);
@@ -338,7 +341,12 @@ export function TerminalView(props: TerminalViewProps) {
     };
     input.addEventListener("focus", onFocus(true));
     input.addEventListener("blur", onFocus(false));
-    r.onDraw = () => placeInput(r.cursorRect());
+    r.onDraw = () => {
+      // The IME composes where the user types, even when the program draws its own cursor.
+      const cell = r.cursorRect();
+      const at = model.imeCursor();
+      placeInput({ x: at.col * cell.width, y: at.row * cell.height, height: cell.height });
+    };
     /** The link (or path still being looked up) under the pointer while Ctrl is held. */
     let hovered: Link | undefined;
     const showLink = (link: Link | undefined, target?: string) => {

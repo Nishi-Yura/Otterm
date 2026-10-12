@@ -93,6 +93,19 @@ export const clipboard = {
   write: (text: string) => invoke<void>("clipboard_write", { text }),
 };
 
+/** A shell the session daemon kept from an earlier window (decision M26). */
+export interface KeptSession {
+  id: number;
+  title: string;
+  /** Its last folder, as a `file://` URL. */
+  cwd: string | null;
+  /** It ended while no window was open. */
+  exited: boolean;
+}
+
+/** The shells waiting in the session daemon, oldest first; empty when shells run in the window. */
+export const keptSessions = () => invoke<KeptSession[]>("sessions_detached").catch(() => [] as KeptSession[]);
+
 /** Save text as `name` in the Downloads folder (decision I12); resolves to the path written. */
 export const saveDownload = (name: string, text: string) => invoke<string>("block_save", { name, text });
 
@@ -113,6 +126,8 @@ export async function createSession(
   profile?: string,
   /** A later `otterm` launch this tab is for (its folder, command and profile). */
   launch?: number,
+  /** A shell the session daemon kept from an earlier window: take it back instead of starting one. */
+  attach?: number,
 ): Promise<Session> {
   const events = new Channel<SessionEvent>();
   events.onmessage = onEvent;
@@ -123,6 +138,7 @@ export async function createSession(
     cwd: cwd ?? null,
     profile: profile ?? null,
     launch: launch ?? null,
+    attach: attach ?? null,
   });
   return {
     id,

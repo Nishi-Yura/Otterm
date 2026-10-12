@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use portable_pty::{Child, ChildKiller, CommandBuilder, MasterPty, native_pty_system};
 
 /// Terminal size in character cells.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct PtySize {
     pub cols: u16,
     pub rows: u16,
@@ -26,7 +26,7 @@ impl From<PtySize> for portable_pty::PtySize {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct SpawnOptions {
     /// Program to run. `None` = the platform default shell ([`default_shell`]).
     pub program: Option<String>,

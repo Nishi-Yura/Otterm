@@ -65,6 +65,12 @@ export class GlyphAtlas {
   /** Incremented on every eviction; a run layout built across one is not kept. */
   private epoch = 0;
   private readonly glyphs = new Map<string, Glyph>();
+  /**
+   * The same glyphs keyed by code point and style, for cells of one code point: looking them up
+   * builds no string, which a full redraw would otherwise do for every cell. Emptied whenever
+   * `glyphs` loses entries.
+   */
+  private readonly byCode = new Map<number, Glyph>();
   private readonly scratch: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
   /** Room around a cell's box for glyphs that reach outside it (italics, tall symbols, emoji). */
@@ -146,6 +152,7 @@ export class GlyphAtlas {
 
   private clear(): void {
     this.glyphs.clear();
+    this.byCode.clear();
     this.runs.clear();
     for (const p of this.pages) {
       p.keys.length = 0;
@@ -177,6 +184,7 @@ export class GlyphAtlas {
     const old = this.pageAt(pick);
     if (old.keys.length > 0) {
       for (const key of old.keys) this.glyphs.delete(key);
+      this.byCode.clear();
       old.keys.length = 0;
       this.runs.clear();
       this.epoch++;
@@ -185,6 +193,20 @@ export class GlyphAtlas {
     }
     this.page = pick;
     this.startPage();
+  }
+
+  /** [`get`] for a cell holding a single code point, the common case. */
+  getCode(cp: number, style: number): Glyph {
+    const code = cp * 8 + (style & 7);
+    let g = this.byCode.get(code);
+    if (g) {
+      this.touch(g);
+      return g;
+    }
+    g = this.get(String.fromCodePoint(cp), style & 7);
+    // A glyph still coming from Rust is asked for again, so it shows once it arrives.
+    if (g !== PENDING) this.byCode.set(code, g);
+    return g;
   }
 
   /** The glyph for a grapheme cluster in a style (bit 0 bold, bit 2 italic, as `Flags`). */

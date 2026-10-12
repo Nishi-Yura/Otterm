@@ -77,5 +77,7 @@ pub async fn update_check(
 pub async fn update_install(app: AppHandle, pending: State<'_, UpdateState>) -> Result<(), String> {
     let update = pending.0.lock().unwrap().take().ok_or("no update to install")?;
     update.download_and_install(|_, _| {}, || {}).await.map_err(|e| e.to_string())?;
+    // The shells wait in the session daemon for the new version (decision M26).
+    crate::keep_sessions_for_restart(&app);
     app.restart();
 }

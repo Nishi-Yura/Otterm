@@ -4,6 +4,28 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-12
+
+### Added
+
+- **Shells outlive the window.** Shells now run in a session daemon (`otterm --daemon`), a process of their own. If the window crashes, or otterm restarts for an update or a setting, the shells keep running with their scrollback and the next window opens them again as tabs. Closing the window normally still ends them; `general.keep_sessions = "always"` keeps them then too, and `"never"` runs them inside the window as before. On Windows the daemon runs from a copy in the data folder, so the update installer does not stop it. No tmux needed (decision M26).
+- `general.restore_session` (off by default) reopens the last tabs in their folders with new shells.
+- `docs/13-positioning.md`: how otterm compares with Windows Terminal, WezTerm, Ghostty, Alacritty and others, and where it means to be different.
+
+### Changed
+
+- VT parsing is a little over twice as fast on scrolling output (about 30 to 70-80 MiB/s): scrollback chunks are compressed and spilled on a background thread, runs of printable ASCII are written at once, and full-screen scrolls rotate rows instead of moving them. Compared byte for byte with the old implementation over random input, the screen, scrollback, search and copied text are the same.
+- Glyph lookups for single-code-point cells no longer build a string key per cell.
+- The IME composes where a program draws its own cursor: TUIs built on Ink (Claude Code and others) hide the real cursor and paint one reverse-video cell, and the candidate window used to open at the hidden cursor instead.
+- AI answers are labelled "The AI's answer", not as Pebble speaking, and every suggested command says it is an AI suggestion to read before running. Pebble no longer acts out "thinking" while a model answers, and clicking Pebble always opens the command palette.
+- Copy across the app, the site, the READMEs and the release notes was rewritten to be plain and specific: no emoji headings, no slogans, one word per idea (ガイドレベル, mod, エディタ).
+- The default (fallback) colors are the project's own warm palette instead of One Dark, with tighter shadows.
+- Store descriptions of the dictionary mods name the commands they cover and what they stop before.
+
+### Removed
+
+- The unused `terminal.images` setting is no longer shown in Settings (images are not drawn yet).
+
 ## [1.1.0] - 2026-10-12
 
 ### Changed
@@ -49,7 +71,8 @@ First release, Windows x64. Highlights:
 - Settings screen generated from `config.toml`, keybindings with chords and `when` clauses, 15 bundled themes, workspaces.
 - Signed auto-update, local crash logs with "create an issue", no telemetry.
 
-[Unreleased]: https://github.com/Nishi-Yura/Otterm/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Nishi-Yura/Otterm/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Nishi-Yura/Otterm/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Nishi-Yura/Otterm/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Nishi-Yura/Otterm/releases/tag/v1.0.0
 [#6]: https://github.com/Nishi-Yura/Otterm/issues/6

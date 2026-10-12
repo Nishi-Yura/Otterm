@@ -10,6 +10,7 @@ mod assist;
 mod config;
 mod config_tools;
 mod crash;
+mod daemon;
 mod editor;
 mod helptext;
 mod history;
@@ -32,8 +33,8 @@ mod update;
 mod window_state;
 
 use otterm_session::{
-    BlockState, Key, LocalSessionManager, Mouse, MouseAction, MouseButton, PtySize, SearchOptions, SessionEvent,
-    SessionId, SessionManager, SpawnOptions,
+    BlockState, Key, Mouse, MouseAction, MouseButton, PtySize, SearchOptions, SessionEvent, SessionId, SessionManager,
+    SpawnOptions,
 };
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -62,7 +63,11 @@ fn add_launch(state: &AppState, launch: TabLaunch) -> u32 {
 }
 
 struct AppState {
-    sessions: Box<LocalSessionManager>,
+    sessions: Box<dyn SessionManager>,
+    /// Shells the session daemon kept, as `sessions_detached` listed them (decision M26).
+    kept: std::sync::Mutex<std::collections::HashMap<SessionId, otterm_session::DetachedSession>>,
+    /// The sessions were handed to the daemon already (a restart); quitting must not end them.
+    released: std::sync::atomic::AtomicBool,
     screen: std::sync::Arc<ScreenServer>,
     config: &'static ConfigState,
     /// Folder and command from the command line, for the first session only.
@@ -194,6 +199,7 @@ fn config_get(state: State<'_, AppState>) -> UiConfig {
 /// else to `events`. `cwd` (a path or a `file://` URL from OSC 7) opens a split or a new tab in
 /// the directory of the pane it came from (docs/03 §3.2).
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 fn session_create(
     state: State<'_, AppState>,
     cols: u16,
@@ -202,7 +208,20 @@ fn session_create(
     cwd: Option<String>,
     profile: Option<String>,
     launch: Option<u32>,
+    attach: Option<SessionId>,
 ) -> CmdResult<SessionId> {
+    // A shell the session daemon kept from an earlier window (decision M26): take it back.
+    if let Some(id) = attach {
+        let kept = state.kept.lock().unwrap().remove(&id);
+        let id_cell = std::sync::Arc::new(std::sync::Mutex::new(Some(id)));
+        let sink = session_sink(&state, events, String::new(), id_cell);
+        state.sessions.attach(id, sink).map_err(err)?;
+        if let Some(k) = kept {
+            state.shells.lock().unwrap().insert(id, k.program);
+        }
+        state.sessions.resize(id, PtySize { cols, rows }).map_err(err)?;
+        return Ok(id);
+    }
     let config = state.config.config();
     // `otterm <path>` / `otterm -e <command>` / `--profile`: the first tab, or the tab a later
     // launch asked for.
@@ -295,70 +314,10 @@ fn session_create(
         .and_then(|_| opts.args.iter().position(|a| a == "-d" || a == "--distribution"))
         .and_then(|i| opts.args.get(i + 1).cloned());
     let shell = opts.program.clone().unwrap_or_else(otterm_session::default_shell);
-    let screen = std::sync::Arc::clone(&state.screen);
-    let history = std::sync::Arc::clone(&state.history);
-    let cwds = std::sync::Arc::clone(&state.cwds);
-    let config_state = state.config;
     let profile_id = chosen.as_ref().map(|p| p.id.clone()).unwrap_or_default();
     let id_cell = std::sync::Arc::new(std::sync::Mutex::new(None::<SessionId>));
-    let id_for_events = std::sync::Arc::clone(&id_cell);
-    let id = state
-        .sessions
-        .create(
-            opts,
-            Box::new(move |ev| {
-                // A failed send means the window is gone; the session ends with the app.
-                let _ = match ev {
-                    SessionEvent::Frame(frame) => {
-                        screen.broadcast(frame);
-                        Ok(())
-                    }
-                    SessionEvent::Title(title) => events.send(UiEvent::Title { title }),
-                    SessionEvent::Bell => events.send(UiEvent::Bell),
-                    SessionEvent::Cwd(url) => {
-                        if let (Some(id), Some(path)) = (*id_for_events.lock().unwrap(), local_path(&url)) {
-                            cwds.lock().unwrap().insert(id, path.display().to_string());
-                        }
-                        events.send(UiEvent::Cwd { url })
-                    }
-                    // OSC 52 carries base64; the UI applies the clipboard policy (decision H2).
-                    SessionEvent::ClipboardWrite(data) => match decode_base64(&data) {
-                        Some(data) => events.send(UiEvent::Clipboard { data }),
-                        None => Ok(()),
-                    },
-                    SessionEvent::BlockStart { line, command } => events.send(UiEvent::BlockStart { line, command }),
-                    SessionEvent::BlockEnd { line, command, exit, ms } => {
-                        // The run history (decision K1).
-                        let c = config_state.config();
-                        if c.history.enabled
-                            && let Some(id) = *id_for_events.lock().unwrap()
-                        {
-                            let cwd = cwds.lock().unwrap().get(&id).cloned().unwrap_or_default();
-                            if !command.trim().is_empty() {
-                                let started = history::now_ms() - i64::from(ms);
-                                let run = history::NewRun {
-                                    command: command.clone(),
-                                    cwd,
-                                    exit,
-                                    started,
-                                    ms,
-                                    profile: profile_id.clone(),
-                                };
-                                history.record(&run, c.history.redact_secrets);
-                            }
-                        }
-                        events.send(UiEvent::BlockEnd { line, exit, ms })
-                    }
-                    SessionEvent::Input { line, cursor, active, exact } => {
-                        events.send(UiEvent::Input { line, cursor, active, exact })
-                    }
-                    SessionEvent::EchoOff(off) => events.send(UiEvent::EchoOff { off }),
-                    SessionEvent::Exited { code } => events.send(UiEvent::Exited { code }),
-                    SessionEvent::Output(_) => Ok(()),
-                };
-            }),
-        )
-        .map_err(err)?;
+    let sink = session_sink(&state, events, profile_id, std::sync::Arc::clone(&id_cell));
+    let id = state.sessions.create(opts, sink).map_err(err)?;
     *id_cell.lock().unwrap() = Some(id);
     // The pseudo console holds typed input until the shell reads it.
     if let Some(text) = input.filter(|t| !t.trim().is_empty()) {
@@ -369,6 +328,71 @@ fn session_create(
         state.wsl.lock().unwrap().insert(id, d);
     }
     Ok(id)
+}
+
+/// Where a session's events go: frames to the screen socket, the rest to the pane's channel. A
+/// finished command also goes into the run history (decision K1).
+fn session_sink(
+    state: &AppState,
+    events: Channel<UiEvent>,
+    profile_id: String,
+    id_for_events: std::sync::Arc<std::sync::Mutex<Option<SessionId>>>,
+) -> otterm_session::EventSink {
+    let screen = std::sync::Arc::clone(&state.screen);
+    let history = std::sync::Arc::clone(&state.history);
+    let cwds = std::sync::Arc::clone(&state.cwds);
+    let config_state = state.config;
+    Box::new(move |ev| {
+        // A failed send means the window is gone; the session ends with the app.
+        let _ = match ev {
+            SessionEvent::Frame(frame) => {
+                screen.broadcast(frame);
+                Ok(())
+            }
+            SessionEvent::Title(title) => events.send(UiEvent::Title { title }),
+            SessionEvent::Bell => events.send(UiEvent::Bell),
+            SessionEvent::Cwd(url) => {
+                if let (Some(id), Some(path)) = (*id_for_events.lock().unwrap(), local_path(&url)) {
+                    cwds.lock().unwrap().insert(id, path.display().to_string());
+                }
+                events.send(UiEvent::Cwd { url })
+            }
+            // OSC 52 carries base64; the UI applies the clipboard policy (decision H2).
+            SessionEvent::ClipboardWrite(data) => match decode_base64(&data) {
+                Some(data) => events.send(UiEvent::Clipboard { data }),
+                None => Ok(()),
+            },
+            SessionEvent::BlockStart { line, command } => events.send(UiEvent::BlockStart { line, command }),
+            SessionEvent::BlockEnd { line, command, exit, ms } => {
+                // The run history (decision K1).
+                let c = config_state.config();
+                if c.history.enabled
+                    && let Some(id) = *id_for_events.lock().unwrap()
+                {
+                    let cwd = cwds.lock().unwrap().get(&id).cloned().unwrap_or_default();
+                    if !command.trim().is_empty() {
+                        let started = history::now_ms() - i64::from(ms);
+                        let run = history::NewRun {
+                            command: command.clone(),
+                            cwd,
+                            exit,
+                            started,
+                            ms,
+                            profile: profile_id.clone(),
+                        };
+                        history.record(&run, c.history.redact_secrets);
+                    }
+                }
+                events.send(UiEvent::BlockEnd { line, exit, ms })
+            }
+            SessionEvent::Input { line, cursor, active, exact } => {
+                events.send(UiEvent::Input { line, cursor, active, exact })
+            }
+            SessionEvent::EchoOff(off) => events.send(UiEvent::EchoOff { off }),
+            SessionEvent::Exited { code } => events.send(UiEvent::Exited { code }),
+            SessionEvent::Output(_) => Ok(()),
+        };
+    })
 }
 
 /// The program a session runs and its WSL distribution, for the mods' `SessionInfo`.
@@ -961,15 +985,17 @@ fn app_state(launch: launch::Launch) -> AppState {
     let history = std::sync::Arc::new(history::History::open(otterm_config::data_dir()));
     history.prune(config.config().history.retention_days);
     ai::prune_log(config.config().ai.log_retention_days);
-    let sessions = Box::new(LocalSessionManager::new());
-    // Unlimited scrollback spills here, one folder per process (docs/09 §5); what a crashed run
-    // left is no use now.
-    if let Some(root) = otterm_config::data_dir().map(|d| d.join("scrollback")) {
-        otterm_session::clean_spill_root(&root);
-        sessions.set_spill_root(Some(root.join(std::process::id().to_string())));
-    }
+    // Benchmarks measure the window's own path, without the daemon in between.
+    let keep = if cfg!(feature = "bench") {
+        otterm_config::KeepSessions::Never
+    } else {
+        config.config().general.keep_sessions
+    };
+    let sessions = daemon::sessions(keep);
     AppState {
         sessions,
+        kept: Default::default(),
+        released: Default::default(),
         screen: std::sync::Arc::new(ScreenServer::start().expect("start the screen socket")),
         config,
         first: std::sync::Mutex::new(Some(TabLaunch {
@@ -1065,10 +1091,85 @@ fn launch_problems(state: State<'_, AppState>) -> Vec<String> {
     state.unknown_args.clone()
 }
 
+/// A shell the session daemon kept from an earlier window, for the UI to open again (decision M26).
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct KeptSession {
+    id: SessionId,
+    title: String,
+    /// The last folder the shell reported (a `file://` URL).
+    cwd: Option<String>,
+    /// The process ended while no window was open.
+    exited: bool,
+}
+
+/// A tab as `general.restore_session` reopens it: its folder, profile and name.
+#[derive(Serialize, Deserialize)]
+struct SavedTab {
+    /// The folder of its active pane, as the shell reported it (a `file://` URL) or as it started.
+    cwd: Option<String>,
+    profile: Option<String>,
+    name: Option<String>,
+}
+
+fn saved_tabs_file() -> Option<std::path::PathBuf> {
+    otterm_config::data_dir().map(|d| d.join("state").join("tabs.json"))
+}
+
+/// Remember the open tabs, for the next start (`general.restore_session`).
+#[tauri::command]
+fn tabs_save(tabs: Vec<SavedTab>) -> CmdResult {
+    let file = saved_tabs_file().ok_or("no data folder")?;
+    if let Some(dir) = file.parent() {
+        std::fs::create_dir_all(dir).map_err(err)?;
+    }
+    let tmp = file.with_extension("json.tmp");
+    std::fs::write(&tmp, serde_json::to_vec(&tabs).map_err(err)?).map_err(err)?;
+    std::fs::rename(&tmp, &file).map_err(err)
+}
+
+/// The tabs of the last run, when `general.restore_session` is on; empty otherwise.
+#[tauri::command]
+fn tabs_saved(state: State<'_, AppState>) -> Vec<SavedTab> {
+    if !state.config.config().general.restore_session {
+        return Vec::new();
+    }
+    saved_tabs_file()
+        .and_then(|f| std::fs::read(f).ok())
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default()
+}
+
+/// The shells waiting in the session daemon, oldest first.
+#[tauri::command]
+fn sessions_detached(state: State<'_, AppState>) -> Vec<KeptSession> {
+    let list = state.sessions.detached();
+    let mut kept = state.kept.lock().unwrap();
+    list.into_iter()
+        .map(|d| {
+            let out = KeptSession { id: d.id, title: d.title.clone(), cwd: d.cwd.clone(), exited: d.exited.is_some() };
+            kept.insert(d.id, d);
+            out
+        })
+        .collect()
+}
+
+/// Hand the shells to the session daemon without ending them: the window restarts (an update, a
+/// setting) and the next one takes them back (decision M26).
+pub(crate) fn keep_sessions_for_restart(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    let state = app.state::<AppState>();
+    if !state.released.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        state.sessions.release(false);
+    }
+}
+
 /// Start otterm again, in safe mode or out of it (docs/04 §2.3), and quit this one. The new
 /// process gets the same arguments, with `--safe-mode` added or taken away.
 #[tauri::command]
 fn app_restart(app: tauri::AppHandle, safe: bool) -> CmdResult {
+    // First, so the new window finds the shells waiting for it.
+    keep_sessions_for_restart(&app);
     let exe = std::env::current_exe().map_err(err)?;
     let mut args: Vec<String> = std::env::args().skip(1).filter(|a| a != "--safe-mode").collect();
     if safe {
@@ -1181,6 +1282,11 @@ fn instance_reply(state: State<'_, AppState>, id: u32, ok: bool, message: String
 #[cfg(not(feature = "bench"))]
 fn main() {
     crash::install_hook();
+    // The session daemon (decision M26): no window, no single-instance hand-over.
+    if std::env::args().nth(1).as_deref() == Some("--daemon") {
+        daemon::run();
+        return;
+    }
     if cli() {
         return;
     }
@@ -1339,9 +1445,23 @@ fn main() {
             settings::background_image_get,
             settings::fonts_list,
             app_restart,
+            sessions_detached,
+            tabs_save,
+            tabs_saved,
         ])
-        .run(tauri::generate_context!())
-        .expect("failed to run otterm");
+        .build(tauri::generate_context!())
+        .expect("failed to run otterm")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                use tauri::Manager;
+                let state = app.state::<AppState>();
+                // A normal quit ends the shells, unless the user keeps them for the next window.
+                if !state.released.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                    let keep = state.config.config().general.keep_sessions == otterm_config::KeepSessions::Always;
+                    state.sessions.release(!keep);
+                }
+            }
+        });
 }
 
 #[cfg(feature = "bench")]

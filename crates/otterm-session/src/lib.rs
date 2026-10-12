@@ -20,6 +20,8 @@ pub use otterm_vt::search::{Match, SearchOptions};
 pub use otterm_vt::{BlockState, CursorShape, Key, Mouse, MouseAction, MouseButton};
 use otterm_vt::{Event, Terminal};
 
+pub mod remote;
+
 pub type SessionId = u64;
 
 /// Most search matches returned at once.
@@ -33,7 +35,7 @@ const FRAME_INTERVAL: Duration = Duration::from_millis(16);
 /// How long a frame may be held while the application has synchronized output (DECSET 2026) on.
 const SYNC_TIMEOUT: Duration = Duration::from_millis(150);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum SessionEvent {
     /// Raw bytes from the PTY, in order. Only from [`LocalSessionManager::raw`].
     Output(Vec<u8>),
@@ -77,7 +79,7 @@ pub enum SessionEvent {
 }
 
 /// A block head without its output.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct BlockSummary {
     pub line: u64,
     pub command: Option<String>,
@@ -85,7 +87,7 @@ pub struct BlockSummary {
 }
 
 /// A block of the shell integration (docs/03 §6.3), as the block menu needs it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct BlockText {
     /// Line number of the head row.
     pub line: u64,
@@ -128,7 +130,7 @@ struct ViewData {
 }
 
 /// Settings for each new session's terminal.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TerminalOptions {
     /// Scrollback lines kept; `usize::MAX` is unlimited, with old chunks spilled to disk.
     pub scrollback: usize,
@@ -221,6 +223,48 @@ pub trait SessionManager: Send + Sync {
     fn reset_modes(&self, id: SessionId) -> Result<()>;
     /// Kill the process. [`SessionEvent::Exited`] follows.
     fn close(&self, id: SessionId) -> Result<()>;
+
+    /// The theme's default colors (foreground, background, cursor) that programs ask for with
+    /// OSC 10 / 11 / 12; for every session, now and later.
+    fn set_default_colors(&self, colors: [(u8, u8, u8); 3]);
+    /// Settings for sessions created from now on.
+    fn set_terminal_options(&self, options: TerminalOptions);
+    /// Where sessions with unlimited scrollback keep their spilled chunks, one folder each.
+    fn set_spill_root(&self, root: Option<std::path::PathBuf>);
+    /// Lines in each session's scrollback, for the memory warning (decision I13).
+    fn scrollback_lines(&self) -> Vec<(SessionId, usize)>;
+
+    /// Sessions that outlived the window that ran them and wait for a window to pick them up
+    /// (decision M26). Only the session daemon keeps such sessions.
+    fn detached(&self) -> Vec<DetachedSession> {
+        Vec::new()
+    }
+    /// Take over a detached session: its events go to `sink` from now on, starting with a full
+    /// frame and its title and folder.
+    fn attach(&self, id: SessionId, sink: EventSink) -> Result<()> {
+        let _ = sink;
+        Err(anyhow!("session {id} cannot be attached: sessions run inside this window"))
+    }
+    /// The window is going away. `close` ends its sessions (a normal quit); otherwise they stay
+    /// with the daemon for the next window (a restart for an update, or `keep_sessions`).
+    fn release(&self, close: bool) {
+        let _ = close;
+    }
+}
+
+/// A session the daemon keeps without a window (decision M26).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct DetachedSession {
+    pub id: SessionId,
+    /// The program it runs, as started.
+    pub program: String,
+    pub title: String,
+    /// The last OSC 7 folder (a `file://` URL), if the shell reported one.
+    pub cwd: Option<String>,
+    /// When it started, in milliseconds since the Unix epoch: windows restore tabs in this order.
+    pub started_ms: u64,
+    /// The exit code once the process ended while no window was attached.
+    pub exited: Option<Option<u32>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -430,6 +474,12 @@ impl LocalSessionManager {
             colors: Mutex::new([(0xd8, 0xde, 0xe9), (0x1b, 0x1d, 0x23), (0x88, 0xc0, 0xd0)]),
             spill_root: Mutex::new(None),
         }
+    }
+
+    /// Sessions whose ids start after `base`, so that ids from several daemons never meet in one
+    /// window (decision M26). Frames carry ids as u32, so `base` plus the sessions must fit in one.
+    pub fn with_id_base(base: u64) -> Self {
+        Self { next_id: AtomicU64::new(base), ..Self::new() }
     }
 
     /// Sessions that send raw [`SessionEvent::Output`] instead of frames.
@@ -796,6 +846,23 @@ impl SessionManager for LocalSessionManager {
 
     fn close(&self, id: SessionId) -> Result<()> {
         self.get(id)?.with_pty(|p| p.kill())
+    }
+
+    // The inherent methods of the same names do the work; these make them reachable through the trait.
+    fn set_default_colors(&self, colors: [(u8, u8, u8); 3]) {
+        LocalSessionManager::set_default_colors(self, colors);
+    }
+
+    fn set_terminal_options(&self, options: TerminalOptions) {
+        LocalSessionManager::set_terminal_options(self, options);
+    }
+
+    fn set_spill_root(&self, root: Option<std::path::PathBuf>) {
+        LocalSessionManager::set_spill_root(self, root);
+    }
+
+    fn scrollback_lines(&self) -> Vec<(SessionId, usize)> {
+        LocalSessionManager::scrollback_lines(self)
     }
 }
 

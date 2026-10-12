@@ -1,4 +1,4 @@
-import type { Attr, Frame, RowBlock } from "./protocol";
+import { type Attr, Flags, type Frame, type RowBlock } from "./protocol";
 
 export const DEFAULT_ATTR: Attr = Object.freeze({ fg: 0, bg: 0, underline: 0, flags: 0, link: 0 });
 
@@ -40,6 +40,35 @@ export class ScreenModel {
   readonly links = new Map<number, string>();
   /** Rows changed since the renderer last drew. */
   readonly dirty = new Set<number>();
+
+  /**
+   * Where the IME should compose: the cursor, or, while a program hides it, the cursor it draws
+   * itself. TUIs built on Ink (Claude Code and others) hide the real cursor and paint one cell in
+   * reverse video where you type; the real cursor then sits somewhere else, and the candidate window
+   * would open there. One lone reverse-video cell is taken as that drawn cursor; anything less
+   * clear (none, or several, as in htop's header) leaves the real cursor.
+   */
+  imeCursor(): { row: number; col: number } {
+    const real = { row: this.cursorRow, col: this.cursorCol };
+    if (this.cursorVisible) return real;
+    let found: { row: number; col: number } | undefined;
+    for (let row = this.rows - 1; row >= 0; row--) {
+      const attrs = this.lines[row]?.attrs;
+      if (!attrs) continue;
+      for (let col = 0; col < attrs.length; col++) {
+        if (!((attrs[col]?.flags ?? 0) & Flags.INVERSE)) continue;
+        const before = col > 0 && ((attrs[col - 1]?.flags ?? 0) & Flags.INVERSE) !== 0;
+        const after = ((attrs[col + 1]?.flags ?? 0) & Flags.INVERSE) !== 0;
+        // A wide character's spacer belongs to the cell before it.
+        const spacer = ((attrs[col + 1]?.flags ?? 0) & Flags.WIDE_SPACER) !== 0;
+        if (before || (after && !spacer)) return real;
+        if (found) return real;
+        found = { row, col };
+        if (spacer) col++;
+      }
+    }
+    return found ?? real;
+  }
 
   /** Apply a frame and mark the rows to redraw, including the old and the new cursor row. */
   apply(f: Frame): void {

@@ -509,12 +509,13 @@ export class WebGLRenderer implements Renderer {
       if (run === null) {
         // Covered by a ligature drawn from an earlier cell.
       } else if (cp !== 32 && !(attr.flags & Flags.HIDDEN)) {
+        const style = attr.flags & (Flags.BOLD | Flags.ITALIC);
+        const extra = line.extras.get(col);
         const g =
           run ??
-          this.atlas.get(
-            String.fromCodePoint(cp) + (line.extras.get(col) ?? ""),
-            attr.flags & (Flags.BOLD | Flags.ITALIC),
-          );
+          (extra === undefined
+            ? this.atlas.getCode(cp, style)
+            : this.atlas.get(String.fromCodePoint(cp) + extra, style));
         if (g.w > 0) {
           const color = this.rgba(readable(fg, bg, this.minimumContrast), attr.flags & Flags.DIM ? 153 : 255);
           this.pushGlyph(cache.glyphs, x + g.x, y + g.y, g.w, g.h, g.u, g.v, color, g.color);

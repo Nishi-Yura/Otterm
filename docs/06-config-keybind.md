@@ -30,6 +30,7 @@ language = "ja"                     # ja | en | auto
 guide_level = 2                     # 0-3
 check_updates = true                # オンボーディングで確認。これ以外に otterm が自発的に外部へ接続することはない
 restore_session = true
+keep_sessions = "on-crash"         # シェルをセッションデーモンで動かす（判断 M26）。on-crash（落ちても更新しても残す。閉じたら終える、既定）| always（閉じても残す）| never（ウィンドウの中で動かす）
 confirm_close_running = true
 # telemetry 設定は存在しない。otterm は利用状況を一切送信しない（判断 H4）
 
