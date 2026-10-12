@@ -304,8 +304,7 @@ fn entry(m: &Installed, config: &otterm_config::Config, data: &Path, workspace: 
         }
         None => (
             // The AI mod follows `[ai] enabled` as well: off by default (docs/10 §5).
-            otterm_modhost::is_enabled(&lists, &m.id, official)
-                && (m.id != "otterm.ai-assist" || config.ai.enabled),
+            otterm_modhost::is_enabled(&lists, &m.id, official) && (m.id != "otterm.ai-assist" || config.ai.enabled),
             is_bundled(m, data) || otterm_modhost::granted(data, &m.id, &mf.mod_.version),
         ),
     };
