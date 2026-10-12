@@ -5,7 +5,7 @@ use crate::term::Modes;
 
 /// A key press as the UI reports it. `key` uses the DOM `KeyboardEvent.key` names
 /// (`"a"`, `"Enter"`, `"ArrowUp"`, `"F5"`, …).
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct Key {
     pub key: String,
     pub ctrl: bool,
@@ -202,7 +202,7 @@ pub fn encode_paste(text: &str, modes: &Modes) -> Vec<u8> {
 }
 
 /// A mouse button, for [`Mouse`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum MouseButton {
     Left,
     Middle,
@@ -213,7 +213,7 @@ pub enum MouseButton {
     None,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum MouseAction {
     Press,
     Release,
@@ -221,7 +221,7 @@ pub enum MouseAction {
 }
 
 /// A mouse event on the grid, as the UI reports it. `row` and `col` are 0-based screen cells.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Mouse {
     pub button: MouseButton,
     pub action: MouseAction,

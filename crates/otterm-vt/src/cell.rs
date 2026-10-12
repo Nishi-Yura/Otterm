@@ -84,7 +84,7 @@ impl Cell {
 }
 
 /// Where a command of the shell integration stands (OSC 133, docs/03 §6).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum BlockState {
     /// The prompt is being printed (OSC 133 A).
     Prompt,

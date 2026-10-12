@@ -7,7 +7,7 @@ use regex::{Regex, RegexBuilder};
 
 use crate::term::Terminal;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SearchOptions {
     /// The query is a regular expression rather than plain text.
     pub regex: bool,
@@ -16,7 +16,7 @@ pub struct SearchOptions {
 }
 
 /// A match from its first cell to its last cell, inclusive.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Match {
     pub start: (u64, usize),
     pub end: (u64, usize),

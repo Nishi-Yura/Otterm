@@ -7,6 +7,10 @@
 //! line in it is read (searching, scrolling far up) and the last one is kept decoded, so reading
 //! along a chunk does not decompress it again.
 //!
+//! Compressing a chunk and writing it to disk happen on a worker thread, not on the thread that
+//! feeds the terminal. Until the worker is done a chunk stays readable as plain rows (`Pending`)
+//! or as its compressed bytes (`Writing`), so reading, trimming and searching never wait for it.
+//!
 //! Lines are dropped from the front a chunk at a time, so the scrollback may hold up to
 //! `CHUNK - 1` lines more than its limit. Block heads are kept beside a chunk, not compressed:
 //! there are few of them and the UI looks them up often.
@@ -16,6 +20,8 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::mpsc::{Receiver, Sender, channel};
+use std::thread::JoinHandle;
 
 use crate::cell::{Attrs, BlockHead, Cell, Color, Row};
 
@@ -25,6 +31,8 @@ pub const CHUNK: usize = 1024;
 pub const HOT_ROWS: usize = 4096;
 /// Compressed chunks kept in memory before the oldest go to disk (only with a spill folder).
 const MEM_BUDGET: usize = 32 * 1024 * 1024;
+/// Chunks waiting for the worker before the next one is compressed on the calling thread instead.
+const MAX_PENDING: usize = 8;
 
 /// Where chunks go once memory holds [`MEM_BUDGET`] of them, and how much they may take.
 #[derive(Debug, Clone)]
@@ -35,8 +43,86 @@ pub struct Spill {
 
 #[derive(Debug)]
 enum Data {
-    Mem(Vec<u8>),
-    Disk { path: PathBuf, len: u64 },
+    /// Plain rows (block heads taken out) the worker has not compressed yet.
+    Pending(Arc<Vec<Row>>),
+    Mem(Arc<Vec<u8>>),
+    /// On its way to `path`: counted as on disk, readable from `bytes` until the write is done.
+    Writing {
+        path: PathBuf,
+        bytes: Arc<Vec<u8>>,
+    },
+    Disk {
+        path: PathBuf,
+        len: u64,
+    },
+}
+
+enum Job {
+    Compress { id: u64, rows: Arc<Vec<Row>> },
+    Write { id: u64, dir: PathBuf, path: PathBuf, bytes: Arc<Vec<u8>> },
+}
+
+enum Done {
+    Compressed { id: u64, bytes: Vec<u8> },
+    Written { id: u64, path: PathBuf, ok: bool },
+}
+
+/// The thread that compresses and writes chunks. Dropping it lets the thread finish what it was
+/// given and joins it.
+#[derive(Debug)]
+struct Worker {
+    jobs: Option<Sender<Job>>,
+    done: Receiver<Done>,
+    thread: Option<JoinHandle<()>>,
+}
+
+impl Worker {
+    fn spawn() -> Option<Self> {
+        let (jobs, job_rx) = channel::<Job>();
+        let (done_tx, done) = channel::<Done>();
+        let thread = std::thread::Builder::new()
+            .name("otterm-scrollback".into())
+            .spawn(move || {
+                for job in job_rx {
+                    let result = match job {
+                        Job::Compress { id, rows } => Done::Compressed { id, bytes: compress(&rows) },
+                        Job::Write { id, dir, path, bytes } => {
+                            let ok = std::fs::create_dir_all(&dir).is_ok()
+                                && std::fs::write(&path, bytes.as_slice()).is_ok();
+                            Done::Written { id, path, ok }
+                        }
+                    };
+                    if done_tx.send(result).is_err() {
+                        break;
+                    }
+                }
+            })
+            .ok()?;
+        Some(Self { jobs: Some(jobs), done, thread: Some(thread) })
+    }
+
+    fn submit(&self, job: Job) -> bool {
+        self.jobs.as_ref().is_some_and(|tx| tx.send(job).is_ok())
+    }
+}
+
+impl Drop for Worker {
+    fn drop(&mut self) {
+        self.jobs = None;
+        if let Some(t) = self.thread.take() {
+            let _ = t.join();
+        }
+        // A write that finished after its chunk was gone leaves a file nobody will read.
+        for done in self.done.try_iter() {
+            if let Done::Written { path, ok: true, .. } = done {
+                let _ = std::fs::remove_file(path);
+            }
+        }
+    }
+}
+
+fn compress(rows: &[Row]) -> Vec<u8> {
+    lz4_flex::compress_prepend_size(&encode_rows(rows))
 }
 
 #[derive(Debug)]
@@ -53,10 +139,18 @@ pub struct History {
     cold: VecDeque<Chunk>,
     cold_rows: usize,
     hot: VecDeque<Row>,
+    /// Compressed bytes held in memory, including those of chunks still being written.
     mem_bytes: usize,
+    /// The part of `mem_bytes` that is on its way to disk.
+    writing_bytes: usize,
     spill: Option<Spill>,
     disk_bytes: u64,
     next_id: u64,
+    worker: Option<Worker>,
+    /// Chunks handed to the worker for compression and not heard back from.
+    pending: usize,
+    /// Writing failed: keep chunks in memory until the spill folder is set again.
+    spill_failed: bool,
     /// The chunk decoded last, by id.
     cache: RefCell<Option<(u64, Arc<Vec<Row>>)>>,
 }
@@ -73,6 +167,7 @@ impl History {
     /// Spill old chunks to `spill.dir` from now on (`None`: keep everything in memory).
     pub fn set_spill(&mut self, spill: Option<Spill>) -> usize {
         self.spill = spill;
+        self.spill_failed = false;
         self.enforce_budget()
     }
 
@@ -104,14 +199,18 @@ impl History {
     }
 
     fn decoded(&self, chunk: &Chunk) -> Option<Arc<Vec<Row>>> {
+        if let Data::Pending(rows) = &chunk.data {
+            return Some(Arc::clone(rows));
+        }
         if let Some((id, rows)) = self.cache.borrow().as_ref()
             && *id == chunk.id
         {
             return Some(Arc::clone(rows));
         }
         let bytes = match &chunk.data {
-            Data::Mem(b) => Cow::Borrowed(b.as_slice()),
+            Data::Mem(b) | Data::Writing { bytes: b, .. } => Cow::Borrowed(b.as_slice()),
             Data::Disk { path, .. } => Cow::Owned(std::fs::read(path).ok()?),
+            Data::Pending(_) => return None,
         };
         let raw = lz4_flex::decompress_size_prepended(&bytes).ok()?;
         let rows = Arc::new(decode_rows(&raw)?);
@@ -123,60 +222,158 @@ impl History {
     /// spill limit (the caller moves its line numbers on by that much).
     pub fn push_back(&mut self, row: Row) -> usize {
         self.hot.push_back(row);
+        let changed = self.poll();
         if self.hot.len() < HOT_ROWS + CHUNK {
-            return 0;
+            return if changed { self.enforce_budget() } else { 0 };
         }
         let rows: Vec<Row> = self.hot.drain(..CHUNK).collect();
         self.freeze(rows);
         self.enforce_budget()
     }
 
-    /// Compress `rows` into a new chunk at the newest end of the cold part.
+    /// Take in what the worker has finished. Returns whether it had anything.
+    fn poll(&mut self) -> bool {
+        if self.pending == 0 && self.writing_bytes == 0 {
+            return false;
+        }
+        let mut changed = false;
+        while let Some(done) = self.worker.as_ref().and_then(|w| w.done.try_recv().ok()) {
+            changed = true;
+            match done {
+                Done::Compressed { id, bytes } => {
+                    self.pending -= 1;
+                    // The chunk may be gone (trimmed, or taken back as rows) meanwhile.
+                    if let Some(c) = self.cold.iter_mut().rev().find(|c| c.id == id)
+                        && matches!(c.data, Data::Pending(_))
+                    {
+                        self.mem_bytes += bytes.len();
+                        c.data = Data::Mem(Arc::new(bytes));
+                    }
+                }
+                Done::Written { id, path, ok } => {
+                    let Some(c) = self.cold.iter_mut().find(|c| c.id == id && matches!(c.data, Data::Writing { .. }))
+                    else {
+                        // Its chunk is gone: the file is of no use.
+                        if ok {
+                            let _ = std::fs::remove_file(path);
+                        }
+                        continue;
+                    };
+                    let Data::Writing { bytes, .. } = std::mem::replace(&mut c.data, Data::Pending(Arc::default()))
+                    else {
+                        continue;
+                    };
+                    let len = bytes.len();
+                    self.writing_bytes -= len;
+                    if ok {
+                        self.mem_bytes -= len;
+                        c.data = Data::Disk { path, len: len as u64 };
+                    } else {
+                        // No disk: keep it in memory rather than lose it.
+                        self.disk_bytes -= len as u64;
+                        c.data = Data::Mem(bytes);
+                        self.spill_failed = true;
+                    }
+                }
+            }
+        }
+        changed
+    }
+
+    /// Compress `rows` into a new chunk at the newest end of the cold part: on the worker, or
+    /// here when it is missing or has too many chunks to get to.
     fn freeze(&mut self, mut rows: Vec<Row>) {
-        let heads = rows.iter_mut().enumerate().filter_map(|(i, r)| Some((i, r.block.take()?))).collect();
-        let data = lz4_flex::compress_prepend_size(&encode_rows(&rows));
-        self.mem_bytes += data.len();
-        self.cold_rows += rows.len();
-        self.cold.push_back(Chunk { id: self.next_id, rows: rows.len(), data: Data::Mem(data), heads });
+        let heads = rows
+            .iter_mut()
+            .enumerate()
+            .filter_map(|(i, r)| {
+                // Read back from a compressed chunk a row has no unused tail to skip.
+                r.used = r.cells.len();
+                Some((i, r.block.take()?))
+            })
+            .collect();
+        let id = self.next_id;
         self.next_id += 1;
+        let count = rows.len();
+        self.cold_rows += count;
+        if self.worker.is_none() {
+            self.worker = Worker::spawn();
+        }
+        let data = match &self.worker {
+            Some(w) if self.pending < MAX_PENDING => {
+                let rows = Arc::new(rows);
+                if w.submit(Job::Compress { id, rows: Arc::clone(&rows) }) {
+                    self.pending += 1;
+                    Data::Pending(rows)
+                } else {
+                    self.compressed(&rows)
+                }
+            }
+            _ => self.compressed(&rows),
+        };
+        self.cold.push_back(Chunk { id, rows: count, data, heads });
+    }
+
+    /// Compress `rows` on this thread.
+    fn compressed(&mut self, rows: &[Row]) -> Data {
+        let bytes = compress(rows);
+        self.mem_bytes += bytes.len();
+        Data::Mem(Arc::new(bytes))
     }
 
     /// Move chunks to disk past the memory budget, and drop the oldest past the disk limit.
     fn enforce_budget(&mut self) -> usize {
         let Some(spill) = self.spill.clone() else { return 0 };
-        while self.mem_bytes > MEM_BUDGET {
+        // Chunks being written still take memory, so stop handing the worker more past one budget.
+        while !self.spill_failed && self.mem_bytes - self.writing_bytes > MEM_BUDGET && self.writing_bytes <= MEM_BUDGET
+        {
+            let Some(w) = &self.worker else { break };
             let Some(chunk) = self.cold.iter_mut().find(|c| matches!(c.data, Data::Mem(_))) else { break };
             let Data::Mem(bytes) = &chunk.data else { break };
             let path = spill.dir.join(format!("{}.lz4", chunk.id));
-            if std::fs::create_dir_all(&spill.dir).is_err() || std::fs::write(&path, bytes).is_err() {
-                // No disk: keep it in memory rather than lose it.
+            let job = Job::Write { id: chunk.id, dir: spill.dir.clone(), path: path.clone(), bytes: Arc::clone(bytes) };
+            if !w.submit(job) {
                 break;
             }
-            let len = bytes.len() as u64;
-            self.mem_bytes -= bytes.len();
-            self.disk_bytes += len;
-            chunk.data = Data::Disk { path, len };
+            let len = bytes.len();
+            self.writing_bytes += len;
+            self.disk_bytes += len as u64;
+            chunk.data = Data::Writing { path, bytes: Arc::clone(bytes) };
         }
         let mut dropped = 0;
         while self.disk_bytes > spill.limit_bytes {
             match self.cold.front() {
-                Some(c) if matches!(c.data, Data::Disk { .. }) => dropped += self.drop_chunk(),
+                Some(c) if matches!(c.data, Data::Disk { .. } | Data::Writing { .. }) => dropped += self.drop_chunk(),
                 _ => break,
             }
         }
         dropped
     }
 
-    fn drop_chunk(&mut self) -> usize {
-        let Some(c) = self.cold.pop_front() else { return 0 };
-        self.cold_rows -= c.rows;
-        match c.data {
+    /// Give up what a chunk holds: its bytes in memory or its file.
+    fn release(&mut self, data: Data) {
+        match data {
+            // The worker still reports back; `poll` finds no chunk for it.
+            Data::Pending(_) => {}
             Data::Mem(b) => self.mem_bytes -= b.len(),
+            Data::Writing { path, bytes } => {
+                self.mem_bytes -= bytes.len();
+                self.writing_bytes -= bytes.len();
+                self.disk_bytes -= bytes.len() as u64;
+                // If the write is still under way, `poll` removes the file when it ends.
+                let _ = std::fs::remove_file(path);
+            }
             Data::Disk { path, len } => {
                 let _ = std::fs::remove_file(path);
                 self.disk_bytes -= len;
             }
         }
+    }
+
+    fn drop_chunk(&mut self) -> usize {
+        let Some(c) = self.cold.pop_front() else { return 0 };
+        self.cold_rows -= c.rows;
+        self.release(c.data);
         c.rows
     }
 
@@ -192,19 +389,14 @@ impl History {
     fn thaw_last(&mut self) {
         let Some(chunk) = self.cold.back() else { return };
         let Some(rows) = self.decoded(chunk) else { return };
-        let mut rows: Vec<Row> = rows.as_ref().clone();
         let chunk = self.cold.pop_back().expect("checked above");
+        self.cold_rows -= chunk.rows;
+        self.release(chunk.data);
+        // The cache and the worker may share the rows: copy only then.
+        let mut rows: Vec<Row> = Arc::try_unwrap(rows).unwrap_or_else(|a| a.as_ref().clone());
         for (i, head) in chunk.heads {
             if let Some(r) = rows.get_mut(i) {
                 r.block = Some(head);
-            }
-        }
-        self.cold_rows -= chunk.rows;
-        match chunk.data {
-            Data::Mem(b) => self.mem_bytes -= b.len(),
-            Data::Disk { path, len } => {
-                let _ = std::fs::remove_file(path);
-                self.disk_bytes -= len;
             }
         }
         for r in rows.into_iter().rev() {

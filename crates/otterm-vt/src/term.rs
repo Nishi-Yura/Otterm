@@ -23,7 +23,7 @@ pub enum MouseMode {
     Motion,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum CursorShape {
     #[default]
     Block,
@@ -216,6 +216,9 @@ pub struct Terminal {
     link_bytes: usize,
     /// Last printed character, for REP.
     last_char: Option<char>,
+    /// Printable ASCII the parser handed over and the grid has not seen yet: a run is written to
+    /// the row at once. Every other callback, and the end of [`Terminal::advance`], flushes it.
+    run: Vec<u8>,
     dirty: Vec<bool>,
     full_damage: bool,
     responses: Vec<u8>,
@@ -255,6 +258,7 @@ impl Terminal {
             link_ids: std::collections::HashMap::new(),
             link_bytes: 0,
             last_char: None,
+            run: Vec::new(),
             dirty: vec![true; rows],
             full_damage: true,
             responses: Vec::new(),
@@ -268,6 +272,7 @@ impl Terminal {
     pub fn advance(&mut self, bytes: &[u8]) {
         let mut parser = std::mem::take(&mut self.parser);
         parser.advance(self, bytes);
+        self.flush_run();
         self.parser = parser;
     }
 
@@ -614,8 +619,9 @@ impl Terminal {
     }
 
     fn touch_range(&mut self, top: usize, bottom: usize) {
-        for r in top..=bottom.min(self.rows - 1) {
-            self.touch(r);
+        let bottom = bottom.min(self.rows - 1);
+        if let Some(rows) = self.dirty.get_mut(top..=bottom) {
+            rows.fill(true);
         }
     }
 
@@ -965,19 +971,26 @@ impl Terminal {
         let pen = self.pen;
         let cols = self.cols;
         let to_scrollback = keep && top == 0 && !self.modes.alt_screen;
-        for _ in 0..n {
-            let mut row = self.grid().remove(top).expect("top is on screen");
-            // History keeps a trimmed copy; the screen row, still in cache, is cleared and reused.
-            // Reusing old history rows instead meant touching memory written ~10,000 lines ago.
-            if to_scrollback {
-                self.push_history(row.compact());
+        // History keeps a trimmed copy; the screen rows, still in cache, are cleared and reused.
+        // Reusing old history rows instead meant touching memory written ~10,000 lines ago.
+        if to_scrollback {
+            for i in 0..n {
+                let row = self.primary[i].compact();
+                self.push_history(row);
             }
+        }
+        // The leaving rows rotate to the bottom of the region, where they are cleared.
+        if top == 0 && bottom + 1 == self.rows {
+            self.grid().rotate_left(n);
+        } else {
+            self.grid().make_contiguous()[top..=bottom].rotate_left(n);
+        }
+        for row in self.grid().range_mut(bottom + 1 - n..=bottom) {
             if row.cells.len() == cols {
                 row.clear(&pen);
             } else {
-                row = Row::new(cols, &pen);
+                *row = Row::new(cols, &pen);
             }
-            self.grid().insert(bottom, row);
         }
         self.touch_range(top, bottom);
     }
@@ -987,10 +1000,13 @@ impl Terminal {
         let (top, bottom) = (self.scroll_top, self.scroll_bottom);
         let n = n.min(bottom - top + 1);
         let pen = self.pen;
-        for _ in 0..n {
-            let mut row = self.grid().remove(bottom).expect("bottom is on screen");
+        if top == 0 && bottom + 1 == self.rows {
+            self.grid().rotate_right(n);
+        } else {
+            self.grid().make_contiguous()[top..=bottom].rotate_right(n);
+        }
+        for row in self.grid().range_mut(top..top + n) {
             row.clear(&pen);
-            self.grid().insert(top, row);
         }
         self.touch_range(top, bottom);
     }
@@ -1027,6 +1043,75 @@ impl Terminal {
         }
         let w = if self.ambiguous_wide { c.width_cjk() } else { c.width() };
         w.unwrap_or(0)
+    }
+
+    /// Write the buffered ASCII run to the grid.
+    fn flush_run(&mut self) {
+        if self.run.is_empty() {
+            return;
+        }
+        let run = std::mem::take(&mut self.run);
+        self.print_ascii(&run);
+        self.run = run;
+        self.run.clear();
+    }
+
+    /// Print printable ASCII, the same as calling [`Self::print_char`] for each byte, but a stretch
+    /// of cells that holds no wide character is written in one go.
+    fn print_ascii(&mut self, mut run: &[u8]) {
+        while !run.is_empty() {
+            if self.modes.insert || self.charsets[self.active_charset] != Charset::Ascii || self.after_zwj() {
+                self.print_char(run[0] as char);
+                run = &run[1..];
+                continue;
+            }
+            if self.cursor.pending_wrap && self.modes.autowrap {
+                let row = self.cursor.row;
+                self.grid()[row].wrapped = true;
+                self.cursor.col = 0;
+                self.linefeed();
+            }
+            let (row, col, cols) = (self.cursor.row, self.cursor.col, self.cols);
+            let n = run.len().min(cols - col);
+            let cells = &self.screen()[row].cells;
+            // A wide character in the way needs the one-at-a-time handling that clears its other half.
+            let touches_wide = cells[col..col + n].iter().any(|c| c.attrs.flags & flags::LAYOUT != 0)
+                || (col + n < cols && cells[col + n].is_spacer());
+            if touches_wide {
+                for &b in &run[..n] {
+                    self.print_char(b as char);
+                }
+            } else {
+                let mut attrs = self.pen;
+                attrs.flags &= !flags::LAYOUT;
+                let r = &mut self.grid()[row];
+                r.clear_extra(col, col + n);
+                r.touch_to(col + n);
+                for (cell, &b) in r.cells[col..col + n].iter_mut().zip(run) {
+                    *cell = Cell { ch: b as char, attrs };
+                }
+                self.touch(row);
+                self.last_char = Some(run[n - 1] as char);
+                if col + n >= cols {
+                    self.cursor.col = cols - 1;
+                    self.cursor.pending_wrap = self.modes.autowrap;
+                } else {
+                    self.cursor.col = col + n;
+                }
+            }
+            run = &run[n..];
+            // Without autowrap everything past the edge lands on the last cell: only the final
+            // character stays.
+            if !self.modes.autowrap && run.len() > 1 {
+                run = &run[run.len() - 1..];
+            }
+        }
+    }
+
+    /// The character before the cursor ends in a zero width joiner: the next one joins it.
+    fn after_zwj(&self) -> bool {
+        let Some((row, col)) = self.previous_cell() else { return false };
+        self.screen()[row].extra_at(col).is_some_and(|e| e.ends_with('\u{200D}'))
     }
 
     fn print_char(&mut self, c: char) {
@@ -1630,10 +1715,16 @@ fn dec_graphics(c: char) -> char {
 
 impl Perform for Terminal {
     fn print(&mut self, c: char) {
-        self.print_char(c);
+        if (' '..='~').contains(&c) {
+            self.run.push(c as u8);
+        } else {
+            self.flush_run();
+            self.print_char(c);
+        }
     }
 
     fn execute(&mut self, byte: u8) {
+        self.flush_run();
         match byte {
             0x07 => self.events.push(Event::Bell),
             0x08 => {
@@ -1659,6 +1750,7 @@ impl Perform for Terminal {
     }
 
     fn csi_dispatch(&mut self, params: &Params, intermediates: &[u8], ignore: bool, action: char) {
+        self.flush_run();
         if ignore {
             return;
         }
@@ -1812,6 +1904,7 @@ impl Perform for Terminal {
     }
 
     fn esc_dispatch(&mut self, intermediates: &[u8], ignore: bool, byte: u8) {
+        self.flush_run();
         if ignore {
             return;
         }
@@ -1857,6 +1950,7 @@ impl Perform for Terminal {
     }
 
     fn osc_dispatch(&mut self, params: &[&[u8]], _bell_terminated: bool) {
+        self.flush_run();
         let Some(cmd) = params.first() else { return };
         let text = |i: usize| params.get(i).map(|p| String::from_utf8_lossy(p).into_owned()).unwrap_or_default();
         match *cmd {
