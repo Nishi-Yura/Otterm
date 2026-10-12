@@ -50,9 +50,10 @@ export function defaults(): Bindings {
     history: ["ctrl+r"],
     "completion.trigger": ["ctrl+space"],
     "multiline.open": ["shift+enter"],
-    // Copy and paste (decision B4). Plain Ctrl+C stays SIGINT unless a selection is there.
+    // Copy and paste (decision B4). Plain Ctrl+C stays SIGINT unless a selection is there. On the
+    // alternate screen (vim, less) Ctrl+V goes to the program; Ctrl+Shift+V and Shift+Insert paste.
     copy: mac ? ["cmd+c"] : win ? ["ctrl+shift+c", "ctrl+c", "ctrl+insert"] : ["ctrl+shift+c", "ctrl+insert"],
-    paste: mac ? ["cmd+v"] : win ? ["ctrl+v", "shift+insert"] : ["ctrl+shift+v", "shift+insert"],
+    paste: mac ? ["cmd+v"] : win ? ["ctrl+v", "ctrl+shift+v", "shift+insert"] : ["ctrl+shift+v", "shift+insert"],
     search: [mac ? "cmd+f" : "ctrl+shift+f"],
     "font.bigger": mac ? ["cmd+=", "cmd+shift+="] : ["ctrl+=", "ctrl+shift+="],
     "font.smaller": [mac ? "cmd+-" : "ctrl+-"],
@@ -265,9 +266,9 @@ interface Binding {
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta"]);
 
 /** Ctrl+Shift or Cmd on every step: TUI applications rarely use these, so otterm keeps them even
- * on the alternate screen. */
+ * on the alternate screen. Shift+Insert and Ctrl+Insert, the CUA paste and copy keys, count too. */
 export function strongSteps(steps: Chord[]): boolean {
-  return steps.every((c) => c.meta || (c.ctrl && c.shift));
+  return steps.every((c) => c.meta || (c.ctrl && c.shift) || ((c.ctrl || c.shift) && c.key.toLowerCase() === "insert"));
 }
 
 export class Keymap {

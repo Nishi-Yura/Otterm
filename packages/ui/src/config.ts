@@ -119,6 +119,8 @@ export interface UiConfig {
     dangerGuard: boolean;
     errorHint: boolean;
     learnHints: boolean;
+    /** `assist.learn_help`: read `--help` of unknown commands in the background (decision B9). */
+    learnHelp: boolean;
   };
   /** Whether the status bar shows, the layout resolved. */
   statusbar: boolean;

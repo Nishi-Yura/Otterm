@@ -68,7 +68,12 @@ export interface TerminalViewProps {
    * Enter at the prompt with a non-empty line: mods may veto or replace it (before-execute,
    * docs/05 §5.4). Resolves to false when the Enter must not be sent.
    */
-  beforeExecute?: (line: string) => Promise<boolean>;
+  /**
+   * A command line is about to run: the mods' verdict (the danger guard). Resolves to the line to
+   * run (an alternative the user picked, perhaps), or false. `typed` means the line is in the
+   * shell's editor already; otherwise it is text otterm is about to write.
+   */
+  beforeExecute?: (line: string, typed?: boolean) => Promise<string | false>;
   /** Keys the window's assist UI (completion popup, history) wants first. Returns true when taken. */
   assistKey?: (e: KeyboardEvent, input: { line: string; cursor: number; active: boolean; exact: boolean }) => boolean;
   onCwd: (url: string) => void;
@@ -555,7 +560,7 @@ export function TerminalView(props: TerminalViewProps) {
       {
         label: t("menu-rerun", { command: short }),
         disabled: b.running,
-        action: () => void session?.write(`${command}\r`),
+        action: () => void runLine(command),
       },
       {
         label: t(b.folded ? "menu-unfold" : "menu-fold"),
@@ -679,11 +684,46 @@ export function TerminalView(props: TerminalViewProps) {
     if (mode === "sound" || mode === "both") beep();
   };
 
+  /** Write `line` and Enter, after the mods' verdict (the danger guard) when there is one. */
+  const runLine = async (line: string) => {
+    const s = session;
+    if (!s) return;
+    const final = props.beforeExecute ? await props.beforeExecute(line, false) : line;
+    if (final !== false) void s.write(`${final}\r`);
+  };
+
+  /**
+   * Paste `text` whose line breaks would run its lines: each line gets the danger guard's look,
+   * like a typed Enter (an alternative the user picks replaces that line), and one cancel drops
+   * the whole paste.
+   */
+  const pasteLines = async (text: string) => {
+    const s = session;
+    if (!s) return;
+    let out = text;
+    if (props.beforeExecute) {
+      const parts = text.split(/(\r\n|\r|\n)/);
+      for (let i = 0; i < parts.length; i += 2) {
+        const line = parts[i] ?? "";
+        if (line.trim() === "") continue;
+        const checked = await props.beforeExecute(line, false);
+        if (checked === false) return;
+        parts[i] = checked;
+      }
+      out = parts.join("");
+    }
+    void s.paste(out);
+  };
+
   /** Paste, asking first when the text has line breaks (decision B16): each line could run. */
   const pasteText = (text: string) => {
     if (!text || !session) return;
-    if (!props.config()?.confirmMultilinePaste || !/[\r\n]/.test(text)) {
+    if (!/[\r\n]/.test(text)) {
       void session.paste(text);
+      return;
+    }
+    if (!props.config()?.confirmMultilinePaste) {
+      void pasteLines(text);
       return;
     }
     const lines = text.split(/\r\n|\r|\n/);
@@ -691,7 +731,7 @@ export function TerminalView(props: TerminalViewProps) {
     const shown = lines.slice(0, 5).join("\n") + (lines.length > 5 ? "\n…" : "");
     const send = (value: string) => {
       closePrompt();
-      void session?.paste(value);
+      void pasteLines(value);
     };
     setPrompt({
       title: t("paste-multiline-title"),
@@ -701,13 +741,15 @@ export function TerminalView(props: TerminalViewProps) {
         { label: t("paste-confirm"), action: () => send(text) },
         {
           label: t("paste-as-single-line"),
-          action: () =>
-            send(
-              lines
-                .map((l) => l.trim())
-                .filter(Boolean)
-                .join(" "),
-            ),
+          action: () => {
+            closePrompt();
+            const one = lines
+              .map((l) => l.trim())
+              .filter(Boolean)
+              .join(" ");
+            // One line, not run: it goes in as typed text, so no guard until Enter.
+            void session?.paste(one);
+          },
         },
         { label: t("action-cancel"), action: closePrompt },
       ],
@@ -881,9 +923,9 @@ export function TerminalView(props: TerminalViewProps) {
       enterPending = true;
       const s = session;
       props
-        .beforeExecute(inputState.line)
-        .then((ok) => {
-          if (ok) void s.key({ key: "Enter", ctrl: false, alt: false, shift: false });
+        .beforeExecute(inputState.line, true)
+        .then((line) => {
+          if (line !== false) void s.key({ key: "Enter", ctrl: false, alt: false, shift: false });
         })
         .finally(() => {
           enterPending = false;

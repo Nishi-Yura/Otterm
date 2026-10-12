@@ -6,6 +6,24 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 
 ### Changed
 
+- **The shell reads its own startup files again.** `shell.user_startup_files` is on by default: the PowerShell profile, `~/.bashrc`, `~/.zshrc` and `config.fish` apply, so aliases, PATH and prompt themes are the same as in any other terminal. `false` starts the shell as installed, as 1.1 and 1.2 did.
+- **Ctrl+V reaches programs on the alternate screen** (vim's visual block, readline's quoted-insert); `Ctrl+Shift+V`, `Shift+Insert` and the context menu paste there. `Ctrl+Shift+V` is a paste key on Windows now. Unbinding `paste` frees `Ctrl+V` on the normal screen too (the WebView's paste no longer takes it first). `Ctrl+Up` / `Ctrl+Down` go to the shell until the pane has seen a block.
+- **`otterm --help` and `otterm --version`** print and exit. An unknown option or a path that does not exist is an error (exit code 2) instead of a window with a notice.
+- **otterm never starts a program you did not type unless you let it.** The background `--help` read for unknown commands (decision B9) now runs only while the explanation mod is on, and `assist.learn_help = false` turns it off. Before, with no mods on, every successful command was "unknown" and got its `--help` run once.
+- **New tabs and splits keep the profile** of the pane in front (a WSL or cmd tab split into a WSL or cmd pane), not only its folder. `Ctrl+Shift+N` picks another.
+- **cmd gets a prompt with marks**: the folder (OSC 7) and the start of the prompt (OSC 133 A/B), so new tabs open in the same folder and `Ctrl+Up` / `Ctrl+Down` jump between prompts. **WSL** tabs get `OTTERM`, `OTTERM_HOOKS` and friends through `WSLENV`; one line in the shell's rc file inside the distribution loads the hooks (see the shell integration guide). Git Bash is also found in `Program Files (x86)`, the per-user installer's folder and scoop; MSYS2 at `C:\msys64` is a detected profile.
+- **The danger guard sees every way a command runs**: a block's "run again", a paste with line breaks (each line), the multi-line editor, a workflow's Run and any mod's `terminal.write` that ends a line go through the same check as a typed Enter.
+- **The AI request is shown in full every time** before it is sent (`ai.preview_first_n = 0`); a number keeps the old "first N times, then a link".
+- `appearance.minimum_contrast` defaults to 1 (off): colors from programs such as `bat` and `delta` are drawn as they asked. Set 3 to get the old nudging.
+- Searching a long scrollback takes the terminal lock in pieces of 2,048 lines, so output and frames keep moving while a regex runs.
+- The README and `docs/bench` list memory while idle (about 460 to 480 MB for one tab, most of it WebView2), which otterm does not win.
+- Docs: what is not implemented is now said so (moving tabs between windows, detaching panes, broadcast input, `otterm open`, search filters by block, sigstore signing, the per-mod "recent actions" view, e-mail and IP masking in AI requests), and the palette's `!` says it puts the text in the input line rather than running it.
+- Tab titles skip `&`, `.`, `source` and `sudo` when naming the running command.
+
+### Fixed
+
+- History redaction treated every bare `-p` as a password flag, so `mkdir -p x` and `ssh -p 22 host` were stored and inserted as `-p [REDACTED]`.
+
 - Mods have a screen of their own, over the whole window like the settings: installed mods and the store on the left, the chosen mod on the right with its description, what it may use, its settings and an on/off button. It replaces the mods list in the right sidebar and the mods page in Settings (which now opens it). The status bar's "mod" and the palette open it.
 - The intro and the "recommended set" button show only while no mod is on, and not again once closed.
 - The "type ls to try it" hint is gone from the window; the tutorial (the onboarding mod) covers it. A tutorial left halfway no longer opens itself at every start; starting it again carries on where it stopped.

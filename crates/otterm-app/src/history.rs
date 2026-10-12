@@ -167,8 +167,10 @@ pub fn redact_secrets(command: &str) -> String {
             out.push(format!("{k}=[REDACTED]"));
             continue;
         }
-        // `--password x`, `-p x`, `Bearer x`
-        if names.iter().any(|n| lower.trim_start_matches('-') == *n) || lower == "-p" {
+        // `--password x`, `Bearer x`. A bare `-p` is not treated as a password: it is `mkdir -p`,
+        // `ssh -p 22` and `docker run -p` far more often, and the commands that take a password
+        // with `-p` (mysql, sshpass) take it attached (`-pSECRET`) or ask for it.
+        if names.iter().any(|n| lower.trim_start_matches('-') == *n) {
             redact_next = true;
             out.push(word.to_owned());
             continue;

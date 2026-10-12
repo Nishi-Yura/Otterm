@@ -689,8 +689,24 @@ impl SessionManager for LocalSessionManager {
             return Ok(Vec::new());
         }
         let re = otterm_vt::search::compile(query, opts).map_err(|e| anyhow!(e))?;
-        let term = session.term.lock().unwrap();
-        Ok(otterm_vt::search::search(&term, &re, MAX_MATCHES))
+        // In pieces, taking the terminal lock for each: a search over a long scrollback would
+        // otherwise hold up the reader thread, and with it the output and the frames, until done.
+        const PIECE: u64 = 2048;
+        let mut out = Vec::new();
+        let mut from = session.term.lock().unwrap().history_base();
+        loop {
+            let term = session.term.lock().unwrap();
+            let end = term.screen_top() + term.rows() as u64;
+            if from >= end || out.len() >= MAX_MATCHES {
+                break;
+            }
+            let (found, next) =
+                otterm_vt::search::search_range(&term, &re, from, from + PIECE, MAX_MATCHES - out.len());
+            drop(term);
+            out.extend(found);
+            from = next.max(from + 1);
+        }
+        Ok(out)
     }
 
     fn reveal(&self, id: SessionId, line: u64) -> Result<()> {

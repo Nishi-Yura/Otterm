@@ -38,7 +38,7 @@ confirm_close_running = true
 theme = "otterm Dark"
 theme_light = "otterm Light"        # OS 追従時のライト側
 follow_system = true
-minimum_contrast = 3.0              # 背景と近すぎる文字色を読める色に寄せる（1 = しない、最大 21）
+minimum_contrast = 1.0              # 背景と近すぎる文字色を読める色に寄せる（1 = しない（既定）、最大 21。3 くらいで効く）
 renderer = "auto"                   # auto（WebGL2、使えなければ Canvas 2D）| webgl | canvas。次に開くペインから効く
 layout = "guided"                   # minimal | classic | guided | ide | <custom name>
 ui_scale = 1.0
@@ -82,7 +82,7 @@ default_profile = "pwsh"
 integration = true
 integration_install = "args"        # args（起動引数で注入、既定。ユーザーのファイルを触らない）| rc（起動ファイルに 1 行追記、オプトイン）| manual
 prompt = "otterm"                   # otterm（otterm がプロンプトバーを描き、シェルは ❯ だけ。判断 M4）| shell（シェルや Oh My Posh のプロンプトのまま）
-user_startup_files = false          # シェル自身の設定ファイル（PowerShell のプロファイル、~/.bashrc、~/.zshrc、config.fish、cmd の AutoRun）を読むか。既定は読まない（判断 M24）
+user_startup_files = true           # シェル自身の設定ファイル（PowerShell のプロファイル、~/.bashrc、~/.zshrc、config.fish、cmd の AutoRun）を読むか。false で素のシェル（判断 M24、1.3 で既定を true に）
 
 [[profiles]]
 id = "pwsh"
@@ -114,6 +114,7 @@ completion.key = "auto"             # auto（Lv0〜2 は ctrl+space、Lv3 は ta
 history_key = "auto"                # auto（Lv1 以上で ctrl+r を otterm が使う）| otterm | shell
 danger_guard = true
 error_hint = true
+learn_help = true                   # 辞書にないコマンドの実行後に --help を裏で読む（説明の mod がオンのときだけ。判断 B9）
 
 [open]
 editor = "code"                     # プリセット名 or テンプレート
@@ -145,7 +146,7 @@ provider = "local"                  # local | claude | openai | gemini | openai-
 endpoint = "http://localhost:11434" # local / openai-compatible のとき
 model = ""
 # API キーはこのファイルに書かず OS のキーチェーンに保存する
-preview_first_n = 5
+preview_first_n = 0                 # 送る前に全文を見せる回数。0 = 毎回（既定）。5 なら 5 回のあとはリンクに縮む
 redact_secrets = true
 log_retention_days = 30
 question_prefix = false             # 入力行の ? プレフィックス（判断 F1、既定オフ）
@@ -192,8 +193,13 @@ otterm config get|set|path|export|import
 otterm workflow run <name>
 otterm trash <path...>             # ゴミ箱へ送る。danger-guard の「ゴミ箱に送る」が rm をこれに書き換える。単体でも使える
 otterm ask [question]              # コツメに聞く（AI mod が有効なとき）。引数なしで対話プロンプト
+otterm --help | -h                 # 使い方を出して終わる（1.3）
+otterm --version | -V              # 版を出して終わる（1.3）
 ```
 
+- 引数なしの `otterm` はホームフォルダで開く。いまいるフォルダで開くなら `otterm .`
+- 知らないオプションや、存在しないパスは、エラーを出して終了コード 2 で終わる（1.3。以前は窓を開いて画面に通知していた）。Windows では `otterm.com` が「出力して終わる起動」を見分けてパイプでつなぐ
+- 既知の限界: `otterm . | tee log` のように otterm.com の出力をパイプにつなぐと、窓を閉じるまで読み手が戻らない。Rust の `Command` が継承可能なハンドルをすべて子に渡すため、窓のプロセスがパイプの書き込み側を持ち続ける。直すには `SetHandleInformation`（Windows API、`unsafe`）が要るので見送っている
 - 既に起動している場合はそのインスタンスに新タブとして開く（単一インスタンス、`--new-window` で別窓）
   - 実装（2026-10-11）: `--new-window` は別プロセスとして起動する。`--config` と `--safe-mode` も設定が違うため引き継がず、別プロセスになる。`otterm workflow run <name>` は起動中のウィンドウでワークフロー mod のコマンド `workflows.run.<name>` を開き、そのワークフローがなければエラー（終了コード 2）で終わる。`otterm ask` は AI mod が有効でないとエラーで終わる。どちらも otterm が起動していないか、ウィンドウが 4 秒以内に答えないとエラーになる
   - Windows のリリース版は GUI プログラムなので、コンソールを持たず、cmd や PowerShell も終了を待たない。そこで `otterm.exe` の隣に小さなコンソールプログラム `otterm.com`（`crates/otterm-console`、`just release` が作る）を置く。`PATHEXT` では `.COM` が `.EXE` より先なので、`otterm` と打つとこちらが動く。サブコマンドは `otterm.exe` の出力をパイプで受けてコンソールへ書き、終了コードをそのまま返す（GUI プロセスはコンソールにつながらないため、コンソールのハンドルを渡すだけでは何も出ない）。それ以外はウィンドウを起こしてすぐ戻る。`unsafe` は使わない（判断 M17 の方針どおり）。インストーラ（M6）は両方を同じフォルダに入れる
@@ -220,7 +226,7 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
 | `pane.resize.<dir>` | `alt+shift+arrow<dir>` |
 | `pane.zoom` | `ctrl+shift+z` |
 | `pane.close` | `ctrl+shift+q` |
-| `copy` / `paste` | Windows: `ctrl+c`（選択範囲があるとき）/ `ctrl+v`。Linux: `ctrl+shift+c` / `ctrl+shift+v`。macOS: `cmd+c` / `cmd+v`（判断 B4） |
+| `copy` / `paste` | Windows: `ctrl+shift+c`、`ctrl+c`（選択範囲があるとき）、`ctrl+insert`（同） / `ctrl+v`、`ctrl+shift+v`、`shift+insert`。Linux: `ctrl+shift+c`、`ctrl+insert` / `ctrl+shift+v`、`shift+insert`。macOS: `cmd+c` / `cmd+v`（判断 B4）。代替画面（vim、less）では `ctrl+v` をアプリに渡し、`ctrl+shift+v` と `shift+insert` で貼り付ける |
 | `search` | `ctrl+shift+f` |
 | `palette` | `ctrl+shift+p` |
 | `history` | `ctrl+r`（Lv1 以上で otterm が使う。Lv0 はシェルへ。判断 B5） |
@@ -236,7 +242,7 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
 | `settings` | `ctrl+,` |
 | `guide.help_mode` | `f1` |
 | `window.fullscreen` | `f11` |
-| `clear` | `ctrl+l`（シェルへパススルー + スクロールバックは保持） |
+| `clear` | `ctrl+l`（シェルへそのまま渡す。bash や zsh の `clear-screen` は画面だけを消すのでスクロールバックが残るが、PowerShell の `cls` / Ctrl+L と `clear` コマンドは ConPTY が ED 3 も送るため、スクロールバックごと消える。どの Windows のターミナルでも同じ） |
 
 ### 5.2.1 macOS の既定キー（判断 I14）
 
@@ -256,11 +262,12 @@ otterm ask [question]              # コツメに聞く（AI mod が有効なと
 
 ### 5.3 競合の扱い
 
-- ターミナルアプリ（vim 等）が必要とするキーは、代替画面中は既定で **シェルに優先して渡す**（`ctrl+b`、`ctrl+j`、`ctrl+l` など）。otterm の割当は「通常画面かつ入力待ち」のときだけ効く。設定で `always` に変更可
+- ターミナルアプリ（vim 等）が必要とするキーは、代替画面中は既定で **シェルに優先して渡す**（`ctrl+b`、`ctrl+j`、`ctrl+l` など）。otterm の割当は「通常画面かつ入力待ち」のときだけ効く。`keybindings.alt_screen_passthrough = false`（真偽値）にすると常に otterm が優先する
   - M1 の実装（2026-10-11、issue #5）: 代替画面中も otterm が使うのは `Ctrl+Shift+…` と `Cmd+…` の割当だけで、`Alt+矢印`・`Ctrl+Tab`・`Ctrl+数字` はアプリに渡す（`keybindings.alt_screen_passthrough = false` で常に otterm）。移動先のペインがないときのペイン移動・リサイズのキーも、シェルに渡す
+  - 1.3: `ctrl+v` も代替画面中はアプリに渡す（vim の矩形選択、readline の quoted-insert）。貼り付けは `ctrl+shift+v`、`shift+insert`、右クリックメニュー。`ctrl+insert` / `shift+insert` は Ctrl+Shift と同じ「強い」キーとして扱う。`paste = []` で割当を外すと、通常画面でも `ctrl+v` がシェルに届く（以前は WebView の貼り付けが先に取っていて外せなかった）。`block.prev` / `block.next`（`ctrl+up` / `ctrl+down`）は、そのペインにブロックが一度も来ていない（シェル統合がない）間はシェルへ渡す
 - 設定画面のキーバインドタブで競合を赤表示。「キーを押して記録」で設定
 - mod が提案するキーはユーザー設定と競合すると無効になり、設定画面で解決を促す
-- 実装（2026-10-11）: チョードは 2 段まで記録でき（設定画面では 1 つ目のキーのあと 0.9 秒以内に 2 つ目）、`config.toml` には何段でも書ける。途中で違うキーを押すと、そのキーは捨てる。代替画面中は `Ctrl+Shift` か `Cmd` で始まるチョードだけが始まる。`copy`・`paste`・`search`・`font.*` は otterm 自身の操作なので代替画面中も otterm が使う。`ai.ask`・`mascot.toggle`・`guide.help_mode` は、そのコマンドを登録した mod がないときはキーをシェルへ渡す。`[[keybindings.custom]]` の `command` はアクション ID、`workflow.run`（`args.name`）、mod のコマンド、`otterm.*` のホストコマンドのどれか
+- 実装（2026-10-11）: チョードは 2 段まで記録でき（設定画面では 1 つ目のキーのあと 0.9 秒以内に 2 つ目）、`config.toml` には何段でも書ける。途中で違うキーを押すと、そのキーは捨てる。代替画面中は `Ctrl+Shift` か `Cmd` で始まるチョードだけが始まる。`copy`（選択範囲があるとき）・`search`・`font.*` は otterm 自身の操作なので代替画面中も otterm が使う（`paste` は 1.3 からアプリ優先）。`ai.ask`・`mascot.toggle`・`guide.help_mode` は、そのコマンドを登録した mod がないときはキーをシェルへ渡す。`[[keybindings.custom]]` の `command` はアクション ID、`workflow.run`（`args.name`）、mod のコマンド、`otterm.*` のホストコマンドのどれか
 
 ### 5.4 キーバインドのスコープ
 

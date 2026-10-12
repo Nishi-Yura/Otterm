@@ -98,7 +98,50 @@ pub fn integrate(program: &str, args: Vec<String>, prompt: PromptStyle, user_fil
             args.extend(["-NoExit".to_owned(), "-EncodedCommand".to_owned(), encode_command(PWSH_SCRIPT)]);
             Integration { args, env }
         }
-        "cmd" => plain,
+        "cmd" => {
+            if has(&["/c", "/k", "/r"]) {
+                return plain;
+            }
+            // cmd has no hooks, but its prompt can print escape sequences ($E): the folder as OSC 7,
+            // so new tabs and splits open where you are, and the prompt marks (OSC 133 A and B), so
+            // Ctrl+Up / Ctrl+Down jump between prompts. $P is the folder with backslashes, which the
+            // terminal turns into slashes; $G is ">". There is no mark for the end of a command.
+            // The string ends with an SGR reset rather than the ST's backslash: an argument that
+            // ends in a backslash gets it doubled when quoted for CreateProcess, and cmd would
+            // print the extra one after the prompt.
+            let mut args = plain.args;
+            args.extend(["/K".to_owned(), r"prompt $E]7;file:///$P$E\$E]133;A$E\$P$G$E]133;B$E\$E[0m".to_owned()]);
+            Integration { args, env }
+        }
+        "wsl" => {
+            // The hooks cannot be loaded from outside, but the variables that say "this is otterm"
+            // and where the hook scripts are (as a Linux path, /p) go in, so a line in ~/.bashrc
+            // or ~/.zshrc inside the distribution can source them (site guide, shell integration).
+            let mut names = vec![
+                "OTTERM",
+                "OTTERM_SESSION_ID",
+                "OTTERM_PROMPT",
+                "OTTERM_USER_STARTUP",
+                "TERM_PROGRAM",
+                "TERM_PROGRAM_VERSION",
+                "COLORTERM",
+            ];
+            if let Some(dir) = &dir {
+                env.push(("OTTERM_HOOKS".to_owned(), dir.display().to_string()));
+                names.push("OTTERM_HOOKS/p");
+            }
+            let mut wslenv = std::env::var("WSLENV").unwrap_or_default();
+            for name in names {
+                if !wslenv.split(':').any(|n| n == name) {
+                    if !wslenv.is_empty() {
+                        wslenv.push(':');
+                    }
+                    wslenv.push_str(name);
+                }
+            }
+            env.push(("WSLENV".to_owned(), wslenv));
+            Integration { args, env }
+        }
         "bash" => {
             if has(&["-c", "--rcfile", "--init-file", "--norc", "--posix", "-s"]) {
                 return plain;

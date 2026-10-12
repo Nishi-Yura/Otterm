@@ -164,6 +164,8 @@ pub struct UiAssist {
     pub danger_guard: bool,
     pub error_hint: bool,
     pub learn_hints: bool,
+    /// `assist.learn_help`: `--help` is read in the background for unknown commands (decision B9).
+    pub learn_help: bool,
 }
 
 #[derive(Clone, Serialize)]
@@ -425,6 +427,7 @@ impl ConfigState {
                 danger_guard: c.assist.danger_guard,
                 error_hint: c.assist.error_hint,
                 learn_hints: effective.learn_hints,
+                learn_help: c.assist.learn_help,
             },
             statusbar: layout.statusbar,
             statusbar_order: c.appearance.statusbar.order.clone(),

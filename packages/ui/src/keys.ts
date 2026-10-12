@@ -18,16 +18,6 @@ export const platform = /Mac/.test(navigator.userAgent)
     ? "windows"
     : "linux";
 
-/** The paste shortcut (decision B4): Ctrl+V on Windows, Cmd+V on macOS, Ctrl+Shift+V on Linux. */
-export function isPasteShortcut(e: KeyboardEvent): boolean {
-  // Shift+Insert, the old CUA paste key, everywhere but macOS.
-  if (platform !== "macos" && e.key === "Insert" && e.shiftKey && !e.ctrlKey && !e.altKey) return true;
-  const v = e.key.toLowerCase() === "v";
-  if (platform === "macos") return v && e.metaKey && !e.ctrlKey;
-  if (platform === "windows") return v && e.ctrlKey && !e.altKey;
-  return v && e.ctrlKey && e.shiftKey && !e.altKey;
-}
-
 export type Dir = "left" | "right" | "up" | "down";
 
 /** Window-level actions on tabs and panes; keys for them are in keymap.ts. */
@@ -88,14 +78,14 @@ export function scrollKey(e: KeyboardEvent, rows: number): number | "top" | "bot
 
 /**
  * The key to send, or `undefined` to leave the event to the browser (IME composition, modifiers on
- * their own, macOS Cmd shortcuts, paste).
+ * their own, macOS Cmd shortcuts). Paste is a key binding like any other (keymap.ts), so Ctrl+V
+ * reaches the shell when the binding is removed, or on the alternate screen (vim's visual block).
  */
 export function terminalKey(e: KeyboardEvent): KeyInput | undefined {
   // IME: the composed text arrives through the input event when it is committed (decision I4).
   if (e.isComposing || e.key === "Process" || e.keyCode === 229) return undefined;
   if (MODIFIERS.has(e.key) || e.key === "Unidentified" || e.key === "Dead") return undefined;
   if (e.metaKey) return undefined;
-  if (isPasteShortcut(e)) return undefined;
   // AltGr on Windows reports Ctrl+Alt; the character it produced is what the user meant.
   const altGraph = e.getModifierState("AltGraph");
   return {

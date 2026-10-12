@@ -139,7 +139,11 @@ export function hostPath(path: string, info: { shell: string; wsl: string | null
 
 /** The program a command line starts: its first word without a path or quotes ("git", "npm"). */
 export function commandName(command: string): string {
-  const first = command.trim().split(/\s+/)[0] ?? "";
+  const words = command.trim().split(/\s+/);
+  // PowerShell's call and dot-source operators, and the usual wrappers, name no program.
+  while (words.length > 1 && ["&", ".", "source", "sudo", "doas", "time", "exec"].includes(words[0] ?? ""))
+    words.shift();
+  const first = words[0] ?? "";
   const word = first.replace(/^["']|["']$/g, "");
   const base = word.split(/[\\/]/).pop() ?? "";
   return base.replace(/\.exe$/i, "");
@@ -401,7 +405,12 @@ export function App() {
   /** The panel last shown in each slot, for toggling it back. */
   const lastPanel: Record<string, string> = {};
   /** Each session's shell program and WSL distribution, from Rust (`session_info`). */
-  const shellOf = new Map<number, { shell: string; wsl: string | null }>();
+  const shellOf = new Map<number, { shell: string; wsl: string | null; profile: string }>();
+  /** The profile a pane runs: the one it was opened with, else the one Rust started it from. */
+  const profileOf = (paneId: number) => {
+    const p = panes().find((x) => x.id === paneId);
+    return p?.profile || shellOf.get(paneId)?.profile || undefined;
+  };
   /** Panes whose terminal has echo off now (a password prompt, decision K2). */
   const echoOff = new Set<number>();
   const snapshot = (pane: Pane): SessionSnapshot | undefined => {
@@ -453,6 +462,18 @@ export function App() {
         .filter((s): s is SessionSnapshot => s !== undefined),
     insert: (id, text) => invoke("session_paste", { id, text }),
     write: (id, text) => invoke("session_write", { id, data: text }),
+    // Each line a mod is about to run gets the danger guard's look, as a typed Enter would.
+    guard: async (_id, text) => {
+      const parts = text.split(/(\r\n|\r|\n)/);
+      for (let i = 0; i < parts.length; i += 2) {
+        const line = parts[i] ?? "";
+        if (line.trim() === "") continue;
+        const checked = await beforeExecute(line, false);
+        if (checked === false) return false;
+        parts[i] = checked;
+      }
+      return parts.join("");
+    },
     toast: pushToast,
     mascotSay(mod, req) {
       // A mod's line is information unless it is an urgent alert; when Kotsume would not say it
@@ -793,27 +814,35 @@ export function App() {
     return false;
   };
   /** Enter at the prompt: the mods' verdict (danger-guard), then the line runs or not. */
-  const beforeExecute = async (line: string): Promise<boolean> => {
+  /**
+   * A command line is about to run, whichever way (Enter at the prompt, a block's re-run, a
+   * paste with line breaks, the multi-line editor, a mod's terminal.write): the mods' verdict
+   * (danger-guard), then it runs or not. Resolves to the line to run, or false. With `typed` the
+   * line is in the shell's editor and an alternative replaces it there; otherwise the line is text
+   * otterm is about to write, and the alternative is returned in its place.
+   */
+  const beforeExecute = async (line: string, typed = true): Promise<string | false> => {
     setCompletion(undefined);
     const s = env.activeSession();
-    if (!s || !(config()?.assist.dangerGuard ?? true)) return true;
+    if (!s || !(config()?.assist.dangerGuard ?? true)) return line;
     const verdict = await host.beforeExecute(s, line).catch(() => ({ action: "run" as const }));
     const replace = async (command: string) => {
+      if (!typed) return command;
       await invoke("session_replace_line", { id: s.id, text: command }).catch((e) => showNotice(String(e)));
       // The editor needs a moment to take the paste before Enter arrives.
       await new Promise((r) => setTimeout(r, 60));
+      return command;
     };
     switch (verdict.action) {
       case "run":
-        return true;
+        return line;
       case "cancel":
         return false;
       case "replace":
-        await replace(verdict.command);
-        return true;
+        return replace(verdict.command);
       case "confirm":
-        return new Promise<boolean>((resolve) => {
-          const done = (answer: () => Promise<boolean> | boolean) => {
+        return new Promise<string | false>((resolve) => {
+          const done = (answer: () => Promise<string | false> | string | false) => {
             setConfirm(undefined);
             refocus();
             void Promise.resolve(answer()).then(resolve);
@@ -824,10 +853,10 @@ export function App() {
             preview: line,
             tone: "danger",
             buttons: [
-              { label: t("danger-run"), action: () => done(() => true), kind: "danger" },
+              { label: t("danger-run"), action: () => done(() => line), kind: "danger" },
               ...verdict.alternatives.map((a, i) => ({
                 label: a.label || t("danger-alternative-label", { command: a.command }),
-                action: () => done(() => replace(a.command).then(() => true)),
+                action: () => done(() => replace(a.command)),
                 kind: i === 0 ? ("primary" as const) : undefined,
               })),
               { label: t("danger-cancel"), action: () => done(() => false) },
@@ -848,7 +877,10 @@ export function App() {
         ? await invoke<{ command: string | null } | null>("session_block", { id: s.id, line }).catch(() => null)
         : null;
       const name = b?.command ? host.parse(b.command).segments[0]?.name : undefined;
-      if (name && !host.lookup(name)) void invoke("help_learn", { name }).catch(() => {});
+      // Only for the explanations, and only if the user lets otterm start programs for that
+      // (`assist.learn_help`): a plain terminal never runs anything the user did not type.
+      const learn = host.isOn("otterm.cmd-explain") && (config()?.assist.learnHelp ?? true);
+      if (learn && name && !host.lookup(name)) void invoke("help_learn", { name }).catch(() => {});
       return;
     }
     if (!(config()?.assist.errorHint ?? true) || exit === 130) return;
@@ -1414,9 +1446,11 @@ export function App() {
     }));
   };
 
+  /** The new pane runs the same profile as the one it comes from, in the same folder. */
   const split = (dir: "row" | "column") => {
     const tab = currentTab();
     if (!tab) return;
+    const from = panes().find((p) => p.id === tab.active);
     const paneId = nextId++;
     batch(() => {
       updateTab(tab.id, (x) => ({
@@ -1425,7 +1459,17 @@ export function App() {
         active: paneId,
         zoomed: undefined,
       }));
-      setPanes([...panes(), { id: paneId, tab: tab.id, cwd: cwds.get(tab.active), started: Date.now() }]);
+      setPanes([
+        ...panes(),
+        {
+          id: paneId,
+          tab: tab.id,
+          cwd: cwds.get(tab.active),
+          profile: profileOf(tab.active),
+          profileName: from?.profileName,
+          started: Date.now(),
+        },
+      ]);
     });
   };
 
@@ -1715,9 +1759,11 @@ export function App() {
       return true;
     }
     const local = r.target.kind === "action" && PANE_ACTIONS.has(r.target.action.kind);
-    // Copy, paste, search and font size act on otterm itself, so they stay otterm's on the
-    // alternate screen too (as before: vim never saw Ctrl+V on Windows).
-    if (pane.altScreen && !r.strong && !local && passthrough) return false;
+    // Copy (it needs a selection), search and font size act on otterm itself, so they stay
+    // otterm's on the alternate screen too. Paste does not: vim's Ctrl+V (visual block) and
+    // readline's quoted-insert come first there; Ctrl+Shift+V, Shift+Insert and the menu paste.
+    const pasteKey = r.target.kind === "action" && r.target.action.kind === "paste";
+    if (pane.altScreen && !r.strong && (!local || pasteKey) && passthrough) return false;
     if (r.target.kind === "action" && local) return r.target.action;
     return runTarget(r.target);
   };
@@ -1850,9 +1896,12 @@ export function App() {
     const list = tabs();
     const index = list.findIndex((x) => x.id === activeTab());
     switch (action.kind) {
-      case "newTab":
-        newTab(tab ? cwds.get(tab.active) : undefined);
+      case "newTab": {
+        // The same profile and folder as the pane in front; Ctrl+Shift+N picks another.
+        const from = tab ? panes().find((p) => p.id === tab.active) : undefined;
+        newTab(tab ? cwds.get(tab.active) : undefined, tab ? profileOf(tab.active) : undefined, from?.profileName);
         break;
+      }
       case "newTabMenu":
         void openProfileMenu();
         break;
@@ -1923,7 +1972,8 @@ export function App() {
         break;
       case "blockJump": {
         const id = tab ? sessionOf.get(tab.active) : undefined;
-        if (id === undefined) return false;
+        // Without blocks (no shell integration yet) Ctrl+Up / Ctrl+Down are the shell's.
+        if (id === undefined || !tab || !integrated.has(tab.active)) return false;
         void invoke("session_block_jump", { id, dir: action.dir }).catch(() => {});
         break;
       }
@@ -2419,7 +2469,7 @@ export function App() {
                       registerSelection={(read) => selectionReaders.set(p.id, read)}
                       onSession={(id) => {
                         sessionOf.set(p.id, id);
-                        void invoke<{ shell: string; wsl: string | null }>("session_info", { id })
+                        void invoke<{ shell: string; wsl: string | null; profile: string }>("session_info", { id })
                           .then((info) => shellOf.set(p.id, info))
                           .catch(() => {})
                           .finally(() => {
@@ -2477,14 +2527,19 @@ export function App() {
                 setMultiline(undefined);
                 const s = env.activeSession();
                 if (s) {
-                  void invoke("session_replace_line", { id: s.id, text })
-                    .then(() => new Promise((r) => setTimeout(r, 60)))
-                    .then(() =>
-                      invoke("session_key", {
-                        id: s.id,
-                        input: { key: "Enter", ctrl: false, alt: false, shift: false },
-                      }),
-                    )
+                  // The danger guard sees it first, like a typed Enter.
+                  void beforeExecute(text, false)
+                    .then((line) => {
+                      if (line === false) return;
+                      return invoke("session_replace_line", { id: s.id, text: line })
+                        .then(() => new Promise((r) => setTimeout(r, 60)))
+                        .then(() =>
+                          invoke("session_key", {
+                            id: s.id,
+                            input: { key: "Enter", ctrl: false, alt: false, shift: false },
+                          }),
+                        );
+                    })
                     .catch((e) => showNotice(String(e)));
                 }
                 refocus();

@@ -80,6 +80,9 @@ struct AppState {
     unknown_args: Vec<String>,
     /// The shell each session started, to quote dropped paths for it.
     shells: std::sync::Mutex<std::collections::HashMap<SessionId, String>>,
+    /// The profile id each session started from ("" for the default), so a new tab or split can
+    /// run the same one.
+    profiles: std::sync::Mutex<std::collections::HashMap<SessionId, String>>,
     /// The run history (decision K1).
     history: std::sync::Arc<history::History>,
     /// What the `--help` of commands the dictionary lacks says (decision B9).
@@ -316,7 +319,7 @@ fn session_create(
     let shell = opts.program.clone().unwrap_or_else(otterm_session::default_shell);
     let profile_id = chosen.as_ref().map(|p| p.id.clone()).unwrap_or_default();
     let id_cell = std::sync::Arc::new(std::sync::Mutex::new(None::<SessionId>));
-    let sink = session_sink(&state, events, profile_id, std::sync::Arc::clone(&id_cell));
+    let sink = session_sink(&state, events, profile_id.clone(), std::sync::Arc::clone(&id_cell));
     let id = state.sessions.create(opts, sink).map_err(err)?;
     *id_cell.lock().unwrap() = Some(id);
     // The pseudo console holds typed input until the shell reads it.
@@ -324,6 +327,7 @@ fn session_create(
         let _ = state.sessions.write(id, format!("{text}\r").as_bytes());
     }
     state.shells.lock().unwrap().insert(id, shell);
+    state.profiles.lock().unwrap().insert(id, profile_id);
     if let Some(d) = wsl_distro {
         state.wsl.lock().unwrap().insert(id, d);
     }
@@ -400,6 +404,8 @@ fn session_sink(
 struct SessionShell {
     shell: String,
     wsl: Option<String>,
+    /// The profile id it runs, "" for the default one.
+    profile: String,
 }
 
 #[tauri::command]
@@ -407,6 +413,7 @@ fn session_info(state: State<'_, AppState>, id: SessionId) -> SessionShell {
     SessionShell {
         shell: state.shells.lock().unwrap().get(&id).cloned().unwrap_or_default(),
         wsl: state.wsl.lock().unwrap().get(&id).cloned(),
+        profile: state.profiles.lock().unwrap().get(&id).cloned().unwrap_or_default(),
     }
 }
 
@@ -1008,6 +1015,7 @@ fn app_state(launch: launch::Launch) -> AppState {
         replies: Default::default(),
         unknown_args: launch.unknown,
         shells: Default::default(),
+        profiles: Default::default(),
         history,
         cwds: Default::default(),
         help: Box::leak(Box::new(helptext::HelpCache::open(otterm_config::data_dir()))),
@@ -1291,6 +1299,27 @@ fn main() {
         return;
     }
     let launch = launch::parse(std::env::args().skip(1));
+    // `--help`, `--version` and mistakes print and exit instead of opening a window (on Windows
+    // through otterm.com, which pipes the output to the console).
+    if launch.help {
+        print!("{}", launch::USAGE);
+        return;
+    }
+    if launch.version {
+        println!("otterm {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+    if !launch.unknown.is_empty() {
+        for arg in &launch.unknown {
+            if arg.starts_with('-') {
+                eprintln!("otterm: unknown option {arg}");
+            } else {
+                eprintln!("otterm: {arg}: no such file or folder");
+            }
+        }
+        eprint!("{}", launch::USAGE);
+        std::process::exit(2);
+    }
     if hand_over(&launch) {
         return;
     }

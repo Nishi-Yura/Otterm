@@ -35,11 +35,20 @@ pub fn compile(query: &str, opts: SearchOptions) -> Result<Regex, String> {
 
 /// Every match of `re`, oldest first, at most `limit`. Empty matches are skipped.
 pub fn search(term: &Terminal, re: &Regex, limit: usize) -> Vec<Match> {
-    let mut out = Vec::new();
-    let first = term.history_base();
     let end = term.screen_top() + term.rows() as u64;
-    let mut line = first;
-    while line < end && out.len() < limit {
+    search_range(term, re, term.history_base(), end, limit).0
+}
+
+/// The matches in the logical lines that start in `from..to`, oldest first, at most `limit`, and
+/// the line to continue from. A logical line that starts before `to` is searched to its end, so a
+/// caller that searches a long scrollback in pieces (letting output through between them) finds
+/// matches across the piece boundary too. Empty matches are skipped.
+pub fn search_range(term: &Terminal, re: &Regex, from: u64, to: u64, limit: usize) -> (Vec<Match>, u64) {
+    let mut out = Vec::new();
+    let end = term.screen_top() + term.rows() as u64;
+    let mut line = from.max(term.history_base());
+    let to = to.min(end);
+    while line < to && out.len() < limit {
         let (text, cells, next) = logical_line(term, line, end);
         for m in re.find_iter(&text) {
             if m.is_empty() {
@@ -54,7 +63,7 @@ pub fn search(term: &Terminal, re: &Regex, limit: usize) -> Vec<Match> {
         }
         line = next.max(line + 1);
     }
-    out
+    (out, line)
 }
 
 /// Where each character of a logical line came from: (byte offset, line, column, width).

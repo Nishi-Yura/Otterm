@@ -25,9 +25,32 @@ sidebar:
 
 ## シェル自身の設定ファイル
 
-otterm は既定で、シェルを **インストールしたままの状態** で起動します。PowerShell のプロファイル、`~/.bashrc`、`~/.zshrc`、`config.fish`、cmd の AutoRun は読みません。ほかのターミナル用に入れたカスタマイズ（プロンプトのテーマ、補完の拡張など）は otterm に持ち込まれず、便利な機能は otterm の設定と mod で足していきます。
+otterm はいつもの設定ファイルを読んでからシェルを始めます。PowerShell のプロファイル、`~/.bashrc`、`~/.zshrc`、`config.fish`、cmd の AutoRun はそのまま効き、エイリアスやプロンプトのテーマもほかのターミナルと同じです。otterm の連携はそのあとに読み込まれます。
 
-いつもの設定ファイルを読ませたいときは `shell.user_startup_files = true` にします（新しいタブから反映）。otterm 自身のシェル連携はどちらでも読み込まれます。
+シェルを **インストールしたままの状態** で始めたいときは `shell.user_startup_files = false` にします（新しいタブから反映）。PowerShell は `-NoProfile`、bash は `--norc`、fish は `--no-config` で起動し、otterm 自身の連携だけが入ります。1.2 まではこちらが既定でした。
+
+## WSL と cmd
+
+WSL のタブは `wsl.exe` が間にいるので、otterm のフックを自動では渡せません。代わりに `OTTERM`、`OTTERM_SESSION_ID`、`OTTERM_HOOKS`（フックのフォルダを Linux のパスにしたもの）などの変数を `WSLENV` で渡します。WSL 側のシェルの設定ファイルに次の 1 行を足すと、ブロックやフォルダの引き継ぎが効きます。
+
+```bash
+# ~/.bashrc
+[ -n "$OTTERM_HOOKS" ] && OTTERM_USER_STARTUP=0 . "$OTTERM_HOOKS/otterm.bash"
+```
+
+```zsh
+# ~/.zshrc
+[ -n "$OTTERM_HOOKS" ] && source "$OTTERM_HOOKS/otterm.zsh"
+```
+
+```fish
+# ~/.config/fish/config.fish
+set -q OTTERM_HOOKS; and source $OTTERM_HOOKS/otterm.fish
+```
+
+cmd にはフックを置けませんが、otterm がプロンプトに「いまのフォルダ」と「プロンプトの始まり」の印を入れます。新しいタブと分割が同じフォルダで開き、Ctrl+Up / Ctrl+Down でプロンプトの間を移動できます。コマンドの終了コードと実行時間は出ません。`PROMPT` 環境変数で決めた見た目は、`$P$G`（フォルダと `>`）に置き換わります。
+
+nushell にはまだ連携がありません。
 
 ## プロンプトの描き方
 

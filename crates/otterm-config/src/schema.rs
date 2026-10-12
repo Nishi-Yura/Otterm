@@ -221,7 +221,7 @@ impl Default for Appearance {
             theme: "otterm Dark".into(),
             theme_light: "otterm Light".into(),
             follow_system: true,
-            minimum_contrast: 3.0,
+            minimum_contrast: 1.0,
             renderer: RendererKind::Auto,
             layout: "guided".into(),
             ui_scale: 1.0,
@@ -559,8 +559,8 @@ pub struct Shell {
     /// Who draws the prompt (decision M4). Needs `integration`.
     pub prompt: PromptStyle,
     /// Load the shell's own startup files: the PowerShell profile, ~/.bashrc, ~/.zshrc,
-    /// config.fish, cmd's AutoRun (decision M24). Off: the shell starts as installed, and otterm's
-    /// own features come from its settings and mods.
+    /// config.fish, cmd's AutoRun (decision M24, on by default since 1.3). Off: the shell starts as
+    /// installed, without your aliases, prompt theme or PATH changes.
     pub user_startup_files: bool,
 }
 
@@ -571,7 +571,7 @@ impl Default for Shell {
             integration: true,
             integration_install: IntegrationInstall::Args,
             prompt: PromptStyle::Otterm,
-            user_startup_files: false,
+            user_startup_files: true,
         }
     }
 }
@@ -698,6 +698,10 @@ pub struct Assist {
     pub error_hint: bool,
     /// Show "this did the same as `cmd`" hints after GUI file operations. `auto` follows guide level.
     pub learn_hints: Auto<bool>,
+    /// After a command the dictionary does not know ran, run `<command> --help` once in the
+    /// background and keep its options for the explanations (decision B9). Only while the
+    /// explanation mod (`otterm.cmd-explain`) is on; off, otterm never starts a program by itself.
+    pub learn_help: bool,
     /// Send `cd` to the shell when a folder is opened in the file tree. `auto` = on at guide level >= 2 (decision B10).
     /// The file tree mod has its own `cd_on_open` setting for now.
     #[schemars(extend("x-hidden" = true))]
@@ -714,6 +718,7 @@ impl Default for Assist {
             danger_guard: true,
             error_hint: true,
             learn_hints: Auto::default(),
+            learn_help: true,
             file_tree_cd: Auto::default(),
         }
     }
@@ -879,7 +884,8 @@ pub struct Ai {
     /// API keys are stored in the OS keychain, never in this file. This holds only the keychain entry name.
     #[schemars(extend("x-advanced" = true))]
     pub key_ref: Option<String>,
-    /// Show the full request before sending for the first N requests (then a link). Decision 10 §4.3.
+    /// Show the full request before sending: every time with 0 (the default), or only for the
+    /// first N requests and then as a link (docs/10 §4.3).
     pub preview_first_n: u32,
     pub redact_secrets: bool,
     /// Keep a local log of requests and responses (days). 0 = off.
@@ -899,7 +905,7 @@ impl Default for Ai {
             endpoint: None,
             model: None,
             key_ref: None,
-            preview_first_n: 5,
+            preview_first_n: 0,
             redact_secrets: true,
             log_retention_days: 30,
             include_recent_commands: true,

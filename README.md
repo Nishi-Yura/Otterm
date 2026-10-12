@@ -210,6 +210,7 @@ export async function activate(ctx: ModContext) {
 | 起動してプロンプトが出るまで（中央値） | 694 ms | うち約 380 ms は WebView2 の起動 |
 | VT の解析（スクロールする出力） | 約 70〜80 MiB/s | 1.1 は約 30。Windows では PTY（約 30〜35 MiB/s）のほうが先に上限になる |
 | スクロールバック 100 万行 | 約 155 MiB | 1 行あたり 160 バイトほど |
+| 待機中のメモリ（タブ 1 つ、ワーキングセット合計） | 約 460〜480 MB | otterm 本体 約 90 MB、WebView2 の 6 プロセス 約 350 MB。Tauri の代償で、Alacritty や Windows Terminal より重い |
 
 キー入力は mod を待たずに Rust へ届きます。描画は WebGL2（使えないときは Canvas 2D）で、文字の形は Rust で整えてからテクスチャにまとめます。
 

@@ -158,6 +158,22 @@ GitHub Actions（Bench ワークフロー、コミット `0414273`、run 3809022
 - 差は測定の揺れの範囲で、mod による打鍵遅延の増加は見えない。キー入力は mod を待たずに Rust へ行くため（09 §3.3）
 - 子プロセスは `otterm-bench pong` でシェル統合がないので、入力行を見る mod（説明・補完・危険ガード）の `input-changed` は走っていない。それらが動いたときの負荷は、シェル統合つきのシェルで測る必要がある（未）
 
+### 4.8 待機中のメモリ（2026-10-12、開発機、Windows、1.2.0）
+
+インストール版の 1.2.0 を起動し、タブ 1 つ（pwsh、mod なし）で 15 秒待ってから、`Get-CimInstance Win32_Process` で otterm 本体、`otterm-daemon`、`OpenConsole` と、ユーザーデータフォルダが `dev.otterm.app` の `msedgewebview2` 全プロセスのワーキングセットとプライベートバイトを足した。3 回の値。
+
+| 項目 | 値 |
+| --- | --- |
+| プロセス数 | 9〜10（otterm、デーモン、OpenConsole、WebView2 が 6） |
+| ワーキングセット合計 | 460〜480 MB |
+| プライベートバイト合計 | 約 330 MB |
+| うち otterm.exe | WS 86 MB、プライベート 55 MB |
+| うち WebView2 | WS 約 350 MB（ブラウザ 127、レンダラ 70、GPU 80、ほか 3 つ） |
+| 待機中の CPU（10 秒） | 1 コアの 0.3% 前後（otterm と レンダラ） |
+
+- WebView2 の起動引数（`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` で `--disable-features=...`、`--in-process-gpu`、`--disable-breakpad` など）を試したが、プロセス数もメモリも変わらなかった（473〜475 MB）
+- Alacritty（30〜50 MB）や Windows Terminal（100〜150 MB）より明らかに重い。これは Tauri（WebView2）を選んだ代償で、ネイティブの描画（07 の v1.x、wgpu）に移すまでは縮まない
+
 ## 5. VT の高速化（2026-10-12、1.2）
 
 Ryzen 7 3700X、Windows 11、release。スクロールバック上限 10,000 行。測定中は別のビルドが走っていて、±15% ほど揺れる。

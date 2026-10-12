@@ -51,11 +51,32 @@ fn detected() -> Vec<Profile> {
         if let Some(p) = in_path("cmd.exe") {
             out.push(make("cmd", "Command Prompt", p, &[]));
         }
-        let git_bash = std::env::var_os("ProgramFiles")
-            .map(|d| PathBuf::from(d).join("Git").join("bin").join("bash.exe"))
-            .filter(|p| p.is_file());
+        // Git for Windows: the system installer, the per-user installer, scoop.
+        let git_bash = [
+            std::env::var_os("ProgramFiles").map(|d| PathBuf::from(d).join("Git")),
+            std::env::var_os("ProgramFiles(x86)").map(|d| PathBuf::from(d).join("Git")),
+            std::env::var_os("LOCALAPPDATA").map(|d| PathBuf::from(d).join("Programs").join("Git")),
+            std::env::var_os("USERPROFILE")
+                .map(|d| PathBuf::from(d).join("scoop").join("apps").join("git").join("current")),
+        ]
+        .into_iter()
+        .flatten()
+        .map(|d| d.join("bin").join("bash.exe"))
+        .find(|p| p.is_file());
         if let Some(p) = git_bash {
             out.push(make("git-bash", "Git Bash", p, &["--login", "-i"]));
+        }
+        // MSYS2 at its default place. MSYSTEM picks the environment (UCRT64 is the one its
+        // installer recommends); CHERE_INVOKING keeps the folder the tab was opened in.
+        let msys2 = ["C:\\msys64", "C:\\msys32"]
+            .iter()
+            .map(|d| PathBuf::from(d).join("usr").join("bin").join("bash.exe"))
+            .find(|p| p.is_file());
+        if let Some(p) = msys2 {
+            let mut profile = make("msys2", "MSYS2 (UCRT64)", p, &["--login", "-i"]);
+            profile.env.insert("MSYSTEM".into(), "UCRT64".into());
+            profile.env.insert("CHERE_INVOKING".into(), "1".into());
+            out.push(profile);
         }
         if let Some(p) = in_path("nu.exe") {
             out.push(make("nu", "Nushell", p, &[]));

@@ -336,7 +336,8 @@ pub fn ai_preview(state: State<'_, AppState>, prompt: String) -> CmdResult<AiPre
         model,
         prompt,
         redactions,
-        full: previews_shown() < ai.preview_first_n,
+        // 0 (the default) shows the whole request every time.
+        full: ai.preview_first_n == 0 || previews_shown() < ai.preview_first_n,
     })
 }
 

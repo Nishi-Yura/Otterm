@@ -210,6 +210,7 @@ We measure typing delay and throughput the same way every time ([docs/bench](doc
 | Start to prompt (median) | 694 ms | About 380 ms of it is WebView2 starting |
 | VT parsing (scrolling output) | about 70 to 80 MiB/s | About 30 in 1.1. On Windows the PTY (about 30 to 35 MiB/s) is the limit first |
 | One million scrollback lines | about 155 MiB | About 160 bytes per line |
+| Memory while idle (one tab, working set of all processes) | about 460 to 480 MB | About 90 MB is otterm itself and about 350 MB the six WebView2 processes. The price of Tauri; heavier than Alacritty or Windows Terminal |
 
 Keys go straight to Rust without waiting for mods. Drawing uses WebGL2 (Canvas 2D when it is not available); glyphs are shaped in Rust and packed into a texture.
 

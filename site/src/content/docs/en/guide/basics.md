@@ -52,4 +52,4 @@ Blocks need [shell integration](/en/guide/shell-integration/).
 
 ## Command palette
 
-`Ctrl+Shift+P` opens the palette. Use `>` for commands, `:` for line numbers, `@` for files, `#` for blocks, and `!` to run a shell command.
+`Ctrl+Shift+P` opens the palette. Type to search commands; use `:` for line numbers, `?` for the dictionary, `@` for files, `#` for blocks, and `!` to put what follows into the shell's input line (it is not run; you press Enter).

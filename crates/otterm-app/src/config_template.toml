@@ -13,7 +13,7 @@
 # 同梱テーマ / bundled: otterm Dark, otterm Light, High Contrast, Catppuccin Mocha,
 # Catppuccin Latte, Dracula, Nord, Tokyo Night, One Dark, Solarized Dark, Solarized Light,
 # Gruvbox Dark, Gruvbox Light. 自作テーマは themes/*.toml に置く / own themes go in themes/*.toml
-# minimum_contrast = 3.0       # 背景に近すぎる文字色を読める色に寄せる（1 = しない）/ 1 = off
+# minimum_contrast = 1.0       # 背景に近すぎる文字色を読める色に寄せる（1 = しない、3 くらいで効く）/ 1 = off, try 3
 
 [font]
 # family = ["Cascadia Mono"]   # 空なら OS の既定 / empty: the platform default
@@ -32,6 +32,7 @@
 
 # [shell]
 # default_profile = "pwsh"
+# user_startup_files = true    # false: プロファイルや .bashrc を読まずに起動 / false: start the shell as installed
 #
 # [[profiles]]
 # id = "pwsh"

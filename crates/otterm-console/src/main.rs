@@ -15,7 +15,40 @@ use std::io::Write;
 use std::process::{Command, ExitCode, Stdio};
 
 /// First arguments that print and exit instead of opening a window (`cli` in otterm-app).
-const SUBCOMMANDS: &[&str] = &["mod", "theme", "config", "workflow", "trash", "ask"];
+const SUBCOMMANDS: &[&str] = &["mod", "theme", "config", "workflow", "trash", "ask", "help"];
+/// Options of a window launch (`launch.rs`). `-e` takes the rest of the line; `--config` and
+/// `--profile` take one value.
+const LAUNCH_FLAGS: &[&str] = &["--safe-mode", "--new-window", "--daemon"];
+const LAUNCH_VALUE_FLAGS: &[&str] = &["--config", "--profile", "-p"];
+
+/// Whether this launch prints something (help, the version, or a complaint about an argument)
+/// and exits, rather than opening a window. Mirrors `launch::parse`, so that what otterm.exe
+/// prints reaches the console.
+fn prints(args: &[std::ffi::OsString]) -> bool {
+    let mut it = args.iter();
+    if args.first().and_then(|a| a.to_str()).is_some_and(|a| SUBCOMMANDS.contains(&a)) {
+        return true;
+    }
+    while let Some(arg) = it.next() {
+        let Some(s) = arg.to_str() else { return true };
+        match s {
+            "-e" | "--command" => return false,
+            "--help" | "-h" | "--version" | "-V" => return true,
+            f if LAUNCH_VALUE_FLAGS.contains(&f) => {
+                it.next();
+            }
+            f if LAUNCH_FLAGS.contains(&f) => {}
+            f if f.starts_with('-') => return true,
+            // A folder, or a file whose folder opens; anything else is a mistake to report.
+            p => {
+                if !std::path::Path::new(p).exists() {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
 
 fn main() -> ExitCode {
     let args: Vec<std::ffi::OsString> = std::env::args_os().skip(1).collect();
@@ -27,8 +60,7 @@ fn main() -> ExitCode {
     }
     let mut command = Command::new(&gui);
     command.args(&args);
-    let subcommand = args.first().and_then(|a| a.to_str()).is_some_and(|a| SUBCOMMANDS.contains(&a));
-    if subcommand {
+    if prints(&args) {
         let mut child = match command.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn() {
             Ok(c) => c,
             Err(e) => return fail(&format!("{}: {e}", gui.display())),
@@ -45,7 +77,10 @@ fn main() -> ExitCode {
             Err(e) => fail(&format!("{}: {e}", gui.display())),
         };
     }
-    // The window outlives this console; leave it nothing to write to.
+    // The window outlives this console; leave it nothing to write to. (Known limit: a pipe this
+    // console was given, as in `otterm . | tee`, is still inherited by the window, because Rust's
+    // Command passes every inheritable handle on; the reader then waits until the window closes.
+    // Closing the inheritance needs SetHandleInformation, a Windows API, which this crate avoids.)
     match command.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn() {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => fail(&format!("{}: {e}", gui.display())),

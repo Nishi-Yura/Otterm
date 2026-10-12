@@ -1,11 +1,39 @@
 //! Command-line arguments (docs/06 §4): `otterm [path]`, `otterm -e <command...>`,
-//! `otterm --profile <id>`, `otterm --config <file>`, `otterm --safe-mode`, `otterm --new-window`.
-//! Subcommands (`otterm mod …`, `otterm config …`) are in `main.rs`'s `cli`.
+//! `otterm --profile <id>`, `otterm --config <file>`, `otterm --safe-mode`, `otterm --new-window`,
+//! `otterm --help`, `otterm --version`. Subcommands (`otterm mod …`, `otterm config …`) are in
+//! `main.rs`'s `cli`.
 
 use std::path::PathBuf;
 
+/// `otterm --help`. The subcommands' own usage lines are printed by their `cli` functions.
+pub const USAGE: &str = "\
+usage: otterm [path] [--profile <id>] [-e <command...>] [--new-window] [--safe-mode] [--config <file>]
+       otterm mod | theme | config | workflow | trash | ask ...
+       otterm --help | --version
+
+  path                 open the first tab in this folder (a file opens its folder)
+  -e, --command ...    run this command in the first tab instead of the shell (takes the rest)
+  -p, --profile <id>   start this profile ([[profiles]] id, or a detected one such as pwsh, cmd, wsl-ubuntu)
+  --new-window         a window of its own instead of a tab in the running otterm
+  --safe-mode          the default theme, no theme or user CSS, no mods
+  --config <file>      a configuration file instead of the usual one
+  -h, --help           this text
+  -V, --version        the version
+
+  otterm mod list|search|install|remove|enable|disable|update|publish|doctor|link
+  otterm theme import <file>...
+  otterm config path|get|set|reset|export|import
+  otterm workflow run <name>
+  otterm trash <path>...
+  otterm ask [question]
+";
+
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Launch {
+    /// `--help` / `-h`: print the usage and exit.
+    pub help: bool,
+    /// `--version` / `-V`: print the version and exit.
+    pub version: bool,
     /// Folder for the first tab.
     pub cwd: Option<PathBuf>,
     /// Program and arguments the first tab runs instead of the shell.
@@ -34,6 +62,8 @@ pub fn parse(args: impl IntoIterator<Item = String>) -> Launch {
                     launch.command = Some(command);
                 }
             }
+            "--help" | "-h" | "help" => launch.help = true,
+            "--version" | "-V" => launch.version = true,
             "--config" => launch.config = args.next().map(PathBuf::from),
             "--safe-mode" => launch.safe_mode = true,
             "--profile" | "-p" => launch.profile = args.next().filter(|p| !p.is_empty()),

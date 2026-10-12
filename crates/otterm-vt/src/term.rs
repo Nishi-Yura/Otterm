@@ -1960,7 +1960,12 @@ impl Perform for Terminal {
                 self.title = title.clone();
                 self.events.push(Event::Title(title));
             }
-            b"7" => self.events.push(Event::Cwd(text(1))),
+            // cmd's prompt can only print its folder with backslashes (`$P`); a file URL takes slashes.
+            b"7" => {
+                let cwd = text(1);
+                let cwd = if cwd.starts_with("file://") { cwd.replace('\\', "/") } else { cwd };
+                self.events.push(Event::Cwd(cwd));
+            }
             // OSC 8 ; params ; URI. The URI may itself contain ';'.
             b"8" => {
                 let uri = params

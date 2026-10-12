@@ -234,6 +234,12 @@ export interface HostEnv {
   insert(sessionId: number, text: string): Promise<void>;
   /** Write to the PTY (ctx.terminal.write): the user confirms the first use and sees a toast. */
   write(sessionId: number, text: string): Promise<void>;
+  /**
+   * Text a mod is about to write that ends a line, so it runs: each line gets the danger guard's
+   * look, like a typed Enter. Resolves to the text to write (alternatives the user picked in it),
+   * or false when the user stopped it.
+   */
+  guard?(sessionId: number, text: string): Promise<string | false>;
   toast(req: ToastRequest): void;
   dialog(req: DialogRequest): Promise<string | null>;
   /** A mod's open dialog re-rendered its body (a function body, e.g. a streaming answer). */
@@ -1529,7 +1535,14 @@ export class ModHost {
           if (!ok) throw new Error("the user refused terminal.write");
           r.confirmedWrite = true;
         }
-        await this.env.write(Number(sid), text);
+        // A line break runs what is before it: the danger guard looks first, as for a typed Enter.
+        let out = text;
+        if (/[\r\n]/.test(text) && this.env.guard) {
+          const checked = await this.env.guard(Number(sid), text);
+          if (checked === false) throw new Error("the user stopped the command (danger guard)");
+          out = checked;
+        }
+        await this.env.write(Number(sid), out);
         this.env.toast({
           text: t("mod-wrote-terminal", { name: state.entry.name, text: firstLine(text).slice(0, 80) }),
           kind: "warning",

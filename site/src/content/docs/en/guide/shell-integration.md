@@ -19,9 +19,32 @@ By default, otterm loads its hook through startup arguments for the shells it la
 
 ## The shell's own startup files
 
-By default otterm starts the shell **as installed**: it does not read the PowerShell profile, `~/.bashrc`, `~/.zshrc`, `config.fish` or cmd's AutoRun. Customizations made for other terminals (prompt themes, completion add-ons) stay out of otterm; conveniences come from otterm's settings and mods instead.
+otterm reads your usual startup files before the shell starts: the PowerShell profile, `~/.bashrc`, `~/.zshrc`, `config.fish` and cmd's AutoRun all apply, so your aliases and prompt theme are the same as in any other terminal. otterm's own hooks load after them.
 
-To load your usual startup files, set `shell.user_startup_files = true` (applies to new tabs). otterm's own shell integration loads either way.
+To start the shell **as installed** instead, set `shell.user_startup_files = false` (applies to new tabs): PowerShell runs with `-NoProfile`, bash with `--norc`, fish with `--no-config`, and only otterm's integration is loaded. This was the default up to 1.2.
+
+## WSL and cmd
+
+A WSL tab has `wsl.exe` in between, so otterm cannot hand its hooks to the shell inside. It passes `OTTERM`, `OTTERM_SESSION_ID`, `OTTERM_HOOKS` (the hooks folder as a Linux path) and a few others through `WSLENV` instead. One line in the shell's startup file inside WSL turns the integration on (blocks, and new tabs in the same folder):
+
+```bash
+# ~/.bashrc
+[ -n "$OTTERM_HOOKS" ] && OTTERM_USER_STARTUP=0 . "$OTTERM_HOOKS/otterm.bash"
+```
+
+```zsh
+# ~/.zshrc
+[ -n "$OTTERM_HOOKS" ] && source "$OTTERM_HOOKS/otterm.zsh"
+```
+
+```fish
+# ~/.config/fish/config.fish
+set -q OTTERM_HOOKS; and source $OTTERM_HOOKS/otterm.fish
+```
+
+cmd takes no hooks, but otterm puts the current folder and the start of the prompt into its prompt. New tabs and splits open in the same folder, and Ctrl+Up / Ctrl+Down move between prompts. Exit codes and durations are not available. A look set with the `PROMPT` variable is replaced by `$P$G` (the folder and `>`).
+
+nushell has no integration yet.
 
 ## Prompt
 
