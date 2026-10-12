@@ -1,0 +1,13 @@
+# A switch for a feature built into otterm: no code, nothing to grant. Off until the user turns it on.
+[mod]
+id = "otterm.history-search"
+name = "履歴検索 / History search"
+version = "1.0.0"
+description = "Ctrl+R で、シェルの履歴と otterm の実行記録をまとめて検索します（フォルダ、成功のみ、今日で絞り込み）。オフのとき Ctrl+R はシェルに届きます。 / Ctrl+R searches the shell history and otterm's run log together (filter by folder, success, today). When off, Ctrl+R goes to the shell."
+author = "otterm"
+license = "Apache-2.0"
+kind = "feature"
+
+[compat]
+otterm = ">=1.1.0"
+api = "1"

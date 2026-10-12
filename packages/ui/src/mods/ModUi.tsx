@@ -534,12 +534,39 @@ const STATUS_KEY: Record<ModState["status"], string> = {
   stopping: "mod-status-stopping",
 };
 
+/** What "turn on the recommended set" turns on: otterm's own help for typing and reading commands. */
+const RECOMMENDED = [
+  "otterm.mascot",
+  "otterm.dictionary-core",
+  "otterm.cmd-explain",
+  "otterm.completion",
+  "otterm.danger-guard",
+  "otterm.error-hint",
+  "otterm.history-search",
+  "otterm.file-tree",
+];
+
 /** The installed mods, with logs and API timings in developer mode (docs/05 §8.2). */
 export function ModsPanel(props: { host: ModHost; developer: boolean; modsDir: string | undefined }) {
   const [open, setOpen] = createSignal<string>();
   const fmt = (n: number) => new Date(n).toLocaleTimeString();
+  const recommended = () => RECOMMENDED.filter((id) => props.host.mods().some((m) => m.entry.id === id));
+  const allOn = () => recommended().every((id) => props.host.isOn(id));
   return (
     <div class="mods-panel">
+      {/* otterm starts as a plain terminal; everything here is opt-in (docs/05 §9). */}
+      <div class="mods-intro" data-ot="mods-intro">
+        <p class="muted">{t("mods-intro")}</p>
+        <Show when={recommended().length > 0 && !allOn()}>
+          <button
+            type="button"
+            class="mt-button mt-button-small"
+            onClick={() => void props.host.enableAll(recommended())}
+          >
+            {t("mods-enable-recommended")}
+          </button>
+        </Show>
+      </div>
       <Show when={props.host.mods().length === 0}>
         <p class="muted">{t("mods-none")}</p>
         <Show when={props.modsDir}>

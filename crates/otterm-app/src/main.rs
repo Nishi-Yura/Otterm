@@ -231,8 +231,13 @@ fn session_create(
     if let Some(program) = opts.program.clone() {
         if config.shell.integration {
             let user_files = config.shell.user_startup_files;
-            let shell::Integration { args, env } =
-                shell::integrate(&program, opts.args.clone(), config.shell.prompt, user_files);
+            // otterm draws the prompt only while the prompt bar mod is on; otherwise the shell keeps its own.
+            let prompt = if config::feature_on(&config, "otterm.prompt-bar") {
+                config.shell.prompt
+            } else {
+                otterm_config::PromptStyle::Shell
+            };
+            let shell::Integration { args, env } = shell::integrate(&program, opts.args.clone(), prompt, user_files);
             opts.args = args;
             opts.env.extend(env);
         } else if !config.shell.user_startup_files {
@@ -1200,6 +1205,13 @@ fn main() {
                 let _ = instance::listen(move |r| on_request(&handle, r));
             }
             watch_config(app);
+            {
+                let state = tauri::Manager::state::<AppState>(app);
+                if mods::keep_v1_defaults(state.config.path().as_deref(), &state.config.config()) {
+                    // Read at once, so the first tab already starts with the kept mods (the prompt bar).
+                    state.config.reload();
+                }
+            }
             mods::extract_bundled();
             mods::watch(app);
             // The window starts hidden (tauri.conf.json); restore shows it once placed.

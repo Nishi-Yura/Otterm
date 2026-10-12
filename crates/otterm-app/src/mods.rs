@@ -122,6 +122,55 @@ pub fn extract_bundled() {
     let _ = std::fs::write(&stamp, bundled::HASH);
 }
 
+/// The mods otterm 1.0 had on without being asked: every official bundled one, and the built-in
+/// features that 1.1 turned into `feature` mods.
+const V1_DEFAULT_ON: &[&str] = &[
+    "otterm.ai-assist",
+    "otterm.cmd-explain",
+    "otterm.completion",
+    "otterm.danger-guard",
+    "otterm.dictionary-core",
+    "otterm.error-hint",
+    "otterm.file-tree",
+    "otterm.onboarding",
+    "otterm.outfit-developer",
+    "otterm.workflows",
+    "otterm.mascot",
+    "otterm.history-search",
+    "otterm.prompt-bar",
+    "otterm.multiline-editor",
+];
+
+/// From 1.1 every mod starts off, official ones included, so a new otterm is a plain terminal. An
+/// install from before keeps what it had: on its first start the mods 1.0 turned on by default go
+/// into `[mods] enabled`, except those the user had turned off. Runs once; a marker file remembers.
+/// Must run before `extract_bundled`, whose files tell an earlier install apart from a new one.
+/// Returns whether it changed `config.toml`.
+pub fn keep_v1_defaults(config_path: Option<&Path>, config: &otterm_config::Config) -> bool {
+    let Some(data) = data_dir() else { return false };
+    let marker = data.join("mods-start-off");
+    if marker.exists() {
+        return false;
+    }
+    let mut changed = false;
+    let earlier = bundled_dir(&data).join(".hash").exists();
+    if earlier && let Some(path) = config_path {
+        for id in V1_DEFAULT_ON {
+            if config.mods.disabled.iter().any(|d| d == id) {
+                continue;
+            }
+            if let Err(e) = otterm_modhost::set_enabled(path, id, true) {
+                eprintln!("keeping the 1.0 mods on: {e}");
+                return changed;
+            }
+            changed = true;
+        }
+    }
+    let _ = std::fs::create_dir_all(&data);
+    let _ = std::fs::write(&marker, "1.1.0\n");
+    changed
+}
+
 /// What `mods_list` found last time, to serve `mod_source` and the broker without rescanning.
 #[derive(Default)]
 pub struct ModsState {
@@ -293,7 +342,7 @@ impl ModsState {
 fn entry(m: &Installed, config: &otterm_config::Config, data: &Path, workspace: Option<&str>) -> ModEntry {
     let mf = &m.manifest;
     // Official only when it also ships with the app: a mod installed under `otterm.` (a linked one in
-    // development, say) gets no on-by-default and no host settings.
+    // development, say) gets no host settings.
     let official = mf.is_official() && is_bundled(m, data);
     let lists =
         otterm_modhost::EnabledLists { enabled: config.mods.enabled.clone(), disabled: config.mods.disabled.clone() };
@@ -304,7 +353,7 @@ fn entry(m: &Installed, config: &otterm_config::Config, data: &Path, workspace: 
         }
         None => (
             // The AI mod follows `[ai] enabled` as well: off by default (docs/10 §5).
-            otterm_modhost::is_enabled(&lists, &m.id, official) && (m.id != "otterm.ai-assist" || config.ai.enabled),
+            otterm_modhost::is_enabled(&lists, &m.id) && (m.id != "otterm.ai-assist" || config.ai.enabled),
             is_bundled(m, data) || otterm_modhost::granted(data, &m.id, &mf.mod_.version),
         ),
     };
@@ -519,7 +568,22 @@ pub fn mod_set_enabled(state: State<'_, AppState>, mods: State<'_, ModsState>, i
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(err)?;
     }
-    otterm_modhost::set_enabled(&path, &id, enabled).map_err(err)
+    otterm_modhost::set_enabled(&path, &id, enabled).map_err(err)?;
+    if enabled {
+        // Everything starts off, so a mod brings what it needs along: its dependencies (the command
+        // dictionary for the input assist mods), and for the AI mod the `[ai] enabled` switch.
+        if let Ok(m) = mods.find(&id) {
+            for dep in m.manifest.dependencies.keys() {
+                if mods.find(dep).is_ok() {
+                    otterm_modhost::set_enabled(&path, dep, true).map_err(err)?;
+                }
+            }
+        }
+        if id == "otterm.ai-assist" {
+            crate::settings::write_config(state.config, &["ai".into(), "enabled".into()], Some(Value::Bool(true)))?;
+        }
+    }
+    Ok(())
 }
 
 /// Turn a workspace mod on or off (docs/05 §4, K4). The UI calls this only after the user read the mod's

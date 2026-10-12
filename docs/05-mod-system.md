@@ -18,6 +18,7 @@
 | `outfit` | コツメの衣装・小物・色違い・台詞セット | 不要（TOML + 画像） |
 | `extension` | 上記に加え、コードで UI・イベント・外部連携を実装する | 必要 |
 | `pack` | 複数 mod + 推奨設定をまとめたもの | 不要 |
+| `feature` | otterm に組み込まれた機能のスイッチ（コツメ、履歴検索、プロンプトバー、複数行エディタ）。公式の同梱 mod だけ（判断 M25） | 不要 |
 
 コード不要の mod が多数を占めるよう設計する。「テーマを作るのに JS を書く」ことがないようにする。
 
@@ -334,22 +335,25 @@ npm create otterm-mod@latest my-mod
 
 ## 9. 同梱 mod 一覧（v1.0）
 
-| id | kind | 内容 | 既定 |
+**1.1 から、同梱 mod はすべて既定でオフ**（判断 M25）。入れたばかりの otterm は普通のターミナルで、ユーザーが mod を選んで足していく。mod の一覧の「おすすめをまとめてオンにする」は、コツメ、辞書、説明、補完、危険ガード、エラー助言、履歴検索、ファイルツリーをまとめてオンにする。mod をオンにすると `[dependencies]` もオンになる。下の表の「既定」は 1.0 のもの。1.0 から更新した環境では、1.0 で既定オンだった mod が初回起動時に `enabled` へ書き込まれ、そのまま残る
+
+| id | kind | 内容 | 既定（1.0） |
 | --- | --- | --- | --- |
 | `otterm.file-tree` | extension | ファイルツリー、プレビュー、開く | Lv2 以上で有効 |
 | `otterm.cmd-explain` | extension | コマンド説明バー | Lv1 以上 |
 | `otterm.completion` | extension | 補完ポップアップ | 有効 |
 | `otterm.danger-guard` | extension | 危険ガード | 有効 |
 | `otterm.error-hint` | extension | エラー助言 | 有効 |
-| `otterm.history-search` | extension | 履歴 UI | 有効 |
-| `otterm.multiline-editor` | extension | 複数行入力 | 有効 |
+| `otterm.history-search` | feature | 履歴 UI | 有効 |
+| `otterm.multiline-editor` | feature | 複数行入力 | 有効 |
+| `otterm.prompt-bar` | feature | otterm が描くプロンプト（判断 M4） | 有効 |
 | `otterm.workflows` | extension | ワークフロー実行・ボタン化 | 有効 |
 | `otterm.dictionary-core` | dictionary | 基本コマンド辞書（coreutils, git, npm, pip, docker, python, node, cargo 等）日英 | 有効 |
 | `otterm.themes-builtin` | theme | 同梱テーマ群 | 有効 |
 | `otterm.layouts-builtin` | layout | レイアウトプリセット | 有効 |
 | `otterm.onboarding` | extension | 初回設定・チュートリアル | 有効 |
 | `otterm.git-status` | extension | ブランチ表示、ファイルツリーの Git 装飾 | 有効（git 検出時） |
-| `otterm.mascot` | extension | コツメ本体（表情、吹き出し、反応ルール、衣装の適用） | Lv1 以上で有効 |
+| `otterm.mascot` | feature | コツメ本体（表情、吹き出し、反応ルール、衣装の適用） | Lv1 以上で有効 |
 | `otterm.outfits-builtin` | outfit | 同梱衣装 `default` / `developer` / `pixel` | 有効 |
 
 公式・同梱・既定オフ: `otterm.ai-assist`（[10-ai-assist.md](10-ai-assist.md)）

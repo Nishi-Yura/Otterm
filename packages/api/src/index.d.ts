@@ -952,7 +952,7 @@ export interface AiApi {
 // Manifest (otmod.toml) as a type, for tooling
 // ---------------------------------------------------------------------------
 
-export type ModKind = "theme" | "layout" | "dictionary" | "workflows" | "outfit" | "extension" | "pack";
+export type ModKind = "theme" | "layout" | "dictionary" | "workflows" | "outfit" | "extension" | "pack" | "feature";
 
 export type ManifestEvent =
   | "session-created"

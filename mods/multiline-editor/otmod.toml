@@ -1,0 +1,13 @@
+# A switch for a feature built into otterm: no code, nothing to grant. Off until the user turns it on.
+[mod]
+id = "otterm.multiline-editor"
+name = "複数行エディタ / Multi-line editor"
+version = "1.0.0"
+description = "Shift+Enter で入力欄が複数行のエディタに切り替わり、確定するとまとめてシェルに送ります。オフのとき Shift+Enter はシェルに届きます。 / Shift+Enter turns the input line into a multi-line editor and sends it to the shell in one go. When off, Shift+Enter goes to the shell."
+author = "otterm"
+license = "Apache-2.0"
+kind = "feature"
+
+[compat]
+otterm = ">=1.1.0"
+api = "1"

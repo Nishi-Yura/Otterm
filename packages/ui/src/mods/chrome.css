@@ -399,3 +399,11 @@
   font-size: 11px;
   overflow: auto;
 }
+
+.mods-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+}

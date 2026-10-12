@@ -7,6 +7,8 @@ sidebar:
 
 otterm は、入力中のコマンドを読んで説明を出したり、危険な操作の前で確認したりします。ただし、入力そのものはシェルが行います。Tab の補完や `Ctrl+R` の履歴、zsh-autosuggestions や fzf などのシェル側の拡張もそのまま使えます。
 
+> ここで紹介する機能はどれも mod です（`otterm.cmd-explain`、`otterm.completion`、`otterm.danger-guard`、`otterm.error-hint`、`otterm.history-search`、`otterm.multiline-editor`、辞書の `otterm.dictionary-core`）。設定 › mod でオンにします。オフのあいだ、`Ctrl+R`、`Ctrl+Space`、`Shift+Enter` はシェルに届きます。
+
 ## ガイドレベル
 
 ガイドレベルは、入力支援や案内の量をまとめて決める設定です。0 から 3 の 4 段階があり、設定画面とステータスバーからいつでも変えられます。

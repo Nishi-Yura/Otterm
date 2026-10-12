@@ -566,6 +566,7 @@ export function App() {
         return true;
       }
       if (id === "otterm.history.show") {
+        if (!host.isOn("otterm.history-search")) return false;
         void openHistory();
         return true;
       }
@@ -924,7 +925,10 @@ export function App() {
         run: () => run({ kind: "togglePanel", slot }),
       })),
       { id: "mods", title: t("palette-cmd-mods"), run: () => env.runHostCommand("otterm.mods.show", undefined) },
-      { id: "history", title: t("palette-cmd-history"), run: () => run({ kind: "history" }) },
+      // The history picker is the `otterm.history-search` mod's; without it the palette has no entry.
+      ...(host.isOn("otterm.history-search")
+        ? [{ id: "history", title: t("palette-cmd-history"), run: () => void openHistory() }]
+        : []),
       ...[0, 1, 2, 3].map((level) => ({
         id: `guide.${level}`,
         title: t("palette-cmd-guide", { level }),
@@ -1899,7 +1903,8 @@ export function App() {
         break;
       case "completion": {
         const st = inputState();
-        if (!st.active || !(config()?.assist.completion ?? true)) return false;
+        // The popup is the completion mod's; without it Ctrl+Space reaches the shell.
+        if (!st.active || !(config()?.assist.completion ?? true) || !host.isOn("otterm.completion")) return false;
         if (completion()) {
           const c = completion();
           if (c) setCompletion({ ...c, selected: (c.selected + 1) % c.items.length });
@@ -1908,7 +1913,8 @@ export function App() {
       }
       case "multiline": {
         const st = inputState();
-        if (!st.active || multiline() !== undefined) return false;
+        // Shift+Enter is the shell's unless the multi-line editor mod is on.
+        if (!st.active || multiline() !== undefined || !host.isOn("otterm.multiline-editor")) return false;
         setMultiline(st.line);
         break;
       }
@@ -1917,6 +1923,7 @@ export function App() {
       case "aiAsk":
         return runModCommand(AI_ASK);
       case "mascotToggle": {
+        if (!host.isOn("otterm.mascot")) return false;
         const show = !mascotShown();
         void invoke("config_write", { path: ["mascot", "visible"], value: show }).catch((e) => showNotice(String(e)));
         if (show && mascotConf()?.position === "hidden")

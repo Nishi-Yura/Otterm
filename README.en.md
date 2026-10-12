@@ -45,7 +45,7 @@ The name is **otter + term**. Otters pry shells open with their nimble paws; ott
 
 - **For someone opening a terminal for the first time**, it explains the command *while you type it*, stops dangerous commands *before they run* and shows what would happen.
 - **For someone who lives in a terminal**, set the guide level to **0** and it gets out of the way: GPU rendering, blocks, splits, search, the Kitty keyboard protocol.
-- **Like a game, it takes mods.** Install one and something changes: a theme, a status bar item, a panel, a new outfit for Pebble. The built-in features use the same mod API.
+- **Like a game, it takes mods, and it starts with none.** A fresh otterm is a plain terminal. Pebble, the typing help and the file tree are mods you turn on when you want them, and the store has more. The built-in features use the same mod system.
 
 > [!NOTE]
 > otterm **never runs a command for you**. Suggestions go into the input line; you are always the one who presses Enter.
@@ -53,6 +53,8 @@ The name is **otter + term**. Otters pry shells open with their nimble paws; ott
 <br>
 
 ## ✨ Features
+
+Each of these is a mod. Turn them all on with "Turn on the recommended set" in Settings › Mods, or pick them one by one.
 
 <table>
 <tr>
@@ -146,7 +148,7 @@ A small-clawed otter named **Pebble** (コツメ, Kotsume, in Japanese) lives in
 - **Thinking** while a long command runs, **happy** when it succeeds, **alert** when something is risky. The mood follows your work.
 - A short word the first time you do something, and never the same thing twice.
 - Outfit mods change the look (bundled: the developer set 👓☕).
-- If you would rather not, one setting hides Pebble completely.
+- Pebble is a mod too (`otterm.mascot`) and appears only once you turn it on.
 
 <br clear="right">
 

@@ -17,3 +17,6 @@ layers = [
   { slot = "face", file = "assets/face.svg" },
   { slot = "hand", file = "assets/hand.svg" },
 ]
+
+[dependencies]
+"otterm.mascot" = ">=1.0.0"

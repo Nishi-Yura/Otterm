@@ -149,6 +149,9 @@ pub enum ModKind {
     Extension,
     /// Several mods and recommended settings, bundled.
     Pack,
+    /// A switch for a feature built into otterm (the mascot, the history picker, the prompt bar).
+    /// No code; only official bundled mods may be one.
+    Feature,
 }
 
 /// The `[compat]` table.
@@ -425,6 +428,10 @@ impl Manifest {
             && !list.contains(&platform)
         {
             out.push(Problem::new("platforms", "this mod does not list the current platform"));
+        }
+
+        if info.kind == ModKind::Feature && !self.is_official() {
+            out.push(Problem::new("kind", "only otterm's own mods can be a feature switch"));
         }
 
         if info.kind == ModKind::Extension {

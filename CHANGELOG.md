@@ -4,6 +4,15 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-12
+
+### Changed
+
+- **otterm starts with no mods.** Every mod, the bundled ones included, is now off until you turn it on, so a fresh otterm behaves like any other terminal: no mascot, no side panel, the shell's own prompt, and `Ctrl+R`, `Ctrl+Space` and `Shift+Enter` reach the shell. Pick what you want in Settings › Mods, or press "Turn on the recommended set" (Pebble, the dictionary, explanations, completion, the danger guard, error hints, history search, the file tree).
+- Built-in features that could be taken apart are now mods of a new kind, `feature`, which only switch on something that lives in otterm: `otterm.mascot` (Pebble), `otterm.history-search` (the `Ctrl+R` picker), `otterm.multiline-editor` (`Shift+Enter`) and `otterm.prompt-bar` (the prompt otterm draws). The completion popup's `Ctrl+Space` now needs `otterm.completion`.
+- Turning a mod on also turns on its `[dependencies]` (the input assist mods bring the command dictionary), and turning on the AI mod sets `[ai] enabled`. The bundled outfit counts only while it is on.
+- Upgrading from 1.0 keeps your setup: on the first start, the mods 1.0 had on by default are written into `[mods] enabled`, except the ones you had turned off.
+
 ### Added
 
 - Registry: 13 more community mods (24 in the store). Themes Yuki, Yuyake and Shinkai; the outfit "Pebble in winter"; dictionaries for network tools, database clients, modern CLI tools and media tools (31 commands, 7 danger rules); the extensions exit-status, command-stats, project-scripts, bookmarks and daily-tip.
@@ -40,7 +49,8 @@ First release, Windows x64. Highlights:
 - Settings screen generated from `config.toml`, keybindings with chords and `when` clauses, 15 bundled themes, workspaces.
 - Signed auto-update, local crash logs with "create an issue", no telemetry.
 
-[Unreleased]: https://github.com/Nishi-Yura/Otterm/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Nishi-Yura/Otterm/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Nishi-Yura/Otterm/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Nishi-Yura/Otterm/releases/tag/v1.0.0
 [#6]: https://github.com/Nishi-Yura/Otterm/issues/6
 [#9]: https://github.com/Nishi-Yura/Otterm/issues/9

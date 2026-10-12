@@ -332,14 +332,10 @@ pub struct EnabledLists {
 }
 
 /// Whether `id` is on. `disabled` wins, then `enabled`. A mod on neither list is on only if it is official.
-pub fn is_enabled(lists: &EnabledLists, id: &str, official: bool) -> bool {
-    if lists.disabled.iter().any(|x| x == id) {
-        false
-    } else if lists.enabled.iter().any(|x| x == id) {
-        true
-    } else {
-        official
-    }
+pub fn is_enabled(lists: &EnabledLists, id: &str) -> bool {
+    // Every mod starts off, official ones included: otterm begins as a plain terminal and the user
+    // picks what to add.
+    !lists.disabled.iter().any(|x| x == id) && lists.enabled.iter().any(|x| x == id)
 }
 
 /// Turn `id` on or off in `config.toml`, keeping the comments and formatting of the file.

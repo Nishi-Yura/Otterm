@@ -61,11 +61,13 @@ pub struct OutfitInfo {
     lines: BTreeMap<String, BTreeMap<String, String>>,
 }
 
-/// The outfit mods that are installed and not disabled (docs/08 §6.4).
+/// The outfit mods that are installed and not disabled (docs/08 §6.4). otterm's own outfits ship
+/// with it, so they count only once turned on, like every bundled mod.
 #[tauri::command]
 pub fn mascot_outfits(state: State<'_, AppState>) -> Vec<OutfitInfo> {
     let Some(data) = otterm_config::data_dir() else { return Vec::new() };
-    let disabled = state.config.config().mods.disabled;
+    let mods = state.config.config().mods;
+    let (enabled, disabled) = (mods.enabled, mods.disabled);
     let read = |dir: &std::path::Path, file: &str| -> Option<String> {
         let path = dir.join(file);
         // Only files inside the mod folder.
@@ -78,7 +80,13 @@ pub fn mascot_outfits(state: State<'_, AppState>) -> Vec<OutfitInfo> {
     crate::mods::discover_everything(&data)
         .into_iter()
         .filter_map(|f| match f {
-            Found::Mod(m) if m.manifest.mod_.kind == ModKind::Outfit && !disabled.contains(&m.id) => Some(m),
+            Found::Mod(m)
+                if m.manifest.mod_.kind == ModKind::Outfit
+                    && !disabled.contains(&m.id)
+                    && (!m.manifest.is_official() || enabled.contains(&m.id)) =>
+            {
+                Some(m)
+            }
             _ => None,
         })
         .filter_map(|m| {

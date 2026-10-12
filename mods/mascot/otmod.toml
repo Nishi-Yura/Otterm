@@ -1,0 +1,13 @@
+# A switch for a feature built into otterm: no code, nothing to grant. Off until the user turns it on.
+[mod]
+id = "otterm.mascot"
+name = "コツメ / Pebble"
+version = "1.0.0"
+description = "カワウソのコツメが画面の隅にいて、表情と短いひとことで状況を知らせます。ほかの mod の台詞もここに出ます。 / Pebble the river otter sits in a corner and shows how things are going with a face and a short line. Other mods speak through Pebble too."
+author = "otterm"
+license = "Apache-2.0"
+kind = "feature"
+
+[compat]
+otterm = ">=1.1.0"
+api = "1"

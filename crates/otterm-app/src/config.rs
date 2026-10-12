@@ -416,7 +416,12 @@ impl ConfigState {
                 explain: effective.explain,
                 completion: c.assist.completion,
                 completion_key: effective.completion_key,
-                history_key: effective.history_key,
+                // Ctrl+R opens otterm's picker only while the history search mod is on.
+                history_key: if feature_on(c, "otterm.history-search") && !safe {
+                    effective.history_key
+                } else {
+                    otterm_config::HistoryKey::Shell
+                },
                 danger_guard: c.assist.danger_guard,
                 error_hint: c.assist.error_hint,
                 learn_hints: effective.learn_hints,
@@ -429,7 +434,7 @@ impl ConfigState {
             check_updates: c.general.check_updates,
             ai_question_prefix: c.ai.question_prefix,
             mascot: UiMascot {
-                visible: effective.mascot_visible,
+                visible: effective.mascot_visible && feature_on(c, "otterm.mascot") && !safe,
                 position: c.mascot.position,
                 speech: effective.speech,
                 speech_auto: matches!(c.mascot.speech, Auto::Auto(_)),
@@ -649,6 +654,14 @@ pub fn background_path(config: Option<&std::path::Path>, p: &str) -> PathBuf {
 }
 
 /// Settings for new terminals.
+/// Whether the user turned on one of otterm's built-in features, which are switched as mods of kind
+/// `feature` (`otterm.mascot`, `otterm.history-search`, `otterm.prompt-bar`). Like every mod they
+/// start off, so a fresh otterm is a plain terminal.
+pub fn feature_on(c: &Config, id: &str) -> bool {
+    let lists = otterm_modhost::EnabledLists { enabled: c.mods.enabled.clone(), disabled: c.mods.disabled.clone() };
+    otterm_modhost::is_enabled(&lists, id)
+}
+
 pub fn terminal_options(c: &Config) -> otterm_session::TerminalOptions {
     otterm_session::TerminalOptions {
         // 0 means unlimited: old chunks are compressed, then spilled to disk (docs/09 §5).

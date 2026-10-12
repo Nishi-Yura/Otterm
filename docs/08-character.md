@@ -156,7 +156,7 @@ ReactionRegistry               # mod が追加する反応ルール
 OutfitRegistry                 # 衣装の登録・適用
 ```
 
-- `MoodController` はコアのイベント（`input-changed`、`before-execute`、`block-end` 等）を購読する。コツメ自体は同梱 mod `otterm.mascot` として実装し、他の mod と同じ API を使う
+- `MoodController` はコアのイベント（`input-changed`、`before-execute`、`block-end` 等）を購読する。コツメ自体は同梱 mod `otterm.mascot` として実装し、他の mod と同じ API を使う（→ M21 で描画と状態はホストに置いた。1.1 から `otterm.mascot` は kind `feature` のスイッチで、既定でオフ。M25）
 - 吹き出しはキュー制。同時に 1 つしか出さない。`alert` は割り込み優先
 
 ### 6.3 mod API（`ctx.mascot`）

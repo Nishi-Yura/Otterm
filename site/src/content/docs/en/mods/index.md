@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-Built-in features such as completion, the danger guard, and the file tree are written as bundled mods using the same public API. Anything a mod can do through the API is available to everyone.
+Built-in features such as completion, the danger guard, and the file tree are written as bundled mods using the same public API. Anything a mod can do through the API is available to everyone. Every mod, bundled ones included, starts off; the user picks what to turn on.
 
 > The [API reference](/en/api/) is the source of truth for types.
 
@@ -20,6 +20,7 @@ Built-in features such as completion, the danger guard, and the file tree are wr
 | `outfit` | Pebble outfits | No (TOML and images) |
 | `extension` | UI, events, integrations | Yes (TypeScript) |
 | `pack` | Several mods with recommended settings | No |
+| `feature` | A switch for a feature built into otterm (Pebble, history search, the prompt bar, the multi-line editor). Official bundled mods only | No |
 
 ## Workflow
 

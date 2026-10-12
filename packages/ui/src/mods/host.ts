@@ -776,6 +776,20 @@ export class ModHost {
     await this.refresh();
   }
 
+  /** Whether a mod is on. Built-in features ask this about their `feature` mod (`otterm.mascot`, …). */
+  isOn(id: string): boolean {
+    return this.states.get(id)?.entry.enabled === true;
+  }
+
+  /** Turn several mods on at once (the mods panel's recommended set), refreshing once. */
+  async enableAll(ids: string[]) {
+    for (const id of ids) {
+      if (!this.states.has(id) || this.isOn(id)) continue;
+      await invoke("mod_set_enabled", { id, enabled: true });
+    }
+    await this.refresh();
+  }
+
   async setEnabled(id: string, enabled: boolean) {
     const state = this.states.get(id);
     if (state?.entry.source === "workspace" && enabled) {

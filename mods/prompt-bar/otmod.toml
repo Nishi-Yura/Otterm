@@ -1,0 +1,13 @@
+# A switch for a feature built into otterm: no code, nothing to grant. Off until the user turns it on.
+[mod]
+id = "otterm.prompt-bar"
+name = "プロンプトバー / Prompt bar"
+version = "1.0.0"
+description = "シェルのプロンプトの代わりに、フォルダ、Git ブランチ、直前の結果を 1 本のバーで表示します。シェル統合が必要です。オフのときはシェル自身のプロンプトのままです。 / Replaces the shell prompt with one bar showing the folder, the Git branch and the last result. Needs shell integration. When off, the shell keeps its own prompt."
+author = "otterm"
+license = "Apache-2.0"
+kind = "feature"
+
+[compat]
+otterm = ">=1.1.0"
+api = "1"

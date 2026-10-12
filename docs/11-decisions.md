@@ -896,3 +896,11 @@ A〜H を決定した後に見つかった事項。同日に推奨どおり決�
 - 決定（2026-10-12）: **既定では、シェル自身の設定ファイルを読まずに起動する**（`shell.user_startup_files = false`）。otterm は「インストールしたままのシェル + otterm の連携」から始まり、便利な機能は設定と mod で足す。読みたい人は設定でオンにする
 - 具体的には PowerShell は `-NoProfile`、cmd は `/D`（AutoRun を読まない）、bash と zsh は otterm のフックがユーザーのファイルを読まない（`/etc` の全体設定は読む）、fish は `--no-config`。連携をオフにしたときも、シェルのフラグで同じようにする
 - インストーラ: ユーザー単位の既定のインストール先を `%LOCALAPPDATA%\Programs\otterm` にした。Tauri の既定（`%LOCALAPPDATA%\otterm`）は otterm のデータフォルダと同じで、プログラムとデータが混ざっていた。Tauri に設定がないため、NSIS のテンプレートを写して 1 行変えている（`crates/otterm-app/windows/installer.nsi`）
+
+### M25. 何も入っていない状態から始める
+
+- 経緯: 1.0 は公式の同梱 mod を既定でオンにしていた。コツメ、`Ctrl+R` の履歴、`Shift+Enter` の複数行エディタ、otterm のプロンプトバーはコアに直接あり、mod の一覧から外せなかった。上級者には「入れた瞬間から otterm の流儀」になり、ほかのターミナルから移りにくかった
+- 決定（2026-10-12）: **1.1 から、すべての mod を既定でオフにする。** 入れたばかりの otterm は、ほかのターミナルとほとんど変わらない。コアにある機能のうち、外せるものは kind `feature` の同梱 mod（`otterm.mascot`、`otterm.history-search`、`otterm.multiline-editor`、`otterm.prompt-bar`）をスイッチにする。描画と状態はホストに置いたまま（M21）で、mod がオフのあいだキーはシェルに届き、プロンプトはシェル自身のものになる。補完の `Ctrl+Space` も `otterm.completion` がオンのときだけ奪う
+- 補足: mod をオンにすると `[dependencies]` もオンになる（補完などは辞書を連れてくる）。AI の mod は `[ai] enabled` も立てる。mod の一覧に「おすすめをまとめてオンにする」を置く。1.0 から更新した環境は、初回起動時に 1.0 で既定オンだった mod を `[mods] enabled` に書き込み（ユーザーがオフにしたものは除く）、今までどおり使える。済んだ印はデータフォルダの `mods-start-off`
+- 影響: 05 §2、§9、08 §6.2、03 §8.5、§8.6、§11
+- 時期: 1.1
