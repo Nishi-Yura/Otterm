@@ -13,7 +13,7 @@ import type { ListItem, ModContext, UiNode } from "@otterm/api";
 const PANEL_ID = "nishi-yura.project-scripts.panel";
 const OPEN_COMMAND_ID = "nishi-yura.project-scripts.open";
 const REFRESH_COMMAND_ID = "nishi-yura.project-scripts.refresh";
-/** A finished command may have edited the files; wait a moment so several blocks fold into one read. */
+/** Wait a moment so several folder or tab changes in a row fold into one read. */
 const REFRESH_DELAY_MS = 400;
 /** package.json beyond this is not a project file we want to parse. */
 const MAX_FILE_BYTES = 512 * 1024;
@@ -189,7 +189,6 @@ export async function activate(ctx: ModContext): Promise<void> {
   };
   ctx.session.onCwdChanged(later);
   ctx.session.onFocusChanged(later);
-  if (ctx.terminal.onBlockEnd) ctx.terminal.onBlockEnd(later);
 
   await refresh();
 }

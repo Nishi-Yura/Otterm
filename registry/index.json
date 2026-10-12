@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-10-12T07:05:52.728Z",
+  "generated": "2026-10-12T10:40:54.357Z",
   "mods": [
     {
       "id": "nishi-yura.bookmarks",
@@ -440,6 +440,16 @@
       "reviewed": true,
       "hidden": false,
       "versions": [
+        {
+          "version": "1.0.1",
+          "otterm": ">=0.0.0 <2.0.0",
+          "api": "1",
+          "platforms": ["windows", "macos", "linux"],
+          "url": "https://raw.githubusercontent.com/Nishi-Yura/Otterm/main/registry/packages/nishi-yura.project-scripts-1.0.1.otmod",
+          "sha256": "a495b9d9379dda56ac497c5287e2c91e88c727c08dfddabf7f253c77a648abd7",
+          "size": 9719,
+          "published": "2026-10-12"
+        },
         {
           "version": "1.0.0",
           "otterm": ">=0.0.0 <2.0.0",

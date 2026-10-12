@@ -1,7 +1,7 @@
 [mod]
 id = "nishi-yura.project-scripts"
 name = "プロジェクトのスクリプト / Project scripts"
-version = "1.0.0"
+version = "1.0.1"
 description = "今いるフォルダの package.json のスクリプト、justfile のレシピ、Makefile のターゲットをサイドパネルに一覧し、クリックで入力欄に入れます / Lists the package.json scripts, justfile recipes and Makefile targets of the current folder in a side panel; click to put the command in the input line."
 author = "nishi-yura"
 license = "MIT"
@@ -31,4 +31,4 @@ label = "プロジェクトのスクリプトを読み直す / Reload project sc
 # Nothing is executed: a click inserts the command into the input line, and you press Enter.
 [permissions]
 fs.read = ["${cwd}/**"]
-events = ["cwd-changed", "focus-changed", "block-end"]
+events = ["cwd-changed", "focus-changed"]
