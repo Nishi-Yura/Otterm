@@ -4,9 +4,19 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-13
+
+Re-released on 2026-10-13 over the first 1.2.0 build of 2026-10-12, with the changes from a review by a terminal-first developer. The installer and its checksum differ from the first build.
+
+### Added
+
+- **Shells outlive the window.** Shells now run in a session daemon (`otterm --daemon`), a process of their own. If the window crashes, or otterm restarts for an update or a setting, the shells keep running with their scrollback and the next window opens them again as tabs. Closing the window normally still ends them; `general.keep_sessions = "always"` keeps them then too, and `"never"` runs them inside the window as before. On Windows the daemon runs from a copy in the data folder, so the update installer does not stop it. No tmux needed (decision M26).
+- `general.restore_session` (off by default) reopens the last tabs in their folders with new shells.
+- `docs/13-positioning.md`: how otterm compares with Windows Terminal, WezTerm, Ghostty, Alacritty and others, and where it means to be different.
+
 ### Changed
 
-- **The shell reads its own startup files again.** `shell.user_startup_files` is on by default: the PowerShell profile, `~/.bashrc`, `~/.zshrc` and `config.fish` apply, so aliases, PATH and prompt themes are the same as in any other terminal. `false` starts the shell as installed, as 1.1 and 1.2 did.
+- **The shell reads its own startup files.** `shell.user_startup_files` is on by default: the PowerShell profile, `~/.bashrc`, `~/.zshrc` and `config.fish` apply, so aliases, PATH and prompt themes are the same as in any other terminal. `false` starts the shell as installed, as 1.0 and 1.1 did.
 - **Ctrl+V reaches programs on the alternate screen** (vim's visual block, readline's quoted-insert); `Ctrl+Shift+V`, `Shift+Insert` and the context menu paste there. `Ctrl+Shift+V` is a paste key on Windows now. Unbinding `paste` frees `Ctrl+V` on the normal screen too (the WebView's paste no longer takes it first). `Ctrl+Up` / `Ctrl+Down` go to the shell until the pane has seen a block.
 - **`otterm --help` and `otterm --version`** print and exit. An unknown option or a path that does not exist is an error (exit code 2) instead of a window with a notice.
 - **otterm never starts a program you did not type unless you let it.** The background `--help` read for unknown commands (decision B9) now runs only while the explanation mod is on, and `assist.learn_help = false` turns it off. Before, with no mods on, every successful command was "unknown" and got its `--help` run once.
@@ -19,26 +29,6 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 - The README and `docs/bench` list memory while idle (about 460 to 480 MB for one tab, most of it WebView2), which otterm does not win.
 - Docs: what is not implemented is now said so (moving tabs between windows, detaching panes, broadcast input, `otterm open`, search filters by block, sigstore signing, the per-mod "recent actions" view, e-mail and IP masking in AI requests), and the palette's `!` says it puts the text in the input line rather than running it.
 - Tab titles skip `&`, `.`, `source` and `sudo` when naming the running command.
-
-### Fixed
-
-- History redaction treated every bare `-p` as a password flag, so `mkdir -p x` and `ssh -p 22 host` were stored and inserted as `-p [REDACTED]`.
-
-- Mods have a screen of their own, over the whole window like the settings: installed mods and the store on the left, the chosen mod on the right with its description, what it may use, its settings and an on/off button. It replaces the mods list in the right sidebar and the mods page in Settings (which now opens it). The status bar's "mod" and the palette open it.
-- The intro and the "recommended set" button show only while no mod is on, and not again once closed.
-- The "type ls to try it" hint is gone from the window; the tutorial (the onboarding mod) covers it. A tutorial left halfway no longer opens itself at every start; starting it again carries on where it stopped.
-- Mod switches say "オンにする / オフにする" (Turn on / Turn off).
-
-## [1.2.0] - 2026-10-12
-
-### Added
-
-- **Shells outlive the window.** Shells now run in a session daemon (`otterm --daemon`), a process of their own. If the window crashes, or otterm restarts for an update or a setting, the shells keep running with their scrollback and the next window opens them again as tabs. Closing the window normally still ends them; `general.keep_sessions = "always"` keeps them then too, and `"never"` runs them inside the window as before. On Windows the daemon runs from a copy in the data folder, so the update installer does not stop it. No tmux needed (decision M26).
-- `general.restore_session` (off by default) reopens the last tabs in their folders with new shells.
-- `docs/13-positioning.md`: how otterm compares with Windows Terminal, WezTerm, Ghostty, Alacritty and others, and where it means to be different.
-
-### Changed
-
 - VT parsing is a little over twice as fast on scrolling output (about 30 to 70-80 MiB/s): scrollback chunks are compressed and spilled on a background thread, runs of printable ASCII are written at once, and full-screen scrolls rotate rows instead of moving them. Compared byte for byte with the old implementation over random input, the screen, scrollback, search and copied text are the same.
 - Glyph lookups for single-code-point cells no longer build a string key per cell.
 - The IME composes where a program draws its own cursor: TUIs built on Ink (Claude Code and others) hide the real cursor and paint one reverse-video cell, and the candidate window used to open at the hidden cursor instead.
@@ -46,6 +36,14 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 - Copy across the app, the site, the READMEs and the release notes was rewritten to be plain and specific: no emoji headings, no slogans, one word per idea (ガイドレベル, mod, エディタ).
 - The default (fallback) colors are the project's own warm palette instead of One Dark, with tighter shadows.
 - Store descriptions of the dictionary mods name the commands they cover and what they stop before.
+- Mods have a screen of their own, over the whole window like the settings: installed mods and the store on the left, the chosen mod on the right with its description, what it may use, its settings and an on/off button. It replaces the mods list in the right sidebar and the mods page in Settings (which now opens it). The status bar's "mod" and the palette open it.
+- The intro and the "recommended set" button show only while no mod is on, and not again once closed.
+- The "type ls to try it" hint is gone from the window; the tutorial (the onboarding mod) covers it. A tutorial left halfway no longer opens itself at every start; starting it again carries on where it stopped.
+- Mod switches say "オンにする / オフにする" (Turn on / Turn off).
+
+### Fixed
+
+- History redaction treated every bare `-p` as a password flag, so `mkdir -p x` and `ssh -p 22 host` were stored and inserted as `-p [REDACTED]`.
 
 ### Removed
 

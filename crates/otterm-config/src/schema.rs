@@ -559,7 +559,7 @@ pub struct Shell {
     /// Who draws the prompt (decision M4). Needs `integration`.
     pub prompt: PromptStyle,
     /// Load the shell's own startup files: the PowerShell profile, ~/.bashrc, ~/.zshrc,
-    /// config.fish, cmd's AutoRun (decision M24, on by default since 1.3). Off: the shell starts as
+    /// config.fish, cmd's AutoRun (decision M24, on by default since 1.2.0). Off: the shell starts as
     /// installed, without your aliases, prompt theme or PATH changes.
     pub user_startup_files: bool,
 }

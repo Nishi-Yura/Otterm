@@ -82,7 +82,7 @@ default_profile = "pwsh"
 integration = true
 integration_install = "args"        # args（起動引数で注入、既定。ユーザーのファイルを触らない）| rc（起動ファイルに 1 行追記、オプトイン）| manual
 prompt = "otterm"                   # otterm（otterm がプロンプトバーを描き、シェルは ❯ だけ。判断 M4）| shell（シェルや Oh My Posh のプロンプトのまま）
-user_startup_files = true           # シェル自身の設定ファイル（PowerShell のプロファイル、~/.bashrc、~/.zshrc、config.fish、cmd の AutoRun）を読むか。false で素のシェル（判断 M24、1.3 で既定を true に）
+user_startup_files = true           # シェル自身の設定ファイル（PowerShell のプロファイル、~/.bashrc、~/.zshrc、config.fish、cmd の AutoRun）を読むか。false で素のシェル（判断 M24、1.2.0 で既定を true に）
 
 [[profiles]]
 id = "pwsh"
@@ -193,12 +193,12 @@ otterm config get|set|path|export|import
 otterm workflow run <name>
 otterm trash <path...>             # ゴミ箱へ送る。danger-guard の「ゴミ箱に送る」が rm をこれに書き換える。単体でも使える
 otterm ask [question]              # コツメに聞く（AI mod が有効なとき）。引数なしで対話プロンプト
-otterm --help | -h                 # 使い方を出して終わる（1.3）
-otterm --version | -V              # 版を出して終わる（1.3）
+otterm --help | -h                 # 使い方を出して終わる（1.2.0）
+otterm --version | -V              # 版を出して終わる（1.2.0）
 ```
 
 - 引数なしの `otterm` はホームフォルダで開く。いまいるフォルダで開くなら `otterm .`
-- 知らないオプションや、存在しないパスは、エラーを出して終了コード 2 で終わる（1.3。以前は窓を開いて画面に通知していた）。Windows では `otterm.com` が「出力して終わる起動」を見分けてパイプでつなぐ
+- 知らないオプションや、存在しないパスは、エラーを出して終了コード 2 で終わる（1.2.0。以前は窓を開いて画面に通知していた）。Windows では `otterm.com` が「出力して終わる起動」を見分けてパイプでつなぐ
 - 既知の限界: `otterm . | tee log` のように otterm.com の出力をパイプにつなぐと、窓を閉じるまで読み手が戻らない。Rust の `Command` が継承可能なハンドルをすべて子に渡すため、窓のプロセスがパイプの書き込み側を持ち続ける。直すには `SetHandleInformation`（Windows API、`unsafe`）が要るので見送っている
 - 既に起動している場合はそのインスタンスに新タブとして開く（単一インスタンス、`--new-window` で別窓）
   - 実装（2026-10-11）: `--new-window` は別プロセスとして起動する。`--config` と `--safe-mode` も設定が違うため引き継がず、別プロセスになる。`otterm workflow run <name>` は起動中のウィンドウでワークフロー mod のコマンド `workflows.run.<name>` を開き、そのワークフローがなければエラー（終了コード 2）で終わる。`otterm ask` は AI mod が有効でないとエラーで終わる。どちらも otterm が起動していないか、ウィンドウが 4 秒以内に答えないとエラーになる
@@ -264,10 +264,10 @@ otterm --version | -V              # 版を出して終わる（1.3）
 
 - ターミナルアプリ（vim 等）が必要とするキーは、代替画面中は既定で **シェルに優先して渡す**（`ctrl+b`、`ctrl+j`、`ctrl+l` など）。otterm の割当は「通常画面かつ入力待ち」のときだけ効く。`keybindings.alt_screen_passthrough = false`（真偽値）にすると常に otterm が優先する
   - M1 の実装（2026-10-11、issue #5）: 代替画面中も otterm が使うのは `Ctrl+Shift+…` と `Cmd+…` の割当だけで、`Alt+矢印`・`Ctrl+Tab`・`Ctrl+数字` はアプリに渡す（`keybindings.alt_screen_passthrough = false` で常に otterm）。移動先のペインがないときのペイン移動・リサイズのキーも、シェルに渡す
-  - 1.3: `ctrl+v` も代替画面中はアプリに渡す（vim の矩形選択、readline の quoted-insert）。貼り付けは `ctrl+shift+v`、`shift+insert`、右クリックメニュー。`ctrl+insert` / `shift+insert` は Ctrl+Shift と同じ「強い」キーとして扱う。`paste = []` で割当を外すと、通常画面でも `ctrl+v` がシェルに届く（以前は WebView の貼り付けが先に取っていて外せなかった）。`block.prev` / `block.next`（`ctrl+up` / `ctrl+down`）は、そのペインにブロックが一度も来ていない（シェル統合がない）間はシェルへ渡す
+  - 1.2.0: `ctrl+v` も代替画面中はアプリに渡す（vim の矩形選択、readline の quoted-insert）。貼り付けは `ctrl+shift+v`、`shift+insert`、右クリックメニュー。`ctrl+insert` / `shift+insert` は Ctrl+Shift と同じ「強い」キーとして扱う。`paste = []` で割当を外すと、通常画面でも `ctrl+v` がシェルに届く（以前は WebView の貼り付けが先に取っていて外せなかった）。`block.prev` / `block.next`（`ctrl+up` / `ctrl+down`）は、そのペインにブロックが一度も来ていない（シェル統合がない）間はシェルへ渡す
 - 設定画面のキーバインドタブで競合を赤表示。「キーを押して記録」で設定
 - mod が提案するキーはユーザー設定と競合すると無効になり、設定画面で解決を促す
-- 実装（2026-10-11）: チョードは 2 段まで記録でき（設定画面では 1 つ目のキーのあと 0.9 秒以内に 2 つ目）、`config.toml` には何段でも書ける。途中で違うキーを押すと、そのキーは捨てる。代替画面中は `Ctrl+Shift` か `Cmd` で始まるチョードだけが始まる。`copy`（選択範囲があるとき）・`search`・`font.*` は otterm 自身の操作なので代替画面中も otterm が使う（`paste` は 1.3 からアプリ優先）。`ai.ask`・`mascot.toggle`・`guide.help_mode` は、そのコマンドを登録した mod がないときはキーをシェルへ渡す。`[[keybindings.custom]]` の `command` はアクション ID、`workflow.run`（`args.name`）、mod のコマンド、`otterm.*` のホストコマンドのどれか
+- 実装（2026-10-11）: チョードは 2 段まで記録でき（設定画面では 1 つ目のキーのあと 0.9 秒以内に 2 つ目）、`config.toml` には何段でも書ける。途中で違うキーを押すと、そのキーは捨てる。代替画面中は `Ctrl+Shift` か `Cmd` で始まるチョードだけが始まる。`copy`（選択範囲があるとき）・`search`・`font.*` は otterm 自身の操作なので代替画面中も otterm が使う（`paste` は 1.2.0 からアプリ優先）。`ai.ask`・`mascot.toggle`・`guide.help_mode` は、そのコマンドを登録した mod がないときはキーをシェルへ渡す。`[[keybindings.custom]]` の `command` はアクション ID、`workflow.run`（`args.name`）、mod のコマンド、`otterm.*` のホストコマンドのどれか
 
 ### 5.4 キーバインドのスコープ
 

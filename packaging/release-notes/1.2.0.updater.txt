@@ -1,3 +1,3 @@
-otterm 1.2: shells now run in a process of their own, so a crash or an update restart no longer ends them (from the next update on). Scrolling output is parsed about twice as fast.
-otterm 1.2: シェルがウィンドウとは別のプロセスで動くようになり、落ちても更新で再起動しても止まりません（次の更新から）。スクロールが続く出力の処理は約 2 倍速くなりました。
+otterm 1.2: shells now run in a process of their own, so a crash or an update restart no longer ends them (from the next update on). Your shell's startup files load, Ctrl+V reaches vim, and otterm --help works.
+otterm 1.2: シェルがウィンドウとは別のプロセスで動き、落ちても更新で再起動しても止まりません（次の更新から）。シェルの設定ファイルを読み、vim で Ctrl+V が使え、otterm --help が動きます。
 https://github.com/Nishi-Yura/Otterm/releases/tag/v1.2.0

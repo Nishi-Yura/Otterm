@@ -15,13 +15,15 @@ By default, otterm loads its hook through startup arguments for the shells it la
 | zsh | `ZDOTDIR` points to otterm's folder, which loads your own files |
 | fish | Loaded after your config |
 | PowerShell 7 / Windows PowerShell | Hook passed at startup. PSReadLine is required. |
-| cmd, WSL launcher | No integration. Works as a plain terminal. |
+| cmd | No hooks. otterm puts the folder and prompt marks into its prompt (no exit codes or durations). See "WSL and cmd" below. |
+| WSL | Not automatic. One line in the shell's startup file inside WSL turns it on. See "WSL and cmd" below. |
+| nushell | Not yet. Works as a plain terminal. |
 
 ## The shell's own startup files
 
 otterm reads your usual startup files before the shell starts: the PowerShell profile, `~/.bashrc`, `~/.zshrc`, `config.fish` and cmd's AutoRun all apply, so your aliases and prompt theme are the same as in any other terminal. otterm's own hooks load after them.
 
-To start the shell **as installed** instead, set `shell.user_startup_files = false` (applies to new tabs): PowerShell runs with `-NoProfile`, bash with `--norc`, fish with `--no-config`, and only otterm's integration is loaded. This was the default up to 1.2.
+To start the shell **as installed** instead, set `shell.user_startup_files = false` (applies to new tabs): PowerShell runs with `-NoProfile`, bash with `--norc`, fish with `--no-config`, and only otterm's integration is loaded. This was the default up to 1.1.
 
 ## WSL and cmd
 
@@ -52,4 +54,4 @@ nushell has no integration yet.
 
 ## When blocks do not appear
 
-The notice "shell integration is disabled" appears when integration is not working. Check that the profile is not cmd or a WSL launcher, that `shell.integration` is `true`, that PSReadLine is installed for PowerShell, and that the profile does not pass `-c` or `-File`.
+The notice "shell integration is disabled" appears when integration is not working. Check that the profile is not cmd (it cannot mark where commands end) or nushell, that a WSL profile has the one line above in its startup file, that `shell.integration` is `true`, that PSReadLine is installed for PowerShell, and that the profile does not pass `-c` or `-File`.

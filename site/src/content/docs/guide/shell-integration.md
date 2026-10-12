@@ -17,7 +17,9 @@ sidebar:
 | zsh | `ZDOTDIR` を otterm の統合フォルダに向けます。元の設定ファイルは、そのまま読み込まれます。 |
 | fish | 設定ファイルの後に読み込みます。 |
 | PowerShell 7、Windows PowerShell | 起動時にフックを渡します。PSReadLine が必要です（Windows PowerShell は 2.0 以上）。 |
-| cmd、WSL のランチャー | 統合はできません。通常のターミナルとして動きます。 |
+| cmd | フックは置けません。プロンプトにフォルダとプロンプトの印を入れます（終了コードと実行時間は出ません）。下の「WSL と cmd」を参照。 |
+| WSL | 自動では入りません。WSL 側の設定ファイルに 1 行足すと入ります。下の「WSL と cmd」を参照。 |
+| nushell | まだありません。通常のターミナルとして動きます。 |
 
 スクリプトは `<設定フォルダ>/shell-integration/` に書き出され、中身を読むこともできます。
 
@@ -27,7 +29,7 @@ sidebar:
 
 otterm はいつもの設定ファイルを読んでからシェルを始めます。PowerShell のプロファイル、`~/.bashrc`、`~/.zshrc`、`config.fish`、cmd の AutoRun はそのまま効き、エイリアスやプロンプトのテーマもほかのターミナルと同じです。otterm の連携はそのあとに読み込まれます。
 
-シェルを **インストールしたままの状態** で始めたいときは `shell.user_startup_files = false` にします（新しいタブから反映）。PowerShell は `-NoProfile`、bash は `--norc`、fish は `--no-config` で起動し、otterm 自身の連携だけが入ります。1.2 まではこちらが既定でした。
+シェルを **インストールしたままの状態** で始めたいときは `shell.user_startup_files = false` にします（新しいタブから反映）。PowerShell は `-NoProfile`、bash は `--norc`、fish は `--no-config` で起動し、otterm 自身の連携だけが入ります。1.1 まではこちらが既定でした。
 
 ## WSL と cmd
 
@@ -63,7 +65,7 @@ nushell にはまだ連携がありません。
 
 統合が効いていないときは、ブロック機能は静かに無効になり、「シェル統合が無効です」と小さく表示されます。次を確認してください。
 
-1. プロファイルが cmd や WSL のランチャーではないか
+1. プロファイルが cmd（コマンドの区切りが取れません）や nushell ではないか。WSL なら、WSL 側の設定ファイルに上の 1 行を足したか
 2. `shell.integration` が `true` になっているか
 3. PowerShell の場合、PSReadLine が入っているか（`Get-Module PSReadLine -ListAvailable` で確認できます）
 4. プロファイルに `-c` や `-File` などの引数がないか
