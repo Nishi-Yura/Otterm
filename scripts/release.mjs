@@ -96,6 +96,9 @@ const overlay = {
         }
       : {}),
   },
+  // The bundler reads the public key from the config when it signs the update artifacts (the app
+  // itself gets it from OTTERM_UPDATER_PUBKEY at build time, update.rs). Same key in both places.
+  ...(canSign ? { plugins: { updater: { pubkey } } } : {}),
 };
 mkdirSync(join(root, "target"), { recursive: true });
 const overlayFile = join(root, "target/release-tauri.json");
