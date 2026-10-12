@@ -10,7 +10,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { createSignal } from "solid-js";
 import { type ParsedCommand, parseCommand } from "../assist/parse";
 import { t } from "../i18n";
-import { type Chord, matches, parseChord } from "../keymap";
+import { type Chord, matches, parseChord, strongSteps } from "../keymap";
 import { compileWhen, type WhenContext } from "../when";
 import type {
   HostToWorker,
@@ -666,19 +666,26 @@ export class ModHost {
   ): Promise<CompletionItem[]> {
     const name = parsed.segments.at(-1)?.name;
     const lists = await Promise.all(
-      this.providersOf("completion", name).map((p) => this.ask<CompletionItem[]>(p, [input, parsed])),
+      this.providersOf("completion", name).map((p) =>
+        this.ask<CompletionItem[]>(p, [input, parsed]).catch(() => undefined),
+      ),
     );
     const seen = new Set<string>();
     const out: CompletionItem[] = [];
+    // A provider that returns something else than items is skipped, not the others (issue #17).
     for (const list of lists) {
-      for (const it of list ?? []) {
+      if (!Array.isArray(list)) continue;
+      for (const it of list) {
+        if (typeof it?.label !== "string" || !it.label) continue;
+        if (it.insertText !== undefined && typeof it.insertText !== "string") continue;
         const key = `${it.kind}:${it.insertText ?? it.label}`;
-        if (!it?.label || seen.has(key)) continue;
+        if (seen.has(key)) continue;
         seen.add(key);
         out.push(it);
       }
     }
-    out.sort((a, b) => (a.sortText ?? a.label).localeCompare(b.sortText ?? b.label));
+    const order = (it: CompletionItem) => (typeof it.sortText === "string" ? it.sortText : it.label);
+    out.sort((a, b) => order(a).localeCompare(order(b)));
     return out.slice(0, 50);
   }
 
@@ -863,13 +870,23 @@ export class ModHost {
   }
 
   /** A key the window did not bind itself: a mod's suggested binding (docs/06 §5; user keys win). */
-  matchKey(e: KeyboardEvent, ctx: WhenContext): string | undefined {
+  matchKey(e: KeyboardEvent, ctx: WhenContext, strongOnly = false): string | undefined {
     for (const k of this.keys) {
       if (!k.chord || !matches(k.chord, e)) continue;
+      // On the alternate screen with passthrough, plain chords belong to the application (issue #15).
+      if (strongOnly && !strongSteps([k.chord])) continue;
       if (k.when && !compileWhen(k.when)?.(ctx)) continue;
       if (this.commands.has(k.command)) return k.command;
     }
     return undefined;
+  }
+
+  /** Withdraw a mod's suggestion of `key` for `command`. */
+  private dropKey(mod: string, k: { command: string; key: string; when?: string }) {
+    const i = this.keys.findIndex(
+      (x) => x.mod === mod && x.command === k.command && x.key === k.key && (x.when ?? "") === (k.when ?? ""),
+    );
+    if (i >= 0) this.keys.splice(i, 1);
   }
 
   /** The keys mods suggested, for the keybindings settings (docs/06 §5.3). */
@@ -1197,7 +1214,12 @@ export class ModHost {
         this.commands.delete(msg.id);
         break;
       case "keybinding":
+        // A mod that wakes from suspension suggests its keys again; one entry each (issue #16).
+        this.dropKey(id, msg);
         this.keys.push({ chord: parseChord(msg.key), command: msg.command, key: msg.key, when: msg.when, mod: id });
+        break;
+      case "unkeybinding":
+        this.dropKey(id, msg);
         break;
       case "subscribe":
         r.subs.add(msg.event);
@@ -1767,7 +1789,8 @@ function ruleMatches(rule: DangerRule, parsed: ParsedCommand): boolean {
   });
 }
 
-function sessionInfo(s: SessionSnapshot) {
+/** A session as mods see it (`SessionInfo` in @otterm/api). */
+export function sessionInfo(s: SessionSnapshot) {
   const shell =
     s.shell
       .toLowerCase()

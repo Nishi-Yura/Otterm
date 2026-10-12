@@ -123,11 +123,27 @@ function semantic(entry, file, errs) {
   walk(entry, entry.name);
 }
 
-const dir = path.join(root, "mods/dictionary-core/dictionary/commands");
-const files = fs
-  .readdirSync(dir)
-  .filter((f) => f.endsWith(".json"))
-  .sort();
+// Every mod that ships a dictionary: the built-in ones and the community ones (issue #23).
+const dictionaries = ["mods", "community-mods"].flatMap((base) => {
+  const at = path.join(root, base);
+  if (!fs.existsSync(at)) return [];
+  return fs
+    .readdirSync(at)
+    .sort()
+    .map((m) => path.join(at, m, "dictionary"))
+    .filter((d) => fs.existsSync(d));
+});
+const jsonIn = (dir) =>
+  fs.existsSync(dir)
+    ? fs
+        .readdirSync(dir)
+        .filter((f) => f.endsWith(".json"))
+        .sort()
+        .map((f) => path.join(dir, f))
+    : [];
+const files = dictionaries.flatMap((d) => jsonIn(path.join(d, "commands")));
+const ruleFiles = dictionaries.flatMap((d) => jsonIn(path.join(d, "rules")));
+const shown = (full) => path.relative(root, full).replaceAll("\\", "/");
 let problems = 0;
 const stats = { files: 0, subcommands: 0, options: 0, errors: 0, examples: 0, danger: 0, lines: 0 };
 const countDanger = (n) =>
@@ -138,8 +154,8 @@ const countOpts = (n) => (n.options || []).length + (n.subcommands || []).reduce
 const countErrs = (n) => (n.errors || []).length + (n.subcommands || []).reduce((a, s) => a + countErrs(s), 0);
 const countEx = (n) => (n.examples || []).length + (n.subcommands || []).reduce((a, s) => a + countEx(s), 0);
 
-for (const f of files) {
-  const full = path.join(dir, f);
+for (const full of files) {
+  const f = shown(full);
   const raw = fs.readFileSync(full);
   const errs = [];
   if (raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf) errs.push("has UTF-8 BOM");
@@ -168,18 +184,44 @@ for (const f of files) {
   }
 }
 
-// rules file
-const rules = JSON.parse(fs.readFileSync(path.join(root, "mods/dictionary-core/dictionary/rules/core.json"), "utf8"));
-for (const r of rules.rules) {
-  if (r.match.regex) {
-    try {
-      new RegExp(r.match.regex, "im");
-    } catch (e) {
-      problems++;
-      console.log(`FAIL rules/core.json ${r.id}: ${e.message}`);
+// Danger rules: each regex compiles, ids are unique across mods, messages are in both languages.
+const ruleIds = new Set();
+let ruleCount = 0;
+for (const full of ruleFiles) {
+  const f = shown(full);
+  const raw = fs.readFileSync(full);
+  const errs = [];
+  if (raw.includes("\r\n")) errs.push("has CRLF line endings");
+  let rules = [];
+  try {
+    rules = JSON.parse(raw.toString("utf8")).rules;
+    if (!Array.isArray(rules)) throw new Error("no rules array");
+  } catch (e) {
+    errs.push(`invalid rules file: ${e.message}`);
+    rules = [];
+  }
+  for (const r of rules) {
+    ruleCount++;
+    const id = r?.id ?? "(no id)";
+    if (typeof r?.id !== "string") errs.push(`${id}: missing id`);
+    else if (ruleIds.has(r.id)) errs.push(`${id}: duplicate rule id`);
+    else ruleIds.add(r.id);
+    if (r?.match?.regex) {
+      try {
+        new RegExp(r.match.regex, "im");
+      } catch (e) {
+        errs.push(`${id}: ${e.message}`);
+      }
     }
+    if (r?.message && typeof r.message === "object" && !("ja" in r.message && "en" in r.message))
+      errs.push(`${id}.message must have both ja and en`);
+  }
+  if (errs.length) {
+    problems += errs.length;
+    console.log(`FAIL ${f}`);
+    for (const e of errs) console.log(`   - ${e}`);
   }
 }
 
-console.log(JSON.stringify({ ...stats, rules: rules.rules.length, problems }, null, 2));
+console.log(JSON.stringify({ dictionaries: dictionaries.length, ...stats, rules: ruleCount, problems }, null, 2));
 process.exit(problems ? 1 : 0);

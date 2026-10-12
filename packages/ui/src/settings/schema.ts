@@ -120,7 +120,11 @@ export function describe(root: Schema, node: Schema): Field {
     }
     case "object":
       if (core.properties) {
-        return { ...field, kind: "object", props: Object.entries(core.properties) as [string, Schema][] };
+        // `x-hidden` keys are read from config.toml but do nothing yet, so the form leaves them out.
+        const props = (Object.entries(core.properties) as [string, Schema][]).filter(
+          ([, s]) => s?.["x-hidden"] !== true,
+        );
+        return { ...field, kind: "object", props };
       }
       if (core.additionalProperties && typeof core.additionalProperties === "object") {
         return { ...field, kind: "map", item: resolve(root, core.additionalProperties) };

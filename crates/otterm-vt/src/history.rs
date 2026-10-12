@@ -363,6 +363,9 @@ impl Reader<'_> {
         self.at += n;
         Some(s)
     }
+    fn left(&self) -> usize {
+        self.b.len().saturating_sub(self.at)
+    }
     fn u8(&mut self) -> Option<u8> {
         Some(self.take(1)?[0])
     }
@@ -381,13 +384,25 @@ impl Reader<'_> {
     }
 }
 
+/// Smallest encoded cell: a char, three one-byte colors, flags and link.
+const MIN_CELL_BYTES: usize = 4 + 3 + 2 + 2;
+/// Smallest encoded row: the wrap flag, the cell count and the extra count.
+const MIN_ROW_BYTES: usize = 1 + 4 + 2;
+
 fn decode_rows(b: &[u8]) -> Option<Vec<Row>> {
     let mut r = Reader { b, at: 0 };
     let n = r.u32()? as usize;
+    // Lengths are checked against the bytes left before anything is allocated for them.
+    if n > r.left() / MIN_ROW_BYTES {
+        return None;
+    }
     let mut rows = Vec::with_capacity(n);
     for _ in 0..n {
         let wrapped = r.u8()? != 0;
         let cells_n = r.u32()? as usize;
+        if cells_n > r.left() / MIN_CELL_BYTES {
+            return None;
+        }
         let mut cells = Vec::with_capacity(cells_n);
         for _ in 0..cells_n {
             let ch = char::from_u32(r.u32()?).unwrap_or(' ');

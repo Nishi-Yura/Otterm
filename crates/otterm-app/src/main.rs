@@ -588,7 +588,8 @@ fn session_text(
     end_line: u64,
     end_col: usize,
 ) -> CmdResult<String> {
-    state.sessions.text(id, (start_line, start_col), (end_line, end_col)).map_err(err)
+    let trim = state.config.config().terminal.trim_trailing_whitespace;
+    state.sessions.text(id, (start_line, start_col), (end_line, end_col), trim).map_err(err)
 }
 
 /// Matches as `[start line, start col, end line, end col]`, oldest first.

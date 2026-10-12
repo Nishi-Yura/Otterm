@@ -56,6 +56,7 @@ import {
   localized,
   ModHost,
   type SessionSnapshot,
+  sessionInfo,
   type ToastRequest,
 } from "./mods/host";
 import { ModDialog, ModsPanel, Panels, PermissionDialog, StatusBar, type Toast, Toasts } from "./mods/ModUi";
@@ -142,6 +143,20 @@ export function commandName(command: string): string {
 }
 
 /** A title that is only a program's path, like `C:\…\pwsh.exe` or `/usr/bin/zsh`. */
+/**
+ * A tab title template with its `{name}` variables filled in. Separators (` · `, `|`, ` - `) left
+ * at either end or doubled by an empty value go away.
+ */
+export function fillTitle(template: string, vars: Record<string, string>): string {
+  // `-` and `:` only with spaces around them, so that "my-app" stays whole.
+  const sep = /\s*[·|]\s*|\s+[-–—:]\s+/;
+  const text = template.replace(/\{(\w+)\}/g, (m, k: string) => (Object.hasOwn(vars, k) ? (vars[k] ?? "") : m));
+  return text
+    .replace(new RegExp(`(${sep.source})(?:${sep.source})+`, "g"), "$1")
+    .replace(new RegExp(`^(?:${sep.source})+|(?:${sep.source})+$`, "g"), "")
+    .trim();
+}
+
 export function isProgramPath(title: string): boolean {
   const t = title.trim();
   return /^([a-zA-Z]:[\\/]|\/)/.test(t) && /(\.exe|[\\/](ba|z|fi|nu)?sh|[\\/]pwsh|[\\/]cmd)$/i.test(t);
@@ -1650,7 +1665,7 @@ export function App() {
     if (r?.kind === "pending" || r?.kind === "cancel") return true;
     if (!r) {
       // A mod's suggested key, when the user bound nothing to the chord (docs/06 §5).
-      const command = host.matchKey(e, ctx);
+      const command = host.matchKey(e, ctx, pane.altScreen && passthrough);
       if (!command) return false;
       void host.runCommand(command);
       return true;
@@ -1948,9 +1963,15 @@ export function App() {
     // A shell that titles its window with its own program path (pwsh after a command, cmd) says
     // nothing useful; the folder and the command do (decision I10).
     if (set && !isProgramPath(set)) return set;
-    const folder = folders()[pane] || panes().find((p) => p.id === pane)?.profileName || "";
+    const p = panes().find((x) => x.id === pane);
+    const c = config();
+    // A tab opened without picking a profile runs the default one: its id, or else the shell it
+    // started (the platform's recommendation), stands in for a name.
+    const profile = p?.profileName || p?.profile || c?.defaultProfile || commandName(shellOf.get(pane)?.shell ?? "");
     const command = commandName(running()[pane] ?? "");
-    return command ? (folder ? `${command} · ${folder}` : command) : folder;
+    const template = command ? (c?.tabTitleRunning ?? "{command} · {cwd_name}") : (c?.tabTitleIdle ?? "{cwd_name}");
+    // `appearance.tabbar.title_idle` / `title_running` (issue #18).
+    return fillTitle(template, { cwd_name: folders()[pane] || profile, command, profile, title: set ?? "" });
   };
   /** The color of the profile the tab's active pane runs, if it has one (`profiles.color`). */
   const tabAccent = (tab: Tab) => {
@@ -2376,10 +2397,13 @@ export function App() {
                         sessionOf.set(p.id, id);
                         void invoke<{ shell: string; wsl: string | null }>("session_info", { id })
                           .then((info) => shellOf.set(p.id, info))
-                          .catch(() => {});
-                        const s = snapshot(p);
-                        if (s) host.emit("session-created", s);
-                        if (currentTab()?.active === p.id) emitFocus();
+                          .catch(() => {})
+                          .finally(() => {
+                            // Once the shell is known, so that `shellKind` is right (issue #14).
+                            const s = snapshot(p);
+                            if (s) host.emit("session-created", sessionInfo(s));
+                            if (currentTab()?.active === p.id) emitFocus();
+                          });
                       }}
                       onBell={() => {
                         if (p.tab !== activeTab()) setRang(new Set([...rang(), p.tab]));

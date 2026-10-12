@@ -164,9 +164,11 @@ A small-clawed otter named **Pebble** (コツメ, Kotsume, in Japanese) lives in
 id = "you.hello"
 name = "Hello"
 version = "1.0.0"
+author = "you"
 kind = "extension"
 
 [compat]
+otterm = ">=1.0.0 <2.0.0"
 api = "1"
 
 [entry]

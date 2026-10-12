@@ -187,7 +187,8 @@ pub trait SessionManager: Send + Sync {
     fn mouse(&self, id: SessionId, mouse: &Mouse) -> Result<bool>;
     /// Text between two (line, column) positions, inclusive. Line numbers are those of the frames
     /// (`otterm_vt::Terminal::line`).
-    fn text(&self, id: SessionId, start: (u64, usize), end: (u64, usize)) -> Result<String>;
+    /// `trim` drops the blanks at the end of each line.
+    fn text(&self, id: SessionId, start: (u64, usize), end: (u64, usize), trim: bool) -> Result<String>;
     /// Find `query` in the scrollback and the screen, oldest first. An invalid regular expression
     /// is an error meant for the user.
     fn search(&self, id: SessionId, query: &str, opts: SearchOptions) -> Result<Vec<Match>>;
@@ -628,8 +629,8 @@ impl SessionManager for LocalSessionManager {
         }
     }
 
-    fn text(&self, id: SessionId, start: (u64, usize), end: (u64, usize)) -> Result<String> {
-        Ok(self.get(id)?.term.lock().unwrap().text_range(start, end))
+    fn text(&self, id: SessionId, start: (u64, usize), end: (u64, usize), trim: bool) -> Result<String> {
+        Ok(self.get(id)?.term.lock().unwrap().text_range_trim(start, end, trim))
     }
 
     fn search(&self, id: SessionId, query: &str, opts: SearchOptions) -> Result<Vec<Match>> {

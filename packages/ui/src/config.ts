@@ -74,6 +74,9 @@ export interface UiConfig {
   themeHighContrast: UiConfig["theme"] | null;
   /** Set by the UI, not Rust: the alpha of the terminal's default background. */
   terminalAlpha?: number;
+  /** Automatic tab title templates (decision I10): `{cwd_name}` `{command}` `{profile}` `{title}`. */
+  tabTitleIdle: string;
+  tabTitleRunning: string;
   cursorStyle: "block" | "underline" | "bar";
   cursorBlink: boolean;
   copyOnSelect: boolean;

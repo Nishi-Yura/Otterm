@@ -52,7 +52,7 @@ pub fn search(term: &Terminal, re: &Regex, limit: usize) -> Vec<Match> {
                 break;
             }
         }
-        line = next;
+        line = next.max(line + 1);
     }
     out
 }
@@ -65,7 +65,11 @@ fn logical_line(term: &Terminal, mut line: u64, end: u64) -> (String, CellMap, u
     let mut text = String::new();
     let mut cells = Vec::new();
     while line < end {
-        let Some(row) = term.line(line) else { break };
+        // A line that cannot be read (a lost or broken scrollback chunk) is skipped.
+        let Some(row) = term.line(line) else {
+            line += 1;
+            break;
+        };
         let mut col = 0;
         while col < row.cells.len() {
             let cell = &row.cells[col];

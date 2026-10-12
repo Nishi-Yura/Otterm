@@ -17,8 +17,6 @@ By default, otterm loads its hook through startup arguments for the shells it la
 | PowerShell 7 / Windows PowerShell | Hook passed at startup. PSReadLine is required. |
 | cmd, WSL launcher | No integration. Works as a plain terminal. |
 
-To use integration in shells started outside otterm, set `shell.integration_install = "rc"`. This adds one line to your startup file and can be undone.
-
 ## The shell's own startup files
 
 By default otterm starts the shell **as installed**: it does not read the PowerShell profile, `~/.bashrc`, `~/.zshrc`, `config.fish` or cmd's AutoRun. Customizations made for other terminals (prompt themes, completion add-ons) stay out of otterm; conveniences come from otterm's settings and mods instead.

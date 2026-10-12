@@ -106,6 +106,8 @@ export type WorkerToHost =
   | { t: "command"; id: string; title: string; description?: string; icon?: string; hidden: boolean; fn: number }
   | { t: "unregister"; kind: "command"; id: string }
   | { t: "keybinding"; command: string; key: string; when?: string }
+  /** The suggestion with the same command, key and `when` is withdrawn. */
+  | { t: "unkeybinding"; command: string; key: string; when?: string }
   | { t: "subscribe"; event: string }
   | { t: "unsubscribe"; event: string }
   /** Menu items for a right-click target (`context.terminal`, `context.block`, …). */

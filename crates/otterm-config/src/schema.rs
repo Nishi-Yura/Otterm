@@ -10,6 +10,7 @@
 //!   - `#[schemars(extend("x-restart" = true))]`  — change needs a restart
 //!   - `#[schemars(extend("x-i18n" = "key"))]`    — Fluent id for the label (defaults to the path)
 //!   - `#[schemars(extend("x-advanced" = true))]` — hidden behind "Advanced" in the UI
+//!   - `#[schemars(extend("x-hidden" = true))]`   — not in the UI: accepted, but nothing reads it yet
 //!
 //! TOML round-trips through `toml_edit` so comments and ordering survive GUI edits.
 
@@ -101,6 +102,7 @@ pub struct General {
     /// Update channel.
     pub update_channel: UpdateChannel,
     /// Reopen tabs, panes and working directories from the previous run.
+    #[schemars(extend("x-hidden" = true))]
     pub restore_session: bool,
     /// Ask before closing a tab whose process is still running.
     pub confirm_close_running: bool,
@@ -448,6 +450,7 @@ pub struct Cursor {
     pub style: CursorStyle,
     pub blink: bool,
     /// Animate cursor movement. Disabled automatically under OS "reduce motion".
+    #[schemars(extend("x-hidden" = true))]
     pub smooth: bool,
 }
 
@@ -532,6 +535,7 @@ pub struct Shell {
     /// Enable shell integration (blocks, cwd tracking, input line).
     pub integration: bool,
     /// How integration hooks are loaded (decision B6). `args` touches no user files.
+    #[schemars(extend("x-hidden" = true))]
     pub integration_install: IntegrationInstall,
     /// Who draws the prompt (decision M4). Needs `integration`.
     pub prompt: PromptStyle,
@@ -676,6 +680,8 @@ pub struct Assist {
     /// Show "this did the same as `cmd`" hints after GUI file operations. `auto` follows guide level.
     pub learn_hints: Auto<bool>,
     /// Send `cd` to the shell when a folder is opened in the file tree. `auto` = on at guide level >= 2 (decision B10).
+    /// The file tree mod has its own `cd_on_open` setting for now.
+    #[schemars(extend("x-hidden" = true))]
     pub file_tree_cd: Auto<bool>,
 }
 
@@ -730,7 +736,9 @@ pub struct Open {
     /// Extension → action. Actions: `editor`, `preview`, `system`.
     pub rules: BTreeMap<String, OpenAction>,
     /// Preview size limits in MB (decision G4).
+    #[schemars(extend("x-hidden" = true))]
     pub preview_text_limit_mb: u32,
+    #[schemars(extend("x-hidden" = true))]
     pub preview_image_limit_mb: u32,
 }
 
@@ -822,6 +830,7 @@ pub struct Mods {
     pub enabled: Vec<String>,
     pub disabled: Vec<String>,
     /// Install updates without asking.
+    #[schemars(extend("x-hidden" = true))]
     pub auto_update: bool,
     /// Show per-mod logs, timings and API calls in Settings.
     pub developer_mode: bool,
@@ -857,6 +866,7 @@ pub struct Ai {
     /// Keep a local log of requests and responses (days). 0 = off.
     pub log_retention_days: u32,
     /// Include the last 5 command strings as context.
+    #[schemars(extend("x-hidden" = true))]
     pub include_recent_commands: bool,
     /// Allow the `?` prefix in the input line to ask (off: dedicated key / mascot click only; decision F1).
     pub question_prefix: bool,

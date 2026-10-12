@@ -404,7 +404,7 @@
       keybindings: {
         suggest(command, key, when) {
           post({ t: "keybinding", command: full(command), key, when });
-          return noop();
+          return disposable(() => post({ t: "unkeybinding", command: full(command), key, when }));
         },
       },
       session: {
@@ -527,8 +527,16 @@
                 return;
               }
               fired = rule.once === "per-day" ? day() : true;
-              if (rule.say) void call("mascot.say", { text: resolve(rule.say), mood: rule.mood, actions: [] });
-              else if (rule.mood) void call("mascot.setMood", { mood: rule.mood, for: 3000 });
+              if (rule.say) {
+                // `"i18n:<id>"` is a message of the mod's own locales (issue #20).
+                const text =
+                  typeof rule.say === "string" && rule.say.startsWith("i18n:")
+                    ? (host.t(rule.say.slice(5), "{}") ?? rule.say.slice(5))
+                    : resolve(rule.say);
+                void call("mascot.say", { text, mood: rule.mood, actions: [] });
+              } else if (rule.mood) {
+                void call("mascot.setMood", { mood: rule.mood, for: 3000 });
+              }
             });
           },
         },

@@ -93,6 +93,8 @@ impl Default for Modes {
 const MAX_LINK_LEN: usize = 2048;
 /// Total size of the OSC 8 targets one terminal keeps (they live as long as the session).
 const MAX_LINK_BYTES: usize = 4 << 20;
+/// Most bytes of combining marks (accents, ZWJ sequences, selectors) one cell keeps.
+const MAX_COMBINING_BYTES: usize = 256;
 
 /// Kitty keyboard flags otterm implements: 1 (disambiguate escape codes) and 8 (report all keys
 /// as escape codes). Event types (2), alternate keys (4) and associated text (16) are not sent, and
@@ -320,6 +322,12 @@ impl Terminal {
     /// Text from `start` to `end` inclusive, as (line, column); the order of the two does not
     /// matter. Lines end with `\n` unless they wrapped; trailing blanks are dropped.
     pub fn text_range(&self, start: (u64, usize), end: (u64, usize)) -> String {
+        self.text_range_trim(start, end, true)
+    }
+
+    /// [`Self::text_range`], keeping the blanks at the end of lines when `trim` is off (copying with
+    /// `terminal.trim_trailing_whitespace = false`).
+    pub fn text_range_trim(&self, start: (u64, usize), end: (u64, usize), trim: bool) -> String {
         let (start, end) = if start <= end { (start, end) } else { (end, start) };
         let mut out = String::new();
         for line in start.0..=end.0 {
@@ -334,7 +342,12 @@ impl Terminal {
                 }
                 text.push_str(&row.cell_text(col));
             }
-            if row.wrapped && !last {
+            if !trim {
+                out.push_str(&text);
+                if !row.wrapped && !last {
+                    out.push('\n');
+                }
+            } else if row.wrapped && !last {
                 out.push_str(&text);
             } else {
                 out.push_str(text.trim_end_matches(' '));
@@ -484,45 +497,23 @@ impl Terminal {
         }
         let pen = Attrs::default();
 
-        // Primary: keep the cursor row on screen. Shrinking pushes top lines into scrollback;
-        // growing pulls them back.
-        let mut pending_wrap = false;
-        if cols != self.cols && !self.modes.alt_screen {
-            pending_wrap = self.reflow_primary(cols, rows);
-        } else if rows < self.rows {
-            let excess = (self.cursor.row + 1).saturating_sub(rows).min(self.rows - rows);
-            let moved: Vec<Row> = self.primary.drain(..excess).collect();
-            if !self.modes.alt_screen {
-                for row in moved {
-                    self.push_history(row);
-                }
-            }
-            self.primary.truncate(rows);
-            if !self.modes.alt_screen {
-                self.cursor.row -= excess;
-            }
+        // The primary screen is resized the same way whichever screen shows (issue #9). Under the
+        // alternate screen its cursor is the one saved on switching over.
+        let alt = self.modes.alt_screen;
+        if alt {
+            std::mem::swap(&mut self.cursor, &mut self.saved[0].cursor);
+        }
+        let pending_wrap = self.resize_primary(cols, rows);
+        if alt {
+            std::mem::swap(&mut self.cursor, &mut self.saved[0].cursor);
+            self.saved[0].cursor.pending_wrap = pending_wrap;
+            // The alternate screen is cut or padded; its application redraws it.
+            self.cursor.pending_wrap = false;
         } else {
-            let mut pulled = 0;
-            while self.primary.len() < rows {
-                if !self.modes.alt_screen
-                    && let Some(row) = self.scrollback.pop_back()
-                {
-                    self.primary.push_front(row);
-                    pulled += 1;
-                } else {
-                    self.primary.push_back(Row::new(cols, &pen));
-                }
-            }
-            if !self.modes.alt_screen {
-                self.cursor.row += pulled;
-            }
+            self.cursor.pending_wrap = pending_wrap;
         }
         self.alt.resize_with(rows, || Row::new(cols, &pen));
-        for row in self.primary.iter_mut().chain(self.alt.iter_mut()) {
-            row.resize(cols);
-        }
-        // Scrollback rows are trimmed; only cut the ones that are now too long.
-        for row in self.scrollback.hot_mut().filter(|r| r.cells.len() > cols) {
+        for row in self.alt.iter_mut() {
             row.resize(cols);
         }
         for s in &mut self.saved {
@@ -534,13 +525,50 @@ impl Terminal {
         self.rows = rows;
         self.cursor.row = self.cursor.row.min(rows - 1);
         self.cursor.col = self.cursor.col.min(cols - 1);
-        self.cursor.pending_wrap = pending_wrap;
         self.scroll_top = 0;
         self.scroll_bottom = rows - 1;
         self.tabs = default_tabs(cols);
         self.dirty = vec![true; rows];
         self.full_damage = true;
         self.trim_scrollback();
+    }
+
+    /// Resize the primary screen around `self.cursor`, keeping the cursor row on screen: a new
+    /// width rewraps lines; shrinking pushes top lines into scrollback, growing pulls them back.
+    /// Returns whether the cursor ends up waiting to wrap.
+    fn resize_primary(&mut self, cols: usize, rows: usize) -> bool {
+        let pen = Attrs::default();
+        let mut pending_wrap = false;
+        if cols != self.cols {
+            pending_wrap = self.reflow_primary(cols, rows);
+        } else if rows < self.rows {
+            let excess = (self.cursor.row + 1).saturating_sub(rows).min(self.rows - rows);
+            let moved: Vec<Row> = self.primary.drain(..excess).collect();
+            for row in moved {
+                self.push_history(row);
+            }
+            self.primary.truncate(rows);
+            self.cursor.row -= excess;
+        } else {
+            while self.primary.len() < rows {
+                if let Some(row) = self.scrollback.pop_back() {
+                    self.primary.push_front(row);
+                    self.cursor.row += 1;
+                } else {
+                    self.primary.push_back(Row::new(cols, &pen));
+                }
+            }
+        }
+        for row in self.primary.iter_mut() {
+            row.resize(cols);
+        }
+        // Scrollback rows are trimmed; only cut the ones that are now too long.
+        for row in self.scrollback.hot_mut().filter(|r| r.cells.len() > cols) {
+            row.resize(cols);
+        }
+        self.cursor.row = self.cursor.row.min(rows - 1);
+        self.cursor.col = self.cursor.col.min(cols - 1);
+        pending_wrap
     }
 
     /// Rewrap the primary screen and the recent scrollback for a new width (issue #2); compressed
@@ -553,7 +581,8 @@ impl Terminal {
         while all.len() > cursor_at + 1 && all.last().is_some_and(is_blank) {
             all.pop();
         }
-        let (mut out, (row, col)) = crate::reflow::reflow(all, cols, (cursor_at, self.cursor.col));
+        let (mut out, (row, col)) =
+            crate::reflow::reflow(all, cols, (cursor_at, self.cursor.col + self.cursor.pending_wrap as usize));
         // Show the last `rows` rows, unless that would leave the cursor above the screen.
         let start = out.len().saturating_sub(rows).min(row);
         let mut screen: VecDeque<Row> = out.drain(start..).take(rows).collect();
@@ -665,6 +694,10 @@ impl Terminal {
         if self.modes.alt_screen {
             return;
         }
+        // Keyboard flags a crashed program left on would keep Ctrl+C from reaching the shell as
+        // ^C (issue #6). A shell that wants the protocol pushes its flags again after this.
+        self.kitty[0].clear();
+        self.update_kitty_mode();
         let row = self.cursor.row;
         match self.primary[row].block.as_deref() {
             Some(h) if matches!(h.state, BlockState::Prompt | BlockState::Input) => {}
@@ -797,7 +830,7 @@ impl Terminal {
     /// OSC 7777 cmd: the command line the user entered.
     fn block_command(&mut self, command: String) {
         /// Longer than any command line worth keeping.
-        const MAX_COMMAND: usize = 1 << 16;
+        const MAX_COMMAND: usize = u16::MAX as usize;
         if self.modes.alt_screen || command.len() > MAX_COMMAND {
             return;
         }
@@ -1152,6 +1185,9 @@ impl Terminal {
         }
         let key = col as u16;
         match r.extra.binary_search_by_key(&key, |(c, _)| *c) {
+            // Marks past the limit are dropped: lengths go out as u16 (frames, scrollback) and
+            // each mark copies the string (issue #10).
+            Ok(i) if r.extra[i].1.len() + c.len_utf8() > MAX_COMBINING_BYTES => return,
             Ok(i) => {
                 let mut s = String::from(std::mem::take(&mut r.extra[i].1));
                 s.push(c);
@@ -1730,7 +1766,7 @@ impl Perform for Terminal {
             ('n', []) => match arg(params, 0, 0) {
                 5 => self.respond("\x1b[0n"),
                 6 => {
-                    let r = if self.modes.origin { row - self.scroll_top } else { row };
+                    let r = if self.modes.origin { row.saturating_sub(self.scroll_top) } else { row };
                     let s = format!("\x1b[{};{}R", r + 1, col + 1);
                     self.respond(&s);
                 }

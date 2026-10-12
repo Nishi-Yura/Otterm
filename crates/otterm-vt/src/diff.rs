@@ -145,6 +145,10 @@ pub fn encode_frame(term: &mut Terminal, session: u32, view: &View, last: &mut F
     for row in lines.iter().flatten() {
         for cell in &row.cells[..used_len(row)] {
             attr_index.entry(cell.attrs).or_insert_with(|| {
+                // The count goes out as a u16; past that, cells borrow the first attribute.
+                if attrs.len() >= u16::MAX as usize {
+                    return 0;
+                }
                 attrs.push(cell.attrs);
                 (attrs.len() - 1) as u16
             });

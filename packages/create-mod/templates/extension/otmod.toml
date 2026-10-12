@@ -20,7 +20,7 @@ slot = "statusbar.left"
 label = "Branch name and change count"
 
 [[adds]]
-command = "__SHORT__.refresh"
+command = "__ID__.refresh"
 label = "Refresh branch info"
 
 [permissions]

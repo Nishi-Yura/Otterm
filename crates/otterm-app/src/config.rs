@@ -76,6 +76,9 @@ pub struct UiConfig {
     pub default_profile: String,
     /// Where the tab bar is: top, bottom, left, or hidden-when-single (the layout resolved).
     pub tabbar: TabbarPosition,
+    /// `appearance.tabbar.title_idle` / `title_running`: automatic tab titles (decision I10).
+    pub tab_title_idle: String,
+    pub tab_title_running: String,
     /// The layout with the `auto` settings resolved (docs/04 §1.2).
     pub layout: Layout,
     /// `appearance.ui_scale` for tabs, panels and dialogs.
@@ -354,6 +357,8 @@ impl ConfigState {
                 .collect(),
             default_profile: c.shell.default_profile.clone(),
             tabbar: layout.tabbar,
+            tab_title_idle: c.appearance.tabbar.title_idle.clone(),
+            tab_title_running: c.appearance.tabbar.title_running.clone(),
             ui_scale: c.appearance.ui_scale.clamp(0.8, 2.0),
             panel_sizes: [
                 c.appearance.sidebar.left.width.clamp(160, 800),

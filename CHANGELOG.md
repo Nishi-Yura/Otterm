@@ -12,6 +12,12 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 ### Fixed
 
 - Mod API: `ctx.terminal.insert(text, { replaceLine: true })` now clears the input line before pasting (it appended on every shell). Mod list items keep their name visible next to a long secondary text, which now ellipsizes.
+- Terminal: resizing while vim or less is open keeps the shell's screen and scrollback (they were cut to the new width, and lines were lost when the height shrank) ([#9]). A character printed after a resize no longer overwrites the last one of a full line ([#12]). Combining marks are capped per cell, so a flood of them can no longer corrupt frames or crash the app when that scrollback is read ([#10]). Search skips scrollback lines it cannot read instead of hanging the tab ([#11]). `CSI 6n` in origin mode with the cursor above the scroll region answers row 1 instead of a huge number ([#13]). The start of a prompt (OSC 133;A) clears the Kitty keyboard flags a crashed program left on, so Ctrl+C works again in any shell with integration ([#6]).
+- Settings: `appearance.tabbar.title_idle` / `title_running` now set the automatic tab titles, and `terminal.trim_trailing_whitespace = false` keeps line-end blanks when copying. Settings that nothing reads yet (`general.restore_session`, `terminal.cursor.smooth`, `shell.integration_install`, `assist.file_tree_cd`, `open.preview_*_limit_mb`, `mods.auto_update`, `ai.include_recent_commands`) are no longer shown in the settings screen ([#18]).
+- Mod API: `session-created` passes a `SessionInfo` (string id, `shellKind`) like every other event ([#14]). Keys suggested by mods no longer take plain chords from vim, nano or less when alternate-screen passthrough is on ([#15]). Disposing a `keybindings.suggest()` result withdraws the key, and a mod that wakes from suspension no longer adds its keys twice ([#16]). A completion provider that returns something other than items no longer stops all completion ([#17]). Mascot reactions translate `say: "i18n:<id>"` ([#20]).
+- Mod template: the command listed in `[[adds]]` uses the full id it is registered under ([#24]). The README example manifest has the required `author` and `[compat] otterm` ([#19]).
+- Registry: project-scripts 1.0.1 drops the `block-end` event it could never receive without `terminal.read`; it rereads on folder and tab changes and with its reload command ([#22]).
+- Tooling: `scripts/release.mjs` and `scripts/publish-community-mods.mjs` work from a checkout whose path has spaces or non-ASCII characters ([#21]). The dictionary validator checks every mod's dictionary, community ones included ([#23]).
 
 ### Security
 
@@ -36,3 +42,20 @@ First release, Windows x64. Highlights:
 
 [Unreleased]: https://github.com/Nishi-Yura/Otterm/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/Nishi-Yura/Otterm/releases/tag/v1.0.0
+[#6]: https://github.com/Nishi-Yura/Otterm/issues/6
+[#9]: https://github.com/Nishi-Yura/Otterm/issues/9
+[#10]: https://github.com/Nishi-Yura/Otterm/issues/10
+[#11]: https://github.com/Nishi-Yura/Otterm/issues/11
+[#12]: https://github.com/Nishi-Yura/Otterm/issues/12
+[#13]: https://github.com/Nishi-Yura/Otterm/issues/13
+[#14]: https://github.com/Nishi-Yura/Otterm/issues/14
+[#15]: https://github.com/Nishi-Yura/Otterm/issues/15
+[#16]: https://github.com/Nishi-Yura/Otterm/issues/16
+[#17]: https://github.com/Nishi-Yura/Otterm/issues/17
+[#18]: https://github.com/Nishi-Yura/Otterm/issues/18
+[#19]: https://github.com/Nishi-Yura/Otterm/issues/19
+[#20]: https://github.com/Nishi-Yura/Otterm/issues/20
+[#21]: https://github.com/Nishi-Yura/Otterm/issues/21
+[#22]: https://github.com/Nishi-Yura/Otterm/issues/22
+[#23]: https://github.com/Nishi-Yura/Otterm/issues/23
+[#24]: https://github.com/Nishi-Yura/Otterm/issues/24

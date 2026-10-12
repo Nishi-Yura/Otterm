@@ -266,7 +266,7 @@ const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta"]);
 
 /** Ctrl+Shift or Cmd on every step: TUI applications rarely use these, so otterm keeps them even
  * on the alternate screen. */
-function strongSteps(steps: Chord[]): boolean {
+export function strongSteps(steps: Chord[]): boolean {
   return steps.every((c) => c.meta || (c.ctrl && c.shift));
 }
 
