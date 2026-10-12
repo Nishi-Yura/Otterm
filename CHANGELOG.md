@@ -9,6 +9,10 @@ All notable changes to otterm. The format follows [Keep a Changelog](https://kee
 - Registry: 13 more community mods (24 in the store). Themes Yuki, Yuyake and Shinkai; the outfit "Pebble in winter"; dictionaries for network tools, database clients, modern CLI tools and media tools (31 commands, 7 danger rules); the extensions exit-status, command-stats, project-scripts, bookmarks and daily-tip.
 - Repository: `SECURITY.md`, issue and pull request templates, this changelog.
 
+### Fixed
+
+- Mod API: `ctx.terminal.insert(text, { replaceLine: true })` now clears the input line before pasting (it appended on every shell). Mod list items keep their name visible next to a long secondary text, which now ellipsizes.
+
 ## [1.0.0] - 2026-10-12
 
 First release, Windows x64. Highlights:
